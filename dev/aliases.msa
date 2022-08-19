@@ -1,0 +1,457 @@
+######################################################
+#
+#   Welcome to CommandHelper scripts for this server.
+#
+######################################################
+
+
+###----Aliases----###
+
+#
+#worldedit
+/1 = '//pos1'
+/2 = '//pos2'
+/s1 = '//hpos1'
+/s2 = '//hpos2'
+//a = /ascend
+//d = /descend
+/fw [$data=5] = /fixwater $data
+/fl [$data=5] = /fixlava $data
+/s $ = /searchitem $
+/nograss = /br sphere 0 15 \ /mask 31,37,38
+#
+#for users of essentials
+/top = /ascend
+/clearinventory = /clear -a
+/sm [$data=pig] [$qty=3] = /spawnmob $data $qty
+#
+#time
+/ws = /weather sunny
+/wr = /weather rain
+/td = /time day
+/ts = /time sunrise
+/tn = /time night
+#
+#LazyRoad
+/rs3g = /road Simple3
+/rs5g = /road Simple5
+/rgt = /road GlassTunnel
+/rs2 = /road Simple2torches
+/rs3 = /road Simple3torches
+/rs5 = /road Simple5torches
+/rs = /road stop
+/ru = /road undo
+/bsr5g = /bridge Simple5 Round3
+/bsr3g = /bridge Simple3 Round3
+/bsr5 = /bridge Simple5torches Round3
+/bsr3 = /bridge Simple3torches Round3
+/tg = /tunnel GlassTunnel
+#
+#misc
+/food = /kit foodnow
+/foodi = /give player() pork 3
+/lw = /listwarps
+#/adopt $data = /spawnmob wolf:tame $data player()
+/give $0 $1 $2 $3 = /give $0 $1.':'.$3 $2
+#
+#uhoh need a short command to help me now!
+/b [$data] = /butcher $data
+/g = /god
+/h [$player] = /heal $player
+/f [$data] = /butcher \ /heal \ /time day
+#
+#Kits
+/weapon = /kit weapon
+/red = /kit redstone
+/redi = /kit redstoneitems
+
+###----Scripts----###
+
+
+
+#
+##-------Scripts: Oops preventers-------##
+#
+#everyone:/reload = >>>
+#if(equals(player(), ~console), 
+#	assign(@msg, color(c).'The console is an idiot and tried to reload the server!'),
+#	assign(@msg, concat(pinfo(player(),4), color(c),' is an idiot and tried to reload the server!'))
+#	)
+#_bc(Oops, @msg)
+#<<<
+
+
+#
+##-------Scripts: Client mod compatibility-------##
+#
+
+#TooManyItems: Creative mode setting
+everyone:/gamemode [$] = >>>
+#name of script
+assign(@name, gameMode)
+assign(@you, player())
+
+if(has_permission(@you, 'commandhelper.alias.shiftmode'),
+	call_alias(/mode),
+	die(color(c).'['.color(6).@name.color(c).'] '.color(f).'You dont have permission to change your gamemode.')
+)
+<<<
+
+everyone:/gm [$] = >>>
+#name of script
+assign(@name, gameMode)
+assign(@you, player())
+
+if(has_permission(@you, 'commandhelper.alias.shiftmode'),
+	call_alias(/mode),
+	die(color(c).'['.color(6).@name.color(c).'] '.color(f).'You dont have permission to change your gamemode.')
+)
+<<<
+#
+##-------Scripts: Replacing plugins-------##
+#
+
+#commandbook: quick kit replacement
+everyone:/powerup = >>>
+assign(@player, player())
+pgive_item(@player, 278, 1)
+pgive_item(@player, 50, 64)
+set_pinv(@player, array(103: array(type:314, qty: 1)))
+set_pinv(@player, array(100: array(type:317, qty: 1)))
+msg(color(e).'Kit \'powerup\' given!')
+<<<
+
+
+
+#bukkit plugin replacements
+
+#-------------------------------------
+#ShiftMode (http://dev.bukkit.org/server-mods/shiftmode/)
+shiftmode:/mode [$] = >>>
+assign(@arg, $)
+
+#argument check
+if(@arg == '', null, msg(concat(color(red), '[', color(gold), GameMode, color(red), '] ', color(c), 'You dont need to specify the mode you want, just type ', color(7), '/mode')))
+
+proc(_set_S,
+    set_pmode('SURVIVAL')
+    die(concat(color(yellow), '[', color(gold), GameMode, color(yellow), '] ', color(white), 'Changed to ', color(c), 'Survival', color(white), ' gamemode'))
+)
+
+proc(_set_C,
+    set_pmode('CREATIVE')
+    die(concat(color(yellow), '[', color(gold), GameMode, color(yellow), '] ', color(white), 'Changed to ', color(b), 'Creative', color(white), ' gamemode'))
+)
+if(pmode() == 'CREATIVE', _set_S())
+if(pmode() == 'SURVIVAL', _set_C())
+<<<
+
+
+#
+##-------Custom scripts:-------##
+#
+
+
+#Worlds:
+#Information and teleporting
+world:/world [$world] = >>>
+assign(@world, $world)
+if(@world == '',
+    assign(@pworld, pworld())
+    assign(@gworld, get_worlds())
+    assign(@world, concat(color(9),'You are in world: ', color(a), @pworld))
+    assign(@aworld, concat(color(7),'Available worlds: ', color(7), @gworld))
+    msg(@world)
+    die(@aworld)
+)
+
+if(@world == 'c',
+    run(/mvtp creative)
+    die()
+)
+
+if(@world == 'sky',
+    run(/mvtp skyblock)
+    die()
+)
+
+if(@world == 'f',
+    run(/mvtp fun)
+    die()
+)
+
+
+if(@world == 'end',
+    run(/mvtp creative_the_end)
+    die()
+)
+
+
+run(/mvtp @world)
+<<<
+
+
+#-------------------------------------
+#[Spleef]
+
+#
+#spleef floor reset script
+everyone:/sareset [$blockid=80] = >>>
+    assign(@cooldown, 100)
+    assign(@player, player())
+
+    if(is_null(get_value(@player.'.spleef1_lastreset')),
+        store_value(@player.'.spleef1_lastreset',0)
+    )
+  
+    assign(@lastreset, get_value(@player.'.spleef1_lastreset'))
+
+    if(gt(add(@lastreset, @cooldown), divide(time(),1000)),
+        # then
+        msg(concat(color(red),'[', color(6), Spleef, color(red), ']', color(gold) 'Not enough time passed since your last arena reset.'))
+	assign(@timeleftsec, subtract(add(@lastreset, @cooldown), divide(time(),1000)))
+	assign(@timeleftmin, divide(@timeleftsec, 60))
+	assign(@timeleft, round(@timeleftsec))
+        die(concat(color(red),'[', color(6), Spleef, color(red), '] ', color(7), @timeleft, color(red),' seconds to go'))
+    )
+
+    store_value(@player.'.spleef1_lastreset', divide(time(),1000))
+
+    runas(~op, /region select arenafloor)
+    runas(~op, '//set' $blockid)   # 80 is 'snow block'
+
+    assign(@pinfo, pinfo())
+    _bc(Spleef, concat(array_get(@pinfo,4), ' reset the spleef arena!'))
+<<<
+
+
+
+#-------------------------------------
+#Other scripts
+
+deathtp:/back = >>>
+assign(@name, DeathTP)
+
+#dynamic vars
+assign(@player, player())
+
+#get where to go
+assign(@here, get_value(@player.'.deathpoint'))
+
+set_ploc(@here)
+msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'You have been returned to your death point.')
+<<<
+
+
+
+everyone:/backitems = >>>
+assign(@player, player())
+assign(@name, GarbageManagement)
+assign(@bi, get_value(@player.'.last.death.drops'))
+if(@bi == null || @bi == '', die(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Sorry, but your inventory was empty!'))
+foreach(@bi, @currentvar,
+	#Accomodating for different data types of items. (Eg mossy stone brick is 98:1)
+	if(@currentvar[data] != 0,
+		assign(@currentvar[type], @currentvar[type].':'.@currentvar[data])
+	)
+	pgive_item(@player, @currentvar[type], @currentvar[qty])
+)
+
+
+msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Respawning your items.')
+<<<
+
+
+admin:/adventure = >>>
+assign(@sp, get_value(@player.'.adventure.savepoint'))
+if(@sp == null || @sp == '', die())
+	set_ploc(@player, @sp)
+msg('Returning to where you left off in Adventure!')
+<<<
+
+citizen:/ow = >>>
+call_alias(/b)
+call_alias(/td)
+call_alias(/h)
+<<<
+
+admin:/randblock [$id=2] [$tries=200] = >>>
+	assign(@id, $id)
+	assign(@xyz, array())
+#world
+	if(player() == ~console,
+		assign(@xyz[3], world)
+	,
+		assign(@xyz[3], world)
+	)
+	
+	assign(@tries, $tries)
+	assign(@blockID, '0:0')
+	for(assign(@i, 1), @i <= @tries, @i++,
+#x
+		assign(@xyz[0], rand(-5500, 5500))
+#z
+		assign(@xyz[2], rand(-5500, 5500))
+#y
+		assign(@xyz[1], get_highest_block_at(@xyz[0], @xyz[2], @xyz[3])[1])
+		assign(@blockID, get_block_at(@xyz[0], @xyz[1] - 1, @xyz[2], @xyz[3]))
+		msg(color(9).'Try #: '.@i.color(7).' Location: '.@xyz[0].','.@xyz[1].','.@xyz[2].','.@xyz[3].color(3).' id: '.@blockID)
+		if(@blockID == @id.':0',
+			msg(color(7).'Yay! We found a random '.data_name(@id).' block here: '.@xyz[0].','.@xyz[1].','.@xyz[2].','.@xyz[3])
+			if(player() != ~console,
+				set_ploc(@xyz)
+				msg(color(7).'Teleported you to the location!')
+			)
+			break()
+		)
+	)
+<<<
+
+
+admin:/randcolor [$msg='This is a test message.'] = >>>
+assign(@array, array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b, c, d, e, f, k, l, m, n, o, r))
+assign(@color, array_rand(@array, 1, false))
+assign(@color, array_implode(@color))
+msg(color(@color).$msg)
+<<<
+
+everyone:/randomnumber [$minnumber=1] [$maxnumber=100] = >>>
+assign(@rand, rand($minnumber, $maxnumber))
+msg(@rand)
+<<<
+
+everyone:/superjump [$minnumber=1] [$maxnumber=100] = >>>
+assign(@player, player())
+assign(@rand, rand($minnumber, $maxnumber))
+assign(@sjenabled, import('superjump.enabled.'.@player))
+if(@sjenabled == false || @sjenabled == '' || @sjenabled == null,
+	export('superjump.enabled.'.@player, true)
+	msg(color(a).'You can now jump '.color(e).@rand.color(a).' times your normal jump height!')
+,
+	export('superjump.enabled.'.@player, false)
+	msg(color(e).'Your jumps are now normal again.')
+)
+<<<
+
+admin:/test2 [$action] [$option1] = >>>
+assign(@player, console)
+assign(@name, Slots)
+
+if($action == 'wr',
+		assign(@choices, array(
+			jackpot: 3,
+			win: 25,
+			block: 35,
+			explode: 7,
+			nothing: 40,
+		))
+
+assign(@array, associative_array())
+for(assign(@i, 0), @i < 50, @i++){
+        # Here is the usage of the proc, we send it our choices array
+        assign(@rand, _weighted_random(@choices))
+        if(!array_index_exists(@array, @rand)){
+                assign(@array[@rand], 0)
+        }
+        assign(@array[@rand], @array[@rand] + 1)
+}
+
+msg(@array)
+die()
+)
+
+if($action == 'moo',
+	msg(moo('moo'))
+	die()
+)
+
+if($action == 'pl',
+assign(@serverplugins, get_server_info(9)[..8])
+	msg(@serverplugins)
+	die()
+)
+
+if($action == 'effect',
+assign(@player, player())
+assign(@herea, ploc(@player))
+msg(@herea)
+	make_effect(@herea, GHAST_SHRIEK)
+for(assign(@i, 0), @i < 1100, inc(@i, 100),
+	set_timeout(@i, closure(
+		msg(@i)
+	))
+)
+die()
+)
+
+if($action == 'firework',
+assign(@player, player())
+assign(@herea, ploc(@player))
+msg(@herea)
+	make_effect(@herea, GHAST_SHRIEK)
+for(assign(@i, 0), @i < 1100, inc(@i, 100),
+	set_timeout(@i, closure(
+		msg(@i)
+	))
+)
+die()
+)
+
+if($action == 'plsearch',
+	assign(@serverplugins, get_server_info(9))
+	assign(@search, to_lower($option1))
+	if(array_contains_ic(@serverplugins, @search),
+		foreach(@serverplugins, @currentvar,
+			assign(@var, to_lower(@currentvar))
+			if(@var == @search,
+				assign(@return, @currentvar)
+			)
+		)
+	,
+		assign(@return, 'no match!!')
+	)
+	msg(@return)
+	die()
+)
+
+if($action == 'itemname',
+	assign(@item, $option1)
+	assign(@realid, data_values(@item))
+	assign(@itemname, data_name(@realid))
+	if(reg_count('[0-9]:[0-9]', @item) == 1, msg(yay), msg(no))
+	msg('realid: '.@realid)
+	msg('itemname: '.@itemname)
+	msg('data_values: '.data_values(@item))
+	msg('data_name: '.data_name(@item))
+die()
+)
+
+if($action == 'nc',
+assign(@number, _number_commaize($option1))
+msg(@number)
+die()
+)
+
+msg(get_server_info())
+
+				assign(@blocks, get_value(@name.'.play.blocks'))
+				if(@blocks == '' || @blocks == null,
+					assign(@blocks, array(1, 3, 4, 5, 12, 13, 20, 24, 30, 50, 54, 65, 85, 86, 101, 102))
+				)
+				assign(@reward, array_rand(@blocks, 1, false))
+				assign(@reward, array_implode(@reward))
+				assign(@rewardqty, rand(2, 16))
+			#	pgive_item(@player, @reward, @rewardqty)
+				msg(color(6).@reward.': '.@rewardqty)
+				#stats: record amount of blocks awarded, player and global. array(INDEX is ID: VALUE is how many)
+				#player stats:
+				assign(@playerblocks, get_value(@player.'.'.@name.'.alltime.blocks'))
+				msg('old: '.@playerblocks)
+				if(@playerblocks == '' || @playerblocks == null, assign(@playerblocks, array()))
+				if(array_index_exists(@playerblocks, @reward) == false,
+					assign(@playerblocks[@reward], 0)
+				)
+				assign(@playerblocks[@reward], @rewardqty + @playerblocks[@reward])
+				store_value(@player.'.'.@name.'.alltime.blocks', @playerblocks)
+				msg('new: '.@playerblocks)
+<<<

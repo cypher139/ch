@@ -1,0 +1,14 @@
+Dispenser Reloader Permissions:
+
+- To use the script: commandhelper.alias.reloader
+- To use items other than the default item: commandhelper.alias.reloader.use.itemnumber
+- To use any item: commandhelper.alias.reloader.any.item.use
+- To use /reloader area: commandhelper.alias.reloader.area
+- To make illegitimate stacks: commandhelper.alias.reloader.stack.illegitimate
+
+Admins:
+- Administration / Use /reloaderadmin: commandhelper.alias.admin
+- To receive admin messages: commandhelper.alias.admin.message
+
+Plugin permissions:
+- Set WorldEdit selection (Required to use area mode): worldedit.selection.pos

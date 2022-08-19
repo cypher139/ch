@@ -1,0 +1,250 @@
+######################################################
+#
+#   CH: Developer debug tools for making CommandHelper scripts..
+#   These scripts make it easier for you to debug what's going on in your scripts, or just /reloadaliases easily.
+#
+######################################################
+
+admin:/ch [$action] [$option1] [$option2] [$] = >>>
+#what is the name of this script?
+assign(@name, ch)
+
+#dynamic vars, dont edit
+assign(@action, $action)
+assign(@option1, $option1)
+assign(@option2, $option2)
+assign(@player, @option1)
+
+if(@player == '', assign(@player, player()))
+
+#action list help
+#this appears on /ch, or when unsupported action variable is passed
+proc(_ch_help,
+	msg(color(6).'CommandHelper debug scripts help:')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(a).'/ch <action> [option1] [option2]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/ch dumpevents'.color(4).' - '.color(f).'Dumps output of the dump_events() function, which tells all events CH is listening to and their file locations.')
+	msg(color(7).'/ch pinfo <player>'.color(4).' - '.color(f).'Dumps all output of the pinfo() function, which lists random infomation about the specified player')
+	msg(color(7).'/ch clearvalue <player> <value>'.color(4).' - '.color(f).'Clears the specified value in ch\'s persistance file. FOR DEBUG USE ONLY.')
+	msg(color(7).'/ch getvalue <value>'.color(4).' - '.color(f).'Gets the specified value from ch\'s persistance file.')
+	msg(color(7).'/ch hasvalue <player> <value>'.color(4).' - '.color(f).'Returns if the specified value exists.')
+	msg(color(7).'/ch storevalue <value> <data>'.color(4).' - '.color(f).'Stores the data into the specified value in ch\'s persistance file. FOR DEBUG USE ONLY.')
+	msg(color(7).'/ch getvalues <player> [value]'.color(4).' - '.color(f).'Gets the values from the specified key. If none is provided, tries the current player.')
+	msg(color(7).'/ch regionat <player>'.color(4).' - '.color(f).'Returns what WG region(s) the specified player is currently in.')
+	msg(color(7).'/ch tolower <text>'.color(4).' - '.color(f).'Returns an all-lowercase version of the text provided.')
+	msg(color(7).'/ch toupper <text>'.color(4).' - '.color(f).'Returns an all-uppercase version of the text provided.')
+	msg(color(7).'/ch death <player> <deathtype> [deathmsg]'.color(4).' - '.color(f).'Random death messages on demand!')
+	msg(color(7).'/ch verbose'.color(4).' - '.color(f).'Turns on/off "verbose": extra messages in scripts that primarily might be considered spam, hence a option to enable/disable them.')
+	msg(color(7).'/ch dev'.color(4).' - '.color(f).'Turns on/off "dev": developer messages in scripts primarily used in debugging.')
+	msg(color(7).'/ch code [codelength]'.color(4).' - '.color(f).'Give a randomly generated code. defaults to a code 7 characters in length, unelss you specify something else.')
+	msg(color(7).'/ch export <value> <data>'.color(4).' - '.color(f).'Stores the data into the specified value into ch\'s memory persistance, that will be lost on server reboot. FOR DEBUG USE ONLY.')
+	msg(color(7).'/ch import <value>'.color(4).' - '.color(f).'Gets the specified value from ch\'s memory persistance.')
+
+)
+
+
+
+
+
+switch(@action){
+
+case help:
+case -help:
+case ?:
+case '/?':
+	_ch_help()
+
+
+case version:
+case build:
+case info:
+	msg(color(7).'['.color(gold).@name.color(7).'] '.engine_build_date())
+
+
+case events:
+case dumpevents:
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'Current binded events:')
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
+	assign(@j, 0)
+	foreach(dump_events(), @var,
+		if(_is_even_number(@j) == true,
+			assign(@color, e)
+		,
+			assign(@color, a)
+		)
+		msg(color(@color).@var)
+		assign(@j, @j + 1)
+	)
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
+
+
+case pinfo:
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'Player info:')
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(0) name: '.color(f).pinfo(@player)[0])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(1) location: '.color(f).pinfo(@player)[1])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(2) cursor: '.color(f).pinfo(@player)[2])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(3) ip: '.color(f).pinfo(@player)[3])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(4) displayname: '.color(f).pinfo(@player)[4])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(5) health: '.color(f).pinfo(@player)[5])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(6) iteminhand: '.color(f).pinfo(@player)[6])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(7) worldname: '.color(f).pinfo(@player)[7])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(8) isop: '.color(f).pinfo(@player)[8])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(9) groups: '.color(f).pinfo(@player)[9])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(10) hostname: '.color(f).pinfo(@player)[10])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(11) sneak: '.color(f).pinfo(@player)[11])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(12) host: '.color(f).pinfo(@player)[12])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(13) entity uuid: '.color(f).pinfo(@player)[13])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(14) vehicle: '.color(f).pinfo(@player)[14])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(15) current slot number: '.color(f).pinfo(@player)[15])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(16) sleeping: '.color(f).pinfo(@player)[16])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(17) blocking: '.color(f).pinfo(@player)[17])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(18) flying: '.color(f).pinfo(@player)[18])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(19) sprinting: '.color(f).pinfo(@player)[19])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'(20) Player UUID: '.color(f).pinfo(@player)[20])
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
+
+
+case clearvalue:
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Clear value: '.color(d).@option1)
+	clear_value(@option1)
+	if(has_value(@option1) == false,
+		msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Successfully cleared value.')
+	)
+
+
+case getvalue:
+	assign(@v, get_value(@option1))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Get value: '.color(d).@option1.color(f).' Value returned:')
+	msg(color(7).@v)
+
+
+case hasvalue:
+	if(has_value(@option1) == true,
+		msg(color(7).'['.color(gold).@name.color(7).'] '.color(a).'That value exists!')
+	)
+	if(has_value(@option1) == false,
+		msg(color(7).'['.color(gold).@name.color(7).'] '.color(c).'That value does not exist.')
+	)
+
+
+case storevalue:
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Store value: '.color(d).@option1)
+	store_value(@option1, @option2 $)
+	assign(@v, get_value(@option1))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Value '.@option1.' saved to: '.color(7).@v)
+
+
+case getvalues:
+	if(@option1 == '', assign(@option1, player()))
+	assign(@v, get_values(@option1))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Get values: '.color(d).@option1.color(f).' Value(s) returned:')
+	msg(color(7).@v)
+
+
+case tolower:
+case lower:
+	assign(@text, @option1 @option2 $)
+	if(@text == '',
+		msg(color(c).'['.color(gold).@name.color(c).'] '.color(c).'You have to say something!')
+	)
+	assign(@r, to_lower(@text))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Convert to lowercase:')
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'Original text: '.@text)
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'New text: '.color(f).@r)
+
+
+case toupper:
+case upper:
+	assign(@text, @option1 @option2 $)
+	if(@text == '',
+		msg(color(c).'['.color(gold).@name.color(c).'] '.color(c).'You have to say something!')
+	)
+	assign(@r, to_upper(@text))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Convert to uppercase:')
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'Original text: '.@text)
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'New text: '.color(f).@r)
+
+
+case death:
+case deathmsg:
+	assign(@deathmsg, _deathmsg(@player, @option2, $))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'A random death message:')
+	msg(@deathmsg)
+
+	
+case verbose:
+	assign(@verbosesetting, get_value(@name.'.player.'.@player.'.verbose'))
+	if(@verbosesetting == true,
+		#disable
+	        store_value(@name.'.player.'.@player.'.verbose', false)
+	        export(@name.'.player.'.@player.'.verbose', false)
+		die(color(7).'['.color(6).@name.color(7).'] '.color(c).'Disabled! '.color(7).' Extra messages from scripts won\'t be displayed.')
+	,
+		#enable
+	        store_value(@name.'.player.'.@player.'.verbose', true)
+	        export(@name.'.player.'.@player.'.verbose', true)
+		die(color(7).'['.color(6).@name.color(7).'] '.color(a).'Enabled! '.color(7).'Verbose messages are enabled! If the script you use supports displaying extra messages using a global value, they will be displayed.')
+	)
+	
+
+
+case code:
+case codegen:
+	assign(@code, _codegen(@option1, @option2, $))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'A random generated code:')
+	msg(@code)
+
+
+case dev:
+case devmsg:
+	assign(@devsetting, get_value(@name.'.player.'.@player.'.developer'))
+	if(@devsetting == true,
+		#disable
+	        store_value(@name.'.player.'.@player.'.developer', false)
+	        export(@name.'.player.'.@player.'.developer', false)
+		die(color(7).'['.color(6).@name.color(7).'] '.color(c).'Developer messages are Disabled! '.color(7).'If the script you use supports dev messages, they will NOT be displayed.')
+	,
+		#enable
+	        store_value(@name.'.player.'.@player.'.developer', true)
+	        export(@name.'.player.'.@player.'.developer', true)
+		die(color(7).'['.color(6).@name.color(7).'] '.color(a).'Developer messages are Enabled! '.color(7).'If the script you use supports dev messages, they will be displayed.')
+	)
+
+
+
+case export:
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Export: '.color(d).@option1)
+	export($option1, @option2 $)
+	assign(@v, import($option1))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Value '.@option1.' exported to: '.color(7).@v)
+
+
+case import:
+	assign(@v, import($option1))
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Import: '.color(d).@option1.color(f).' Value(s) returned:')
+	msg(color(7).@v)
+
+case extinfo:
+	assign(@v, extension_info())
+	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'extension info: '.color(d).@option1.color(f).' Value(s) returned:')
+        foreach(@key: @word in @v){
+		if(@key == 'Core', msg(color(7).'['.color(gold).@name.color(7).'] '.color(3).'Hiding Core functions, to focus on extensions.') continue())
+                msg(color(7).'['.color(gold).@name.color(7).'] '.color(3).@key.' '.color(7).@word)
+        }   
+case test:
+	msg(vault_pgroup(@player, prefix))
+
+default:
+	assign(@devsetting, get_value(@name.'.player.'.@player.'.developer'))
+	if(@devsetting == true || @player == '~console',
+		run(/reloadaliases)
+		die()
+	)
+	msg(color(red).'['.color(gold).@name.color(red).'] '.color(red).'No action specified.')
+	_ch_help()
+}
+<<<

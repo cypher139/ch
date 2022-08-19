@@ -1,0 +1,95 @@
+everyone:/repeat [$action] = >>>
+@player = player()
+switch(to_lower($action)){
+	case printrepeatcommand:
+	case printrepeatcmd:
+	case printrepeat:
+	case showrepeat:
+	case hiderepeat:
+	case showr:
+	case hider:
+	case pr:
+		assign(@setting, get_value('chHelperz.player.'.@player.'.command.show'))
+		if(@setting == true,
+			#disable
+			store_value('chHelperz.player.'.@player.'.command.show', false)
+			export('chHelperz.player.'.@player.'.command.show', false)
+			die(color(7).'['.color(6).'Command'.color(7).'] '.color(r).' The command re-run will be '.color(c).'hidden'.color(r).' and not shown to you in the chat.')
+		,
+			#enable
+			store_value('chHelperz.player.'.@player.'.command.show', true)
+			export('chHelperz.player.'.@player.'.command.show', true)
+			die(color(7).'['.color(6).'Command'.color(7).'] '.color(r).' The command re-run will be '.color(a).'shown'.color(r).' only to you in the chat.')
+		)
+	case printcommand:
+	case printcmd:
+	case print:
+	case show:
+	case hide:
+	case printall:
+	case p:
+		assign(@setting, get_value('chHelperz.player.'.@player.'.command.show.all'))
+		if(@setting == true,
+			#disable
+			store_value('chHelperz.player.'.@player.'.command.show.all', false)
+			export('chHelperz.player.'.@player.'.command.show.all', false)
+			die(color(7).'['.color(6).'Command'.color(7).'] '.color(r).' Any command you run will be '.color(c).'hidden'.color(r).' and not printed back to you in the chat.')
+		,
+			#enable
+			store_value('chHelperz.player.'.@player.'.command.show.all', true)
+			export('chHelperz.player.'.@player.'.command.show.all', true)
+			die(color(7).'['.color(6).'Command'.color(7).'] '.color(r).' Any command you run will be '.color(a).'shown'.color(r).', printed back only to you in the chat.')
+		)
+	case consolecmd:
+	case console:
+	case consolecommand:
+		assign(@setting, get_value('chHelperz.console.command.show'))
+		if(has_permission(@player, 'commandhelper.alias.admin'),
+			if(@setting == true,
+				#disable
+				store_value('chHelperz.console.command.show', false)
+				export('chHelperz.console.command.show', false)
+				die(color(7).'['.color(6).'Command'.color(7).'] '.color(r).' All commands will '.color(c).'NOT broadcast'.color(r).' to the console. This does not affect any command broadcast messages other plugins or the vanilla server may provide.')
+			,
+				#enable
+				store_value('chHelperz.console.command.show', true)
+				export('chHelperz.console.command.show', true)
+				die(color(7).'['.color(6).'Command'.color(7).'] '.color(r).' All commands will '.color(a).' be broadcast'.color(r).' to the console. This does not affect any command broadcast messages other plugins or the vanilla server may provide.')
+			)
+		,
+			die(color(c).'['.color(7).'Command'.color(c).'] '.color(3).'You do not have permissions to use this command.')
+		)
+	case nope:
+		die('\n'.moo(color(c).'['.color(7).'Command'.color(c).'] '.color(3).'Unexpected action.'.color(r)))
+			
+}
+
+if(@player == '~console', die('/repeat'))
+
+assign(@lastcmd, import('chHelperz.player.'.@player.'.last.command'))
+assign(@showcmd, get_value('chHelperz.player.'.@player.'.command.show'))
+	if(@lastcmd == '' || @lastcmd == null,
+		die(color(c).'You have not run a command recently.'.color(r).' Did you just login?')
+	)
+#List cmd used, with CH aliases showing as a different color.
+if(is_alias(reg_split(' ', @lastcmd)[0]), assign(@cmdcolor, 3), assign(@cmdcolor, 6))
+#msg(@lastcmd)
+msg(color(3).'Re-ran your last command.')
+if(@showcmd == true,
+	if(has_permission(@player, 'commandhelper.alias.see.is.alias'), null,
+		#CH builds < 2964: Repeat cmd prints back the command to run in color code #7
+		@cmdcolor = 7
+	)
+	msg('> '.color(@cmdcolor).@lastcmd)
+)
+run_cmd(@lastcmd)
+<<<
+
+/. [$action] = >>>
+call_alias(/repeat $action)
+<<<
+
+'/\'' [$action] = >>>
+msg(yes)
+call_alias(/repeat $action)
+<<<

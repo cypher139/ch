@@ -1,0 +1,437 @@
+######################################################
+#
+#   Slots: Win stuff just by whacking a sign!
+#   This provides the commands for Slots, where you can view stats, change settings, and view sign locations.
+#   version ...
+#
+######################################################
+
+slots:/slots [$action] [$option1] = >>>
+#what is the name of this script?
+assign(@name, Slots)
+
+#dynamic vars, dont edit
+assign(@you, player())
+assign(@player, player())
+assign(@action, to_lower($action))
+assign(@option1, $option1)
+
+
+#action list help
+proc(_sl_help,
+	msg(color(6).'Slots help:')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(a).'/slots [action] [option1] ')
+	msg(color(6).'Actions:')
+	msg(color(7).'/slots'.color(4).' - '.color(f).' Shows you all of your signs, where they are at, and their locations.')
+	msg(color(7).'/slots verbose <yes/no>'.color(4).' - '.color(f).'Allows you to turn on or off extra messages ExpBank can display.')
+	msg(color(7).'/slots last'.color(4).' - '.color(f).'Shows you data about the last sign you used, such as its location, and what you won.')
+)
+
+
+if(@action == 'help',
+	_sl_help()
+	die()
+)
+
+
+#Player settings.
+if(@action == 'verbose',
+	assign(@value, @option1)
+	assign(@entry[0], 'yes')
+	assign(@entry[1], 'no')
+	assign(@newsetting, to_lower(@value))
+	if(array_contains_ic(@entry, @newsetting),
+		store_value(@you.'.'.@name.'.verbose', @newsetting)
+		if(equals_ic(@newsetting, @entry[0]),
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are enabled! '.color(7).@name.' will display more messages than normal now.')
+		)
+		if(equals_ic(@newsetting, @entry[1]),
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are now disabled! '.color(7).@name.' will NOT display lots of messages now.')
+		)
+		msg(@newsetting)
+		die(@successmsg),	
+		die(color(red).'['.color(7).@name.color(red).'] '.color(red).'Invalid setting specified. Type either yes or no.')
+	)
+)	
+
+if(@action == 'last',
+	assign(@lastloc, get_value(@you.'.'.@name.'.last.signused'))
+
+	if(@lastloc == '' || @lastloc == null,
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'You have not used a '.@name.' sign before.')
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Want to create a '.@name.' sign? Type (without quotes) "['.to_lower(@name).']" when creating a sign!')
+		die()
+	,
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'The last '.@name.' sign you used was:')
+	)
+	msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Located at: '.color(a).@lastloc[location])
+	msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Last action: '.color(b).@lastloc[lastrun])
+	die()
+)
+
+
+#List all of a player's created signs
+
+
+assign(@locationarray, get_value(@name.'.locations'))
+assign(@playerlocationcount, 0)
+foreach(@locationarray, @currentvar,
+#Find your signs
+	if(@currentvar[creator] == @you,
+		assign(@playerlocationcount, @playerlocationcount + 1)
+		if(@playerlocations == null || @playerlocations == '', assign(@playerlocations, array()))
+		if(@playerlr == null || @playerlr == '', assign(@playerlr, array()))
+		if(@playerlp == null || @playerlp == '', assign(@playerlp, array()))
+		array_push(@playerlocations, @currentvar[location])
+		array_push(@playerlr, @currentvar[lastrun])
+		array_push(@playerlp, @currentvar[lastplayer])
+	)
+)	
+
+#plural check
+if(@playerlocationcount == 1, assign(@sp, sign), assign(@sp, signs))
+
+msg(color(6).'['.color(7).@name.color(6).'] '.color(a).'You have created '.@playerlocationcount.' '.@name.' '.@sp.'!')
+
+
+
+if(@playerlocationcount !== 0,
+	assign(@tsl, 0)
+	for(assign(@i, 0), @i < array_size(@playerlocations), @i++,
+		assign(@j, @i + 1)
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Sign '.@j.': '.@playerlocations[@i].color(3).' Last win: '.@playerlr[@i].' by: '.@playerlp[@i])
+	)
+	,
+	msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Want to create a '.@name.' sign? Type (without quotes) "['.to_lower(@name).']" when creating a sign!')		
+)
+
+
+<<<
+
+
+
+
+###admin
+
+admin:/sladmin [$action] [$option1] [$option2] [$option3] = >>>
+#what is the name of this script?
+assign(@name, Slots)
+
+#dynamic vars, dont edit
+assign(@you, player())
+assign(@action, to_lower($action))
+assign(@option1, $option1)
+assign(@option2, $option2)
+assign(@option3, $option3)
+
+assign(@player, player())
+
+#action list help
+proc(_sl_help,
+	msg(color(6).'Slots admin help:')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(a).'/sladmin <action> [option1] [option2] [option3]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/sladmin signlist'.color(4).' - '.color(f).'Tells you the locations of all '.@name.' signs you have, the last run results, who last used them, and more.')
+	msg(color(7).'/sladmin stats <stattype>'.color(4).' - '.color(f).'Shows '.@name.' stats, such as total runs, all time fees charged, and more!')
+	msg(color(7).'/sladmin stats runs'.color(4).' - '.color(f).'Shows '.@name.' total run stats, aka every time a particular action has been run, and all time total runs of all actions.')
+	msg(color(7).'/sladmin stats econ'.color(4).' - '.color(f).'Shows '.@name.' economy stats, such as earnings awarded to players and fees collected from them.')
+	msg(color(7).'/sladmin stats <player>'.color(4).' - '.color(f).'Shows specific player '.@name.' stats for the specified player, such as total runs, fees charged, earnings awarded, etc.')
+	msg(color(7).'/sladmin econ view'.color(4).' - '.color(f).'View the set economy settings.')
+	msg(color(7).'/sladmin econ static <enable/disable> <accountname>'.color(4).' - '.color(f).'Allows you to enable or disable static economy support. When enabled all fees charged will go to, or monetary awards will come out of, the specifed account, instead of thin air.')
+	msg(color(7).'/sladmin econ fee <feetype> <amount>'.color(4).' - '.color(f).'Allows you to set fee amounts for various '.@name.' actions (eg creating sign, using a sign).')
+
+
+)
+
+
+if(@action == 'help',
+	_sl_help()
+	die()
+)
+
+if(@action == 'stats',
+	if(@option1 == 'econ',
+		assign(@fees, get_value(@name.'.stats.alltime.econ.fees'))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'All time fees charged: '.color(6).'$'.@fees)
+		assign(@jtr, get_value(@name.'.play.jackpot'))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Current Jackpot: '.color(9).'$'.@jtr)
+		assign(@ajtr, get_value(@name.'.stats.alltime.jackpot'))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'All time Jackpot: '.color(6).'$'.@ajtr)
+		assign(@wtr, get_value(@name.'.stats.alltime.runs.win'))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Wins: '.color(b).'$'.@wtr)
+		assign(@btr, get_value(@name.'.stats.alltime.runs.block'))
+		die()
+	)
+
+
+	if(@option1 == 'runs',
+		assign(@lastsign, get_value(@name.'.stats.lastsignused'))
+		if(@lastsign == '' || @lastsign == null, 
+			msg(color(c).'['.color(7).@name.color(c).'] '.color(c).'You haven\'t run '.@name.' yet!')
+			die(color(6).'['.color(7).@name.color(6).'] '.color(7).'Want to create a '.@name.' sign? Type (without quotes) "['.to_lower(@name).']" when creating a sign!')
+		)
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'All time '.@name.' runs:')
+		assign(@jtr, get_value(@name.'.stats.alltime.runs.jackpot'))
+		if(@jtr == '' || @jtr == null, assign(@jtr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Jackpot: '.color(b).@jtr.' runs')
+		assign(@wtr, get_value(@name.'.stats.alltime.runs.win'))
+		if(@wtr == '' || @wtr == null, assign(@wtr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Wins: '.color(b).@wtr.' runs')
+		assign(@btr, get_value(@name.'.stats.alltime.runs.block'))
+		if(@btr == '' || @btr == null, assign(@btr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Blocks: '.color(b).@btr.' runs')
+		assign(@etr, get_value(@name.'.stats.alltime.runs.explode'))
+		if(@etr == '' || @etr == null, assign(@etr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Explosions: '.color(b).@etr.' runs')
+		assign(@ntr, get_value(@name.'.stats.alltime.runs.nothing'))
+		if(@ntr == '' || @ntr == null, assign(@ntr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Nothing / Lose: '.color(b).@ntr.' runs')
+		assign(@tr, get_value(@name.'.stats.alltime.runs'))
+		if(@tr == '' || @tr == null, assign(@tr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Total '.@name.' runs: '.color(b).@tr.' runs')
+		assign(@lastsign, get_value(@name.'.stats.lastsignused'))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Last sign used: '.color(3).'Location: '.@lastsign[location].color(7).' Last run: '.@lastsign[lastrun].' by '.@lastsign[lastplayer].'.')
+		die()
+	)
+
+	if(@option1 == 'player',
+		if(@option2 == '' || @option2 == null,
+			assign(@option2, @player)
+			die(color(c).'['.color(7).@name.color(c).'] '.color(7).'You need to specify a player!')
+		)
+		assign(@player, @option2)
+
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Stats for: '.color(9).@player)	
+		assign(@ls, get_value(@player.'.'.@name.'.stats.last.signused'))
+		#stop with 0/null stuff if the player hasnt done anything.
+		#if(@ls == '' || @ls == null, die(color(c).'['.color(7).@name.color(c).'] '.color(c).'This player hasn\'t done anything with '.@name.'!')))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Last sign used: '.color(9).@ls)
+
+		msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+
+		assign(@ae, get_value(@player.'.'.@name.'.stats.alltime.earnings'))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Total earnings awarded: '.color(b).'$'.@ae)
+		assign(@af, get_value(@player.'.'.@name.'.stats.alltime.fees'))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Total fees paid: '.color(a).'$'.@af)
+
+		msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'All time '.@name.' runs:')
+		assign(@jtr, get_value(@player.'.'.@name.'.stats.alltime.runs.jackpot'))
+		if(@jtr == '' || @jtr == null, assign(@jtr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Jackpot: '.color(b).@jtr.' runs')
+		assign(@wtr, get_value(@player.'.'.@name.'.stats.alltime.runs.win'))
+		if(@wtr == '' || @wtr == null, assign(@wtr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Wins: '.color(b).@wtr.' runs')
+		assign(@btr, get_value(@player.'.'.@name.'.stats.alltime.runs.block'))
+		if(@btr == '' || @btr == null, assign(@btr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Blocks: '.color(b).@btr.' runs')
+		assign(@etr, get_value(@player.'.'.@name.'.stats.alltime.runs.explode'))
+		if(@etr == '' || @etr == null, assign(@etr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Explosions: '.color(b).@etr.' runs')
+		assign(@ntr, get_value(@player.'.'.@name.'.stats.alltime.runs.nothing'))
+		if(@ntr == '' || @ntr == null, assign(@ntr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Nothing / Lose: '.color(b).@ntr.' runs')
+		assign(@tr, get_value(@player.'.'.@name.'.stats.alltime.runs'))
+		if(@tr == '' || @tr == null, assign(@tr, 0))
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Total '.@name.' runs: '.color(b).@tr.' runs')
+
+		msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+
+		assign(@locationarray, get_value(@name.'.locations'))
+		assign(@playerlocationcount, 0)
+		try(
+		foreach(@locationarray, @currentvar,
+		#Find your signs
+			if(@currentvar[creator] == @player,
+				assign(@playerlocationcount, @playerlocationcount + 1)
+				if(@playerlr == null || @playerlr == '', assign(@playerlr, array()))
+				if(@playerlp == null || @playerlp == '', assign(@playerlp, array()))
+				array_push(@playerlocations, @currentvar[location])
+				array_push(@playerlr, @currentvar[lastrun])
+				array_push(@playerlp, @currentvar[lastplayer])
+			)
+		)
+		)
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Total '.@name.' signs created: '.color(7).@playerlocationcount.' '.@name.' signs')
+
+		msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+
+		assign(@playerblocks, get_value(@player.'.'.@name.'.alltime.blocks'))
+		try(
+			msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'All time blocks awarded:')
+			assign(@tbl, 0)
+			assign(@j, 0)
+			assign(@playerblocksi, array_keys(@playerblocks))
+			foreach(@playerblocks, @currentvar,
+				assign(@tbl, @tbl + @currentvar)
+				assign(@blockname, data_name(@playerblocksi[@j]))
+				msg(color(6).'['.color(7).@name.color(6).'] '.color(7).@blockname.': '.@currentvar)
+				assign(@j, @j + 1)
+			)	
+			msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'Total blocks awarded: '.@tbl)
+		,@fail,
+			msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'No blocks have ever been awarded to this player!')
+		)
+
+		msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+		#player stats: all time earnings, all time fees, sign locations/count, last action done by a sign, total runs, total runs of each action, player total earnings, player total types of wins, last sign used, player and global total blocks earned Type and qty
+	)
+	if(@option1 == 'signs',
+		assign(@locationarray, get_value(@name.'.locations'))
+		assign(@locationcount, 0)
+		foreach(@locationarray, @currentvar,
+			assign(@locationcount, @locationcount + 1)
+			if(@locations == null || @locations == '', assign(@locations, array()))
+			if(@levels == null || @levels == '', assign(@levels, array()))
+			if(@players == null || @players == '', assign(@players, array()))
+			array_push(@locations, @currentvar[location])
+			array_push(@levels, @currentvar[level])
+			array_push(@players, @currentvar[player])
+		)	
+
+		#plural check
+		if(@locationcount == 1, assign(@sp, sign), assign(@sp, signs))
+
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(a).'There are '.@locationcount.' '.@name.' '.@sp.'!')
+
+
+
+		if(@locationcount !== 0,
+			assign(@tsl, 0)
+			for(assign(@i, 0), @i < array_size(@locations), @i++,
+				assign(@j, @i + 1)
+				assign(@tsl, @levels[@i] + @tsl)
+				msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Sign '.@j.': '.@locations[@i].color(3).' Stored levels: '.@levels[@i].color(6).' Owner: '.@players[@i])
+			)
+			msg(color(e).'['.color(gold).@name.color(e).'] '.color(3).'Total stored levels: '.@tsl)
+			,
+			msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Want to create a '.@name.' sign? Type (without quotes) "['.to_lower(@name).']" when creating a sign!')		
+		)
+
+	)
+)
+
+
+
+
+if(@action == 'econ',
+	if(@option1 == 'view',
+		assign(@enableecon, get_value(@name.'.econ.enable'))
+		if(@enableecon == '' || @enableecon == null, assign(@enableecon, yes))
+		assign(@static, get_value(@name.'.econ.static'))
+		assign(@cfee, get_value(@name.'.econ.fee.create'))
+		if(@cfee == '' || @cfee == null, assign(@cfee, 100))
+		assign(@usefee, get_value(@name.'.econ.fee.use'))
+		if(@usefee == '' || @usefee == null, assign(@usefee, 50))
+		if(@enableecon == 'yes',
+			assign(@eemsg, color(a).'Enabled')
+			,
+			assign(@eemsg, color(c).'Disabled')
+		)
+		if(@static == 'yes',
+			assign(@stmsg, color(a).'Enabled')
+			,
+			assign(@stmsg, color(c).'Disabled')
+		)
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(b).'Economy: '.@eemsg)
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(3).'Static economy: '.@stmsg)
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(6).'Fees:')
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'Create sign: '.color(6).'$'.@cfee)
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'Use sign: '.color(6).'$'.@usefee)
+		die()
+	)
+
+	if(@option1 == 'enable',
+		store_value(@name.'.econ.enable', yes)
+		msg(color(a).'['.color(7).@name.color(a).'] '.color(b).'Economy support enabled! '.color(7).'Players will be charged fees to use '.@name.' functions.')
+		die()
+	)
+
+#	if(@option1 == 'disable', 
+# currently econ is mandatory
+#		store_value(@name.'.econ.enable', no)
+#		msg(color(a).'['.color(7).@name.color(a).'] '.color(b).'Economy support disabled! '.color(7).'All '.@name.' functions are now free.')
+#		die()
+#	)
+	if(@option1 == 'static',
+		if(@option2 == 'enable', 
+			if(is_integral(@option3) || @option3 == '' || @option3 == null, 
+				die(color(c).'['.color(7).@name.color(c).'] '.color(7).'You need to specify a account name. This account will be credited with any fees '.@name.' charges players.')
+			)
+			store_value(@name.'.econ.static', yes)
+			store_value(@name.'.econ.static.account', @option3)
+			msg(color(a).'['.color(7).@name.color(a).'] '.color(b).'Static economy support enabled! '.color(7).'The account "'.@option3.'" will be credited with any fees '.@name.' charges players.')
+			die()
+		)
+
+		if(@option2 == 'disable', 
+			store_value(@name.'.econ.static', no)
+			msg(color(a).'['.color(7).@name.color(a).'] '.color(b).'Static economy support disabled! '.color(7).'Any fees '.@name.' charges players will vanish into thin air.')
+			die()
+		)
+	die(color(c).'['.color(7).@name.color(c).'] '.color(7).'Um... Do you want to enable or disable static economy support?')
+	)
+
+	if(@option1 == 'fee',
+		if(@option2 == 'create',
+			if(is_integral(@option3), null,
+				die(color(c).'['.color(7).@name.color(c).'] '.color(7).'You need to specify a number.')
+			)
+			assign(@cfee, get_value(@name.'.econ.fee.create'))
+			if(@cfee == null || @cfee == '',
+				assign(@cfee, 100)
+			)
+			store_value(@name.'.econ.fee.create', @option3)
+			msg(color(a).'['.color(7).@name.color(a).'] '.color(b).'The fee for creating a '.@name.' was: $'.@cfee.', and is now: $'.@option3)
+			die()
+		)
+		if(@option2 == 'use',
+			if(is_integral(@option3), null,
+				die(color(c).'['.color(7).@name.color(c).'] '.color(7).'You need to specify a number.')
+			)
+			assign(@usefee, get_value(@name.'.econ.fee.use'))
+			if(@usefee == null || @usefee == '',
+				assign(@usefee, 25)
+			)
+			store_value(@name.'.econ.fee.use', @option3)
+			msg(color(a).'['.color(7).@name.color(a).'] '.color(b).'The fee for using a '.@name.' sign was: $'.@usefee.', and is now: $'.@option3)
+			die()
+		)
+	)
+)
+
+if(@action == 'signlist',
+	assign(@locationarray, get_value(@name.'.locations'))
+	assign(@locationcount, 0)
+	foreach(@locationarray, @currentvar,
+		assign(@locationcount, @locationcount + 1)
+		if(@locations == null || @locations == '', assign(@locations, array()))
+		if(@lr == null || @lr == '', assign(@lr, array()))
+		if(@lp == null || @lp == '', assign(@lp, array()))
+		array_push(@locations, @currentvar[location])
+		array_push(@lr, @currentvar[lastrun])
+		array_push(@lp, @currentvar[lastplayer])
+	)	
+
+	#plural check
+	if(@locationcount == 1, 
+		assign(@sp, 'There is 1 '.@name.' sign!')
+		,
+		assign(@sp, 'There are '.@locationcount.' '.@name.' signs!')
+	)
+	msg(color(6).'['.color(7).@name.color(6).'] '.color(a).@sp)
+
+	if(@locationcount !== 0,
+		for(assign(@i, 0), @i < array_size(@locations), @i++,
+			assign(@j, @i + 1)
+			msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Sign '.@j.': '.@locations[@i].color(3).' Last win: '.@lr[@i].' by: '.@lp[@i])
+		)
+		,
+		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Want to create a '.@name.' sign? Type (without quotes) "['.to_lower(@name).']" when creating a sign!')		
+	)
+
+)
+<<<

@@ -1,0 +1,80 @@
+*:/amicool [$action] = >>>
+	assign(@player, player())
+	assign(@devsetting, get_value('ch.player.'.@player.'.developer'))
+
+msg(pgroup(@player))
+
+msg(ptexp(@player))
+msg(pisop(@player))
+
+if($action == 'reset', 
+	set_ptexp(@player, 0)
+)
+
+if($action == 'g50', 
+	give_pexp(@player, 50)
+)
+
+@coolmeter = 0
+@awesomemsg = 'not yet set'
+#Are you a script developer?
+if(@devsetting == true, assign(@coolmeter, @coolmeter + 1))
+#Are you an admin? (part of admins group)
+foreach(pgroup(@player), @word,
+	if(@word == admins,  assign(@coolmeter, @coolmeter + 1))
+)
+#Are you an op?
+if(pisop(@player), == true, assign(@coolmeter, @coolmeter + 1))
+
+#Do you have copious amounts of XP on hand?
+switch(ptexp(@player)){
+
+	case >= 201:
+		assign(@coolmeter, @coolmeter + 3)
+	case 175..200:
+		assign(@coolmeter, @coolmeter + 2)
+	case 100..175:
+		assign(@coolmeter, @coolmeter + 1)
+
+	case 0..100:
+		msg(aw)
+}
+
+msg(@coolmeter)
+
+switch(@coolmeter){
+
+case 4:
+	assign(@awesomemsg, array_rand(array('This is sick!', 'You should be awesome at what you build next!', 'Word.'), 1, false))
+
+#moving on up
+case 3:
+	assign(@awesomemsg, array_rand(array('You are a rockstar!!!', 'Are you a karate expert?', 'Word.'), 1, false))
+
+#moving on up
+case 2:
+	assign(@awesomemsg, array_rand(array('Nice!', 'Solid work!', 'You are awesome!', 'You are in the zone!'), 1, false))
+
+#moving on up
+case 1:
+	assign(@awesomemsg, array_rand(array('You\'re moving on up!', 'This is cool.'), 1, false))
+
+
+#not really cool
+case 0:
+	assign(@awesomemsg, array_rand(array('You should get some ice cream.', 'That\'s nice! You\'re... almost cool.', 'I don\'t feel like answering that today', 'You should play Minecraft: Xbox 360 edition.', 'Go eat some bacon!', 'Magnus isn\'t allowed here.', 'This is not a /ping command!!!!!!!!!!!!!!', 'I like trains.', 'I\'m right here.'), 1, false))
+
+
+default:
+	assign(@awesomemsg, 'You\'re so awesomely cool that you are off the charts!!!!!')
+
+
+}
+
+if(@coolmeter >= 3,
+	msg(_rainbow(@awesomemsg))
+,
+msg(color(3).@awesomemsg)
+) 
+
+<<<
