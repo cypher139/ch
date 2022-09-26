@@ -33,7 +33,19 @@ proc(_iterate_cuboid, @b1, @b2, @proc_name,
     )
 )
 
+#new player sanitize
+proc(_getplayer, @option1,
+	
+	assign(@player, pinfo(@option1)[0])
+	#bedrock to Java players come in with name ".NAME", remove dot
+	if(reg_count('^[\\.].*', @player) == 1, 
+		assign(@player, reg_replace('^[\\.]','', @player))
+	)
+	assign(@nick, pinfo(@option1)[4])
 
+#	if(@player == @nick, return(@player), return(@nick))
+	return(@player)
+)
 
 #---------
 proc(_bc, @label, @str,
