@@ -34,18 +34,6 @@ proc(_iterate_cuboid, @b1, @b2, @proc_name,
 )
 
 #new player sanitize
-proc(_getplayer, @option1,
-	
-	assign(@player, pinfo(@option1)[0])
-	#bedrock to Java players come in with name ".NAME", remove dot
-	if(reg_count('^[\\.].*', @player) == 1, 
-		assign(@player, reg_replace('^[\\.]','', @player))
-	)
-	assign(@nick, pinfo(@option1)[4])
-
-#	if(@player == @nick, return(@player), return(@nick))
-	return(@player)
-)
 
 #---------
 proc(_bc, @label, @str,
@@ -203,70 +191,6 @@ proc(_healthbar, @player, @char,
 )
 	
 
-#Code generation
-proc(_codegen, @codelength, @codetype, @codetype2,
-#How to use:
-# call _codegen(NUMBER, type 1, type 2)
-# The number determines how long the code is, and the 2 types determine which types of characters you want. 
-# Accepted types are lower (lowercase), upper (UPPERCASE), number (numbers), & full (lower, upper, and number)
-
-#checks
-	assign(@string, array())
-	if(@codelength == '', 
-		assign(@codelength, 7)
-	)
-	if(@codetype == '', 
-		assign(@codetype, full)
-	)
-
-#the characters
-	assign(@lower, array(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z))
-	assign(@upper, array(A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z))
-	assign(@number, array(1,2,3,4,5,6,7,8,9))
-	assign(@full, array(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,1,2,3,4,5,6,7,8,9))
-
-#set 1
-	switch(@codetype,
-	'lower',
-		assign(@chars, array_get(@lower)),
-	'upper',
-		assign(@chars, array_get(@upper)),
-	'number',
-		assign(@chars, array_get(@number)),
-	'full',
-		assign(@chars, array_get(@full)),
-	msg('Fail: Invalid code type given')
-	)
-#set 2	
-	if(@codetype2 !== '',
-		switch(@codetype2,
-		'lower',
-			assign(@chars2, array_get(@lower)),
-		'upper',
-			assign(@chars2, array_get(@upper)),
-		'number',
-			assign(@chars2, array_get(@number)),
-		'full',
-			assign(@chars2, array_get(@full)),
-		die('Fail: Invalid code type given')
-		)
-		foreach(@chars2, @i,
-			array_push(@chars, @i)
-		)
-	)
-#generating code
-	for(assign(@i, 0), @i < @codelength, @i++,
-		assign(@string[@i], @chars[rand(array_size(@chars))])
-	)
-	assign(@string, array_implode(@string, ''))
-
-	return(@string)
-)
-
-
-
-
-
 proc(_idcheck, @id, @id2, @option1,
 
 	if(reg_count('('.@id.')(:[0-9]*)?', @id2) > 0,
@@ -275,12 +199,6 @@ proc(_idcheck, @id, @id2, @option1,
 	)
 )
 	
-
-
-
-
-
-
 #Death messages
 
 #include('LocalPackages/deathmsg.ms')

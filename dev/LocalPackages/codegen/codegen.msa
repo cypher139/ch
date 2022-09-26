@@ -1,0 +1,25 @@
+everyone:/codegen [$length] [$type1] [$type2] [$] = >>>
+proc(_codegen_help,
+	msg(color(6).'CodeGen!')
+	msg(color(7).'/codegen'.color(3).' - '.color(f).'Prints a randomly generated code. Defaults to a code 7 characters in length using uppercase, lowercase, and numbers.')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(3).'/codegen [length] [Character type 1] [Character type 2]')
+	msg(color(3).' - '.color(f).' You can specify how many characters the code should be, and specify the types of characters.')
+	msg(color(3).' - '.color(f).' Character types: lowercase ("lower"), uppercase ("upper"), number ("num"), or all.')
+
+)
+
+switch($length){
+
+case help:
+case -help:
+case ?:
+case '/?':
+	_codegen_help()
+
+default:
+	assign(@code, _codegen($length, $type1, $type2))
+	msg(color(7).'['.color(6).'CodeGen'.color(7).'] '.color(7).'Random generated code at '.simple_date(E.', '.h.':'.m.':'.s.'.'.S.' '.a).':')
+	msg(@code)
+}
+<<<

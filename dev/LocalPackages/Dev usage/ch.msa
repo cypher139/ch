@@ -16,6 +16,7 @@ assign(@option2, $option2)
 assign(@player, @option1)
 
 if(@player == '', assign(@player, player()))
+assign(@playerID, _getplayerID(@player))
 
 #action list help
 #this appears on /ch, or when unsupported action variable is passed
@@ -177,16 +178,16 @@ case deathmsg:
 
 	
 case verbose:
-	assign(@verbosesetting, get_value(@name.'.player.'.@player.'.verbose'))
+	assign(@verbosesetting, get_value(@name.'.player.'.@playerID[id].'.verbose'))
 	if(@verbosesetting == true,
 		#disable
-	        store_value(@name.'.player.'.@player.'.verbose', false)
-	        export(@name.'.player.'.@player.'.verbose', false)
+	        store_value(@name.'.player.'.@playerID[id].'.verbose', false)
+	        export(@name.'.player.'.@playerv.'.verbose', false)
 		die(color(7).'['.color(6).@name.color(7).'] '.color(c).'Disabled! '.color(7).' Extra messages from scripts won\'t be displayed.')
 	,
 		#enable
-	        store_value(@name.'.player.'.@player.'.verbose', true)
-	        export(@name.'.player.'.@player.'.verbose', true)
+	        store_value(@name.'.player.'.@playerID[id].'.verbose', true)
+	        export(@name.'.player.'.@playerID[id].'.verbose', true)
 		die(color(7).'['.color(6).@name.color(7).'] '.color(a).'Enabled! '.color(7).'Verbose messages are enabled! If the script you use supports displaying extra messages using a global value, they will be displayed.')
 	)
 	
@@ -201,16 +202,16 @@ case codegen:
 
 case dev:
 case devmsg:
-	assign(@devsetting, get_value(@name.'.player.'.@player.'.developer'))
+	assign(@devsetting, get_value(@name.'.player.'.@playerID[id].'.developer'))
 	if(@devsetting == true,
 		#disable
-	        store_value(@name.'.player.'.@player.'.developer', false)
-	        export(@name.'.player.'.@player.'.developer', false)
+	        store_value(@name.'.player.'.@playerID[id].'.developer', false)
+	        export(@name.'.player.'.@playerID[id].'.developer', false)
 		die(color(7).'['.color(6).@name.color(7).'] '.color(c).'Developer messages are Disabled! '.color(7).'If the script you use supports dev messages, they will NOT be displayed.')
 	,
 		#enable
-	        store_value(@name.'.player.'.@player.'.developer', true)
-	        export(@name.'.player.'.@player.'.developer', true)
+	        store_value(@name.'.player.'.@playerID[id].'.developer', true)
+	        export(@name.'.player.'.@playerID[id].'.developer', true)
 		die(color(7).'['.color(6).@name.color(7).'] '.color(a).'Developer messages are Enabled! '.color(7).'If the script you use supports dev messages, they will be displayed.')
 	)
 
@@ -239,7 +240,7 @@ case test:
 	msg(vault_pgroup(@player, prefix))
 
 default:
-	assign(@devsetting, get_value(@name.'.player.'.@player.'.developer'))
+	assign(@devsetting, get_value(@name.'.player.'.@playerID[id].'.developer'))
 	if(@devsetting == true || @player == '~console',
 		run(/reloadaliases)
 		die()

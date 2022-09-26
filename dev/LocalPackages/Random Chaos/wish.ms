@@ -4,7 +4,7 @@ bind(player_chat, array(id: 'Wish.granter.lolz'), null, @chat,
 	assign(@player, player())
 	assign(@allplayers, all_players())
 
-	assign(@dev, import('ch.player.'.@chat[player].'.developer'))
+	assign(@dev, import('ch.player.'._getplayerID(player())[id].'.developer'))
 
 
 #did you say a player name? this will catch it
@@ -158,7 +158,7 @@ bind(player_chat, array(id: 'Wish.granter.lolz'), null, @chat,
 			)
 
 
-			assign(@test, switch(to_lower(@word)){
+			switch(to_lower(@word)){
 			#die after each action, otherwise multiple actions can be done.
 				case die:
 				case kill:
@@ -211,36 +211,37 @@ bind(player_chat, array(id: 'Wish.granter.lolz'), null, @chat,
 				case friends:
 					broadcast(color(e).'['.color(gold).@name.color(e).'] '.color(6).@player.'s wish has been granted.')
 					assign(@ploc, ploc(@vplayer))
-					spawn_mob(CREEPER, 2, @ploc)
+					spawn_entity(CREEPER, 2, @ploc)
 			
 				case artist:
 					broadcast(color(e).'['.color(gold).@name.color(e).'] '.color(6).@player.'s wish has been granted.')
 					assign(@ploc, ploc(@vplayer))
 					assign(@ploc[1], @ploc[1] + 1)
 					assign(@ploc[y], @ploc[y] + 1)
-					spawn_mob('sheep:black', 1, @ploc)
-					spawn_mob('sheep:red', 1, @ploc)
-					spawn_mob('sheep:green', 1, @ploc)
-					spawn_mob('sheep:brown', 1, @ploc)
-					spawn_mob('sheep:blue', 1, @ploc)
-					spawn_mob('sheep:purple', 1, @ploc)
-					spawn_mob('sheep:cyan', 1, @ploc)
-					spawn_mob('sheep:silver', 1, @ploc)
-					spawn_mob('sheep:gray', 1, @ploc)
-					spawn_mob('sheep:pink', 1, @ploc)
-					spawn_mob('sheep:lime', 1, @ploc)
-					spawn_mob('sheep:yellow', 1, @ploc)
-					spawn_mob('sheep:light_blue', 1, @ploc)
-					spawn_mob('sheep:magenta', 1, @ploc)
-					spawn_mob('sheep:orange', 1, @ploc)
-					spawn_mob('sheep:white', 1, @ploc)
+					spawn_entity('sheep:black', 1, @ploc)
+					spawn_entity('sheep:red', 1, @ploc)
+					spawn_entity('sheep:green', 1, @ploc)
+					spawn_entity('sheep:brown', 1, @ploc)
+					spawn_entity('sheep:blue', 1, @ploc)
+					spawn_entity('sheep:purple', 1, @ploc)
+					spawn_entity('sheep:cyan', 1, @ploc)
+					spawn_entity('sheep:silver', 1, @ploc)
+					spawn_entity('sheep:gray', 1, @ploc)
+					spawn_entity('sheep:pink', 1, @ploc)
+					spawn_entity('sheep:lime', 1, @ploc)
+					spawn_entity('sheep:yellow', 1, @ploc)
+					spawn_entity('sheep:light_blue', 1, @ploc)
+					spawn_entity('sheep:magenta', 1, @ploc)
+					spawn_entity('sheep:orange', 1, @ploc)
+					spawn_entity('sheep:white', 1, @ploc)
 			#switch
-			})
-		if(@dev == true, 
-			msg(color(7).'[DEV] Action returned: '.color(r).@test)
-		)
+			}
+#		if(@dev == true, 
+#			msg(color(7).'[DEV] Action returned: '.color(r).@test)
+#		)
 		#foreach
 		}
+		play_sound(puuid(player()), array(sound: 'ENTITY_EXPERIENCE_ORB_PICKUP', volume: '16'))
 	#if iswish
 	)
 #bind
