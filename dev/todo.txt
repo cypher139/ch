@@ -1,3 +1,6 @@
+
+Actually to be most accurate, get_block(location_shift(ploc(), 'up', 0.99)) or something to catch carpets and slabs too
+
 playerinfo:
 we selection, wg region, player,nick, uuid
 advanced: hostname

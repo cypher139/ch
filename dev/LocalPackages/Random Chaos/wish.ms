@@ -1,3 +1,4 @@
+#version 1.1-tmc
 bind(player_chat, array(id: 'Wish.granter.lolz'), null, @chat,
 
 	assign(@name, 'Wish')
@@ -218,22 +219,22 @@ bind(player_chat, array(id: 'Wish.granter.lolz'), null, @chat,
 					assign(@ploc, ploc(@vplayer))
 					assign(@ploc[1], @ploc[1] + 1)
 					assign(@ploc[y], @ploc[y] + 1)
-					spawn_entity('sheep:black', 1, @ploc)
-					spawn_entity('sheep:red', 1, @ploc)
-					spawn_entity('sheep:green', 1, @ploc)
-					spawn_entity('sheep:brown', 1, @ploc)
-					spawn_entity('sheep:blue', 1, @ploc)
-					spawn_entity('sheep:purple', 1, @ploc)
-					spawn_entity('sheep:cyan', 1, @ploc)
-					spawn_entity('sheep:silver', 1, @ploc)
-					spawn_entity('sheep:gray', 1, @ploc)
-					spawn_entity('sheep:pink', 1, @ploc)
-					spawn_entity('sheep:lime', 1, @ploc)
-					spawn_entity('sheep:yellow', 1, @ploc)
-					spawn_entity('sheep:light_blue', 1, @ploc)
-					spawn_entity('sheep:magenta', 1, @ploc)
-					spawn_entity('sheep:orange', 1, @ploc)
-					spawn_entity('sheep:white', 1, @ploc)
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'black')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'red')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'green')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'brown')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'blue')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'purple')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'cyan')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'light_gray')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'gray')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'pink')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'lime')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'yellow')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'light_blue')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'magenta')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'orange')); })
+					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'white')); })
 			#switch
 			}
 #		if(@dev == true, 

@@ -1,0 +1,31 @@
+admin:/randblock [$id=2] [$tries=200] = >>>
+	assign(@id, $id)
+	assign(@xyz, array())
+#world
+	if(player() == ~console,
+		assign(@xyz[3], world)
+	,
+		assign(@xyz[3], world)
+	)
+	
+	assign(@tries, $tries)
+	assign(@blockID, '0:0')
+	for(assign(@i, 1), @i <= @tries, @i++,
+#x
+		assign(@xyz[0], rand(-5500, 5500))
+#z
+		assign(@xyz[2], rand(-5500, 5500))
+#y
+		assign(@xyz[1], get_highest_block_at(@xyz[0], @xyz[2], @xyz[3])[1])
+		assign(@blockID, get_block_at(@xyz[0], @xyz[1] - 1, @xyz[2], @xyz[3]))
+		msg(color(9).'Try #: '.@i.color(7).' Location: '.@xyz[0].','.@xyz[1].','.@xyz[2].','.@xyz[3].color(3).' id: '.@blockID)
+		if(@blockID == @id.':0',
+			msg(color(7).'Yay! We found a random '.data_name(@id).' block here: '.@xyz[0].','.@xyz[1].','.@xyz[2].','.@xyz[3])
+			if(player() != ~console,
+				set_ploc(@xyz)
+				msg(color(7).'Teleported you to the location!')
+			)
+			break()
+		)
+	)
+<<<

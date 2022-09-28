@@ -2,7 +2,7 @@
 #
 #   ReLoad: Fill chests or dispensers, or furnaces in one click!
 #   Main.ms: Tool interaction listener.
-#   version 1.0-tza
+#   version 1.1-tmc
 #
 ######################################################
 #Include required backend functions
@@ -11,24 +11,25 @@ include('includes.library/dreloadfunctions.ms')
 #Listen for interactions with the ReLoad tool
 bind(player_interact, array(id: 'ReLoad.tool'), null, @reload,
 	assign(@name, import('dispenserreloader.name'))
-	assign(@verbose, import(@name.'.player.'.@reload[player].'.verbose'))
+	assign(@player, _reloader_getplayerID(@reload[player]))
+	assign(@verbose, import(@name.'.player.'.@player[id].'.verbose'))
 	if(@verbose == null,
-		export(@name.'.player.'.@reload[player].'.verbose', get_value(@name.'.player.'.@reload[player].'.verbose'))
+		export(@name.'.player.'.@player[id].'.verbose', get_value(@name.'.player.'.@player[id].'.verbose'))
 	)
-	assign(@dev, import(@reload[player].'.script.developer'))
+	assign(@dev, import(@player[id].'.script.developer'))
 
 	assign(@index, null)
 	try(
-		assign(@usetool, pinv(@reload[player], @index)[type])
+		assign(@usetool, pinv(@player[name], @index)[type])
 	,@fail,
 		#No tool equipped, hand
 		die()
 	)
-	assign(@checktool, import(@name.'.player.'.@reload[player].'.tool.id.'.@usetool))
-	if(@checktool == true && @reload[action] == 'left_click_block' && has_permission(@reload[player], 'commandhelper.alias.reloader'),
-		assign(@item, import(@name.'.player.'.@reload[player].'.tool.id.'.@usetool.'.item'))
-		assign(@qty, import(@name.'.player.'.@reload[player].'.tool.id.'.@usetool.'.qty'))
-		assign(@fuel, import(@name.'.player.'.@reload[player].'.tool.id.'.@usetool.'.fuel'))
+	assign(@checktool, import(@name.'.player.'.@player[id].'.tool.id.'.@usetool))
+	if(@checktool == true && @reload[action] == 'left_click_block' && has_permission(@player[name], 'commandhelper.alias.reloader'),
+		assign(@item, import(@name.'.player.'.@player[id].'.tool.id.'.@usetool.'.item'))
+		assign(@qty, import(@name.'.player.'.@player[id].'.tool.id.'.@usetool.'.qty'))
+		assign(@fuel, import(@name.'.player.'.@player[id].'.tool.id.'.@usetool.'.fuel'))
 		# Check: Item permissions
 		assign(@defaultitem, import(@name.'.default.item.type'))
 		if(@defaultitem != @item,
@@ -39,7 +40,7 @@ bind(player_interact, array(id: 'ReLoad.tool'), null, @reload,
 			)
 		)
 		#assigning for return value
-		assign(@return, _reloader_fill(@reload[location][0], @reload[location][1], @reload[location][2], @reload[location][3], @item, @reload[player], @qty, @fuel, @verbose))
+		assign(@return, _reloader_fill(@reload[location][0], @reload[location][1], @reload[location][2], @reload[location][3], @item, @player[name], @qty, @fuel, @verbose))
 		#stats
 		if(@return[fail] == true,
 			die(@return[msg])
@@ -48,7 +49,7 @@ bind(player_interact, array(id: 'ReLoad.tool'), null, @reload,
 			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! However this '.to_lower(@return[type]).' was already full of '.data_name(@item).'!')
 		)
 		#record stats
-		_reloader_record_stats(@reload[player], tool, 1, @return[filledqty], @item, @qty)
+		_reloader_record_stats(@player[name], tool, 1, @return[filledqty], @item, @qty)
 		if(@verbose == true,
 			msg(@return[msg])
 		)
