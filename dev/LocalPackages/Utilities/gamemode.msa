@@ -3,25 +3,27 @@ shiftmode:/mode [$] = >>>
 assign(@arg, $)
 assign(@player, _getplayerID(player()))
 #argument check
-if(@arg == '', null, msg(color(red).'['.color(gold).'gameMode'.color(red).'] '.color(c).'You don\'t need to specify the mode you want, just type '.color(7).'/mode'))
+if(@arg != '') {
+	msg(color(red).'['.color(gold).'gameMode'.color(red).'] '.color(c).'You don\'t need to specify the mode you want, just type '.color(7).'/mode')
+}
 
 #/mode proc
 
-proc(_set_S, @user, @msg, @name,
+proc _set_S(@user, @msg, @name) {
     set_pmode(@user, 'SURVIVAL')	
     if(@msg == '', null,
 		if(@name == '', assign(@name, 'gameMode'))
 		tmsg(@user, color(yellow).'['.color(gold).@name.color(yellow).'] '.color(white).'Changed to '.color(c).'Survival'.color(white).' gamemode')
 	)
-)
+}
 
-proc(_set_C, @user, @msg, @name, 
+proc _set_C(@user, @msg, @name) { 
     set_pmode(@user, 'CREATIVE')
     if(@msg == '', null,
 		if(@name == '', assign(@name, 'gameMode'))
-		tmsg(@user, concat(color(yellow), '[', color(gold), @name, color(yellow), '] ', color(white), 'Changed to ', color(b), 'Creative', color(white), ' gamemode'))
+		tmsg(@user, color(yellow).'['.color(gold).@name.color(yellow).'] '.color(white).'Changed to '.color(b).'Creative'.color(white).' gamemode')
 	)
-)
+}
 
 if(pmode() == 'CREATIVE') {
 	_set_S(@player[name], 'y')
@@ -53,7 +55,7 @@ assign(@you, player())
 
 if(has_permission(@you, 'commandhelper.alias.shiftmode'),
 	call_alias(/mode),
-	die(color(c).'['.color(6).@name.color(c).'] '.color(f).'You dont have permission to change your gamemode.')
+	die(color(c).'['.color(6).@name.color(c).'] '.color(f).'You don\'t have permission to change your gamemode.')
 )
 <<<
 

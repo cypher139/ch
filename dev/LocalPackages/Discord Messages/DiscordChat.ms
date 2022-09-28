@@ -7,7 +7,7 @@ discord_connect('discordCredentials', closure(){
 
 # proc to send message to discord. player, message
 
-proc(_send_discord_message, @message, @from, @channel,
+proc _send_discord_message(@message, @from, @channel) {
 
 	if(@from == '', assign(@from, player()))
 	if(@channel == '', assign(@channel, 'botspam'))
@@ -18,11 +18,11 @@ proc(_send_discord_message, @message, @from, @channel,
 		assign(@sendmsg, '['.@from.'] '.@message)
 	}
 	discord_broadcast(@channel, associative_array(content: @sendmsg))
-)
+}
 
 
 #bind player chat, call proc
-bind(player_chat, array(id: 'message.to.Discord'), null, @chat,
+bind('player_chat', array(id: 'message.to.Discord'), null, @chat) {
 
 assign(@channel, 'botspam')
 assign(@sendmsg, @chat[message])
@@ -30,6 +30,7 @@ assign(@sendmsg, @chat[message])
 #channel override
 	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat[message]) == 1) { 
 		assign(@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat[message]))
+		#returns 'channel' in '#channel message text'
 		assign(@channel, reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat[message])[1])[1])
 #dev		tmsg(@chat[player], @sendmsg.' channel name:'.@channel)
 		_send_discord_message(@sendmsg[1], player(), @channel)
@@ -37,19 +38,19 @@ assign(@sendmsg, @chat[message])
 	} else {
 	_send_discord_message(@chat[message], player(), @channel)
 	}
-)
+}
 
 
 #bind discord message, send as broadcast
-bind(discord_message_received, array(id: 'message.from.Discord'), null, @discord,
+bind('discord_message_received', array(id: 'message.from.Discord'), null, @discord) {
 
-	assign(@allowedChannels, array('general', 'mc server', 'other'))
+	assign(@allowedChannels, array('general', 'Minecraft', 'other'))
 
 	if(array_contains(@allowedChannels, @discord[channel]) == true, 
 	assign(@sendmsg, '['.@discord[username].'] '.@discord[message])
 		broadcast(@sendmsg, all_players())
 	)
-)
+}
 
 
 bind(player_quit, array(id: 'Discord.message.quit'), null, @quit,

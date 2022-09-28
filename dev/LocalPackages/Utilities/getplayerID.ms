@@ -1,4 +1,4 @@
-proc(_getplayerID, @option1,
+proc _getplayerID(@option1) {
 	@pid = array()
 	if(@option1 == '~console'){
 		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
@@ -13,12 +13,12 @@ proc(_getplayerID, @option1,
 		assign(@pid[display], reg_replace('^[\\.]','', @pid[name]))
 	)
 	return(@pid)
-)
+}
 
-proc(_getnick, @player,
+proc _getnick(@player) {
 	
 	assign(@player, pinfo(@player)[0])
 	assign(@nick, pinfo(@player)[4])
 
 	if(@player == @nick, return(@player), return(@nick))
-)
+}
