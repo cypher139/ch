@@ -1,0 +1,59 @@
+######################################################
+#
+#   bucket: spaming block info to youz
+#
+######################################################
+
+admin:/bucket [$action] [$] = >>>
+assign(@name, 'Bucket')
+assign(@player, _getplayerID(player()))
+
+assign(@action, to_lower($action))
+assign(@option1, $option1)
+assign(@option2, $option2)
+
+
+proc _bucket_help() {
+	msg(color(6).'bucket: get block IDs by hitting blocks with a bucket!')
+	msg(color(6).'Actions:')
+	msg(color(7).'/bucket'.color(4).' - '.color(f).'Enables/Disables: Returns info about the block interacted with when holding a bucket')
+}
+
+
+switch(@action){
+
+#case '':
+#case null:
+#	msg(color(red).'['.color(gold).@name.color(red).'] '.color(red).'No action specified.'.color(7).' Use /bucket help for more information on this command.')
+#	msg(color(7).'['.color(gold).@name.color(gold).'] '.color(7).rand(1,100))
+#	die()
+
+case help:
+	_bucket_help()
+	die()
+
+
+default:
+	assign(@bucketenabled, import('bucket.enabled.'.@player[id]))
+	if(@bucketenabled == false || @bucketenabled == '' || @bucketenabled == null) {
+		export('bucket.info.enabled.'.@player[id], true)
+	#then check if bind is added
+		if(has_bind('bucket.info'), null,
+			bind(player_interact, array(id: 'bucket.info'), array(item:325), @bucket) {
+				assign(@player, _getplayerID(@bucket[player]))
+					if(import('bucket.info.enabled.'.@bucket[player]) == true) {
+		     			if(equals(@bucket['action'], 'left_click_block' || 'right_click_block')) {
+						cancel()
+						msg(color(7).'['.color(gold).'Bucket'.color(7).'] '.color(7).'Block ID: '.color(b).@bucket[block].color(3).' ('.data_name(@bucket[block]).')'.color(7).' (@'.color(8).@bucket[location][x].','.@bucket[location][y].','.@bucket[location][z].', facing: '.@bucket[facing].color(7).')')
+					}
+				}
+			}
+		)
+		die(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Enabled!'.color(7).' Left-click a block using a bucket to get information about the block. Use "/bucket" again to disable bucket info.')
+	} else {
+		export('bucket.info.enabled.'.@player[id], false)
+		die(color(7).'['.color(gold).@name.color(7).'] '.color(7).'Bucket for '.@player[display].color(a).' disabled.')
+	}
+
+}
+<<<

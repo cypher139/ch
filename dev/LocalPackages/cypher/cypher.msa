@@ -1,85 +1,73 @@
-/cypher [$option1] = >>>
-	assign(@option1, player())
-/*	assign(@player, pinfo(@option1)[0])
-	if(reg_count('^[\\.].*', @player) == 1, 
-	msg(1)
-	assign(@player, reg_replace('^[\\.]','', @player))
-	)
-	assign(@nick, pinfo(@option1)[4])
+admin:/cypher [$action] [$option1] = >>>
 
-#	if(@player == @nick, return(@player), return(@nick))
-*/
-assign(@playerID, _getplayerID(player()))
-assign(@player, player())
+assign(@player, _getplayerID(player()))
+assign(@you, player())
+msg(@you)
 msg(@player)
-msg(@playerID)
-<<<
 
-admin:/test2 [$action] [$option1] = >>>
-assign(@player, console)
-assign(@name, Slots)
 
-if($action == 'wr',
-		assign(@choices, array(
-			jackpot: 3,
-			win: 25,
-			block: 35,
-			explode: 7,
-			nothing: 40,
-		))
 
-assign(@array, associative_array())
-for(assign(@i, 0), @i < 50, @i++){
-        # Here is the usage of the proc, we send it our choices array
-        assign(@rand, _weighted_random(@choices))
-        if(!array_index_exists(@array, @rand)){
-                assign(@array[@rand], 0)
-        }
-        assign(@array[@rand], @array[@rand] + 1)
-}
+switch(to_lower($action)) {
 
-msg(@array)
-die()
-)
+case 'wr':
+	assign(@choices, array(
+		jackpot: 3,
+		win: 25,
+		block: 35,
+		explode: 7,
+		nothing: 40,
+	))
 
-if($action == 'moo',
+	assign(@array, associative_array())
+	for(assign(@i, 0), @i < 50, @i++){
+		# Here is the usage of the proc, we send it our choices array
+		assign(@rand, _weighted_random(@choices))
+		if(!array_index_exists(@array, @rand)){
+				assign(@array[@rand], 0)
+		}
+		assign(@array[@rand], @array[@rand] + 1)
+	}
+	msg(@array)
+	die()
+
+
+case 'moo':
 	msg(moo('moo'))
 	die()
-)
-
-if($action == 'pl',
-assign(@serverplugins, get_server_info(9)[..8])
+	
+case 'pl':
+	assign(@serverplugins, get_server_info(9)[..8])
 	msg(@serverplugins)
 	die()
-)
 
-if($action == 'effect',
-assign(@player, player())
-assign(@herea, ploc(@player))
-msg(@herea)
-	make_effect(@herea, GHAST_SHRIEK)
-for(assign(@i, 0), @i < 1100, inc(@i, 100),
-	set_timeout(@i, closure(
-		msg(@i)
-	))
-)
-die()
-)
+case 'effect':
+	assign(@player, player())
+	assign(@herea, ploc(@player))
+	msg(@herea)
+		make_effect(@herea, GHAST_SHRIEK)
+	for(assign(@i, 0), @i < 1100, inc(@i, 100),
+		set_timeout(@i, closure(
+			msg(@i)
+		))
+	)
+	die()
 
-if($action == 'firework',
-assign(@player, player())
-assign(@herea, ploc(@player))
-msg(@herea)
-	make_effect(@herea, GHAST_SHRIEK)
-for(assign(@i, 0), @i < 1100, inc(@i, 100),
-	set_timeout(@i, closure(
-		msg(@i)
-	))
-)
-die()
-)
 
-if($action == 'plsearch',
+case 'firework':
+	assign(@player, player())
+	assign(@herea, ploc(@player))
+	msg(@herea)
+		make_effect(@herea, GHAST_SHRIEK)
+	for(assign(@i, 0), @i < 1100, inc(@i, 100),
+		set_timeout(@i, closure(
+			msg(@i)
+		))
+	)
+	die()
+
+
+case 'plsearch':
+case 'pls':
 	assign(@serverplugins, get_server_info(9))
 	assign(@search, to_lower($option1))
 	if(array_contains_ic(@serverplugins, @search),
@@ -94,9 +82,10 @@ if($action == 'plsearch',
 	)
 	msg(@return)
 	die()
-)
 
-if($action == 'itemname',
+
+case 'itemname':
+case 'in':
 	assign(@item, $option1)
 	assign(@realid, data_values(@item))
 	assign(@itemname, data_name(@realid))
@@ -105,17 +94,17 @@ if($action == 'itemname',
 	msg('itemname: '.@itemname)
 	msg('data_values: '.data_values(@item))
 	msg('data_name: '.data_name(@item))
-die()
-)
+	die()
 
-if($action == 'nc',
-assign(@number, _number_commaize($option1))
-msg(@number)
-die()
-)
 
-msg(get_server_info())
+case 'nc':
+	assign(@number, _number_commaize($option1))
+	msg(@number)
+	die()
 
+case 'slotstest':
+case 'st':
+assign(@name, Slots)
 				assign(@blocks, get_value(@name.'.play.blocks'))
 				if(@blocks == '' || @blocks == null,
 					assign(@blocks, array(1, 3, 4, 5, 12, 13, 20, 24, 30, 50, 54, 65, 85, 86, 101, 102))
@@ -127,13 +116,20 @@ msg(get_server_info())
 				msg(color(6).@reward.': '.@rewardqty)
 				#stats: record amount of blocks awarded, player and global. array(INDEX is ID: VALUE is how many)
 				#player stats:
-				assign(@playerblocks, get_value(@player.'.'.@name.'.alltime.blocks'))
+				assign(@playerblocks, get_value(@name.'.player.'.@player[id].'.alltime.blocks'))
 				msg('old: '.@playerblocks)
 				if(@playerblocks == '' || @playerblocks == null, assign(@playerblocks, array()))
 				if(array_index_exists(@playerblocks, @reward) == false,
 					assign(@playerblocks[@reward], 0)
 				)
 				assign(@playerblocks[@reward], @rewardqty + @playerblocks[@reward])
-				store_value(@player.'.'.@name.'.alltime.blocks', @playerblocks)
+				store_value(@name.'.player.'.@player[id].'.alltime.blocks', @playerblocks)
 				msg('new: '.@playerblocks)
+case '':
+case null:
+	msg('uh specify something?')
+
+default:
+	msg('uh specify something valid?')
+}
 <<<
