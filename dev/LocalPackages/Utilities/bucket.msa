@@ -34,17 +34,24 @@ case help:
 
 
 default:
-	assign(@bucketenabled, import('bucket.enabled.'.@player[id]))
+	assign(@bucketenabled, import('bucket.info.enabled.'.@player[id]))
 	if(@bucketenabled == false || @bucketenabled == '' || @bucketenabled == null) {
 		export('bucket.info.enabled.'.@player[id], true)
 	#then check if bind is added
 		if(has_bind('bucket.info'), null,
-			bind(player_interact, array(id: 'bucket.info'), array(item:325), @bucket) {
+			bind(player_interact, array(id: 'bucket.info'), array(itemname: 'BUCKET'), @bucket) {
 				assign(@player, _getplayerID(@bucket[player]))
-					if(import('bucket.info.enabled.'.@bucket[player]) == true) {
+					if(import('bucket.info.enabled.'.@player[id]) == true) {
 		     			if(equals(@bucket['action'], 'left_click_block' || 'right_click_block')) {
 						cancel()
-						msg(color(7).'['.color(gold).'Bucket'.color(7).'] '.color(7).'Block ID: '.color(b).@bucket[block].color(3).' ('.data_name(@bucket[block]).')'.color(7).' (@'.color(8).@bucket[location][x].','.@bucket[location][y].','.@bucket[location][z].', facing: '.@bucket[facing].color(7).')')
+							if(is_numeric(@bucket[block])) {
+								assign(@id, data_name(@bucket[block]))
+								assign(@idn, @bucket[block])
+							} else {
+								assign(@id, to_upper(@bucket[block]))
+								assign(@idn, data_values(@bucket[block]))
+							}
+						msg(color(7).'['.color(gold).'Bucket'.color(7).'] '.color(7).'Block ID: '.color(b).@id.color(3).' ('.@idn.')'.color(7).' (@'.color(8).@bucket[location][x].','.@bucket[location][y].','.@bucket[location][z].', facing: '.@bucket[facing].color(7).')')
 					}
 				}
 			}

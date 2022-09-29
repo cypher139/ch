@@ -5,11 +5,6 @@ playerinfo:
 we selection, wg region, player,nick, uuid
 advanced: hostname
 
-sanitize player name:
-
-proc(get_player_name
-if first cahracter  == ., remove dot from array, return rest
-
 also fix get nicknames, reimplement
 
 store ch values as player uuid, not nick

@@ -1,0 +1,29 @@
+deathtp:/back = >>>
+assign(@name, DeathTP)
+
+#dynamic vars
+assign(@player, player())
+
+#get where to go
+assign(@here, get_value(@player.'.deathpoint'))
+
+set_ploc(@here)
+msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'You have been returned to your death point.')
+<<<
+
+
+
+everyone:/backitems = >>>
+assign(@player, player())
+assign(@name, GarbageManagement)
+assign(@bi, get_value(@player.'.last.death.drops'))
+if(@bi == null || @bi == '', die(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Sorry, but your inventory was empty!'))
+foreach(@bi, @currentvar,
+	#Accomodating for different data types of items. (Eg mossy stone brick is 98:1)
+	if(@currentvar[data] != 0,
+		assign(@currentvar[type], @currentvar[type].':'.@currentvar[data])
+	)
+	pgive_item(@player, @currentvar[type], @currentvar[qty])
+)
+msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Respawning your items.')
+<<<

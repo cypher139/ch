@@ -5,27 +5,36 @@ assign(@name, 'DeathTP')
 assign(@player, _getplayerID(player()))
 
 #get where to go
-assign(@here, get_value(@player[id].'.last.death.loc'))
+assign(@here, get_value('player.'.@player[id].'.last.death.loc'))
 
-set_ploc(@here)
-msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'You have been returned to your death point.')
+switch(@here) {
+
+case '':
+case null:
+	die(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
+default:
+	set_ploc(@here)
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'You were teleported to your death point.')
+}
 <<<
 
 
 
 everyone:/backitems = >>>
 assign(@player, _getplayerID(player()))
-assign(@name, 'GarbageManagement')
-assign(@bi, get_value(@player[id].'.last.death.drops'))
-if(@bi == null || @bi == '', die(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Sorry, but your inventory was empty!'))
-foreach(@bi, @currentvar,
-	#Accomodating for different data types of items. (Eg mossy stone brick is 98:1)
-	if(@currentvar[data] != 0,
-		assign(@currentvar[type], @currentvar[type].':'.@currentvar[data])
+assign(@name, 'DeathTP - GarbageManagement')
+assign(@bi, get_value('player.'.@player[id].'.last.death.drops'))
+
+switch(@bi) {
+case '':
+case null:
+	die(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Sorry, but your inventory was empty!')
+default:
+	foreach(@bi, @currentvar,
+	#mew MC versions do not need numeric id:data type. updated to just written name. 
+	#array: meta, qty, name
+		pgive_item(@player[name], @currentvar)
 	)
-	pgive_item(@player, @currentvar[type], @currentvar[qty])
-)
-
-
-msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Respawning your items.')
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Respawning your items.')
+}
 <<<

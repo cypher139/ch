@@ -25,9 +25,9 @@ case help:
 	die()
 
 default:
-	assign(@sheepenabled, import('sheep.spawner.enabled.'.@player))
+	assign(@sheepenabled, import('sheep.spawner.enabled.'.@player[id]))
 	if(@sheepenabled == false || @sheepenabled == '' || @sheepenabled == null) {
-		export('sheep.spawner.enabled.'.@player, true)
+		export('sheep.spawner.enabled.'.@player[id], true)
 	#then check if bind is added
 		if(has_bind('sheep.spawner'), null,
 			bind(player_interact, array(id: 'sheep.spawner'), null, @sheepevent) {
@@ -41,7 +41,7 @@ default:
 						spawn_entity('sheep', 1, @here, closure(@id){ set_entity_spec(@id, array('color': @sheeptype)); })
 						
 					#	assign(@sheepcolor, reg_split(':', @sheep)[1])
-						msg(color(7).'['.color(gold).'Sheep'.color(7).'] '.color(7).'Spawned a new sheep with a color of: '.color(@sheeptype).to_lower(@sheeptype).color(8).'. ( You were looking at '.color(8).@here[0].','.@here[1].','.@here[2].color(8).')')
+						msg(color(7).'['.color(gold).'Sheep'.color(7).'] '.color(7).'Spawned a new sheep! Color: '.color(@sheeptype).to_lower(@sheeptype).color(8).'. (Location: '.color(8).@here[0].','.@here[1].','.@here[2].color(8).')')
 					)
 				}
 			}
