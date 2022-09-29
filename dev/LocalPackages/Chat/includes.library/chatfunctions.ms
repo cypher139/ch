@@ -1,57 +1,25 @@
-#===============================================================================
-#
-#   auto_incude.ms - includes for CommandHelper
-#
-#===============================================================================
-
-#default samples
-#Returns the distance between two blocks, or any other 3d points, for that matter
-proc(_3d_distance, @arr1, @arr2,
-    return(
-        floor(
-            sqrt(
-                add(
-                    pow(subtract(@arr2[0], @arr1[0]), 2),
-                    pow(subtract(@arr2[1], @arr1[1]), 2),
-                    pow(subtract(@arr2[2], @arr1[2]), 2)
-                )
-            )
-        )
-    )
-)
-
-#Given two blocks, iterates through all the blocks inside the cuboid, and calls the 
-#user defined function on them. The used defined procedure should accept 3 parameters,
-#the x, y, and z coordinates of the block.
-proc(_iterate_cuboid, @b1, @b2, @proc_name,
-    for(assign(@x, min(@b1[0], @b2[0])), lte(@x, max(@b1[0], @b2[0])), inc(@x),
-        for(assign(@y, min(@b1[1], @b2[1])), lte(@y, max(@b1[1], @b2[1])), inc(@y),
-            for(assign(@z, min(@b1[2], @b2[2])), lte(@z, max(@b1[2], @b2[2])), inc(@z),
-                call_proc(@proc_name, @x, @y, @z)
-            )
-        )
-    )
-)
-
-include('LocalPackages/Utilities/getplayerID.ms')
-#include('LocalPackages/Utilities/DiscordChat.ms')
-
-
-#---------
-proc(_bc, @label, @str,
-    broadcast(concat(color(yellow), '[', color(gold), @label, color(yellow), '] ', color(white), @str))
-)
-
 #is this a even number?
     proc(_is_even_number, @number, return(mod(@number, 2) == 0))
 
 
-#-----------------
-#misc
+proc _chat_getplayerID(@option1) {
+	@pid = array()
+	if(@option1 == '~console'){
+		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
+	} else {
+	@pid[display] = pinfo(@option1)[0];
+	@pid[name] = pinfo(@option1)[0];
+	@pid[id] = puuid(@option1, dashless);
+	@pid[nick] = pinfo(@option1)[4];
+	}
+	#Bedrock to Java players come in with name ".NAME", remove dot
+	if(reg_count('^[\\.].*', @pid[name]) == 1, 
+		assign(@pid[display], reg_replace('^[\\.]','', @pid[name]))
+	)
+	return(@pid)
+}
 
-
-
-proc(_msgAdmins, @msg, @consolemsg, @cmconcat, @hideplayer,
+proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg', assign(@consolemsg, @msg))
 	if(@cmconcat == 'yes', assign(@consolemsg, @msg.@consolemsg))
 	console(@consolemsg, false)
@@ -60,14 +28,14 @@ proc(_msgAdmins, @msg, @consolemsg, @cmconcat, @hideplayer,
 			tmsg(@p, @msg)
 		)
 	)
-)
+}
 
-proc(_capitalize, @string,
+proc _capitalize(@string) {
 	assign(@l1, to_upper(@string[0]))
 	assign(@length, length(@string) - 1)
 	assign(@newstring, @l1.@string[cslice(1, @length)])
 	return(@newstring)
-)
+}
 
 #supposed to work but doesnt:
 #proc(_capitalize, @string,
@@ -104,7 +72,16 @@ proc(_getplayer, @name,
 	)
 )
 
-proc(_rainbow, @msg, @type,
+proc _getnick(@player) {
+	
+	assign(@player, pinfo(@player)[0])
+	assign(@nick, pinfo(@player)[4])
+
+	if(@player == @nick, return(@player), return(@nick))
+}
+	
+
+proc _rainbow(@msg, @type) {
 #fabulous light colors: 6abcdef
 	if(@msg == '', return(color(c).'You didn\'t say anything!!'))
 	assign(@msg, strip_colors(@msg))
@@ -141,14 +118,14 @@ proc(_rainbow, @msg, @type,
 		)
 		return(@string)
 	)
-)
+}
 
 
 #-----
 
 #ichat +healthbar replacement
 
-proc(_healthbar, @player, @char,
+proc _healthbar(@player, @char) {
 	if(@char == '' || @char == null, assign(@char, '|'))
 	assign(@phealth, pinfo(@player)[5])
 	assign(@1, 0)
@@ -181,18 +158,4 @@ proc(_healthbar, @player, @char,
 
 
 	return(@healthbar)
-)
-	
-
-
-
-proc(_idcheck, @id, @id2, @option1,
-
-	if(reg_count('('.@id.')(:[0-9]*)?', @id2) > 0,
-	return(true),	
-	return(false)
-	)
-)
-	
-#Death messages
-#include('LocalPackages/deathmsg.ms')
+}

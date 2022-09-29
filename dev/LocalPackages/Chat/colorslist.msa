@@ -1,27 +1,8 @@
 everyone:/colors [$type] = >>>
-assign(@color,
-      concat(
-              color(f),'Colors: '
-              color(0),'&0'
-              color(1),'&1'
-              color(2),'&2'
-              color(3),'&3'
-              color(4),'&4'
-              color(5),'&5'
-              color(6),'&6'
-              color(7),'&7'
-              color(8),'&8'
-              color(9),'&9'
-              color(a),'&a'
-              color(b),'&b'
-              color(c),'&c'
-              color(d),'&d'
-              color(e),'&e'
-              color(f),'&f'
-      )
-)
-
-if($type == 'all',
+switch($type) {
+case 'all':
+case '-a':
+case 'a':
 assign(@color,
       concat(
               color(f),'Colors: '
@@ -54,7 +35,30 @@ assign(@color,
               color(r),'&r'
       )
 )
+default:
+assign(@color,
+      concat(
+              color(f),'Colors: '
+              color(0),'&0'
+              color(1),'&1'
+              color(2),'&2'
+              color(3),'&3'
+              color(4),'&4'
+              color(5),'&5'
+              color(6),'&6'
+              color(7),'&7'
+              color(8),'&8'
+              color(9),'&9'
+              color(a),'&a'
+              color(b),'&b'
+              color(c),'&c'
+              color(d),'&d'
+              color(e),'&e'
+              color(f),'&f'
+      )
 )
+
+}
 
 msg(@color)
 <<<

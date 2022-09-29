@@ -4,9 +4,12 @@
 
 #standard rainbow chat: this selects a new random color for every letter in the message.
 everyone:/rsay [$] = >>>
-assign(@player, player())
+assign(@name, 'Rainbow')
+# Include required backend functions
+include('includes.library/chatfunctions.ms')
+assign(@player, _chat_getplayerID(player()))
 
-if(has_permission(@player, 'commandhelper.alias.chat.use.rainbow'), null,
+if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'), null,
 	die(color(c).'['.color(7).'Rainbow'.color(c).'] '.color(c).'You do not have permission to use Rainbow chat!')
 )
 
@@ -17,28 +20,30 @@ assign(@msg, strip_colors($))
 	if(player() == '~console',
 		broadcast(@string)
 		,
-		export(@name.'.player.'.@player.'.rainbow.cmd', true)
+		export(@name.'.player.'.@player[id].'.rainbow.cmd', true)
 		chat(@string)
 	)
 <<<
 
 #This selects a new random color for every other character in the message.
 everyone:/rsay2 [$] = >>>
-assign(@player, player())
+assign(@name, 'Rainbow')
+# Include required backend functions
+include('includes.library/chatfunctions.ms')
+assign(@player, _chat_getplayerID(player()))
 
-if(has_permission(@player, 'commandhelper.alias.chat.use.rainbow'), null,
+if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'), null,
 	die(color(c).'['.color(7).'Rainbow'.color(c).'] '.color(c).'You do not have permission to use Rainbow chat!')
 )
 
 if($ == '', die(color(c).'You didn\'t say anything!!'))
+assign(@msg, strip_colors($))
 
-
-	assign(@string, _rainbow($, 'doubles'))
-
+	assign(@string, _rainbow(@msg, 'doubles'))
 	if(player() == '~console',
 		broadcast(@string)
 		,
-		export(@name.'.player.'.@player.'.rainbow.cmd', true)
+		export(@name.'.player.'.@player[id].'.rainbow.cmd', true)
 		chat(@string)
 	)
 <<<
@@ -46,21 +51,23 @@ if($ == '', die(color(c).'You didn\'t say anything!!'))
 
 #This uses all the minecraft colors, not just specific colors.
 everyone:/rsayall [$] = >>>
-assign(@player, player())
+assign(@name, 'Rainbow')
+# Include required backend functions
+include('includes.library/chatfunctions.ms')
+assign(@player, _chat_getplayerID(player()))
 
-if(has_permission(@player, 'commandhelper.alias.chat.use.rainbow'), null,
+if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'), null,
 	die(color(c).'['.color(7).'Rainbow'.color(c).'] '.color(c).'You do not have permission to use Rainbow chat!')
 )
 
 if($ == '', die(color(c).'You didn\'t say anything!!'))
+assign(@msg, strip_colors($))
 
-
-	assign(@string, _rainbow($, 'all'))
-
+	assign(@string, _rainbow(@msg, 'all'))
 	if(player() == '~console',
 		broadcast(@string)
 		,
-		export(@name.'.player.'.@player.'.rainbow.cmd', true)
+		export(@name.'.player.'.@player[id].'.rainbow.cmd', true)
 		chat(@string)
 	)
 <<<
@@ -68,13 +75,15 @@ if($ == '', die(color(c).'You didn\'t say anything!!'))
 
 everyone:/rainbow [$action] [$option1] [$] = >>>
 #toggle rainbow chat on/off
-assign(@name, Rainbow)
+assign(@name, 'Rainbow')
+# Include required backend functions
+include('includes.library/chatfunctions.ms')
 assign(@action, $action)
 assign(@option1, to_lower($option1))
-assign(@player, player())
-assign(@you, player())
+assign(@player, _chat_getplayerID(player()))
 
-if(has_permission(@player, 'commandhelper.alias.chat.use.rainbow'), null,
+
+if(has_permission(@player[name], 'commandhelper.alias.chat.use.rainbow'), null,
 	die(color(c).'['.color(7).'Rainbow'.color(c).'] '.color(c).'You do not have permission to use Rainbow chat!')
 )
 
@@ -82,25 +91,25 @@ if(has_permission(@player, 'commandhelper.alias.chat.use.rainbow'), null,
 if(@action == 'toggle',
 	assign(@successmsg, color(red).'['.color(gold).@name.color(red).'] '.color(c).'Invalid setting specified. '.color(r).'Leave blank for normal rainbow chat, or type \'doubles\' to use doubles mode.')
 	if(@option1 == '' || @option1 == null,
-		assign(@oldvalue, get_value(@name.'.player.'.@player.'.rainbow.toggle'))
+		assign(@oldvalue, get_value(@name.'.player.'.@player[id].'.rainbow.toggle'))
 		if(@oldvalue == true,
-			store_value(@name.'.player.'.@player.'.rainbow.toggle', false)
-			export(@name.'.player.'.@player.'.rainbow.toggle', false)
+			store_value(@name.'.player.'.@player[id].'.rainbow.toggle', false)
+			export(@name.'.player.'.@player[id].'.rainbow.toggle', false)
 			assign(@successmsg, color(7).'['.color(gold).@name.color(7).'] '.color(d). 'Automatic rainbow chat is now disabled!')
 		,
 		#enable
-			store_value(@name.'.player.'.@player.'.rainbow.toggle', true)
-			store_value(@name.'.player.'.@player.'.rainbow.type', 'normal')
-			export(@name.'.player.'.@player.'.rainbow.toggle', true)
-			export(@name.'.player.'.@player.'.rainbow.type', 'normal')
+			store_value(@name.'.player.'.@player[id].'.rainbow.toggle', true)
+			store_value(@name.'.player.'.@player[id].'.rainbow.type', 'normal')
+			export(@name.'.player.'.@player[id].'.rainbow.toggle', true)
+			export(@name.'.player.'.@player[id].'.rainbow.type', 'normal')
 			assign(@successmsg, color(7).'['.color(gold).@name.color(7).'] '.color(d)._rainbow('Automatic rainbow chat is now enabled!').color(a).' Your chat will be like the colors of the rainbow now!')
 		)
 	)
 	if(@option1 == 'doubles',
-		store_value(@name.'.player.'.@player.'.rainbow.toggle', true)
-		store_value(@name.'.player.'.@player.'.rainbow.type', 'doubles')
-		export(@name.'.player.'.@player.'.rainbow.toggle', true)
-		export(@name.'.player.'.@player.'.rainbow.type', 'doubles')
+		store_value(@name.'.player.'.@player[id].'.rainbow.toggle', true)
+		store_value(@name.'.player.'.@player[id].'.rainbow.type', 'doubles')
+		export(@name.'.player.'.@player[id].'.rainbow.toggle', true)
+		export(@name.'.player.'.@player[id].'.rainbow.type', 'doubles')
 		assign(@successmsg, color(7).'['.color(gold).@name.color(7).'] '.color(d)._rainbow('Automatic rainbow chat is now enabled!', doubles).color(a).' Your chat will be like the colors of the rainbow now!')
 	)
 	die(@successmsg)

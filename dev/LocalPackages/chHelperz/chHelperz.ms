@@ -1,15 +1,33 @@
 export('chHelperz.console.command.show', get_value('chHelperz.console.command.show'))
 
-bind(player_join, array(id: 'chHelperz.login'), null, @login,
+proc _ch_getplayerID(@option1) {
+	@pid = array()
+	if(@option1 == '~console'){
+		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
+	} else {
+	@pid[display] = pinfo(@option1)[0];
+	@pid[name] = pinfo(@option1)[0];
+	@pid[id] = puuid(@option1, dashless);
+	@pid[nick] = pinfo(@option1)[4];
+	}
+	#Bedrock to Java players come in with name ".NAME", remove dot
+	if(reg_count('^[\\.].*', @pid[name]) == 1, 
+		assign(@pid[display], reg_replace('^[\\.]','', @pid[name]))
+	)
+	return(@pid)
+}
+
+
+bind('player_join', array(id: 'chHelperz.login'), null, @login) {
 	#event playername may return null for some unknown reason
-	assign(@player, player())
+	assign(@player, _ch_getplayerID(player()))
 
-	export('chHelperz.player.'.@player.'.command.show.all', get_value('chHelperz.player.'.@player.'.command.show.all'))
-)
+	export('chHelperz.player.'.@player[id].'.command.show.all', get_value('chHelperz.player.'.@player[id].'.command.show.all'))
+}
 
 
-bind(player_command, array(id: 'chHelperz.cmd'), null, @cmdevent,
-	assign(@player, player())
+bind('player_command', array(id: 'chHelperz.cmd'), null, @cmdevent) {
+	assign(@player, _ch_getplayerID(player()))
 	assign(@cmd, reg_split(' ', @cmdevent[command]))
 
 	#List cmd used, with CH aliases showing as a different color.
@@ -18,27 +36,28 @@ bind(player_command, array(id: 'chHelperz.cmd'), null, @cmdevent,
 	#show command to the console if permitted to do so.
 	assign(@consolecmdshow, import('chHelperz.console.command.show'))
 	if(@consolecmdshow == true,
-		console(color(7).@player.' used '.color(@cmdcolor).@cmdevent[command], false)
+		console(color(7).@player[display].' used '.color(@cmdcolor).@cmdevent[command], false)
 	)
 	#show command back to the player who issued the command, if permitted to do so.
-	assign(@sendcmd, import('chHelperz.player.'.@player.'.command.show.all'))
+	assign(@sendcmd, import('chHelperz.player.'.@player[id].'.command.show.all'))
 	if(@sendcmd == null,
-			assign(@sendcmd, get_value('chHelperz.player.'.@player.'.command.show.all'))
-			export('chHelperz.player.'.@player.'.command.show.all', @sendcmd)
+			assign(@sendcmd, get_value('chHelperz.player.'.@player[id].'.command.show.all'))
+			export('chHelperz.player.'.@player[id].'.command.show.all', @sendcmd)
 	)
-	if(@sendcmd == true && @cmd[0] != '/.',
-		if(has_permission(@player, 'commandhelper.alias.see.is.alias'), null,
-			assign(@cmdcolor, '7')
-		)
-		msg('> '.color(@cmdcolor).@cmdevent[command])
-	)
+
 	#Save the last command this player used.
 	switch(@cmd[0]){
 		case '/.':
 		case '/repeat':
 		case '/\'':
-		msg(no)
+			msg(no)
 		default:
-		export('chHelperz.player.'.@player.'.last.command', @cmdevent[command])
+			if(@sendcmd == true) {
+				if(has_permission(@player[name], 'commandhelper.alias.see.is.alias'), null,
+					assign(@cmdcolor, '7')
+				)
+				msg('> '.color(@cmdcolor).@cmdevent[command])
+				export('chHelperz.player.'.@player[id].'.last.command', @cmdevent[command])
+			}
 	}
-)
+}

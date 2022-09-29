@@ -16,7 +16,8 @@ admin:/randblock [$id='GRASS_BLOCK'] [$tries='20'] = >>>
 	}
 	
 	assign(@tries, $tries)
-msg(color(7).'Searching for a '.color(3).@id.color(7).' [ID: '.color(3).@idn.color(7).'] block on the top level of geography for '.@tries.' tries.')
+	msg(color(7).'Searching for a '.color(3).@id.color(7).' [ID: '.color(3).@idn.color(7).'] block on the top level of geography for '.@tries.' tries.')
+	
 	for(assign(@i, 1), @i <= @tries, @i++,
 #x (0)
 		assign(@xyz[x], rand(-5500, 5500))
@@ -34,7 +35,7 @@ msg(color(7).'Searching for a '.color(3).@id.color(7).' [ID: '.color(3).@idn.col
 				msg(color(7).'Teleported you to the location!')
 			}
 			break()
-# wrong spot			msg(color(7).'Aw, after '.@tries.' tries a "'.color(3).@blockID.color(7).'" block was not found.')
+# wrong spot, needs for return			msg(color(7).'Aw, after '.@tries.' tries a "'.color(3).@blockID.color(7).'" block was not found.')
 		}
 	)
 <<<
