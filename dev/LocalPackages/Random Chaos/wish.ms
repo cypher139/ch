@@ -5,7 +5,7 @@ bind(player_chat, array(id: 'Wish.granter.lolz'), null, @chat,
 	assign(@player, player())
 	assign(@allplayers, all_players())
 
-	assign(@dev, import('ch.player.'._getplayerID(player())[id].'.developer'))
+	assign(@dev, import('ch.player.'.pinfo(player())[20].'.developer'))
 
 
 #did you say a player name? this will catch it
