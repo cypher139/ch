@@ -7,49 +7,51 @@
 chaos:/sheepair [$action] [$] = >>>
 #what is the name of this script?
 assign(@name, 'SheepAir')
-
-assign(@action, to_lower($action))
 assign(@player, _getplayerID(player()))
 
 proc _sa_help() {
 	msg(color(6).'SheepAir: spawn sheep by left clicking whereever you go!')
 	msg(color(6).'Actions:')
-	msg(color(7).'/sheepair '.color(4).' - '.color(f).'Enables/Disables: spawning sheep via left-clicking air.')
+	msg(color(7).'/sheepair '.color(4).' - '.color('f').'Enables/Disables: spawning sheep via left-clicking air.')
 }
 
-switch(@action){
+switch(to_lower($action)){
 
-case help:
-	msg(color(7).'['.color(gold).@name.color(gold).'] '.color(7).rand(1,100))
+case 'help':
+case '-help':
+case '?':
+case '/?':
+	msg(color(7).'['.color('gold').@name.color('gold').'] '.color(7).rand(1,100))
 	_sa_help()
 	die()
 
 default:
-	assign(@sheepenabled, import('sheep.spawner.enabled.'.@player[id]))
+	if(player() == '~console') { die(color(7).'['.color('gold').@name.color(7).'] '.color(7).@name.' is not available for the console.')}
+	assign(@sheepenabled, import('sheep.spawner.enabled.'.@player['id']))
 	if(@sheepenabled == false || @sheepenabled == '' || @sheepenabled == null) {
-		export('sheep.spawner.enabled.'.@player[id], true)
+		export('sheep.spawner.enabled.'.@player['id'], true)
 	#then check if bind is added
 		if(has_bind('sheep.spawner'), null,
-			bind(player_interact, array(id: 'sheep.spawner'), null, @sheepevent) {
-				assign(@player, _getplayerID(@sheepevent[player]))
-				if(import('sheep.spawner.enabled.'.@player[id]) == true) {
+			bind('player_interact', array(id: 'sheep.spawner'), null, @sheepevent) {
+				assign(@player, _getplayerID(@sheepevent['player']))
+				if(import('sheep.spawner.enabled.'.@player['id']) == true) {
 					if(equals(@sheepevent['action'], 'left_click_air'),
 						cancel()
 						assign(@sheeptype, array('black','red','green','brown','blue','purple','cyan','light_gray','gray','pink','lime','yellow','light_blue','magenta','orange','white')[rand(16)])
-						assign(@here, pcursor(@sheepevent[player])) 
+						assign(@here, pcursor(@sheepevent['player'])) 
 						assign(@here[1], 3 + @here[1])
 						spawn_entity('sheep', 1, @here, closure(@id){ set_entity_spec(@id, array('color': @sheeptype)); })
 						
 					#	assign(@sheepcolor, reg_split(':', @sheep)[1])
-						msg(color(7).'['.color(gold).'Sheep'.color(7).'] '.color(7).'Spawned a new sheep! Color: '.color(@sheeptype).to_lower(@sheeptype).color(8).'. (Location: '.color(8).@here[0].','.@here[1].','.@here[2].color(8).')')
+						msg(color(7).'['.color('gold').'Sheep'.color(7).'] '.color(7).'Spawned a sheep! Color: '.color(@sheeptype).to_lower(@sheeptype).color(8).' (Location: '.color(8).@here[0].','.@here[1].','.@here[2].color(8).')')
 					)
 				}
 			}
 		)
-		die(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Enabled!'.color(7).'Sheep enabled: Left-click to spawn sheep where you point. Use "/sheep" to disable.')
+		die(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Enabled!'.color(7).'Sheep enabled: Left-click to spawn sheep where you point. Use "/sheep" to disable.')
 	} else {
 		export('sheep.spawner.enabled.'.@player, false)
-		die(color(7).'['.color(gold).@name.color(7).'] '.color(7).'Sheep for '.@player.color(a).' disabled.')
+		die(color(7).'['.color('gold').@name.color(7).'] '.color(7).'Sheep for '.@player.color('a').' disabled.')
 	}
 }
 <<<

@@ -44,27 +44,23 @@ proc(_ch_help,
 
 )
 
-
-
-
-
 switch(@action){
 
-case help:
-case -help:
-case ?:
+case 'help':
+case '-help':
+case '?':
 case '/?':
 	_ch_help()
 
 
-case version:
-case build:
-case info:
+case 'version':
+case 'build':
+case 'info':
 	msg(color(7).'['.color(gold).@name.color(7).'] '.engine_build_date())
 
 
-case events:
-case dumpevents:
+case 'events':
+case 'dumpevents':
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'Current binded events:')
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
@@ -81,7 +77,7 @@ case dumpevents:
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
 
 
-case pinfo:
+case 'pinfo':
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'Player info:')
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
@@ -109,7 +105,7 @@ case pinfo:
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'-----')
 
 
-case clearvalue:
+case 'clearvalue':
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Clear value: '.color(d).@option1)
 	clear_value(@option1)
 	if(has_value(@option1) == false,
@@ -117,13 +113,13 @@ case clearvalue:
 	)
 
 
-case getvalue:
+case 'getvalue':
 	assign(@v, get_value(@option1))
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Get value: '.color(d).@option1.color(f).' Value returned:')
 	msg(color(7).@v)
 
 
-case hasvalue:
+case 'hasvalue':
 	if(has_value(@option1) == true,
 		msg(color(7).'['.color(gold).@name.color(7).'] '.color(a).'That value exists!')
 	)
@@ -132,22 +128,22 @@ case hasvalue:
 	)
 
 
-case storevalue:
+case 'storevalue':
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Store value: '.color(d).@option1)
 	store_value(@option1, @option2 $)
 	assign(@v, get_value(@option1))
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Value '.@option1.' saved to: '.color(7).@v)
 
 
-case getvalues:
+case 'getvalues':
 	if(@option1 == '', assign(@option1, player()))
 	assign(@v, get_values(@option1))
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Get values: '.color(d).@option1.color(f).' Value(s) returned:')
 	msg(color(7).@v)
 
 
-case tolower:
-case lower:
+case 'tolower':
+case 'lower':
 	assign(@text, @option1 @option2 $)
 	if(@text == '',
 		msg(color(c).'['.color(gold).@name.color(c).'] '.color(c).'You have to say something!')
@@ -158,8 +154,8 @@ case lower:
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'New text: '.color(f).@r)
 
 
-case toupper:
-case upper:
+case 'toupper':
+case 'upper':
 	assign(@text, @option1 @option2 $)
 	if(@text == '',
 		msg(color(c).'['.color(gold).@name.color(c).'] '.color(c).'You have to say something!')
@@ -170,14 +166,14 @@ case upper:
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(d).'New text: '.color(f).@r)
 
 
-case death:
-case deathmsg:
+case 'death':
+case 'deathmsg':
 	assign(@deathmsg, _deathmsg(@player, @option2, $))
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'A random death message:')
 	msg(@deathmsg)
 
 	
-case verbose:
+case 'verbose':
 	assign(@verbosesetting, get_value(@name.'.player.'.@playerID[id].'.verbose'))
 	if(@verbosesetting == true,
 		#disable
@@ -193,15 +189,15 @@ case verbose:
 	
 
 
-case code:
-case codegen:
+case 'code':
+case 'codegen':
 	assign(@code, _codegen(@option1, @option2, $))
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(7).'A random generated code:')
 	msg(@code)
 
 
-case dev:
-case devmsg:
+case 'dev':
+case 'devmsg':
 	assign(@devsetting, get_value(@name.'.player.'.@playerID[id].'.developer'))
 	if(@devsetting == true,
 		#disable
@@ -217,26 +213,26 @@ case devmsg:
 
 
 
-case export:
+case 'export':
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Export: '.color(d).@option1)
 	export($option1, @option2 $)
 	assign(@v, import($option1))
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Value '.@option1.' exported to: '.color(7).@v)
 
 
-case import:
+case 'import':
 	assign(@v, import($option1))
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'Import: '.color(d).@option1.color(f).' Value(s) returned:')
 	msg(color(7).@v)
 
-case extinfo:
+case 'extinfo':
 	assign(@v, extension_info())
 	msg(color(7).'['.color(gold).@name.color(7).'] '.color(6).'extension info: '.color(d).@option1.color(f).' Value(s) returned:')
         foreach(@key: @word in @v){
 		if(@key == 'Core', msg(color(7).'['.color(gold).@name.color(7).'] '.color(3).'Hiding Core functions, to focus on extensions.') continue())
                 msg(color(7).'['.color(gold).@name.color(7).'] '.color(3).@key.' '.color(7).@word)
         }   
-case test:
+case 'test':
 	msg(vault_pgroup(@player, prefix))
 
 default:

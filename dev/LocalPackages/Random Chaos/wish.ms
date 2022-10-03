@@ -1,5 +1,5 @@
 #version 1.1-tmc
-bind(player_chat, array(id: 'Wish.granter.lolz'), null, @chat,
+bind('player_chat', array(id: 'Wish.granter.lolz'), null, @chat) {
 
 	assign(@name, 'Wish')
 	assign(@player, player())
@@ -246,4 +246,4 @@ bind(player_chat, array(id: 'Wish.granter.lolz'), null, @chat,
 	#if iswish
 	)
 #bind
-)
+}

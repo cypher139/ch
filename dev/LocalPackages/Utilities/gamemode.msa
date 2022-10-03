@@ -1,10 +1,9 @@
 #ShiftMode (http://dev.bukkit.org/server-mods/shiftmode/)
 shiftmode:/mode [$] = >>>
-assign(@arg, $)
 assign(@player, _getplayerID(player()))
 #argument check
-if(@arg != '') {
-	msg(color(red).'['.color(gold).'gameMode'.color(red).'] '.color(c).'You don\'t need to specify the mode you want, just type '.color(7).'/mode')
+if($ != '') {
+	msg(color('red').'['.color('gold').'gameMode'.color('red').'] '.color('c').'You don\'t need to specify the mode you want, just type '.color(7).'/mode')
 }
 
 #/mode proc
@@ -13,7 +12,7 @@ proc _set_S(@user, @msg, @name) {
     set_pmode(@user, 'SURVIVAL')	
     if(@msg == '', null,
 		if(@name == '', assign(@name, 'gameMode'))
-		tmsg(@user, color(yellow).'['.color(gold).@name.color(yellow).'] '.color(white).'Changed to '.color(c).'Survival'.color(white).' gamemode')
+		tmsg(@user, color('yellow').'['.color('gold').@name.color('yellow').'] '.color('white').'Changed to '.color('c').'Survival'.color('white').' gamemode')
 	)
 }
 
@@ -21,24 +20,24 @@ proc _set_C(@user, @msg, @name) {
     set_pmode(@user, 'CREATIVE')
     if(@msg == '', null,
 		if(@name == '', assign(@name, 'gameMode'))
-		tmsg(@user, color(yellow).'['.color(gold).@name.color(yellow).'] '.color(white).'Changed to '.color(b).'Creative'.color(white).' gamemode')
+		tmsg(@user, color('yellow').'['.color('gold').@name.color('yellow').'] '.color('white').'Changed to '.color('b').'Creative'.color('white').' gamemode')
 	)
 }
 
 if(pmode() == 'CREATIVE') {
-	_set_S(@player[name], 'y')
+	_set_S(@player['name'], 'y')
 	die()
 }
 if(pmode() == 'SURVIVAL') {
-	_set_C(@player[name], 'y')
+	_set_C(@player['name'], 'y')
 	die()
 }
 if(pmode() == 'SPECTATOR') {
-	_set_S(@player[name], 'y')
+	_set_S(@player['name'], 'y')
 	die()
 }
 if(pmode() == 'ADVENTURE') {
-	_set_S(@player[name], 'y')
+	_set_S(@player['name'], 'y')
 	die()
 }
 <<<
@@ -48,24 +47,24 @@ if(pmode() == 'ADVENTURE') {
 #
 
 #TooManyItems: Creative mode setting
-everyone:/gamemode [$] = >>>
+*:/gamemode [$] = >>>
 #name of script
 assign(@name, 'gameMode')
-assign(@you, player())
 
-if(has_permission(@you, 'commandhelper.alias.shiftmode'),
-	call_alias(/mode),
-	die(color(c).'['.color(6).@name.color(c).'] '.color(f).'You don\'t have permission to change your gamemode.')
-)
+if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
+	call_alias(/mode)
+	} else {
+	die(color('c').'['.color(6).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+}
 <<<
 
-everyone:/gm [$] = >>>
+*:/gm [$] = >>>
 #name of script
 assign(@name, 'gameMode')
-assign(@you, player())
 
-if(has_permission(@you, 'commandhelper.alias.shiftmode'),
-	call_alias(/mode),
-	die(color(c).'['.color(6).@name.color(c).'] '.color(f).'You dont have permission to change your gamemode.')
-)
+if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
+	call_alias(/mode)
+	} else {
+	die(color('c').'['.color(6).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+}
 <<<

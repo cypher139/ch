@@ -88,11 +88,16 @@
 
 #commandbook: quick kit replacement
 everyone:/powerup = >>>
+#array: meta, qty, name
 assign(@player, player())
-pgive_item(@player, 278, 1)
-pgive_item(@player, 50, 64)
-set_pinv(@player, array(103: array(type:314, qty: 1)))
-set_pinv(@player, array(100: array(type:317, qty: 1)))
+#278
+pgive_item(@player, array(name: 'DIAMOND_PICKAXE', qty: '1'))
+#50
+pgive_item(@player, array(name: 'WALL_TORCH', qty: '64'))
+#314
+set_pinv(@player, array(103: array(type: 'GOLDEN_HELMET', qty: 1)))
+#317
+set_pinv(@player, array(100: array(type: 'GOLDEN_BOOTS', qty: 1)))
 msg(color(e).'Kit \'powerup\' given!')
 <<<
 

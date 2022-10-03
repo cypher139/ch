@@ -6,7 +6,7 @@
 
 #default samples
 #Returns the distance between two blocks, or any other 3d points, for that matter
-proc(_3d_distance, @arr1, @arr2,
+proc _3d_distance(@arr1, @arr2) {
     return(
         floor(
             sqrt(
@@ -18,12 +18,12 @@ proc(_3d_distance, @arr1, @arr2,
             )
         )
     )
-)
+}
 
 #Given two blocks, iterates through all the blocks inside the cuboid, and calls the 
 #user defined function on them. The used defined procedure should accept 3 parameters,
 #the x, y, and z coordinates of the block.
-proc(_iterate_cuboid, @b1, @b2, @proc_name,
+proc _iterate_cuboid(@b1, @b2, @proc_name) {
     for(assign(@x, min(@b1[0], @b2[0])), lte(@x, max(@b1[0], @b2[0])), inc(@x),
         for(assign(@y, min(@b1[1], @b2[1])), lte(@y, max(@b1[1], @b2[1])), inc(@y),
             for(assign(@z, min(@b1[2], @b2[2])), lte(@z, max(@b1[2], @b2[2])), inc(@z),
@@ -31,19 +31,19 @@ proc(_iterate_cuboid, @b1, @b2, @proc_name,
             )
         )
     )
-)
+}
 
 include('LocalPackages/Utilities/getplayerID.ms')
 #include('LocalPackages/Utilities/DiscordChat.ms')
 
 
 #---------
-proc(_bc, @label, @str,
-    broadcast(concat(color(yellow), '[', color(gold), @label, color(yellow), '] ', color(white), @str))
-)
+proc _bc(@label, @str) {
+    broadcast(concat(color('yellow'), '[', color('gold'), @label, color('yellow'), '] ', color('white'), @str))
+}
 
 #is this a even number?
-    proc(_is_even_number, @number, return(mod(@number, 2) == 0))
+    proc _is_even_number(@number) {return(mod(@number, 2) == 0)}
 
 
 #-----------------
@@ -51,7 +51,7 @@ proc(_bc, @label, @str,
 
 
 
-proc(_msgAdmins, @msg, @consolemsg, @cmconcat, @hideplayer,
+proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg', assign(@consolemsg, @msg))
 	if(@cmconcat == 'yes', assign(@consolemsg, @msg.@consolemsg))
 	console(@consolemsg, false)
@@ -60,14 +60,14 @@ proc(_msgAdmins, @msg, @consolemsg, @cmconcat, @hideplayer,
 			tmsg(@p, @msg)
 		)
 	)
-)
+}
 
-proc(_capitalize, @string,
+proc _capitalize(@string) {
 	assign(@l1, to_upper(@string[0]))
 	assign(@length, length(@string) - 1)
 	assign(@newstring, @l1.@string[cslice(1, @length)])
 	return(@newstring)
-)
+}
 
 #supposed to work but doesnt:
 #proc(_capitalize, @string,
@@ -76,7 +76,7 @@ proc(_capitalize, @string,
 #	return(@newstring)
 #)
 
-proc(_getplayer, @name,
+proc _getplayer(@name) {
 	assign(@chars, length(@name))
 #returns the real player's name
 	assign(@isfound, false)
@@ -102,11 +102,11 @@ proc(_getplayer, @name,
 			return(pinfo(@name)[0])
 		)
 	)
-)
+}
 
-proc(_rainbow, @msg, @type,
+proc _rainbow(@msg, @type) {
 #fabulous light colors: 6abcdef
-	if(@msg == '', return(color(c).'You didn\'t say anything!!'))
+	if(@msg == '', return(color('c').'You didn\'t say anything!!'))
 	assign(@msg, strip_colors(@msg))
 	if(@type == '' || @type == null,
 		assign(@type, 'normal')
@@ -141,58 +141,12 @@ proc(_rainbow, @msg, @type,
 		)
 		return(@string)
 	)
-)
+}
 
 
 #-----
 
-#ichat +healthbar replacement
-
-proc(_healthbar, @player, @char,
-	if(@char == '' || @char == null, assign(@char, '|'))
-	assign(@phealth, pinfo(@player)[5])
-	assign(@1, 0)
-	@color = array()
-	for(assign(@i, 0), @i < 20, @i++,
-		@color[@i] = 2
-		#dead.
-		if(@phealth == 0,
-			assign(@color[@i], 8)
-		) 
-		#red: 1-4 hearts
-		if(gte(@phealth, 1) && lte(@phealth, 8),
-			assign(@color[@i], 4)
-		) 
-		#yellow: 5-7 hearts
-		if(gte(@phealth, 9) && lte(@phealth, 15),
-			assign(@color[@i], e)
-		) 
-		#green: 8-10 hearts
-		if(gte(@phealth, 16) && lte(@phealth, 20),
-			assign(@color[@i], 2)
-		) 
-		#missing health
-		if(gte(@i, @phealth),
-			assign(@color[@i], 8)
-		)
-	)
-
-	assign(@healthbar, color(@color[0]).@char.color(@color[2]).@char.color(@color[4]).@char.color(@color[6]).@char.color(@color[8]).@char.color(@color[10]).@char.color(@color[12]).@char.color(@color[14]).@char.color(@color[16]).@char.color(@color[18]).@char)
 
 
-	return(@healthbar)
-)
-	
-
-
-
-proc(_idcheck, @id, @id2, @option1,
-
-	if(reg_count('('.@id.')(:[0-9]*)?', @id2) > 0,
-	return(true),	
-	return(false)
-	)
-)
-	
 #Death messages
 #include('LocalPackages/deathmsg.ms')
