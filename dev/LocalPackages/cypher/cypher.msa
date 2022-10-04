@@ -1,0 +1,147 @@
+admin:/cypher [$action] [$option1] [$] = >>>
+
+assign(@player, _getplayerID(player()))
+assign(@you, player())
+msg(@you)
+msg(@player)
+
+
+
+switch(to_lower($action)) {
+
+case 'superjump':
+	assign(@player, player())
+	assign(@rand, rand(1, 10))
+	assign(@sjenabled, import('superjump.enabled.'.@player['id']))
+	if(@sjenabled != true) {
+		export('superjump.enabled.'.@player['id'], true)
+		msg(color(a).'You can now jump '.color(e).@rand.color(a).' times your normal jump height!')
+	} else {
+		export('superjump.enabled.'.@player['id'], false)
+		msg(color(e).'Your jumps are now normal again.')
+	}
+
+case 'wr':
+	assign(@choices, array(
+		jackpot: 3,
+		win: 25,
+		block: 35,
+		explode: 7,
+		nothing: 40,
+	))
+
+	assign(@array, associative_array())
+	for(assign(@i, 0), @i < 50, @i++){
+		# Here is the usage of the proc, we send it our choices array
+		assign(@rand, _weighted_random(@choices))
+		if(!array_index_exists(@array, @rand)){
+				assign(@array[@rand], 0)
+		}
+		assign(@array[@rand], @array[@rand] + 1)
+	}
+	msg(@array)
+	die()
+
+
+case 'moo':
+	msg(moo('moo'))
+	die()
+	
+case 'pl':
+	assign(@serverplugins, get_server_info(9)[..8])
+	msg(@serverplugins)
+	die()
+
+case 'effect':
+	assign(@player, player())
+	assign(@herea, ploc(@player))
+	msg(@herea)
+		make_effect(@herea, GHAST_SHRIEK)
+	for(assign(@i, 0), @i < 1100, inc(@i, 100),
+		set_timeout(@i, closure(
+			msg(@i)
+		))
+	)
+	die()
+
+
+case 'firework':
+	assign(@player, player())
+	assign(@herea, ploc(@player))
+	msg(@herea)
+		make_effect(@herea, GHAST_SHRIEK)
+	for(assign(@i, 0), @i < 1100, inc(@i, 100),
+		set_timeout(@i, closure(
+			msg(@i)
+		))
+	)
+	die()
+
+
+case 'plsearch':
+case 'pls':
+	assign(@serverplugins, get_server_info(9))
+	assign(@search, to_lower($option1))
+	if(array_contains_ic(@serverplugins, @search),
+		foreach(@serverplugins, @currentvar,
+			assign(@var, to_lower(@currentvar))
+			if(@var == @search,
+				assign(@return, @currentvar)
+			)
+		)
+	,
+		assign(@return, 'no match!!')
+	)
+	msg(@return)
+	die()
+
+
+case 'itemname':
+case 'in':
+	assign(@item, $option1)
+	assign(@realid, data_values(@item))
+	assign(@itemname, data_name(@realid))
+	if(reg_count('[0-9]:[0-9]', @item) == 1, msg(yay), msg(no))
+	msg('realid: '.@realid)
+	msg('itemname: '.@itemname)
+	msg('data_values: '.data_values(@item))
+	msg('data_name: '.data_name(@item))
+	die()
+
+
+case 'nc':
+	assign(@number, _number_commaize($option1))
+	msg(@number)
+	die()
+
+case 'slotstest':
+case 'st':
+assign(@name, Slots)
+				assign(@blocks, get_value(@name.'.play.blocks'))
+				if(@blocks == '' || @blocks == null,
+					assign(@blocks, array(1, 3, 4, 5, 12, 13, 20, 24, 30, 50, 54, 65, 85, 86, 101, 102))
+				)
+				assign(@reward, array_rand(@blocks, 1, false))
+				assign(@reward, array_implode(@reward))
+				assign(@rewardqty, rand(2, 16))
+			#	pgive_item(@player, @reward, @rewardqty)
+				msg(color(6).@reward.': '.@rewardqty)
+				#stats: record amount of blocks awarded, player and global. array(INDEX is ID: VALUE is how many)
+				#player stats:
+				assign(@playerblocks, get_value(@name.'.player.'.@player['id'].'.alltime.blocks'))
+				msg('old: '.@playerblocks)
+				if(@playerblocks == '' || @playerblocks == null, assign(@playerblocks, array()))
+				if(array_index_exists(@playerblocks, @reward) == false,
+					assign(@playerblocks[@reward], 0)
+				)
+				assign(@playerblocks[@reward], @rewardqty + @playerblocks[@reward])
+				store_value(@name.'.player.'.@player['id'].'.alltime.blocks', @playerblocks)
+				msg('new: '.@playerblocks)
+case '':
+case null:
+	msg('uh specify something?')
+
+default:
+	msg('uh specify something valid?')
+}
+<<<

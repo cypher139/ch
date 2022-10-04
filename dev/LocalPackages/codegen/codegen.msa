@@ -1,0 +1,36 @@
+codegen:/codegen [$length] [$type1] [$type2] [$] = >>>
+export('codegen.version', '2.1')
+proc _codegen_help() {
+	msg(color(6).'CodeGen!     Version: 2.1')
+	msg(color(7).'/codegen'.color(3).' - '.color('f').'Prints a randomly generated code. Defaults to a code 7 characters in length using uppercase, lowercase, and numbers.')
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color(3).'/codegen [length] [Character type 1] [Character type 2]')
+	msg(color(3).' - '.color('f').' You can specify how many characters the code should be, and specify the types of characters.')
+	msg(color(3).' - '.color('f').' Character types: lowercase ("lower"), uppercase ("upper"), number ("num"), symbol ("sym"), full (all alphanumeric characters) or all (full + symbols).')
+}
+
+if(is_numeric($length)) {
+	assign(@options, array(length: $length, type1: $type1, type2: $type2))
+} else {
+	assign(@options, array(length: '7', type1: $length, type2: $type1))
+}
+
+switch($length){
+
+case 'help':
+case '-help':
+case '?':
+case '/?':
+	_codegen_help()
+	die()
+
+default:
+	x_new_thread('CodeGenerator', closure(){
+		assign(@code, _codegen(@options['length'], @options['type1'], @options['type2']))
+		msg(color(7).'['.color(6).'CodeGen'.color(7).'] '.color(7).'Random generated code at '.simple_date('HH:mm:ss.S z').':')
+		msg(@code)
+	});
+}
+<<<
+
+#	x_new_thread('CodeGenerator', closure(){ });

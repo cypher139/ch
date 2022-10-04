@@ -1,0 +1,50 @@
+###----Aliases----###
+
+#
+#worldedit
+/1 = '//pos1'
+/2 = '//pos2'
+/s1 = '//hpos1'
+/s2 = '//hpos2'
+//a = /ascend
+//d = /descend
+/fw [$data=5] = /fixwater $data
+/fl [$data=5] = /fixlava $data
+/s $ = /searchitem $
+/nograss = /br sphere 0 15 \ /mask 31,37,38
+#
+#for users of essentials
+/top = /ascend
+/clearinventory = /clear -a
+/sm [$data=pig] [$qty=3] = /spawnmob $data $qty
+#
+#time
+/ws = /weather sunny
+/wr = /weather rain
+/td = /time day
+/ts = /time sunrise
+/tn = /time night
+#
+#misc
+/food = /kit foodnow
+/foodi = /give player() pork 3
+/lw = /listwarps
+#/adopt $data = /spawnmob wolf:tame $data player()
+/give $0 $1 $2 $3 = /give $0 $1.':'.$3 $2
+#
+#uhoh need a short command to help me now!
+/b [$data] = /butcher $data
+/g = /god
+/h [$player] = /heal $player
+/f [$data] = /butcher \ /heal \ /time day
+#
+#Kits
+/weapon = /kit weapon
+/red = /kit redstone
+/redi = /kit redstoneitems
+
+citizen:/ow = >>>
+call_alias(/b)
+call_alias(/td)
+call_alias(/h)
+<<<

@@ -1,0 +1,14 @@
+#LazyRoad
+/rs3g = /road Simple3
+/rs5g = /road Simple5
+/rgt = /road GlassTunnel
+/rs2 = /road Simple2torches
+/rs3 = /road Simple3torches
+/rs5 = /road Simple5torches
+/rs = /road stop
+/ru = /road undo
+/bsr5g = /bridge Simple5 Round3
+/bsr3g = /bridge Simple3 Round3
+/bsr5 = /bridge Simple5torches Round3
+/bsr3 = /bridge Simple3torches Round3
+/tg = /tunnel GlassTunnel

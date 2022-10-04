@@ -2,7 +2,7 @@
 #
 #   ReLoad: Fill chests or dispensers in one click!
 #   Administration: Manage settings for Reloader.
-#   version 1.0-wzr
+#   version 1.1-tmc
 #
 ######################################################
 
@@ -17,8 +17,8 @@ assign(@action, to_lower($action))
 assign(@option1, $option1)
 assign(@option2, $option2)
 assign(@option3, $option3)
-assign(@player, player())
-assign(@dev, get_value(@player.'.script.developer'))
+assign(@player, _reloader_getplayerID(player()))
+assign(@dev, get_value(@player[id].'.script.developer'))
  
 #action list help
 proc(_reloader_help,
@@ -34,16 +34,16 @@ proc(_reloader_help,
  
 switch(@action){
 
-case help:
-case -help:
-case ?:
+case 'help':
+case '-help':
+case '?':
 case '/?':
 	_reloader_help()
 
 
-case version:
-case build:
-case info:
+case 'version':
+case 'build':
+case 'info':
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@name.' Version: '.import('dispenserreloader.version'))
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(d).'Dependencies:')
 	#SKcompat - worldedit
@@ -65,19 +65,19 @@ case info:
 	#	msg(upupdowndownleftrightleftrightbastart(abc))
 
 
-case stats:
-case statistics:
-case -stats:
+case 'stats':
+case 'statistics':
+case '-stats':
 	if(@option1 == 'player',
 	        if(@option2 == '' || @option2 == null,
-	                assign(@option2, @player)
+	                assign(@option2, @player[name])
 	                die(color(c).'['.color(7).@name.color(c).'] '.color(7).'You need to specify a player!')
 	        )
-	        assign(@player, @option2)
+	        assign(@player, _reloader_getplayerID(@option2))
  
-	        msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player)  
-	        assign(@atr, get_value(@name.'.player.'.@player.'.stats.alltime.runs.area'))
-	        assign(@ttr, get_value(@name.'.player.'.@player.'.stats.alltime.runs.tool'))
+	        msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player[display])  
+	        assign(@atr, get_value(@name.'.player.'.@player[id].'.stats.alltime.runs.area'))
+	        assign(@ttr, get_value(@name.'.player.'.@player[id].'.stats.alltime.runs.tool'))
 	        #stop with 0/null stuff if the player hasnt done anything.
 	        if(@atr == '' || @atr == null,
 	                if(@ttr == '' || @ttr == null,
@@ -88,26 +88,26 @@ case -stats:
 	        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
  
 	        msg(color(7).'All time '.@name.' runs:')
-	        assign(@atr, get_value(@name.'.player.'.@player.'.stats.alltime.runs.area'))
+	        assign(@atr, get_value(@name.'.player.'.@player[id].'.stats.alltime.runs.area'))
 	        if(@atr == '' || @atr == null, assign(@atr, 0))
 	        msg(color(6).'/reload area: '.color(b)._number_commaize(@atr).' runs')
-	        assign(@ttr, get_value(@name.'.player.'.@player.'.stats.alltime.runs.tool'))
+	        assign(@ttr, get_value(@name.'.player.'.@player[id].'.stats.alltime.runs.tool'))
 	        if(@ttr == '' || @ttr == null, assign(@ttr, 0))
 	        msg(color(6).'/reload (tool): '.color(b)._number_commaize(@ttr).' runs')
 	        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
  
-	        assign(@fb, get_value(@name.'.player.'.@player.'.stats.alltime.filled.blocks'))
+	        assign(@fb, get_value(@name.'.player.'.@player[id].'.stats.alltime.filled.blocks'))
 	        msg(color(7).'Total blocks filled: '.color(b)._number_commaize(@fb))
 	        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
  
-	        assign(@lr, get_value(@name.'.player.'.@player.'.stats.last.run'))
+	        assign(@lr, get_value(@name.'.player.'.@player[id].'.stats.last.run'))
 	        msg(color(7).'Last run: '.color(6).@lr[action].'.')
 	        if(@lr[blocks] == 1, assign(@p, block) assign(@p2, was), assign(@p, blocks) assign(@p2, were))
 	        msg(color(a)._number_commaize(@lr[blocks]).' '.@p.color(7).' '.@p2.' filled, using '.color(b)._number_commaize(@lr[filledqty]).' '.color(3).data_name(@lr[item]).'.')
 
 	        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
  
-	        assign(@playeritems, get_value(@name.'.player.'.@player.'.stats.alltime.items'))
+	        assign(@playeritems, get_value(@name.'.player.'.@player[id].'.stats.alltime.items'))
 	        try(
 	                msg(color(9).'Total items used to fill blocks:')
 	                assign(@tiu, 0)
@@ -174,13 +174,13 @@ case -stats:
 
 
 
-case default:
-case setdefault:
-case -default:
+case 'default':
+case 'setdefault':
+case '-default':
 	switch(@option1){
 
 
-	case view:
+	case 'view':
 	        assign(@defaultitem, get_value(@name.'.default.item.type'))
 	        assign(@defaultitemqty, get_value(@name.'.default.item.qty'))
 	        assign(@defaultitemfuel, get_value(@name.'.default.item.type.fuel'))
@@ -197,11 +197,11 @@ case -default:
 	        die()
 		
  
-	case item:
+	case 'item':
 		switch(@option2){
 	        
-		case type:
-		case fuel:
+		case 'type':
+		case 'fuel':
 	        	assign(@defaultitem, get_value(@name.'.default.item.type'))
 	        	if(@defaultitem == '' || @defaultitem == null, assign(@defaultitem, 262))
 			if(@option2 == 'fuel', 
@@ -226,11 +226,11 @@ case -default:
 	                        assign(@item, @realid)
 	                )
 	                if(@itemname == 'AIR' || @item == '0',
-	                        _reloader_msgAdmins(color(c).'['.color(6).@name.color(c).'] '.color(c).@player.' tried to set the default item to air in '.@name.'! ')
+	                        _reloader_msgAdmins(color(c).'['.color(6).@name.color(c).'] '.color(c).@player[name].' tried to set the default item to air in '.@name.'! ')
 	                        die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You cannot use air!')
 	                )
 	                if(@itemname == null || @itemname == '',
-	                        _reloader_msgAdmins(color(c).'['.color(6).@name.color(c).'] '.color(c).@player.' tried to set the default item to a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', ' Note: If you are running a modded server, you will need to notify CommandHelper of the data names for blocks/items that mods add. Ask on CommandHelper\'s IRC channel for help in doing this.', true)
+	                        _reloader_msgAdmins(color(c).'['.color(6).@name.color(c).'] '.color(c).@player[name].' tried to set the default item to a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', ' Note: If you are running a modded server, you will need to notify CommandHelper of the data names for blocks/items that mods add. Ask on CommandHelper\'s IRC channel for help in doing this.', true)
 	                        die(color(c).'['.color(6).@name.color(c).'] '.color(7).'That item isn\'t supported!')
 	                )
 			if(@fuel == true,
@@ -240,8 +240,8 @@ case -default:
 			)
 	                msg(color(a).'['.color(6).@name.color(a).'] '.color(3).'The default item type was: '.color(7).@defaultitem.color(3).', and is now: '.color(a).@item.' ('.@itemname.')')
 
-		case qty:
-		case quantity:
+		case 'qty':
+		case 'quantity':
 	        	assign(@defaultitemqty, get_value(@name.'.default.item.qty'))
 	        	if(@defaultitemqty == '' || @defaultitemqty == null, assign(@defaultitemqty, 64))
 	                if(@option3 == '' || @option3 == null,

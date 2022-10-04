@@ -1,0 +1,147 @@
+#Edit signs
+test:/sign [$action] [$] = >>>
+#version 1.1-pid
+assign(@name, 'Sign')
+assign(@action, $action)
+assign(@player, _getplayerID(player()))
+assign(@t1, $)
+assign(@text, reg_split('\\|', @t1))
+
+proc _sign_help() {
+	msg(color(6).'Sign help:')
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color('a').'/sign <action> [option1] [option2]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/sign read'.color(4).' - '.color('f').'When looking at a sign, this tells you what the sign says.')
+	msg(color(7).'/sign load'.color(4).' - '.color('f').'Loads your saved sign and reads it to you.')
+	msg(color(7).'/sign save'.color(4).' - '.color('f').'When looking at a sign, saves the sign text for use later.')
+	msg(color(7).'/sign savetext <line1|line2|line3|line4>'.color(4).' - '.color('f').'Saves the text typed for use later. Separate each line with a pipe (aka | ).')
+	msg(color(7).'/sign set'.color(4).' - '.color('f').'Sets the sign text of the sign you are looking at to the saved text set with /sign save')
+	msg(color(7).'/sign undo'.color(4).' - '.color('f').'Undoes the previous /sign set.')
+	msg(color(7).'/sign redo'.color(4).' - '.color('f').'Sets the saved text again on the last set sign.')
+}
+
+
+if(@player['name'] == '~console') {
+	assign(@here, array(x: '0', y: '0', z: '0', world: 'world'))
+} else {
+	assign(@here, pcursor(@player['player']))
+}
+
+switch(@action){
+	case '':
+	case null:
+	msg(color('red').'['.color('gold').@name.color('red').'] '.color('red').'No action specified.')
+	_sign_help()
+	die()
+
+	case 'read':
+		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).@here)
+		if(is_sign_at(@here) == 'true') {
+			assign(@signtext, get_sign_text(@here))
+			assign(@read, reg_split(', ', @signtext))
+			msg(color(7).'This sign says:')
+			msg(@read[0])
+			msg(@read[1])
+			msg(@read[2])
+			msg(@read[3])
+			} else {
+			msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Look at a sign!')
+		}
+	case 'load':
+	case 'l':
+		assign(@read, get_value('sign.player.'.@player['id'].'.savedsign'))
+		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign! Your saved sign text is:')
+		msg(@read)
+	case 'save':
+	case 's':
+		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).@here)
+		if(is_sign_at(@here) == 'true') {
+			assign(@signtext, get_sign_text(@here))
+			assign(@read, reg_split(', ', @signtext))
+			store_value('sign.player.'.@player['id'].'.savedsign', @signtext)
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Saved sign! This sign says:')
+			msg(@read[0])
+			msg(@read[1])
+			msg(@read[2])
+			msg(@read[3])
+			} else {
+			msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Look at a sign!')
+		}
+	case 'savetext':
+	case 't':
+		store_value('sign.player.'.@player['id'].'.savedsign', @text)
+		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Saved sign! The text will show up like this:')
+		try(msg(@text[0]))
+		try(msg(@text[1]))
+		try(msg(@text[2]))
+		try(msg(@text[3]))
+	case 'set':
+		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).@here)
+		if(is_sign_at(@here) == 'true') {
+			assign(@oldsigntext, get_sign_text(@here))
+			assign(@oldread, reg_split(', ', @oldsigntext))
+			store_value('sign.player.'.@player['id'].'.savedsign.undo', @oldsigntext)
+			store_value('sign.player.'.@player['id'].'.savedsign.undo.loc', @here)	
+			msg(@oldread)
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'This sign used to say:')
+			if(@oldread[0] == ', , , ', assign(@oldread[0], color(7).'This sign didnt say anything!!'),
+				try(msg(@oldread[0]))
+				try(msg(@oldread[1]))
+				try(msg(@oldread[2]))
+				try(msg(@oldread[3]))		
+			)
+			assign(@savedsign, get_value('sign.player.'.@player['id'].'.savedsign'))
+			assign(@newread, reg_split(', ', @savedsign))
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign!')
+			set_sign_text(@here, @savedsign)
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Saved sign! This sign now says:')
+			try(msg(@newread[0]))
+			try(msg(@newread[1]))
+			try(msg(@newread[2]))
+			try(msg(@newread[3]))
+			} else {
+			msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Look at a sign!')
+		}
+	case 'undo':
+	case 'z':
+	case 'u':
+		assign(@here, get_value('sign.player.'.@player['id'].'.savedsign.undo.loc')) 
+		if(is_sign_at(@here) == 'true') {
+			assign(@savedsign, get_value('sign.player.'.@player['id'].'.savedsign.undo'))
+			assign(@newread, reg_split(', ', @savedsign))
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign!')
+			set_sign_text(@here, @savedsign)
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Undid sign at '.@here.' ! This sign now says:')
+			try(msg(@newread[0]))
+			try(msg(@newread[1]))
+			try(msg(@newread[2]))
+			try(msg(@newread[3]))
+			} else {
+			msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Look at a sign!')
+		}
+	case 'redo':
+	case 'y':
+	case 'r':
+		assign(@here, get_value('sign.player.'.@player['id'].'.savedsign.undo.loc')) 
+		if(is_sign_at(@here) == 'true') {
+			assign(@savedsign, get_value('sign.player.'.@player['id'].'.savedsign'))
+			assign(@newread, reg_split(', ', @savedsign))
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign!')
+			set_sign_text(@here, @savedsign)
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Redid sign at '.@here.' ! This sign now says:')
+			try(msg(@newread[0]))
+			try(msg(@newread[1]))
+			try(msg(@newread[2]))
+			try(msg(@newread[3]))
+			} else {
+			msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Look at a sign!')
+		}
+	case 'give':
+		pgive_item(@player['name'], array(item: 'sign'))
+	default:
+		msg(color('red').'['.color('gold').@name.color('red').'] '.color('red').'Oops! That action isn\'t supported!')
+		_sign_help() 
+		die()
+}
+<<<

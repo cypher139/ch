@@ -1,0 +1,140 @@
+######################################################
+#
+#   Information: Adventure rules.
+#   These scripts make it easier for you to remember what the rules and challenges of adventure maps are.
+#
+######################################################
+
+#skyblock:
+world:/skyblock [$var1] [$player] = >>>
+assign(@var1, $var1)
+assign(@player, $player)
+
+proc(_skyblock_rules,
+        msg(
+            color(6).'Skyblock rules:
+            'color(c).'Do NOT purposely jump off the island to regenerate your health.
+            'color(c).'Do NOT make a bridge to the mainland.
+            'color(c).'NO Mods, Hacks, Flying, etc.
+            'color(a).'Play on at least easy difficulty.
+            'color(a).'Post pictures of your achievements and progress!
+            'color(a).'Have FUN!'
+        )
+    die()
+)
+
+
+
+proc(_skyblock_challenges,
+        msg(
+            color(6).'Skyblock challenges -version 1-:
+            'color(b).'1- Build a Cobble Stone generator.
+            'color(c).'2- Build a house.
+            'color(a).'3- Expand the island.
+            'color(b).'4- Make a melon farm.
+            'color(c).'5- Make a pumpkin farm.
+            'color(a).'6- Make a reed farm.
+            'color(b).'7- Make a wheat farm.
+            'color(b).'8- Make a giant red mushroom.
+            'color(c).'9- Build a bed.
+            'color(a).'10- Make 40 stone bricks.
+            'color(b).'11- Make at least 20 torches.
+            'color(c).'12- Make an infinite water source.
+            'color(a).'13- Build a furnace.
+            'color(b).'14- Make a small lake.
+            'color(c).'15- Make a platform 24 blocks away from the island, for mobs to spawn.
+            'color(a).'16- Make 10 cactus green dye.
+            'color(b).'17- Make 10 mushroom stew.
+            'color(c).'18- Make 10 Jack 'o' lanterns.
+            'color(a).'19- Build 10 bookcases.
+            'color(b).'20- Make 10 bread.
+            'color(c).'21- Collect 10 Ender-pearls.
+            'color(a).'22- Cook 10 fish.
+            'color(b).'23- Craft 10 Black Wool.
+            'color(c).'24- Craft 10 Gray Wool.
+            'color(a).'25- Craft 10 Light Gray Wool.
+            'color(b).'26- Craft 10 Lime Green Wool.
+            'color(c).'27- Craft 10 Red Wool.
+            'color(a).'28- Craft 10 Yellow Wool.
+            'color(b).'29- Craft 10 Pink Wool.
+            'color(c).'30- Craft 10 Green Wool.
+            'color(a).'31- Craft 10 Orange Wool.
+            'color(b).'32- Craft 10 Snow Golems.
+            'color(c).'33- Craft 20 Paintings.
+            'color(6).'Open chat to seee all challenges!'
+        )
+    die()
+)
+
+
+
+
+proc(_skyblock_challenges_2,
+        msg(
+            color(6).'Skyblock challenges:
+            'color(b).'1- Build a Cobble Stone generator.
+            'color(c).'2- Build a house.
+            'color(a).'3- Expand the island.
+            'color(b).'4- Make a melon farm.
+            'color(c).'5- Make a pumpkin farm.
+            'color(a).'6- Make a reed/sugarcane farm.
+            'color(b).'7- Make a wheat farm.
+            'color(b).'8- Make a giant red mushroom.
+            'color(c).'9- Craft a bed.
+            'color(a).'10- Make 64 stone bricks.
+            'color(b).'11- Make 20 torches.
+            'color(c).'12- Make an infinite water source.
+            'color(a).'13- Craft a furnace.
+            'color(b).'14- Make a small lake.
+            'color(c).'15- Build a platform 24 blocks away from the island, for mobs to spawn.
+            'color(a).'16- Make 10 cactus green dye.
+            'color(b).'17- Make 10 mushroom stew.
+            'color(c).'18- Craft 10 Jack 'o' lanterns.
+            'color(a).'19- Craft 10 bookcases.
+            'color(b).'20- Make 10 bread.
+            'color(c).'21- Collect 10 Ender-pearls.
+            'color(a).'22- Cook 10 fish.
+            'color(b).'23- Craft 10 Black Wool.
+            'color(c).'24- Craft 10 Gray Wool.
+            'color(a).'25- Craft 10 Light Gray Wool.
+            'color(b).'26- Craft 10 Lime Green Wool.
+            'color(c).'27- Craft 10 Red Wool.
+            'color(a).'28- Craft 10 Yellow Wool.
+            'color(b).'29- Craft 10 Pink Wool.
+            'color(c).'30- Craft 10 Green Wool.
+            'color(a).'31- Craft 10 Orange Wool.
+            'color(b).'32- Craft 10 Snow Golems.
+            'color(c).'33- Craft 20 Paintings.
+            'color(a).'34- Build and light a nether portal.
+            'color(b).'35- Craft 5 Gold Ingots.
+            'color(c).'36- Craft 16 Glass Panes.
+            'color(a).'37- Collect 50 birch logs.
+            'color(b).'38- Collect 64 arrows and craft a bow.
+            'color(c).'39- Craft 10 stone buttons.
+            'color(a).'40- Craft 30 stone slabs.
+            'color(b).'41- Craft 10 signs.
+            'color(c).'42- Craft 20 ladders.
+            'color(a).'43- Craft 20 fences.
+            'color(b).'44- Craft 20 fence gates.
+            'color(c).'45- Craft 10 levers.
+            'color(a).'46- Craft 10 trapdoors.
+            'color(b).'47- Craft 10 stone pressure plates.
+            'color(c).'48- Craft 10 wooden pressure plates.
+            'color(a).'49- Collect 64 bonemeal.
+            'color(b).'50- Craft 20 cobblestone stairs.
+            'color(6).'Open chat to seee all challenges!'
+        )
+    die()
+)
+
+if(@var1 == 'rules', _skyblock_rules())
+if(@var1 == 'challenges', _skyblock_challenges_2())
+if(@var1 == 'challenges1', _skyblock_challenges())
+if(@var1 == 'go',
+    run(/mvtp skyblock)
+    die()
+)
+if(@var1 == '', msg(color(7).'Type /skyblock rules for rules, /skyblock challenges for challenge list, and /skyblock go to go to skyblock map!'))
+<<<
+
+

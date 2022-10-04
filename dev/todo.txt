@@ -1,7 +1,9 @@
-sanitize player name:
 
-proc(get_player_name
-if first cahracter  == ., remove dot from array, return rest
+Actually to be most accurate, get_block(location_shift(ploc(), 'up', 0.99)) or something to catch carpets and slabs too
+
+playerinfo:
+we selection, wg region, player,nick, uuid
+advanced: hostname
 
 also fix get nicknames, reimplement
 

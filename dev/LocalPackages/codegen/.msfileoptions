@@ -1,0 +1,7 @@
+<!
+	strict: off;
+	author: CypherNova139;
+	created: 1/5/2016;
+	description: Create randomly generated codes, useful for secondary authentications;
+	suppressWarnings: UseBareStrings;
+>

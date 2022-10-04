@@ -1,0 +1,155 @@
+#Edit signs
+test:/sign [$action] [$] = >>>
+assign(@name, 'Sign')
+assign(@action, $action)
+assign(@player, player())
+assign(@t1, $)
+assign(@text, reg_split('\\|', @t1))
+
+#action list help
+#this appears on /sign, or when unsupported action variable is passed
+proc(_sign_help,
+	msg(color(6).'Sign help:')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(a).'/sign <action> [option1] [option2]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/sign read'.color(4).' - '.color(f).'When looking at a sign, this tells you what the sign says.')
+	msg(color(7).'/sign load'.color(4).' - '.color(f).'Loads your saved sign and reads it to you.')
+	msg(color(7).'/sign save'.color(4).' - '.color(f).'When looking at a sign, saves the sign text for use later.')
+	msg(color(7).'/sign savetext <line1|line2|line3|line4>'.color(4).' - '.color(f).'Saves the text typed for use later. Separate each line with a pipe (aka | ).')
+	msg(color(7).'/sign set'.color(4).' - '.color(f).'Sets the sign text of the sign you are looking at to the saved text set with /sign save')
+	msg(color(7).'/sign undo'.color(4).' - '.color(f).'Undoes the previous /sign set.')
+	msg(color(7).'/sign redo'.color(4).' - '.color(f).'Sets the saved text again on the last set sign.')
+)
+
+
+#argument error checks
+#list of supported actions
+assign(@actionl[0], help)
+assign(@actionl[1], read)
+assign(@actionl[2], load)
+assign(@actionl[3], savetext)
+assign(@actionl[4], save)
+assign(@actionl[5], set)
+assign(@actionl[6], undo)
+assign(@actionl[7], redo)
+#you just called /sign, help msg time.
+if(@action == '', 
+	msg(color(red).'['.color(gold).@name.color(red).'] '.color(red).'No action specified.')
+	_sign_help()
+	die()
+)
+#you didnt give a correct action! help msg time.
+if(array_contains(@actionl, @action), null, msg(color(red).'['.color(gold).@name.color(red).'] '.color(red).'Oops! That action isnt supported!') _sign_help() die())
+
+
+#dynamic vars, dont edit
+assign(@here, pcursor(@player))
+
+
+
+
+if(@action == 'read',
+	msg(@here)
+	if(is_sign_at(@here) == 'true',
+		assign(@signtext, get_sign_text(@here))
+		assign(@read, reg_split(', ', @signtext))
+		msg(color(7).'This sign says:')
+		msg(@read[0])
+		msg(@read[1])
+		msg(@read[2])
+		msg(@read[3]),
+		msg(color(c).'['.color(6).@name.color(c).'] '.color(c).'Look at a sign!')
+	)
+)
+
+if(@action == 'load',
+	assign(@read, get_value(@player.'.savedsign'))
+	msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Loaded sign! Your saved sign text is:')
+	msg(@read)
+)
+
+if(@action == 'save',
+	msg(@here)
+	if(is_sign_at(@here) == 'true',
+		assign(@signtext, get_sign_text(@here))
+		assign(@read, reg_split(', ', @signtext))
+		store_value(@player.'.savedsign', @signtext)
+		msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Saved sign! This sign says:')
+		msg(@read[0])
+		msg(@read[1])
+		msg(@read[2])
+		msg(@read[3]),
+		msg(color(c).'['.color(6).@name.color(c).'] '.color(c).'Look at a sign!')
+	)
+)
+
+if(@action == 'savetext',
+	store_value(@player.'.savedsign', @text)
+	msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Saved sign! The text will show up like this:')
+	try(msg(@text[0]))
+	try(msg(@text[1]))
+	try(msg(@text[2]))
+	try(msg(@text[3]))
+)
+
+
+if(@action == 'set',
+	msg(@here)
+	if(is_sign_at(@here) == 'true',
+		assign(@oldsigntext, get_sign_text(@here))
+		assign(@oldread, reg_split(', ', @oldsigntext))
+		store_value(@player.'.undosavedsign', @oldsigntext)
+		store_value(@player.'.undosavedsignloc', @here)	
+		msg(@oldread)
+		msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'This sign used to say:')
+		if(@oldread[0] == ', , , ', assign(@oldread[0], color(7).'This sign didnt say anything!!'),
+			try(msg(@oldread[0]))
+			try(msg(@oldread[1]))
+			try(msg(@oldread[2]))
+			try(msg(@oldread[3]))		
+		)
+		assign(@savedsign, get_value(@player.'.savedsign'))
+		assign(@newread, reg_split(', ', @savedsign))
+		msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Loaded sign!')
+		set_sign_text(@here, @savedsign)
+		msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Saved sign! This sign now says:')
+		try(msg(@newread[0]))
+		try(msg(@newread[1]))
+		try(msg(@newread[2]))
+		try(msg(@newread[3])),
+		msg(color(c).'['.color(6).@name.color(c).'] '.color(c).'Look at a sign!')
+	)
+)
+if(@action == 'undo',
+	assign(@here, get_value(@player.'.undosavedsignloc')) 
+	if(is_sign_at(@here) == 'true',
+		assign(@savedsign, get_value(@player.'.undosavedsign'))
+		assign(@newread, reg_split(', ', @savedsign))
+		msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Loaded sign!')
+		set_sign_text(@here, @savedsign)
+		msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Undid sign at '.@here.' ! This sign now says:')
+		try(msg(@newread[0]))
+		try(msg(@newread[1]))
+		try(msg(@newread[2]))
+		try(msg(@newread[3])),
+		msg(color(c).'['.color(6).@name.color(c).'] '.color(c).'Look at a sign!')
+	)
+)
+
+if(@action == 'redo',
+	assign(@here, get_value(@player.'.undosavedsignloc')) 
+	if(is_sign_at(@here) == 'true',
+		assign(@savedsign, get_value(@player.'.savedsign'))
+		assign(@newread, reg_split(', ', @savedsign))
+		msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Loaded sign!')
+		set_sign_text(@here, @savedsign)
+		msg(color(e).'['.color(6).@name.color(e).'] '.color(7).'Redid sign at '.@here.' ! This sign now says:')
+		try(msg(@newread[0]))
+		try(msg(@newread[1]))
+		try(msg(@newread[2]))
+		try(msg(@newread[3])),
+		msg(color(c).'['.color(6).@name.color(c).'] '.color(c).'Look at a sign!')
+	)
+)
+<<<

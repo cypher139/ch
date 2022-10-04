@@ -2,14 +2,14 @@
 #
 #   ReLoad: Fill chests or dispensers, or furnaces in one click!
 #   includes for Area mode, to be included if the extension SKCompat is installed.
-#   version 1.0-tza
+#   version 1.1-tmc
 #
 ######################################################
-proc(_reloader_iterate_cuboid, @proc_name, @world, @item, @player, @qty, @fuel, @verbose,
+proc(_reloader_iterate_cuboid, @proc_name, @world, @item, @playergiven, @qty, @fuel, @verbose,
 	assign(@name, import('dispenserreloader.name'))
-
-	assign(@pos1, sk_pos1(@player))
-	assign(@pos2, sk_pos2(@player))
+	assign(@player, _reloader_getplayerID(@playergiven))
+	assign(@pos1, sk_pos1(@player[name]))
+	assign(@pos2, sk_pos2(@player[name]))
         if(@pos1 == null || @pos2 == null,
                 return(array(fail: true, failmsg: color(c).'['.color(6).@name.color(c).'] '.color(7).'What area? You need to make a selection with WorldEdit first!'))
         )
@@ -51,7 +51,7 @@ proc(_reloader_iterate_cuboid, @proc_name, @world, @item, @player, @qty, @fuel, 
                                         if(@areamode != @filltype, continue())
                                 )      
                                 #Run the fill operation.
-                                assign(@return, call_proc(@proc_name, @x, @y, @z, @world, @item, @player, @qty, @fuel, @verbose))
+                                assign(@return, call_proc(@proc_name, @x, @y, @z, @world, @item, @player[name], @qty, @fuel, @verbose))
                                 #stats: count blocks filled and items used.
                                 assign(@ft, to_lower(@filltype))
                                 #Report how many of each block type was filled, but only if it was filled!
@@ -65,7 +65,7 @@ proc(_reloader_iterate_cuboid, @proc_name, @world, @item, @player, @qty, @fuel, 
         )
 #record stats, only if you actually filled a block.
         if(@nq != 0,
-                _reloader_record_stats(@player, area, @n, @nq, @item, @qty)
+                _reloader_record_stats(@player[name], area, @n, @nq, @item, @qty)
         )
  
 #return

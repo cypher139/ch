@@ -1,0 +1,70 @@
+#ShiftMode (http://dev.bukkit.org/server-mods/shiftmode/)
+shiftmode:/mode [$] = >>>
+assign(@player, _getplayerID(player()))
+#argument check
+if($ != '') {
+	msg(color('red').'['.color('gold').'gameMode'.color('red').'] '.color('c').'You don\'t need to specify the mode you want, just type '.color(7).'/mode')
+}
+
+#/mode proc
+
+proc _set_S(@user, @msg, @name) {
+    set_pmode(@user, 'SURVIVAL')	
+    if(@msg == '', null,
+		if(@name == '', assign(@name, 'gameMode'))
+		tmsg(@user, color('yellow').'['.color('gold').@name.color('yellow').'] '.color('white').'Changed to '.color('c').'Survival'.color('white').' gamemode')
+	)
+}
+
+proc _set_C(@user, @msg, @name) { 
+    set_pmode(@user, 'CREATIVE')
+    if(@msg == '', null,
+		if(@name == '', assign(@name, 'gameMode'))
+		tmsg(@user, color('yellow').'['.color('gold').@name.color('yellow').'] '.color('white').'Changed to '.color('b').'Creative'.color('white').' gamemode')
+	)
+}
+
+if(pmode() == 'CREATIVE') {
+	_set_S(@player['name'], 'y')
+	die()
+}
+if(pmode() == 'SURVIVAL') {
+	_set_C(@player['name'], 'y')
+	die()
+}
+if(pmode() == 'SPECTATOR') {
+	_set_S(@player['name'], 'y')
+	die()
+}
+if(pmode() == 'ADVENTURE') {
+	_set_S(@player['name'], 'y')
+	die()
+}
+<<<
+
+#
+##-------Scripts: Client mod compatibility-------##
+#
+
+#TooManyItems: Creative mode setting
+*:/gamemode [$] = >>>
+#name of script
+assign(@name, 'gameMode')
+
+if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
+	call_alias(/mode)
+	} else {
+	die(color('c').'['.color(6).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+}
+<<<
+
+*:/gm [$] = >>>
+#name of script
+assign(@name, 'gameMode')
+
+if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
+	call_alias(/mode)
+	} else {
+	die(color('c').'['.color(6).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+}
+<<<
