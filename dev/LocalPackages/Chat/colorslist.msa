@@ -5,7 +5,7 @@ case '-a':
 case 'a':
 assign(@color,
       concat(
-              color(f),'Colors: '
+              color('f'),'Colors: '
               color(0),'&0'
               color(1),'&1'
               color(2),'&2'
@@ -16,29 +16,29 @@ assign(@color,
               color(7),'&7'
               color(8),'&8'
               color(9),'&9'
-              color(a),'&a'
-              color(b),'&b'
-              color(c),'&c'
-              color(d),'&d'
-              color(e),'&e'
-              color(f),'&f'
-              color(k),'&k'
-              color(r),
-              color(l),'&l'
-              color(r),
-              color(m),'&m'
-              color(r),
-              color(n),'&n'
-              color(r),
-              color(o),'&o'
-              color(r),
-              color(r),'&r'
+              color('a'),'&a'
+              color('b'),'&b'
+              color('c'),'&c'
+              color('d'),'&d'
+              color('e'),'&e'
+              color('f'),'&f'
+              color('k'),'&k'
+              color('r'),
+              color('l'),'&l'
+              color('r'),
+              color('m'),'&m'
+              color('r'),
+              color('n'),'&n'
+              color('r'),
+              color('o'),'&o'
+              color('r'),
+              color('r'),'&r'
       )
 )
 default:
 assign(@color,
       concat(
-              color(f),'Colors: '
+              color('f'),'Colors: '
               color(0),'&0'
               color(1),'&1'
               color(2),'&2'
@@ -49,12 +49,12 @@ assign(@color,
               color(7),'&7'
               color(8),'&8'
               color(9),'&9'
-              color(a),'&a'
-              color(b),'&b'
-              color(c),'&c'
-              color(d),'&d'
-              color(e),'&e'
-              color(f),'&f'
+              color('a'),'&a'
+              color('b'),'&b'
+              color('c'),'&c'
+              color('d'),'&d'
+              color('e'),'&e'
+              color('f'),'&f'
       )
 )
 

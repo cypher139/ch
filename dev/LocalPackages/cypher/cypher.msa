@@ -1,4 +1,4 @@
-admin:/cypher [$action] [$option1] = >>>
+admin:/cypher [$action] [$option1] [$] = >>>
 
 assign(@player, _getplayerID(player()))
 assign(@you, player())
@@ -8,6 +8,18 @@ msg(@player)
 
 
 switch(to_lower($action)) {
+
+case 'superjump':
+	assign(@player, player())
+	assign(@rand, rand(1, 10))
+	assign(@sjenabled, import('superjump.enabled.'.@player['id']))
+	if(@sjenabled != true) {
+		export('superjump.enabled.'.@player['id'], true)
+		msg(color(a).'You can now jump '.color(e).@rand.color(a).' times your normal jump height!')
+	} else {
+		export('superjump.enabled.'.@player['id'], false)
+		msg(color(e).'Your jumps are now normal again.')
+	}
 
 case 'wr':
 	assign(@choices, array(
@@ -116,14 +128,14 @@ assign(@name, Slots)
 				msg(color(6).@reward.': '.@rewardqty)
 				#stats: record amount of blocks awarded, player and global. array(INDEX is ID: VALUE is how many)
 				#player stats:
-				assign(@playerblocks, get_value(@name.'.player.'.@player[id].'.alltime.blocks'))
+				assign(@playerblocks, get_value(@name.'.player.'.@player['id'].'.alltime.blocks'))
 				msg('old: '.@playerblocks)
 				if(@playerblocks == '' || @playerblocks == null, assign(@playerblocks, array()))
 				if(array_index_exists(@playerblocks, @reward) == false,
 					assign(@playerblocks[@reward], 0)
 				)
 				assign(@playerblocks[@reward], @rewardqty + @playerblocks[@reward])
-				store_value(@name.'.player.'.@player[id].'.alltime.blocks', @playerblocks)
+				store_value(@name.'.player.'.@player['id'].'.alltime.blocks', @playerblocks)
 				msg('new: '.@playerblocks)
 case '':
 case null:

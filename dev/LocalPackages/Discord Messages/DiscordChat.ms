@@ -25,18 +25,18 @@ proc _send_discord_message(@message, @from, @channel) {
 bind('player_chat', array(id: 'message.to.Discord'), null, @chat) {
 
 assign(@channel, 'botspam')
-assign(@sendmsg, @chat[message])
-#dev tmsg(@chat[player], reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat[message]))
+assign(@sendmsg, @chat['message'])
+#dev tmsg(@chat['player'], reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']))
 #channel override
-	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat[message]) == 1) { 
-		assign(@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat[message]))
+	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']) == 1) { 
+		assign(@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['']))
 		#returns 'channel' in '#channel message text'
-		assign(@channel, reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat[message])[1])[1])
-#dev		tmsg(@chat[player], @sendmsg.' channel name:'.@channel)
+		assign(@channel, reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1])
+#dev		tmsg(@chat['player'], @sendmsg.' channel name:'.@channel)
 		_send_discord_message(@sendmsg[1], player(), @channel)
 		modify_event('message', @sendmsg[1])
 	} else {
-	_send_discord_message(@chat[message], player(), @channel)
+	_send_discord_message(@chat['message'], player(), @channel)
 	}
 }
 
@@ -46,24 +46,24 @@ bind('discord_message_received', array(id: 'message.from.Discord'), null, @disco
 
 	assign(@allowedChannels, array('general', 'Minecraft', 'other'))
 
-	if(array_contains(@allowedChannels, @discord[channel]) == true, 
-	assign(@sendmsg, '['.@discord[username].'] '.@discord[message])
+	if(array_contains(@allowedChannels, @discord['channel']) == true, 
+	assign(@sendmsg, '['.@discord['username'].'] '.@discord['message'])
 		broadcast(@sendmsg, all_players())
 	)
 }
 
 
-bind(player_quit, array(id: 'Discord.message.quit'), null, @quit,
+bind('player_quit', array(id: 'Discord.message.quit'), null, @quit) {
 	assign(@playerID, _getplayerID(player()))
-	_send_discord_message('- part: '.@playerID[name], 'none')
-)
+	_send_discord_message('- part: '.@playerID['name'], 'none')
+}
 
-bind(player_death, array(id: 'Discord.message.death'), null, @death,
+bind('player_death', array(id: 'Discord.message.death'), null, @death) {
 	assign(@player, _getplayerID(player()))
-	_send_discord_message(@death[death_message], 'Server')
-)
+	_send_discord_message(@death['death_message'], 'Server')
+}
 	
-bind(player_join, array(id: 'Discord.message.login'), null, @login,
+bind('player_join', array(id: 'Discord.message.login'), null, @login) {
 	assign(@player, _getplayerID(player()))
-	_send_discord_message('+ join: '.@player[name], 'none')
-)
+	_send_discord_message('+ join: '.@player['name'], 'none')
+}

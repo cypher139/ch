@@ -115,7 +115,7 @@ proc _rainbow(@msg, @type) {
 	if(@type == 'normal',
 		assign(@string, '')
 		for(assign(@i, 0), @i < length(@msg), @i++,
-			assign(@string, @string.'\u00a7'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i, @i + 1))
+			assign(@string, @string.'\u00a7'.array(6,7,9,'a','b','c','d','e','f')[rand(9)].substr(@msg, @i, @i + 1))
 		)
 		return(@string)
 	)
@@ -125,7 +125,7 @@ proc _rainbow(@msg, @type) {
 		assign(@string, '')
 		for(assign(@i, 0), @i < length(@msg), @i++,
 			if(_is_even_number(@i) == true,
-				assign(@color, array(6,7,9,a,b,c,d,e,f)[rand(9)])
+				assign(@color, array(6,7,9,'a','b','c','d','e','f')[rand(9)])
 			)
 			assign(@string, @string.color(@color).substr(@msg, @i, @i + 1))
 		)
@@ -137,7 +137,7 @@ proc _rainbow(@msg, @type) {
 	if(@type == 'all',
 		assign(@string, '')
 		for(assign(@i, 0), @i < length(@msg), @i++,
-			assign(@string, @string.'\u00a7'.array(0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f)[rand(16)].substr(@msg, @i, @i + 1))
+			assign(@string, @string.'\u00a7'.array(0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f')[rand(16)].substr(@msg, @i, @i + 1))
 		)
 		return(@string)
 	)

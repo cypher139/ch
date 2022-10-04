@@ -1,5 +1,5 @@
 #version 1.0-tmc
-bind('player_interact', array(id: 'cake'), array(itemname: 'CAKE'), @cake) {
+bind('player_interact', array(id: 'cake'), array(block: 'CAKE'), @cake) {
   	if(@cake['action'] == 'right_click_block' || @cake['action'] == 'left_click_block') {
 		assign(@here, ploc(@cake['player'])) 
 		lightning(@here)

@@ -1,0 +1,7 @@
+<!
+	strict: off;
+	author: CypherNova139;
+	created: 1/5/2011;
+	description: Useful testing scripts for script development, debugging, and testing;
+	suppressWarnings: UseBareStrings;
+>

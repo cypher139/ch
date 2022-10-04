@@ -1,0 +1,184 @@
+######################################################
+#
+#   These scripts help automate Spleef games.
+#
+######################################################
+
+#version 0.1-alpha
+
+#3....2....1...
+everyone:/321 [$times=3] [$saying=Start] [$name=Spleef] = >>>
+#editable vars:
+assign(@limit, 100)
+
+#dynamic vars, dont edit
+assign(@times, $times)
+assign(@ms, 1000)
+
+#make it quicker!
+if(@times > @limit, die(color('red').'['.color('gold').$name.color('red').'] '.color('red').'Make the countdown quicker!'))
+#the countdown
+for(@times, gte(@times, 1), dec(@times) inc(@ms, 1000),
+	set_timeout(@ms, closure(_bc($name, @times)))
+	if(@times == '1',
+		inc(@ms, 1000)
+		set_timeout(@ms,closure(_bc($name, $saying)))
+		set_timeout(@ms,closure(console($name round started)))
+	)
+)
+<<<
+#
+#
+#
+
+everyone:/sareset [$blockid=80] = >>>
+    assign(@cooldown, 80)
+    assign(@player, player())
+
+    if(is_null(import(@player.'.spleef.last.resettime')),
+        export(@player.'.spleef.last.resettime', '0')
+    )
+  
+    assign(@lastreset, import(@player.'.spleef.last.resettime'))
+
+    if(gt(add(@lastreset, @cooldown), divide(time(),1000)),
+        # then
+        msg(concat(color('red'),'[', color(6), Spleef, color('red'), ']', color('gold') 'Not enough time has passed since your last arena reset.'))
+	assign(@timeleftsec, subtract(add(@lastreset, @cooldown), divide(time(),1000)))
+	assign(@timeleftmin, divide(@timeleftsec, 60))
+	assign(@timeleft, round(@timeleftsec))
+        die(concat(color('red'),'[', color(6), Spleef, color('red'), '] ', color(7), @timeleft, color('red'),' seconds to go'))
+    )
+
+    export(@player.'.spleef.last.resettime', divide(time(),1000))
+
+    sudo('/region select arenafloor')
+    sudo('//set' $blockid)   # 80 is 'snow block'
+
+    broadcast(color('e').'['.color(9).'Spleef'.color('e').'] '.color(3).pinfo(@player)[4].color(7).' reset the spleef arena!')
+<<<
+
+*:/addsc = >>>
+	export('Spleef.gameplay.gameinprogress', 'yes')
+assign(@scname, Spleef)
+msg(get_scoreboards())
+assign(@isfound, false)
+foreach(get_scoreboards(), @var,
+	if(@var == @scname, assign(@isfound, true))
+)
+
+if(@isfound == false,
+	create_scoreboard(@scname)
+)
+assign(@isfound, false)
+foreach(get_objectives(@scname), @var,
+	if(@var[name] == 'Win', assign(@isfound, true) msg(1))
+)
+if(@isfound == false,
+	create_objective('Win', DUMMY, @scname)
+)
+assign(@isfound, false)
+foreach(get_objectives(@scname), @var,
+	if(@var[name] == 'Lost', assign(@isfound, true) msg(1))
+)
+if(@isfound == false,
+	create_objective('Lost', DUMMY, @scname)
+)
+set_objective_display('Win', array(displayname: 'In the game:', slot: SIDEBAR), @scname)
+set_objective_display('Lost', array(displayname: 'Lost', slot: PLAYER_LIST), @scname)
+
+msg(get_objectives(@scname))
+set_pscoreboard(player(), @scname)
+set_pscore('Win', player(), 1, @scname)
+
+msg(get_pscore('Win', player(), @scname))
+msg(get_pscore('Lost', player(), @scname))
+<<<
+
+*:/rmsc = >>>
+	export('Spleef.gameplay.gameinprogress', 'no')
+remove_scoreboard(Spleef)
+msg(done)
+<<<
+
+
+#/spleefadmin install
+#check if install has been run before. make a upgrade cmd?
+#prompt: selection of entire arena
+#set arena region
+#prompt: arena floor selection (remind player about 1 block high only, require player to use //hpos1/2 !! (block //pos))
+#set arena floor region
+#region above floor?
+#prompt: spectator warp to warp players that are on floor that arent in game to.
+#set spec warp
+#have a next command that runs next in series after each selection
+
+#/spleef ready
+#add player to arena region member to allow pvp and arena floor for build
+#alias: /ready
+
+#/spleef setup
+#sets up a game.
+#prohibit snowball drops
+#check for required regions
+#set up scoreboard
+#dont setup pvp till later
+
+#/spleef addplayer
+#adds player to game, they need to type /accept
+#adds to scoreboard
+
+#/spleef start
+#requires min 2 players to have joined
+#once about to start , call /321 alias countdown
+#check if multiple players (if players < 5) are in same corner. 
+#after countdown activate PvP.
+#
+
+
+#/spleef dropout
+#removes player from game, if a player no longer wants to play
+
+#/sagame outplayer
+#makes player lose, meant to be called as player falls out of arena.
+#removes frome active players scoreboard, puts in lost scoreboard.
+#remove member status to regions, activate no-PvP and no build. No cheating by mining under the floor!
+#warp to spectator area?
+#disable PvP cmds?
+
+#/sagame win
+#stops game and begins post-game festivities, meant to be called as only the last player is standing in arena.
+
+
+*:/ready [$] = >>>
+assign(@isaction, import('cmd.ready.isaction'))
+
+if(@isaction == 'yes',
+	assign(@action, import('cmd.ready.action'))
+	assign(@alias, import('cmd.ready.alias'))
+	call_alias(@alias @action)
+	msg('you are ready')
+,
+	die(color('c').'There isn\'t anything to be ready about!')
+) 
+<<<
+
+
+*:/sagame [$player] [$action] [$] = >>>
+assign(@player, $player)
+assign(@action, $action)
+
+if(@action == 'out',
+	assign(@gameinprogress, import('Spleef.gameplay.gameinprogress'))
+	if(@gameinprogress == '' || @gameinprogress == null,
+		assign(@gameinprogress, 'no')
+	)
+	if(@gameinprogress == 'yes',
+		broadcast(color('e').@player.' is out of the game!')
+		#scoreboard
+		assign(@scname, Spleef)
+		reset_all_pscores(@player, @scname)
+		set_pscore('Lost', player(), 1, @scname)
+	)
+)
+<<<

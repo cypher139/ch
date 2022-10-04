@@ -1,4 +1,4 @@
-chHelperz adds back the lost /repeat command! Type /repeat to re-run the last command you used.
+cmdrepeat adds back the lost /repeat command! Type /repeat to re-run the last command you used.
 
 Also included:
 - Broadcast the command used to the console, complete with color coding showing CH aliases or server commands.

@@ -50,8 +50,8 @@ default:
 		)
 		die(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Enabled!'.color(7).'Sheep enabled: Left-click to spawn sheep where you point. Use "/sheep" to disable.')
 	} else {
-		export('sheep.spawner.enabled.'.@player, false)
-		die(color(7).'['.color('gold').@name.color(7).'] '.color(7).'Sheep for '.@player.color('a').' disabled.')
+		export('sheep.spawner.enabled.'.@player['id'], false)
+		die(color(7).'['.color('gold').@name.color(7).'] '.color(7).'Sheep for '.@player['name'].color('a').' disabled.')
 	}
 }
 <<<

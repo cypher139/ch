@@ -10,7 +10,7 @@ bind('player_chat', array(id: 'Wish.granter.lolz'), null, @chat) {
 
 #did you say a player name? this will catch it
 	@themsg = array()
-	assign(@themsg, reg_split(' ', @chat[message]))
+	assign(@themsg, reg_split(' ', @chat['message']))
 	@otherplayer = ''
 	foreach(@themsg, @word, 
 		if(array_contains_ic(all_players(), @word), assign(@otherplayer, @word))
@@ -205,7 +205,7 @@ bind('player_chat', array(id: 'Wish.granter.lolz'), null, @chat) {
 					broadcast(color(e).'['.color(gold).@name.color(e).'] '.color(6).@player.'s wish has been granted.')
 					assign(@ploc, ploc(@vplayer))
 					assign(@ploc[1], @ploc[1] + 1)
-					assign(@ploc[y], @ploc[y] + 1)
+					assign(@ploc['y'], @ploc['y'] + 1)
 					explosion(@ploc, 4, false)
 			
 				case friend:
@@ -218,7 +218,7 @@ bind('player_chat', array(id: 'Wish.granter.lolz'), null, @chat) {
 					broadcast(color(e).'['.color(gold).@name.color(e).'] '.color(6).@player.'s wish has been granted.')
 					assign(@ploc, ploc(@vplayer))
 					assign(@ploc[1], @ploc[1] + 1)
-					assign(@ploc[y], @ploc[y] + 1)
+					assign(@ploc['y'], @ploc['y'] + 1)
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'black')); })
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'red')); })
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'green')); })

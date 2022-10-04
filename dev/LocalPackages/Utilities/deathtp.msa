@@ -43,7 +43,7 @@ default:
 	foreach(@bi, @currentvar,
 	#mew MC versions do not need numeric id:data type. updated to just written name. 
 	#array: meta, qty, name
-		pgive_item(@player[name], @currentvar)
+		pgive_item(@player['name'], @currentvar)
 	)
 	msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
 }
