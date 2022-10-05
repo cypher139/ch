@@ -1,0 +1,25 @@
+creative:/i [$id=3] [$amount=1] [$] = >>>
+set_uncaught_exception_handler(closure(@ex){
+     msg(color('c').@ex['message']);
+     return(true);
+   });
+assign(@dev, get_value('ch.player.'.puuid(player(), 'dashless').'.developer'))
+
+if(is_numeric($id)) {
+	assign(@id, data_name($id))
+	assign(@idn, $id)
+} else {
+	assign(@id, to_upper($id))
+	assign(@idn, data_values(@id))
+}
+if(is_numeric($amount)) {
+	assign(@amount, $amount)
+} else {
+	assign(@amount, 1)
+}
+if(@dev == true) {
+	msg(color(7).'[DEV]: '.@id.'('.@idn.')')
+}
+pgive_item(player(), array('name': to_upper(@id), 'qty': @amount))
+msg(color(6).'Giving '.color(3).@amount.color(6).' of '.color('a').to_lower(@id))
+<<<

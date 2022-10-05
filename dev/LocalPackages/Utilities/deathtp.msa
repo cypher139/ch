@@ -13,13 +13,12 @@ if(is_numeric($option1)) {
 assign(@here, get_value('player.'.@player['id'].'.last.death.loc.'.@dropid))
 
 switch(@here) {
-
-case '':
-case null:
-	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
-default:
-	set_ploc(@here)
-	msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'You were teleported to your death point.')
+	case '':
+	case null:
+		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
+	default:
+		set_ploc(@here)
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'You were teleported to your death point.')
 }
 <<<
 
@@ -36,15 +35,15 @@ if(is_numeric($option1)) {
 assign(@bi, get_value('player.'.@player['id'].'.last.death.drops.'.@dropid))
 
 switch(@bi) {
-case '':
-case null:
-	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
-default:
-	foreach(@bi, @currentvar,
-	#mew MC versions do not need numeric id:data type. updated to just written name. 
-	#array: meta, qty, name
-		pgive_item(@player['name'], @currentvar)
-	)
-	msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
+	case '':
+	case null:
+		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
+	default:
+		foreach(@bi, @currentvar,
+		#mew MC versions do not need numeric id:data type. updated to just written name. 
+		#array: meta, qty, name
+			pgive_item(@player['name'], @currentvar)
+		)
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
 }
 <<<

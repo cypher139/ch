@@ -27,22 +27,33 @@ bind('player_command', array(id: 'cmdrepeat.cmd'), null, @cmdevent) {
 		case '/.':
 		case '/repeat':
 		case '/\'':
-		case '//.':
 			if(@consolecmdshow == true) {
 				if(array_index_exists(@cmd, 1)) {
 					if(is_numeric(@cmd[1]) && @cmd[1] < 4) {
 						#123 repeat
 						if(is_alias(@lastcmd[@cmd[1]]), assign(@cmdcolor, 3), assign(@cmdcolor, 6))
-						console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[@cmd[1]], false)
+						if(@lastcmd[@cmd[1]] == '' || @lastcmd[@cmd[1]] == null, null,
+							console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[@cmd[1]], false)
+						)
 					} else {
 					#repeat cmd options
-					console(color(7).@player['display'].' used '.color(@cmdcolor).@cmdevent['command'], false)
+						console(color(7).@player['display'].' used '.color(@cmdcolor).@cmdevent['command'], false)
 					}
 				} else {
 				#just repeat cmd used
 					if(is_alias(@lastcmd[1]), assign(@cmdcolor, 3), assign(@cmdcolor, 6))
-					console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[1], false)
+					if(@lastcmd[1] == '' || @lastcmd[1] == null, null,
+						console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[1], false)
+					)
 				}
+			}			
+		case '//.':	
+		#special alias for /repeat 2
+			if(@consolecmdshow == true) {
+				if(is_alias(@lastcmd[2]), assign(@cmdcolor, 3), assign(@cmdcolor, 6))
+				if(@lastcmd[2] == '' || @lastcmd[2] == null, null,
+					console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[2], false)
+				)
 			}
 		default:
 		#Save the last command this player used.
