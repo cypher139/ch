@@ -12,7 +12,9 @@ Usage:
 /repeat print = Toggles printing back any command you use when you use it.
 /repeat consolecmd = Toggles whether to broadcast to the console what commmand was used.
 
-Reminder / Note: The console doesn't use "/" to start a command. To use the "/repeat" command in the console, use "repeat" instead.
+Notes:
+- The console doesn't use "/" to start a command. To use the "/repeat" command in the console, use "repeat" instead.
+- Aliases for /repeat: /. and /'
 
 Permissions:
 commandhelper.alias.everyone: Use /repeat

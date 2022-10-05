@@ -29,7 +29,7 @@ assign(@sendmsg, @chat['message'])
 #dev tmsg(@chat['player'], reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']))
 #channel override
 	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']) == 1) { 
-		assign(@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['']))
+		assign(@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']))
 		#returns 'channel' in '#channel message text'
 		assign(@channel, reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1])
 #dev		tmsg(@chat['player'], @sendmsg.' channel name:'.@channel)

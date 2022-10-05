@@ -20,3 +20,21 @@ Additions:
 
 ###### 1.0 to 2.0 (?)
 Changelogs not found.
+
+
+### cmdrepeat
+
+###### 1.1 (10/5/22)
+Added:  
+- Saves up to 3 recent commands used (up from 1)
+	- Use /repeat 2 or /repeat 3 to access 2nd or 3rd recent commands.
+	- Added short command //. to repeat 2nd recent command.
+- Renamed script to cmdrepeat
+- /repeat recent. Lists your last 3 commands!
+Fixes:  
+- Updated player persistence storage to use UUID
+- Quote switch cases, updated defaults
+- Updated console log messages on repeat command usage.
+
+###### 1.0 (1/17/16)
+Initial Release
