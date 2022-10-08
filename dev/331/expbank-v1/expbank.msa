@@ -1,0 +1,338 @@
+######################################################
+#
+#   ExpBank: Deposit or withdraw experience levels using signs!
+#   This provides the commands for ExpBank, where you can view your signs and their stored levels
+#   version ...
+#
+######################################################
+
+expbank:/expbank [$action] [$option1] = >>>
+#what is the name of this script?
+assign(@name, ExpBank)
+
+#dynamic vars, dont edit
+assign(@you, player())
+assign(@player, player())
+assign(@action, to_lower($action))
+assign(@option1, $option1)
+
+
+#action list help
+proc(_expbank_help,
+	msg(color(6).'ExpBank help:')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(a).'/expbank [action] [option1] ')
+	msg(color(6).'Actions:')
+	msg(color(7).'/expbank'.color(4).' - '.color(f).' Shows you all of your signs, where they are at, and their locations.')
+	msg(color(7).'/expbank verbose <yes/no>'.color(4).' - '.color(f).'Allows you to turn on or off extra messages ExpBank can display.')
+	msg(color(7).'/expbank last'.color(4).' - '.color(f).'Shows you data about the last ExpBank sign you used, such as its location, current levels, and what kind of transaction you did.')
+)
+
+
+if(@action == 'help',
+	_expbank_help()
+	die()
+)
+
+
+#Player settings.
+if(@action == 'verbose',
+	assign(@value, @option1)
+	assign(@entry[0], 'yes')
+	assign(@entry[1], 'no')
+	assign(@newsetting, to_lower(@value))
+	if(array_contains_ic(@entry, @newsetting),
+		store_value(@you.'.ExpBank.verbose', @newsetting)
+		if(equals_ic(@newsetting, @entry[0]),
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are enabled! '.color(7).@name.' will display more messages than normal now.')
+		)
+		if(equals_ic(@newsetting, @entry[1]),
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are now disabled! '.color(7).@name.' will NOT display lots of messages now.')
+		)
+		msg(@newsetting)
+		die(@successmsg),	
+		die(color(red).'['.color(gold).@name.color(red).'] '.color(red).'Invalid setting specified. Type either yes or no.')
+	)
+)	
+
+if(@action == 'last',
+	assign(@lastloc, get_value(@you.'.'.@name.'.last.signused'))
+
+	if(@lastloc == '' || @lastloc == null,
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'You have not used a '.@name.' sign before.')
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Want to create a '.@name.' sign? Type (without quotes) "[expbank]" when creating a sign!')
+		die()
+	,
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(9).'The last '.@name.' sign you used was:')
+	)
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Located at: '.color(a).@lastloc[location])
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Current Levels: '.color(b).@lastloc[level])
+	assign(@iseven, _is_even_number(@lastloc[type]))
+	if(@iseven == true,
+		assign(@ttype, Withdraw), assign(@ttype, Deposit)
+	)
+	if(@lastloc[typea] == 1,
+		assign(@lp, level), assign(@lp, levels)
+	)
+	assign(@type, @ttype.': '.@lastloc[typea].' '.@lp)
+	assign(@return, _is_even_number(@lastloc[type]))
+	msg(@return)
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Transaction type: '.color(6).@type)
+	die()
+)
+
+
+#List all of a player's signs
+
+
+assign(@locationarray, get_value(@name.'.locations'))
+assign(@playerlocationcount, 0)
+foreach(@locationarray, @currentvar,
+#Find your signs
+	if(@currentvar[player] == @you,
+		assign(@playerlocationcount, @playerlocationcount + 1)
+		if(@playerlocations == null || @playerlocations == '', assign(@playerlocations, array()))
+		if(@playerlevels == null || @playerlevels == '', assign(@playerlevels, array()))
+		array_push(@playerlocations, @currentvar[location])
+		array_push(@playerlevels, @currentvar[level])
+	)
+)	
+
+#plural check
+if(@playerlocationcount == 1, assign(@sp, sign), assign(@sp, signs))
+
+msg(color(e).'['.color(gold).@name.color(e).'] '.color(a).'You have '.@playerlocationcount.' '.@name.' '.@sp.'!')
+
+
+
+if(@playerlocationcount !== 0,
+	assign(@tsl, 0)
+	for(assign(@i, 0), @i < array_size(@playerlocations), @i++,
+		assign(@j, @i + 1)
+		assign(@tsl, @playerlevels[@i] + @tsl)
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Sign '.@j.': '.@playerlocations[@i].color(3).' Stored levels: '.@playerlevels[@i])
+	)
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(3).'Total stored levels: '.@tsl)
+	,
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Want to create a '.@name.' sign? Type (without quotes) "[expbank]" when creating a sign!')		
+)
+
+
+<<<
+
+
+
+
+###admin
+
+admin:/expbankadmin [$action] [$option1] [$option2] [$option3] = >>>
+#what is the name of this script?
+assign(@name, ExpBank)
+
+#dynamic vars, dont edit
+assign(@you, player())
+assign(@action, $action)
+assign(@option1, $option1)
+assign(@option2, $option2)
+assign(@option3, $option3)
+
+
+assign(@player, player())
+
+#action list help
+proc(_expbank_help,
+	msg(color(6).'ExpBank admin help:')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(a).'/expbankadmin <action> [option1] [option2] [option3]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/expbankadmin list'.color(4).' - '.color(f).'Tells you the locations of all ExpBank signs you have, how many levels are stored on them, and their owners.')
+	msg(color(7).'/expbankadmin stats'.color(4).' - '.color(f).'Shows all time stats of ExpBank, such as total levels stored, and all time fees charged.')
+	msg(color(7).'/expbankadmin max <option> <value>'.color(4).' - '.color(f).'Allows you to view and set maximum limits (use "view" in the <option> to view max settings).')
+	msg(color(7).'/expbankadmin econ view'.color(4).' - '.color(f).'View the set economy settings.')
+	msg(color(7).'/expbankadmin econ static <enable/disable> <accountname>'.color(4).' - '.color(f).'Allows you to enable or disable static economy support. When enabled all fees charged will go to the specifed account, instead of thin air.')
+	msg(color(7).'/expbankadmin econ fee <feetype> <amount>'.color(4).' - '.color(f).'Allows you to set fee amounts for various ExpBank actions (eg creating sign, deposits or withdraws).')
+
+
+)
+
+
+if(@action == 'help',
+	_expbank_help()
+	die()
+)
+
+if(@action == 'stats',
+	assign(@locationarray, get_value(@name.'.locations'))
+	foreach(@locationarray, @currentvar,
+		if(@tsl == '' || @tsl == null, assign(@tsl, 0))
+		assign(@tsl, @currentvar[level] + @tsl)
+	)
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Levels currently stored: '.color(6).@tsl.' levels')
+	assign(@lifelevels, get_value(@name.'.alltime.levels'))
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'All time total stored levels: '.color(b).@lifelevels.' levels')
+	assign(@lifefees, get_value(@name.'.alltime.fees'))
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'All time fees charged: '.color(a).'$'.@lifefees)
+	die()
+)
+
+
+if(@action == 'max',
+	if(@option1 == 'view',
+		assign(@maxlvl, get_value(@name.'.max.levels'))
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(b).'Maximum global level storage for a player: '.@maxlvl)
+		die()
+	)
+
+	if(@option1 == 'levels',
+		assign(@maxlvl, get_value(@name.'.max.levels'))
+		if(is_integral(@option2), null,
+			if(@option2 == 'default',
+				assign(@option2, 104)
+				,
+				die(color(c).'['.color(gold).@name.color(c).'] '.color(7).'You need to specify a number.')
+			)
+		)
+		if(@maxlvl == null || @maxlvl == '',
+			assign(@maxlvl, 104)
+		)
+		store_value(@name.'.max.levels', @option2)
+		msg(color(a).'['.color(gold).@name.color(a).'] '.color(b).'The maximum levels allowed for a player to store was: '.@maxlvl.', and is now: '.@option2)
+		die()
+	)
+	
+die()	
+)
+
+if(@action == 'econ',
+	if(@option1 == 'view',
+		assign(@enableecon, get_value(@name.'.econ.enable'))
+		assign(@static, get_value(@name.'.econ.static'))
+		assign(@cfee, get_value(@name.'.econ.fee.create'))
+		if(@cfee == '' || @cfee == null, assign(@cfee, 100))
+		assign(@dfee, get_value(@name.'.econ.fee.deposit'))
+		if(@dfee == '' || @dfee == null, assign(@dfee, 30))
+		assign(@wfee, get_value(@name.'.econ.fee.withdraw'))
+		if(@wfee == '' || @wfee == null, assign(@wfee, 30))
+		if(@enableecon == 'yes',
+			assign(@eemsg, color(a).'Enabled')
+			,
+			assign(@eemsg, color(c).'Disabled')
+		)
+		if(@static == 'yes',
+			assign(@stmsg, color(a).'Enabled')
+			,
+			assign(@stmsg, color(c).'Disabled')
+		)
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(b).'Economy: '.@eemsg)
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(3).'Static economy: '.@stmsg)
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(6).'Fees:')
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(9).'Create: '.color(6).@cfee)
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(9).'Deposit: '.color(6).@dfee)
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(9).'Withdraw: '.color(6).@wfee)
+		die()
+	)
+
+	if(@option1 == 'enable',
+		store_value(@name.'.econ.enable', yes)
+		msg(color(a).'['.color(gold).@name.color(a).'] '.color(b).'Economy support enabled! '.color(7).'Players will be charged fees to use '.@name.' functions.')
+		die()
+	)
+
+	if(@option1 == 'disable', 
+		store_value(@name.'.econ.enable', no)
+		msg(color(a).'['.color(gold).@name.color(a).'] '.color(b).'Economy support disabled! '.color(7).'All '.@name.' functions are now free.')
+		die()
+	)
+	if(@option1 == 'static',
+		if(@option2 == 'enable', 
+			if(is_integral(@option3) || @option3 == '' || @option3 == null, 
+				die(color(c).'['.color(gold).@name.color(c).'] '.color(7).'You need to specify a account name. This account will be credited with any fees '.@name.' charges players.')
+			)
+			store_value(@name.'.econ.static', yes)
+			store_value(@name.'.econ.static.account', @option3)
+			msg(color(a).'['.color(gold).@name.color(a).'] '.color(b).'Static economy support enabled! '.color(7).'The account "'.@option3.'" will be credited with any fees '.@name.' charges players.')
+			die()
+		)
+
+		if(@option2 == 'disable', 
+			store_value(@name.'.econ.static', no)
+			msg(color(a).'['.color(gold).@name.color(a).'] '.color(b).'Static economy support disabled! '.color(7).'Any fees '.@name.' charges players will vanish into thin air.')
+			die()
+		)
+	die(color(c).'['.color(gold).@name.color(c).'] '.color(7).'Um... Do you want to enable or disable static economy support?')
+	)
+
+	if(@option1 == 'fee',
+		if(@option2 == 'create',
+			if(is_integral(@option3), null,
+				die(color(c).'['.color(gold).@name.color(c).'] '.color(7).'You need to specify a number.')
+			)
+			assign(@cfee, get_value(@name.'.econ.fee.create'))
+			if(@cfee == null || @cfee == '',
+				assign(@cfee, 100)
+			)
+			store_value(@name.'.econ.fee.create', @option3)
+			msg(color(a).'['.color(gold).@name.color(a).'] '.color(b).'The fee for creating a '.@name.' was: $'.@cfee.', and is now: $'.@option3)
+			die()
+		)
+		if(@option2 == 'deposit',
+			if(is_integral(@option3), null,
+				die(color(c).'['.color(gold).@name.color(c).'] '.color(7).'You need to specify a number.')
+			)
+			assign(@cfee, get_value(@name.'.econ.fee.deposit'))
+			if(@dfee == null || @dfee == '',
+				assign(@dfee, 30)
+			)
+			store_value(@name.'.econ.fee.deposit', @option3)
+			msg(color(a).'['.color(gold).@name.color(a).'] '.color(b).'The fee for deposting a level was: $'.@dfee.', and is now: $'.@option3)
+			die()
+		)
+		if(@option2 == 'withdraw',
+			if(is_integral(@option3), null,
+				die(color(c).'['.color(gold).@name.color(c).'] '.color(7).'You need to specify a number.')
+			)
+			assign(@cfee, get_value(@name.'.econ.fee.withdraw'))
+			if(@wfee == null || @wfee == '',
+				assign(@wfee, 30)
+			)
+			store_value(@name.'.econ.fee.withdraw', @option3)
+			msg(color(a).'['.color(gold).@name.color(a).'] '.color(b).'The fee for withdrawing a level was: $'.@wfee.', and is now: $'.@option3)
+			die()
+		)
+	)
+)
+
+if(@action == 'list',
+	assign(@locationarray, get_value(@name.'.locations'))
+	assign(@locationcount, 0)
+	foreach(@locationarray, @currentvar,
+		assign(@locationcount, @locationcount + 1)
+		if(@locations == null || @locations == '', assign(@locations, array()))
+		if(@levels == null || @levels == '', assign(@levels, array()))
+		if(@players == null || @players == '', assign(@players, array()))
+		array_push(@locations, @currentvar[location])
+		array_push(@levels, @currentvar[level])
+		array_push(@players, @currentvar[player])
+	)	
+
+	#plural check
+	if(@locationcount == 1, assign(@sp, sign), assign(@sp, signs))
+
+	msg(color(e).'['.color(gold).@name.color(e).'] '.color(a).'There are '.@locationcount.' '.@name.' '.@sp.'!')
+
+
+
+	if(@locationcount !== 0,
+		assign(@tsl, 0)
+		for(assign(@i, 0), @i < array_size(@locations), @i++,
+			assign(@j, @i + 1)
+			assign(@tsl, @levels[@i] + @tsl)
+			msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Sign '.@j.': '.@locations[@i].color(3).' Stored levels: '.@levels[@i].color(6).' Owner: '.@players[@i])
+		)
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(3).'Total stored levels: '.@tsl)
+		,
+		msg(color(e).'['.color(gold).@name.color(e).'] '.color(7).'Want to create a '.@name.' sign? Type (without quotes) "[expbank]" when creating a sign!')		
+	)
+
+)
+<<<
