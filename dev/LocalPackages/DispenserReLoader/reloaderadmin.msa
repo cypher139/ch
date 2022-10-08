@@ -8,7 +8,7 @@
 
 admin:/reloaderadmin [$action] [$option1] [$option2] [$option3] = >>>
 #Include required backend functions
-include('includes.library/dreloadfunctions.ms')
+include('includes.library/reload-functions-Core.ms')
 #what is the name of this script?
 assign(@name, string(import('dispenserreloader.name')))
  

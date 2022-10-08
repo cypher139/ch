@@ -7,7 +7,7 @@
 #test layout:/rl      area       fuel       263         64
 reloader:/reloader [$action] [$option1] [$option2] [$option3] [$option4] = >>>
 #Include required backend functions
-include('includes.library/dreloadfunctions.ms')
+include('includes.library/reload-functions-Core.ms')
 ### What is the name of this script?
 assign(@name, string(import('dispenserreloader.name')))
  
@@ -404,9 +404,9 @@ case 'clear':
  
 # Check: Did you specify a item name or ID?
 # Item data support: This checks for one : in the middle of the given item ID. A match means the ID has extra data to it to denote the item.
-if(reg_count('[0-9]:[0-9]', @item) == 1,
+if(reg_count('[0-9]+:[0-9]+', @item) == 1,
         #Get rid of a 0 data value
-        if(reg_count('[0-9]:0', @item) == 1,
+        if(reg_count('[0-9]+:0', @item) == 1,
                 assign(@item, reg_split(':', @item)[0])
         )
         assign(@itemname, data_name(@item))
@@ -538,7 +538,7 @@ case '-a':
 	,
 		@extok = false
 	)
-	include('includes.library/dreloadfunctions-extSKCompat-'.@extok.'.ms')
+	include('includes.library/reload-functions-SKCompat-'.@extok.'.ms')
 
         # Area fuel: This is done earlier in action variables conversion area.
 	# WE valid selection check moved to iterate proc.

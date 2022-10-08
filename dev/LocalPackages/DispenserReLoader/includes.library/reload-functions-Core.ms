@@ -4,17 +4,56 @@ proc(_reloader_getplayerID, @option1,
 	if(@option1 == '~console'){
 		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
 	} else {
-	@pid[display] = pinfo(@option1)[0];
-	@pid[name] = pinfo(@option1)[0];
-	@pid[id] = puuid(@option1, dashless);
-	@pid[nick] = pinfo(@option1)[4];
+	@pid['display'] = pinfo(@option1)[0];
+	@pid['name'] = pinfo(@option1)[0];
+	@pid['id'] = puuid(@option1, dashless);
+	@pid['nick'] = pinfo(@option1)[4];
 	}
 	#Bedrock to Java players come in with name ".NAME", remove dot
-	if(reg_count('^[\\.].*', @pid[name]) == 1, 
-		assign(@pid[display], reg_replace('^[\\.]','', @pid[name]))
+	if(reg_count('^[\\.].*', @pid['name']) == 1, 
+		assign(@pid['display'], reg_replace('^[\\.]','', @pid['name']))
 	)
 	return(@pid)
 )
+
+proc _reloader_item_name(@item) {
+	#Get rid of a 0 data value
+	if(reg_count('[0-9]+:0', @item) == 1,
+			assign(@item, reg_split(':', @item)[0])
+			msg('dev: :0 removed')
+	)
+	# item:subitem argument syntax not supported internally anymore, translated here
+	if(reg_count('[0-9]+:[0-9]+', @item) == 1) {
+		@ids = reg_split(':', @item)
+		@name = data_name(array(name: data_name(@ids[0]), data: @ids[1]))
+		@display = to_lower(@name)
+		@id = @item
+	} else {
+		if(is_numeric(@item)) {
+		#legacy ID given
+			assign(@name, data_name(@item))
+			assign(@display, to_lower(@name))
+			assign(@id, @item)
+		} else {
+		#newer named ID given
+			assign(@name, to_upper(@item))
+			assign(@display, to_lower(@item))
+			assign(@id, data_values(@item))
+		}
+	}
+	
+	if(reg_count('[a-zA-Z]+_[a-zA-Z]+', @name) == 1) {
+		msg('dev: _ detected')
+		assign(@display, to_lower(reg_replace('_', ' ', @name)))
+	}
+	
+	# Check: Is this air?
+	if(@item == '0',
+        msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
+	)
+return(array(name: @name, id: @id, display: @display))
+
+}
 
 
  
@@ -54,7 +93,7 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
 	assign(@name, import('dispenserreloader.name'))
 	assign(@chmaxstacksize, 64)
 	assign(@player, _reloader_getplayerID(@playergiven))
-	assign(@dev, import(@player[id].'.script.developer'))
+	assign(@dev, import('ch.player.'.@player['id'].'.developer'))
 # We need a real array
 	assign(@xyz, array())
         assign(@xyz[0], @x)
@@ -62,36 +101,36 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
         assign(@xyz[2], @z)
         assign(@xyz[3], @world)
         if(@dev == true,
-                tmsg(@player[name], color(7).'[DEV] _reloader_fill: '.color(f).'Evaluating block: '.@xyz)
+                tmsg(@player['name'], color(7).'[DEV] _reloader_fill: '.color('f').'Evaluating block: '.@xyz)
         )
 # Check: null/air
         assign(@itemname, data_name(@item))
         if(@itemname == null || @item == 0,
-                return(array(msg: color(c).'['.color(6).@name.color(c).'] '.color(7).'You cannot use air!', size: 0, fail: true))
+                return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!', size: 0, fail: true))
         )
 # Get the inventory size
         try(
                 assign(@size, get_inventory_size(@xyz))
         ,@fail,
-                return(array(msg: color(c).'['.color(6).@name.color(c).'] '.color(7).'This location isn\'t capable of having a inventory!', size: 0, fail: true))
+                return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'This location isn\'t capable of having a inventory!', size: 0, fail: true))
         )
         assign(@filltype, get_inventory_type(@xyz))
         assign(@maxstacksize, max_stack_size(@item))
         if(@verbose == 'yes',
-                tmsg(@player[name], color(3).'['.color(6).@name.color(3).'] '.color(9).'A fillable item was found at: '.@xyz)
+                tmsg(@player['name'], color(3).'['.color(6).@name.color(3).'] '.color(9).'A fillable item was found at: '.@xyz)
         )
 # Check for fuel mode: If enabled ignore chest/dispenser
 	if(@filltype != 'FURNACE' && @fuel == true,
-		return(array(msg: color(c).'['.color(6).@name.color(c).'] '.color(7).'You cannot use a Chest or Dispenser while in Fuel mode!', size: 0, fail: true))
+		return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use a Chest or Dispenser while in Fuel mode!', size: 0, fail: true))
 	) 
 # Check: limit what you can fill
         assign(@acceptfilltypes, array(CHEST, DISPENSER, FURNACE))
         if(array_contains(@acceptfilltypes, @filltype), null,
-                return(array(msg: color(c).'['.color(6).@name.color(c).'] '.color(7).'You cannot fill this item type!', size: 0, fail: true))
+                return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot fill this item type!', size: 0, fail: true))
         )
 # Get specified item quantity
         if(@qty == '' || @qty == null,
-                assign(@qty, import(@name.'.player.'.@player[id].'.set.item.qty'))
+                assign(@qty, import(@name.'.player.'.@player['id'].'.set.item.qty'))
         )
         if(@qty == '' || @qty == null,
                 assign(@qty, @maxstacksize)
@@ -100,7 +139,7 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
         assign(@itema, array(type: @item, qty: @qty))
  
 # Check: illegitimate stack perm
-        if(has_permission(@player[name], 'commandhelper.alias.reloader.stack.illegitimate'),
+        if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate'),
                 assign(@istack, true)
         ,
                 assign(@istack, false)
@@ -126,16 +165,16 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                 assign(@mqty, 0)
                 #if block types match
                 if(reg_count('[0-9]:[0-9]', @item) == 1,
-                        assign(@checktype, @af[type].':'.@af[data])
+                        assign(@checktype, @af['type'].':'.@af['data'])
                 ,
-                        assign(@checktype, @af[type])
+                        assign(@checktype, @af['type'])
                 )
                 if(@item == @checktype,
                         assign(@re, 're-')
                         #quantity greater than current (eg qty 64, filled 23)
-                        if(@qty > @af[qty],
+                        if(@qty > @af['qty'],
                                 #set_inventory_item needs what's already there plus the new items, as anything previously in there gets overwritten.
-                                assign(@nqty, @af[qty] + @qty)
+                                assign(@nqty, @af['qty'] + @qty)
                                 #set_inventory_item has a max limit of 64
                                 if(@nqty > @chmaxstacksize,
                                         assign(@mqty, @nqty - @chmaxstacksize)
@@ -145,18 +184,18 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                                 if(@nqty > @maxstacksize,
                                         if(@istack == true, null,
                                                 #no perm, so we will bump down the qty to the max stack size minus what's filled.
-                                                assign(@qty, @maxstacksize - @af[qty])
+                                                assign(@qty, @maxstacksize - @af['qty'])
                                                 if(0 > @qty, assign(@qty, 0))
                                                 assign(@mqty, @qty)
                                                 assign(@nqty, @qty)
                                         )
                                 )
-                                assign(@itema[qty], @nqty)
+                                assign(@itema['qty'], @nqty)
                                 #stats: quantity actually filled
                                 assign(@fqty1, @qty - @mqty)
                         )
                         #quantity is less than or equals filled
-                        if(@qty < @af[qty] || @qty == @af[qty],
+                        if(@qty < @af['qty'] || @qty == @af['qty'],
                                 if(@filltype == 'FURNACE',
                                         break()
                                 ,
@@ -174,7 +213,7 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                                         assign(@fqty1, @qty)
                                 )
                         )
-                        assign(@itema[qty], @qty)
+                        assign(@itema['qty'], @qty)
                         assign(@fqty1, @qty)
                 )
                 if(@dev == true, msg('slot'.@i.': '.get_inventory_item(@xyz, @i)))
@@ -205,20 +244,20 @@ proc(_reloader_record_stats, @playergiven, @action, @filledblocks, @totalitems, 
         assign(@nfb, @fb + @filledblocks)
         store_value(@name.'.stats.alltime.filled.blocks', @nfb)
         #total blocks filled - player
-        assign(@pfb, get_value(@name.'.player.'.@player[id].'.stats.alltime.filled.blocks'))
+        assign(@pfb, get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks'))
         if(@pfb == '' || @pfb == null, assign(@pfb, 0))
         assign(@npfb, @pfb + @filledblocks)
-        store_value(@name.'.player.'.@player[id].'.stats.alltime.filled.blocks', @npfb)
+        store_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks', @npfb)
         #total action runs
         assign(@atr, get_value(@name.'.stats.alltime.runs.'.@action))
         if(@atr == '' || @atr == null, assign(@atr, 0))
         assign(@antr, @atr + 1)
         store_value(@name.'.stats.alltime.runs.'.@action, @antr)
         #total action runs - player
-        assign(@ptr, get_value(@name.'.player.'.@player[id].'.stats.alltime.runs.'.@action))
+        assign(@ptr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.'.@action))
         if(@ptr == '' || @ptr == null, assign(@ptr, 0))
         assign(@pntr, @ptr + 1)
-        store_value(@name.'.player.'.@player[id].'.stats.alltime.runs.'.@action, @pntr)
+        store_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.'.@action, @pntr)
         #total items filled
         assign(@items, get_value(@name.'.stats.alltime.items'))
         if(@items == '' || @items == null, assign(@items, array()))
@@ -228,23 +267,23 @@ proc(_reloader_record_stats, @playergiven, @action, @filledblocks, @totalitems, 
         assign(@items[@item], @totalitems + @items[@item])
         store_value(@name.'.stats.alltime.items', @items)
         #total items filled - player
-        assign(@playeritems, get_value(@name.'.player.'.@player[id].'.stats.alltime.items'))
+        assign(@playeritems, get_value(@name.'.player.'.@player['id'].'.stats.alltime.items'))
         if(@playeritems == '' || @playeritems == null, assign(@playeritems, array()))
         if(array_index_exists(@playeritems, @item) == false,
                 assign(@playeritems[@item], 0)
         )
         assign(@playeritems[@item], @totalitems + @playeritems[@item])
-        store_value(@name.'.player.'.@player[id].'.stats.alltime.items', @playeritems)
+        store_value(@name.'.player.'.@player['id'].'.stats.alltime.items', @playeritems)
         #Last run
         assign(@olr1, get_value(@name.'.stats.last.run.1'))
         assign(@olr2, get_value(@name.'.stats.last.run.2'))
         assign(@olr3, get_value(@name.'.stats.last.run.3'))
-        store_value(@name.'.stats.last.run.1', array(action: @action, player: @player[display], qty: @qty, filledqty: @totalitems, blocks: @filledblocks, item: @item))
+        store_value(@name.'.stats.last.run.1', array(action: @action, player: @player['display'], qty: @qty, filledqty: @totalitems, blocks: @filledblocks, item: @item))
         store_value(@name.'.stats.last.run.2', @olr1)
         store_value(@name.'.stats.last.run.3', @olr2)
 		store_value(@name.'.stats.last.run.4', @olr3)
         #last run - player
-        store_value(@name.'.player.'.@player[id].'.stats.last.run', array(action: @action, qty: @qty, filledqty: @totalitems, blocks: @filledblocks, item: @item))
+        store_value(@name.'.player.'.@player['id'].'.stats.last.run', array(action: @action, qty: @qty, filledqty: @totalitems, blocks: @filledblocks, item: @item))
  
 )
 

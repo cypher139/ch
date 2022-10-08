@@ -7,7 +7,7 @@
 
 admin:/ch [$action] [$option1] [$option2] [$] = >>>
 #what is the name of this script?
-assign(@name, ch)
+assign(@name, 'ch')
 
 #dynamic vars, dont edit
 assign(@action, to_lower($action))
@@ -45,6 +45,9 @@ proc(_ch_help,
 )
 
 switch(@action){
+
+case 'r':
+run_cmd(/recompile)
 
 case 'help':
 case '-help':
@@ -106,6 +109,7 @@ case 'pinfo':
 
 
 case 'clearvalue':
+case 'cv':
 	msg(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Clear value: '.color('d').@option1)
 	clear_value(@option1)
 	if(has_value(@option1) == false,
@@ -114,12 +118,14 @@ case 'clearvalue':
 
 
 case 'getvalue':
+case 'gv':
 	assign(@v, get_value(@option1))
 	msg(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Get value: '.color('d').@option1.color('f').' Value returned:')
 	msg(color(7).@v)
 
 
 case 'hasvalue':
+case 'hv':
 	if(has_value(@option1) == true,
 		msg(color(7).'['.color('gold').@name.color(7).'] '.color('a').'That value exists!')
 	)
@@ -129,6 +135,7 @@ case 'hasvalue':
 
 
 case 'storevalue':
+case 'sv':
 	msg(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Store value: '.color('d').@option1)
 	store_value(@option1, @option2 $)
 	assign(@v, get_value(@option1))
@@ -136,6 +143,7 @@ case 'storevalue':
 
 
 case 'getvalues':
+case 'gvs':
 	if(@option1 == '', assign(@option1, player()))
 	assign(@v, get_values(@option1))
 	msg(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Get values: '.color('d').@option1.color('f').' Value(s) returned:')
@@ -198,18 +206,26 @@ case 'codegen':
 
 case 'dev':
 case 'devmsg':
+	assign(@importcheck, import(@name.'.player.'.@playerID['id'].'.developer'))
 	assign(@devsetting, get_value(@name.'.player.'.@playerID['id'].'.developer'))
-	if(@devsetting == true,
-		#disable
-	        store_value(@name.'.player.'.@playerID['id'].'.developer', false)
-	        export(@name.'.player.'.@playerID['id'].'.developer', false)
-		die(color(7).'['.color(6).@name.color(7).'] '.color('c').'Developer messages are Disabled! '.color(7).'If the script you use supports dev messages, they will NOT be displayed.')
-	,
-		#enable
-	        store_value(@name.'.player.'.@playerID['id'].'.developer', true)
-	        export(@name.'.player.'.@playerID['id'].'.developer', true)
-		die(color(7).'['.color(6).@name.color(7).'] '.color('a').'Developer messages are Enabled! '.color(7).'If the script you use supports dev messages, they will be displayed.')
-	)
+#	msg(@importcheck)
+	if(@importcheck == true || @importcheck == false) {
+		if(@devsetting == true,
+			#disable
+				store_value(@name.'.player.'.@playerID['id'].'.developer', false)
+				export(@name.'.player.'.@playerID['id'].'.developer', false)
+			die(color(7).'['.color(6).@name.color(7).'] '.color('c').'Developer messages are Disabled! '.color(7).'If the script you use supports dev messages, they will NOT be displayed.')
+		,
+			#enable
+				store_value(@name.'.player.'.@playerID['id'].'.developer', true)
+				export(@name.'.player.'.@playerID['id'].'.developer', true)
+			die(color(7).'['.color(6).@name.color(7).'] '.color('a').'Developer messages are Enabled! '.color(7).'If the script you use supports dev messages, they will be displayed.')
+		)
+	} else {
+#	recompile wiped out imports
+		msg(color(7).'['.color(6).@name.color(7).'] '.color('a').'Developer messages are Re-Enabled!')
+		export(@name.'.player.'.@playerID['id'].'.developer', @devsetting)
+	}
 
 
 
@@ -226,6 +242,7 @@ case 'import':
 	msg(color(7).@v)
 
 case 'extinfo':
+case 'ext':
 	assign(@v, extension_info())
 	msg(color(7).'['.color('gold').@name.color(7).'] '.color(6).'extension info: '.color('d').@option1.color('f').' Value(s) returned:')
         foreach(@key: @word in @v){
@@ -234,17 +251,29 @@ case 'extinfo':
         }   
 case 'test':
 	msg(vault_pgroup(@player, prefix))
+	msg(to_lower('50'))
 
 case 'randnumber':
 	assign(@rand, rand($option1, $option2))
 	msg(@rand)
 
+case 'number':
+#unexpected results do not rely on
+	msg('integer: '.is_integer($option1))
+	msg('number: '.is_number($option1))
+	msg('integral: '.is_integral($option1))
+	msg('numeric: '.is_numeric($option1))
+	msg(reg_count('(\\.)', $option1))
+	msg(reg_split('(\\.)', $option1))
+	msg(round($option1))
+
 default:
 	assign(@devsetting, get_value(@name.'.player.'.@playerID['id'].'.developer'))
-	if(@devsetting == true || @player == '~console',
+	if(@devsetting == true || @player == '~console') {
 		run(/reloadaliases)
+		export(@name.'.player.'.@playerID['id'].'.developer', @devsetting)
 		die()
-	)
+	}
 	msg(color('red').'['.color('gold').@name.color('red').'] '.color('red').'No action specified.')
 	_ch_help()
 }

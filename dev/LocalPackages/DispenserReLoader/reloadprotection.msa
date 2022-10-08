@@ -8,16 +8,16 @@
 ######################################################
 
 /reload [$action] [$] = >>>
-msg(color(c).'Warning: /reload is not nice to servers.')
-msg(color(c).'Stop using /reload!!!!!!!!!!!!!')
+msg(color('c').'Warning: /reload is not nice to servers.')
+msg(color('c').'Stop using /reload!!!!!!!!!!!!!')
 #if console, reload if an option given
-if(player() == ~console,
-	msg('If a reload is required, type "/reload now".'color(c).' It is highly recommended that you stop and restart your server, rather than reload it.')
+if(player() == '~console') {
+	msg('If a reload is required, type "/reload now".'color('c').' It is highly recommended that you stop and restart your server, rather than reload it.')
 	if($action == 'now',
 		run(/reload)
 	)
 	die()	
-)
+}
 msg(color(7).'To access the ReLoad plugin, please use "/reloader".')
 #if players, call alias
 call_alias(/reloader $action $)

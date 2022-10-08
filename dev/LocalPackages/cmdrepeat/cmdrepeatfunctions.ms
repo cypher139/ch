@@ -42,9 +42,9 @@ bind('player_command', array(id: 'cmdrepeat.cmd'), null, @cmdevent) {
 				} else {
 				#just repeat cmd used
 					if(is_alias(@lastcmd[1]), assign(@cmdcolor, 3), assign(@cmdcolor, 6))
-					if(@lastcmd[1] == '' || @lastcmd[1] == null, null,
+					if(@lastcmd[1]) {
 						console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[1], false)
-					)
+					}
 				}
 			}			
 		case '//.':	

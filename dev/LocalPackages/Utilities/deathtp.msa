@@ -1,7 +1,6 @@
 #version 1.1-tmc
 deathtp:/back [$option1=1] = >>>
 assign(@name, 'DeathTP')
-assign(@player, _getplayerID(player()))
 
 if(is_numeric($option1)) {
 	assign(@dropid, $option1)
@@ -10,7 +9,7 @@ if(is_numeric($option1)) {
 	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
-assign(@here, get_value('player.'.@player['id'].'.last.death.loc.'.@dropid))
+assign(@here, get_value('player.'.puuid(player(), 'dashless').'.last.death.loc.'.@dropid))
 
 switch(@here) {
 	case '':
@@ -23,7 +22,6 @@ switch(@here) {
 <<<
 
 deathitems:/backitems [$option1=1] = >>>
-assign(@player, _getplayerID(player()))
 assign(@name, 'DeathTP - GarbageManagement')
 if(is_numeric($option1)) {
 	assign(@dropid, $option1)
@@ -32,7 +30,7 @@ if(is_numeric($option1)) {
 	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
-assign(@bi, get_value('player.'.@player['id'].'.last.death.drops.'.@dropid))
+assign(@bi, get_value('player.'.puuid(player(), 'dashless').'.last.death.drops.'.@dropid))
 
 switch(@bi) {
 	case '':
@@ -42,7 +40,7 @@ switch(@bi) {
 		foreach(@bi, @currentvar,
 		#mew MC versions do not need numeric id:data type. updated to just written name. 
 		#array: meta, qty, name
-			pgive_item(@player['name'], @currentvar)
+			pgive_item(player(), @currentvar)
 		)
 		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
 }
