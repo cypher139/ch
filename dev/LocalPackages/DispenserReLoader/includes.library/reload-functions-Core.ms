@@ -18,10 +18,9 @@ proc(_reloader_getplayerID, @option1,
 
 proc _reloader_item_name(@item) {
 	#Get rid of a 0 data value
-	if(reg_count('[0-9]+:0', @item) == 1,
+	if(reg_count('[0-9]+:0', @item) == 1) {
 			assign(@item, reg_split(':', @item)[0])
-			msg('dev: :0 removed')
-	)
+	}
 	# item:subitem argument syntax not supported internally anymore, translated here
 	if(reg_count('[0-9]+:[0-9]+', @item) == 1) {
 		@ids = reg_split(':', @item)
@@ -41,18 +40,14 @@ proc _reloader_item_name(@item) {
 			assign(@id, data_values(@item))
 		}
 	}
-	
 	if(reg_count('[a-zA-Z]+_[a-zA-Z]+', @name) == 1) {
-		msg('dev: _ detected')
 		assign(@display, to_lower(reg_replace('_', ' ', @name)))
 	}
-	
 	# Check: Is this air?
-	if(@item == '0',
+	if(@item == '0') {
         msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
-	)
+	}
 return(array(name: @name, id: @id, display: @display))
-
 }
 
 

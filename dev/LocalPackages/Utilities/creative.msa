@@ -1,4 +1,4 @@
-creative:/i [$id=3] [$amount=1] [$] = >>>
+creative:/i [$id=3] [$amount=1] [$rec] [$] = >>>
 set_uncaught_exception_handler(closure(@ex){
      msg(color('c').@ex['message']);
      return(true);
@@ -6,6 +6,16 @@ set_uncaught_exception_handler(closure(@ex){
 assign(@dev, import('ch.player.'.puuid(player(), 'dashless').'.developer'))
 
 switch(to_lower($id)) {
+#gib me that block I'm looking at
+case 'that':
+case 'look':
+	if(string_contains_ic(get_block(pcursor()), 'air')) {
+		die(color('c').'No block in sight!')
+		@id = 'DIRT'
+	} else {
+		@id = get_block(pcursor())
+	}
+
 # overrides for some Legacy IDs that are not being picked up by CH / minecraft data values
 # or seemingly obvious names that don't actually match to anything as too generic
 case '50':
@@ -57,8 +67,15 @@ if(is_integral($amount)) {
 		@amount = integer(round($amount))
 		#round returns number.0 
 	} else {
-	# option specified not accepted, using default of 1
-		@amount = 1
+	switch(to_lower($amount)) {
+		case 'max':
+		case 'm':
+		# shorthand for give a full item stack
+			@amount = max_stack_size(array(name: to_upper(@id), 'meta': null))
+		default:
+		# Amount specified not accepted, using default of 1
+			@amount = 1
+		}
 	}
 }
 if(@dev == true) {
@@ -68,5 +85,16 @@ if(@dev == true) {
 @give = array('meta': null, 'name': to_upper(@id), 'qty': @amount)
 	
 pgive_item(player(), @give)
-msg(color(6).'Giving '.color(3).@amount.color(6).' of '.color('a').to_lower(@id))
+#setup messages
+if(has_permission(player(), 'commandhelper.alias.creative.see.id')) {
+	@msgid = color(7).' ('.@idn.')'
+} else {
+	@msgid = ''
+}
+if(reg_count('[a-zA-Z]+_[a-zA-Z]+', @id) == 1) {
+	@display = to_lower(reg_replace('_', ' ', @id))
+} else {
+	@display = to_lower(@id)
+}
+msg(color(6).'Giving '.color(3).@amount.color(6).' of '.color('a').@display.@msgid)
 <<<

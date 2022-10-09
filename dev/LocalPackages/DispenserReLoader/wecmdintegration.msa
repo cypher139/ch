@@ -38,7 +38,7 @@ case 'u':
 	#check if tool has been previously bound
 	if(array_index_exists(@tooldata, 'item') {
 	#A tool has previously existed
-		@tooldata['enabled'] = true
+		@tooldata['use'] = true
         export(@name.'.player.'.@player['id'].'.tool.id.'.@tool, @tooldata)
 		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'ReLoad tool re-bound to your '.color('a').@tooldisplay['display'].color(3).', utilizing previously used settings for this item.')	
 	} else {
