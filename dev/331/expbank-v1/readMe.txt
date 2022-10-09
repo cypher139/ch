@@ -8,4 +8,6 @@ Notes on why this version is no longer supported:
 
 - Full levels are used & not total XP, which may open up duping issues by a player storing level 1 transactions many many times then withdrawing to high levels.
 
+- Economy support in CH was moved to extensions. this version has not been updated for that
+
 Untested past CH 3.3.1 and Minecraft 1.8.
