@@ -1,0 +1,566 @@
+######################################################
+#
+#   Plugins list: Dynamically hide plugins based on permissions checks!
+#   version
+#
+######################################################
+
+
+#Changelog:
+
+
+
+#todo:
+#add stats of who calls plugins, or banned cmds
+
+
+#change:
+
+
+#tests: done:
+
+
+
+*:/plugins [$option1] [$option2] [$option3] [$] = >>>
+### What is the name of this script?
+assign(@name, Plugins)
+
+
+#dynamic vars, dont edit
+assign(@you, player())
+assign(@action, $option1)
+assign(@option1, $option1)
+assign(@option2, $option2)
+assign(@option3, $option3)
+assign(@player, player())
+
+#Initial permission check
+if(has_permission(@you, 'bukkit.command.plugins'), null,
+	#This is the normal Bukkit error message, if you don't have permission for /plugins.
+	msg(color(c).'I\'m sorry, but you do not have permission to perform this command. Please contact the server administrators if you believe that this is in error.')
+	die()
+)
+
+
+#Extra permission / verbose
+if(has_permission(@you, 'commandhelper.alias.plugins.extra'), assign(@verbose, 'yes'))
+assign(@dev, get_value(@player.'.script.developer'))
+
+
+
+
+#get plugins list
+assign(@serverplugins, get_server_info(9))
+#get array of plugins to check
+assign(@checkpluginsperm, get_value(@name.'.plugins.checklist'))
+if(@checkpluginsperm == '' || @checkpluginsperm == null,
+	assign(@checkpluginsperm, array(plugin: 'please.set.up.your.own.plugins.to.check'))
+)
+assign(@checkpluginslist, array_keys(@checkpluginsperm))
+
+#Foreach: Check each plugin in list. if in checklist, run perm check on perm listed. if fail, hide plugin from list.
+assign(@newlist, array())
+foreach(@serverplugins, @currentplugin,
+	assign(@checkcurrentplugin, to_lower(@currentplugin))
+	#Check to see if plugin is in check list. If not the plugin will be displayed in the plugin list.
+	if(array_contains_ic(@checkpluginslist, @checkcurrentplugin),
+		#This plugin is in the check list. If the player does not have the permissions previously set up, the plugin will be hidden from the plugin list for this player.
+		if(has_permission(@player, @checkpluginsperm[@checkcurrentplugin]), 
+			if(@dev == 'yes', msg('[DEV]: you have perm for plugin: '.@currentplugin))
+			array_push(@newlist, color(a).@currentplugin)
+		,
+			if(@verbose == 'yes',
+				array_push(@newlist, color(c).@currentplugin)
+			)
+			continue()
+		)
+	,
+	#Not in list. The color will show up yellow if no check is performed.
+		if(@verbose == 'yes',
+		array_push(@newlist, color(e).@currentplugin)
+		,
+		array_push(@newlist, color(a).@currentplugin)
+		)
+	)
+)
+#Plugin count: Get the array's size
+	assign(@plcount, array_size(@newlist))
+	assign(@newpllist, array_implode(@newlist, color(f).', '))
+	msg(color(r).'Plugins ('.@plcount.'): '.color(a).@newpllist)
+#stats: how many times has this player viewed /plugins. store globally in 1 value so admin stats shows all players total views.
+	assign(@stats, get_value(@name.'.stats.views'))
+	if(@stats == '' || @stats == null, assign(@stats, array()))
+	if(array_index_exists(@stats, @you),
+		assign(@stats[@you], 1 + @stats[@you])
+	,
+		assign(@stats[@you], 1)
+	)
+	store_value(@name.'.stats.views', @stats)
+<<<
+
+
+
+
+
+
+admin:/pluginsadmin [$action] [$option1] [$option2] [$option3] = >>>
+#what is the name of this script?
+assign(@name, Plugins)
+
+#dynamic vars, don't edit
+assign(@you, player())
+assign(@action, $action)
+assign(@option1, $option1)
+assign(@option2, $option2)
+assign(@option3, $option3)
+assign(@player, player())
+
+if(has_permission(@you, 'commandhelper.alias.plugins.extra'), assign(@verbose, 'yes'))
+assign(@dev, get_value(@player.'.script.developer'))
+
+#action list help
+proc(_pl_help,
+	msg(color(6).'Plugins admin help:')
+	msg(color(a).'Command usage: <required> [optional]')
+	msg(color(a).'/pluginsadmin <action> [option1] [option2] [option3]')
+	msg(color(6).'How this script works:')
+	msg(color(3).'Part 1: /plugins:'.color(7).' This script dynamically hides plugins from players in the plugins list, based on if they have a permission you specify. If they do NOT have the permission, the plugin is hidden from the list.')
+	msg(color(3).'Part 2: Commands: '.color(7).'If a player tries to use a command you register to a plugin, the script will check the permission for the plugin the command is registered to, and will block the command and return a "Unknown command" message if the player does not have the specified permission.')
+	msg(color(3).'Usage: '.color(7).' First use "/pluginsadmin add <plugin name> <permission to check>" to specify that the specified permission should be used to verify if the player can use the plugin. Only one permission per plugin is supported.')
+	msg(color(7).' Second, use "/pluginsadmin registercmd <plugin name> <command>" to register a command to belong to the specified plugin. This is for use in blocking commands if the player doesn\'t have the specified permission for the plugin.')
+	msg(color(6).'More help:')
+	msg(color(7).'/pluginsadmin help [morehelp]'.color(4).' - '.color(f).'Views this help, use a action to learn more.')
+	msg(color(7).'/pluginsadmin help actions'.color(4).' - '.color(f).'View what actions are supported, and how to use them.')
+	msg(color(7).'/pluginsadmin help colorkey'.color(4).' - '.color(f).'Tells you what each color means in the plugins list, if you have the extra permissions.')
+	msg(color(7).'/pluginsadmin help realplugins'.color(4).' - '.color(f).'This redirects to the real /plugins command. Useful if you need to see what is really installed.')
+	msg(color(7).'/pluginsadmin help perms'.color(4).' - '.color(f).'Shows you all of this script\'s permissions.')
+)
+
+proc(_pl_actions_help,
+	msg(color(6).'Plugins help: Actions:')
+	msg(color(7).'/pluginsadmin stats'.color(4).' - '.color(f).'Shows all time stats of '.@name.', such as how many times has /plugins been used, and who uses it the most.')
+	msg(color(7).'/pluginsadmin list [plugin name]'.color(4).' - '.color(f).'Shows all plugins to check, their permission to check, and the commands to potentially block. If the player does not have the correct permission specified, this plugin will be hidden in the plugins list, or a "Unknown command" message will appear if they tried to use the specified command. Use a plugin name to see specifically that plugin.')
+	msg(color(7).'/pluginsadmin add <plugin> <permission to check>'.color(4).' - '.color(f).'Adds the specified plugin to the plugin permission check. If the player does not have the correct permission specified, this plugin will be hidden in their /plugins list. Only one permission per plugin is supported.')
+	msg(color(7).'/pluginsadmin remove <plugin>'.color(4).' - '.color(f).'Removes the specified plugin from the plugin permission check. The plugin will now show in the plugin list.')
+	msg(color(7).'/pluginsadmin registercmd <plugin name> <command>'.color(4).' - '.color(f).'Registers the specified command to the specified plugin, for use in the command check.')
+	msg(color(7).'/pluginsadmin unregistercmd <plugin name> <command>'.color(4).' - '.color(f).'Unregisters the specified command from the specified plugin.')
+
+)
+
+proc(_pl_colorkey_help,
+	msg(color(6).'Plugins: Color key help:')
+	#without perms
+	msg(color(6).'Without extra permission:')
+	msg(color(3).'A '.color(a).'GREEN'.color(3).' color on a plugin name means: '.color(7).' ... nothing. It\'s the color used in the real /plugins.')
+	#with perms
+	msg(color(6).'WITH extra permission:')
+	msg(color(3).'A '.color(a).'GREEN'.color(3).' color on a plugin name means: '.color(7).'The player has the permission previously specified for the plugin.')
+	msg(color(3).'A '.color(e).'YELLOW'.color(3).' color on a plugin name means: '.color(7).'The plugin is not set up to be checked. Use "/pluginsadmin add" to add a permission to check.')
+	msg(color(3).'A '.color(c).'RED'.color(3).' color on a plugin name means: '.color(7).'The player does NOT have the permission previously specified for the plugin.')
+)
+
+proc(_pl_perms_help,
+	msg(color(6).'Plugins: Permissions list:')
+	msg(color(7).'Normal players:')
+	msg(color(3).'To use /plugins: '.color(7).' bukkit.command.plugins '.color(2).'(Note: This is the same permission for the real /plugins. By default everyone should have this permission, although for this script you may need to grant this permission.)')
+	msg(color(6).'Admins ONLY:')
+	msg(color(3).'"Extra permission": '.color(7).' commandhelper.alias.plugins.extra '.color(2).'(This is used for extra messages/verbose mode, or for seeing what plugins are left to enable permission checks for.)')
+	msg(color(c).'NOTE: '.color(7).' DO NOT give the extra permission to untrusted / lower rank players, only give that permission to admins, as using this permission will reveal hidden plugins.')
+	msg(color(3).'To use /pluginsadmin: '.color(7).' commandhelper.alias.admin ')
+	msg(color(3).'To receive admin notifications:'.color(7).' commandhelper.alias.admin.message ')
+)
+
+if(@action == 'help',
+	if(@option1 == 'actions',
+		_pl_actions_help()
+		die()
+	)
+	if(@option1 == 'colorkey',
+		_pl_colorkey_help()
+		die()
+	)
+	if(@option1 == 'realplugins',
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Real plugins list from the server:')
+		run('/plugins')
+		die()
+	)
+	if(@option1 == 'perms',
+		_pl_perms_help()
+		die()
+	)
+	_pl_help()
+	die()
+)
+
+if(@action == 'verbose',
+	assign(@value, @option1)
+	assign(@entry[0], 'yes')
+	assign(@entry[1], 'no')
+	assign(@newsetting, to_lower(@value))
+	if(array_contains_ic(@entry, @newsetting),
+		store_value(@you.'.'.@name.'.verbose', @newsetting)
+		if(equals_ic(@newsetting, @entry[0]),
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are enabled! '.color(7).@name.' will display more messages than normal now.')
+			export(@player.'.'.@name.'.verbose', yes)
+		)
+		if(equals_ic(@newsetting, @entry[1]),
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are now disabled! '.color(7).@name.' will NOT display lots of messages now.')
+			export(@player.'.'.@name.'.verbose', no)
+		)
+		die(@successmsg),	
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'Invalid setting specified. Type either yes or no.')
+	)
+)
+
+
+if(@action == 'stats',
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' Global stats:')	
+	msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'All time views:')
+	assign(@vs, get_value(@name.'.stats.views'))
+	if(@vs == '' || @vs == null, msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'Nobody has used /plugins yet?') die())
+	assign(@tr, 0)
+	assign(@j, 0)
+	assign(@h, 0)
+	assign(@vskeys, array_keys(@vs))
+	foreach(@vs, @var,
+		assign(@tr, @tr + @var)
+		assign(@p, @vskeys[@j])
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(2).@p.': '.color(3).@var.' views')
+		assign(@j, @j + 1)
+		if(@var > @h, assign(@h, @var) assign(@pmostviews, @p))
+	)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Total /plugins views: '.color(a).@tr)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Most /plugins views by: '.color(b).@pmostviews)
+
+	msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'Last plugins removed from permission check:')
+	assign(@serverplugins, get_server_info(9))
+	for(assign(@i, 1), @i < 4, @i++,
+		assign(@op, get_value(@name.'.plugins.checklist.last.removed.'.@i))
+		if(@op == '' || @op == null, continue())
+		assign(@pl2, array_keys(@op))
+		assign(@plugin, array_implode(@pl2))
+		foreach(@serverplugins, @currentplugin,
+			assign(@checkcurrentplugin, to_lower(@currentplugin))
+			if(@plugin == @checkcurrentplugin,
+				assign(@plname, @currentplugin)
+			,
+				assign(@plname, '-')
+			)
+		)
+		if(@plname == '-', assign(@plname, @plugin))
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@i.': '.color(2).@plname.color(7).' (Permission: '.@op[@plugin].')')
+	)
+	msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+
+	die()
+
+)
+
+
+
+if(@action == 'add',
+
+	assign(@checkpluginsperm, get_value(@name.'.plugins.checklist'))
+	if(@checkpluginsperm == '' || @checkpluginsperm == null,
+		assign(@checkpluginsperm, array())
+	)
+	if(@option1 == '' || @option1 == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a plugin!')
+	)
+	if(@option2 == '' || @option2 == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a permission to check for the plugin!')
+	)
+	
+	#Get plugin name from plugin list
+	assign(@serverplugins, get_server_info(9))
+	assign(@search, to_lower(@option1))
+	if(array_contains_ic(@serverplugins, @search),
+		foreach(@serverplugins, @currentvar,
+			assign(@var, to_lower(@currentvar))
+			if(@var == @search,
+				assign(@plname, @currentvar)
+			)
+		)
+	,
+		assign(@plname, @option1)
+	)
+	#Check: Let's make sure you only add perms for plugins that are installed.
+	#To combat abuse from mods who may have a limited version of /plugins, this doesnt report if something isn't installed, it just asks it you want to add this or not.
+	if(array_contains(@serverplugins, @plname), null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(c).'Are you sure you want to add this check?')
+	)
+	#get the old perm
+	assign(@plugin, to_lower(@option1))
+	if(array_index_exists(@checkpluginsperm, @plugin),
+		assign(@plperm, @checkpluginsperm[@plugin])
+		assign(@ploldmsg, '(Old permission to check was: '.@plperm.') ')
+	)
+	
+	#set up array
+	assign(@checkpluginsperm[@plugin], @option2)
+	#store values
+	store_value(@name.'.plugins.checklist', @checkpluginsperm)
+	msg(color(a).'['.color(6).@name.color(a).'] '.color(3).'The plugin "'.@plname.'" has been sucessfully added to the permission check! '.color(7).@ploldmsg.color(a).'Now checking permission: '.@option2)
+	#If no commands are found for the plugin, spam you with a reminder message. 
+	assign(@checkpluginscmds, get_value(@name.'.plugins.checklist.cmds'))
+	if(@checkpluginscmds == '' || @checkpluginscmds == null,
+		assign(@checkpluginscmds, array())
+	)
+	if(array_index_exists(@checkpluginscmds, @plugin), null,
+		msg(color(a).'['.color(6).@name.color(a).'] '.color(a).'Don\'t forget to use "registercmd" to add this plugin\'s commands to the command check! '.color(7).'This is useful for fooling players who don\'t have permission to use '.@plname.'\'s commands into thinking the plugin isn\'t installed.')
+	)
+	die()
+)
+
+if(@action == 'remove',
+
+	assign(@checkpluginsperm, get_value(@name.'.plugins.checklist'))
+	if(@checkpluginsperm == '' || @checkpluginsperm == null,
+		assign(@checkpluginsperm, array())
+	)
+	if(@option1 == '' || @option1 == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a plugin!')
+	)
+	
+#get plugin name from plugin list
+	assign(@serverplugins, get_server_info(9))
+	assign(@search, to_lower(@option1))
+	if(array_contains_ic(@serverplugins, @search),
+		foreach(@serverplugins, @currentvar,
+			assign(@var, to_lower(@currentvar))
+			if(@var == @search,
+				assign(@plname, @currentvar)
+			)
+		)
+	,
+		assign(@plname, @option1)
+	)
+
+	assign(@plugin, to_lower(@option1))
+	#is the plugin being checked?
+	if(array_index_exists(@checkpluginsperm, @plugin),
+		assign(@plperm, @checkpluginsperm[@plugin])
+		assign(@array[@plugin], @checkpluginsperm[@plugin])
+		#store last removed plugin from list
+		assign(@op1, get_value(@name.'.plugins.checklist.last.removed.1'))
+		assign(@op2, get_value(@name.'.plugins.checklist.last.removed.2'))
+		assign(@op3, get_value(@name.'.plugins.checklist.last.removed.3'))	
+		store_value(@name.'.plugins.checklist.last.removed.1', @array)
+		store_value(@name.'.plugins.checklist.last.removed.2', @op1)
+		store_value(@name.'.plugins.checklist.last.removed.3', @op2)
+		#remove plugin from list
+		array_remove(@checkpluginsperm, @plugin)
+		#store values
+		store_value(@name.'.plugins.checklist', @checkpluginsperm)
+		msg(color(a).'['.color(6).@name.color(a).'] '.color(3).'The plugin "'.@plname.'" has been sucessfully removed from the permission check!')
+	,
+	#not being checked.
+		if(array_contains(@serverplugins, @plname),
+			msg(color(c).'['.color(6).@name.color(c).'] '.color(7).'The plugin "'.@option1.'" isn\'t being checked, so nothing was done!')
+		,
+			msg(color(c).'['.color(6).@name.color(c).'] '.color(c).'The plugin "'.@option1.'" isn\'t installed on this server. '.color(7).'Try typing the plugin name exactly as it appears in the vanilla /plugins command.')
+		)
+	)
+	
+
+
+	die()
+)
+
+
+
+if(@action == 'list',
+
+	assign(@checkpluginsperm, get_value(@name.'.plugins.checklist'))
+	assign(@checkpluginscmds, get_value(@name.'.plugins.checklist.cmds'))
+	assign(@checkpluginslist, array_keys(@checkpluginsperm))
+	assign(@serverplugins, get_server_info(9))
+
+	if(@option1 == '' || @option1 == null,
+		try(
+			msg(color(a).'['.color(6).@name.color(a).'] '.color(9).'List of plugins being checked:')
+			assign(@j, 0)
+			foreach(@checkpluginslist, @currentvar,
+				assign(@plname, color(c).@currentvar)
+
+			#get plugin name from plugin list
+				foreach(@serverplugins, @currentvar1,
+					assign(@var, to_lower(@currentvar1))
+					if(@var == @currentvar,
+						assign(@plname, color(a).@currentvar1)
+					)
+				)
+				if(array_index_exists(@checkpluginscmds, @currentvar),
+					assign(@cmdmsg, ' Commands: '.@checkpluginscmds[strip_colors(to_lower(@plname))])
+				,
+					assign(@cmdmsg, ' No commands added to check!')
+				)
+				assign(@plperm, @checkpluginsperm[@currentvar])
+				msg(color(7).'['.color(6).@name.color(7).'] '.@plname.color(7).' (Permission: '.@plperm.')'.color(3).@cmdmsg)
+				assign(@j, @j + 1)
+			)	
+			msg(color(a).'['.color(6).@name.color(a).'] '.color(9).'Total plugins to be checked: '.@j)
+		,@fail,
+			msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'No plugins are being checked!')
+		)
+	,
+		#individual list
+		foreach(@checkpluginslist, @currentvar,
+			assign(@var, to_lower(@option1))
+			if(@var == @currentvar,
+		#get plugin name from plugin list
+				if(array_contains_ic(@serverplugins, @option1),
+					foreach(@serverplugins, @currentvar1,
+						if(equals_ic(@var, @currentvar1),
+							assign(@plname, color(a).@currentvar1)
+							break()
+						)
+					)
+				,
+					#plugin isn't installed
+					assign(@plname, color(c).@option1)
+				)
+				if(array_index_exists(@checkpluginscmds, @currentvar),
+					assign(@cmdmsg, ' Commands: '.@checkpluginscmds[strip_colors(to_lower(@plname))])
+				,
+					assign(@cmdmsg, ' No commands added to check!')
+				)
+				break()
+			)
+		)
+		assign(@plperm, @checkpluginsperm[strip_colors(to_lower(@plname))])
+		msg(color(a).'['.color(6).@name.color(a).'] '.color(9).'Listing plugin: '.@plname)
+		msg(color(7).'['.color(6).@name.color(7).'] '.@plname.color(7).' (Permission: '.@plperm.')'.color(3).@cmdmsg)	
+	)
+die()
+)
+
+
+if(@action == 'registercmd',
+	assign(@checkpluginscmds, get_value(@name.'.plugins.checklist.cmds'))
+	msg(@checkpluginscmds)
+	if(@checkpluginscmds == '' || @checkpluginscmds == null,
+		assign(@checkpluginscmds, array())
+	)
+	if(@option1 == '' || @option1 == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a plugin!')
+	)
+	if(@option2 == '' || @option2 == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a command to check for this plugin!')
+	)
+	
+#get plugin name from plugin list
+	assign(@serverplugins, get_server_info(9))
+	assign(@search, to_lower(@option1))
+	if(array_contains_ic(@serverplugins, @search),
+		foreach(@serverplugins, @currentvar,
+			assign(@var, to_lower(@currentvar))
+			if(@var == @search,
+				assign(@plname, @currentvar)
+			)
+		)
+	,
+		assign(@plname, @option1)
+	)
+	#Check: Let's make sure you only add perms for plugins that are installed.
+	#To combat potential abuse from mods who may have a limited version of /plugins, this doesnt report if something isn't installed, it just asks if you want to add this or not.
+	if(array_contains(@serverplugins, @plname), null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(c).'Are you sure you want to add this check?')
+	)
+	#check: Does the command have a leading / ?
+	if(reg_count('^(/.*)', @option2) > 0, null,
+		assign(@option2, '/'.@option2)
+	)
+
+#set up array
+	assign(@plugin, to_lower(@plname))
+	if(array_index_exists(@checkpluginscmds, @plugin),
+		#Check: The command is already being checked!
+		foreach(array_keys(@checkpluginscmds[@plugin]), @var,
+			if(@checkpluginscmds[@plugin][@var] == @option2,
+				die(color(c).'['.color(6).@name.color(c).'] '.color(7).'The "'.@option2.'" command is already being checked!')
+			)
+		)
+		array_push(@checkpluginscmds[@plugin], @option2)
+	,
+		assign(@checkpluginscmds[@plugin], array(@option2))
+	)
+#store values
+	store_value(@name.'.plugins.checklist.cmds', @checkpluginscmds)
+	msg(color(a).'['.color(6).@name.color(a).'] '.color(3).'The command "'.@option2.'" has been sucessfully '.color(a).'registered'.color(3).' to the plugin "'.@plname.'" for use in plugin checking.')
+	msg(@checkpluginscmds)
+	die()
+)
+
+if(@action == 'unregistercmd',
+
+	assign(@checkpluginscmds, get_value(@name.'.plugins.checklist.cmds'))
+	msg(@checkpluginscmds)
+	if(@checkpluginscmds == '' || @checkpluginscmds == null,
+		assign(@checkpluginscmds, array())
+	)
+	if(@option1 == '' || @option1 == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a plugin!')
+	)
+	if(@option2 == '' || @option2 == null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You need to specify a command to check for this plugin!')
+	)
+	
+#get plugin name from plugin list
+	assign(@serverplugins, get_server_info(9))
+	assign(@search, to_lower(@option1))
+	if(array_contains_ic(@serverplugins, @search),
+		foreach(@serverplugins, @currentvar,
+			assign(@var, to_lower(@currentvar))
+			if(@var == @search,
+				assign(@plname, @currentvar)
+			)
+		)
+	,
+		assign(@plname, @option1)
+	)
+	#Check: Let's make sure you only add perms for plugins that are installed.
+	#To combat potential abuse from mods who may have a limited version of /plugins, this doesnt report if something isn't installed, it just asks if you want to add this or not.
+	if(array_contains(@serverplugins, @plname), null,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(c).'Are you sure you want to add this check?')
+	)
+	#check: Does the command have a leading / ?
+	if(reg_count('^(/.*)', @option2) > 0, null,
+		assign(@option2, '/'.@option2)
+	)
+
+#set up array
+	assign(@plugin, to_lower(@plname))
+	#check if any plugin commands are being checked
+	if(array_index_exists(@checkpluginscmds, @plugin),
+		#yes, find index of the cmd being removed.
+		foreach(array_keys(@checkpluginscmds[@plugin]), @var,
+			if(@checkpluginscmds[@plugin][@var] == @option2,
+				array_remove(@checkpluginscmds[@plugin], @var)
+				assign(@removed, 'yes')
+			)
+		)
+	,
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'The "'.@plname.'" plugin doesn\'t have any commands being checked!')
+	)
+	#Check: was the command listed at all?
+	if(@removed != 'yes', 
+		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'The command "'.@option2.'" wasn\'t already registered to '.@plname.'!')	
+	)
+	#check: Is plugin's array now empty? If so, remove it.
+	if(@checkpluginscmds[@plugin] == array(), 
+		array_remove(@checkpluginscmds, @plugin)
+	)
+#store values
+	store_value(@name.'.plugins.checklist.cmds', @checkpluginscmds)
+	msg(color(a).'['.color(6).@name.color(a).'] '.color(3).'The command "'.@option2.'" has been sucessfully '.color(c).'unregistered'.color(3).' to the plugin "'.@plname.'" for use in plugin checking.')
+	msg(@checkpluginscmds)
+	die()
+)
+
+
+<<<
