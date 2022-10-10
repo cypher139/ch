@@ -150,7 +150,7 @@ case 'switch':
 	case 'colorize':
 	case 'c':
 		assign(@oldsetting, get_value(@player['id'].'.chat.format.colorize'))
-		if(@oldsetting == true
+		if(@oldsetting == true,
 			assign(@newsetting, false)
 		)
 		if(@oldsetting == false || @oldsetting == '' || @oldsetting == null,
@@ -332,7 +332,7 @@ case 's':
 	if(@chatoptions == '' || @chatoptions == null,
 		assign(@chatoptions, array(colorize: '', randcolor: '', capitalizechat: '', capitalizegroupname: ''))
 	)
-
+				assign(@entry, array())
 	switch(@option1) {
 	case 'option':
 	case 'o':
@@ -364,6 +364,7 @@ case 's':
 			switch(@option3) {
 			case 'chat':
 			case 'c':
+
 				assign(@entry[0], true)
 				assign(@entry[1], false)
 				assign(@newsetting, to_lower(@option4))

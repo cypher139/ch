@@ -1,5 +1,5 @@
 #version 1.1-tmc
-~admin:/randblock [$id='GRASS_BLOCK'] [$tries='20'] = >>>
+~admin:/randblock [$id='GRASS_BLOCK'] [$tries='20'] [$edity=0] = >>>
 	if(is_numeric($id)) {
 		assign(@id, data_name($id))
 		assign(@idn, $id)
@@ -20,9 +20,9 @@
 	
 	for(assign(@i, 1), @i <= @tries, @i++,
 #x (0)
-		assign(@xyz['x'], rand(-5500, 5500))
+		assign(@xyz['x'], rand(-2500, 2500))
 #z (2)
-		assign(@xyz['z'], rand(-5500, 5500))
+		assign(@xyz['z'], rand(-2500, 2500))
 #y (1)
 		assign(@xyz['y'], get_highest_block_at(@xyz['x'], @xyz['z'], @xyz['world'])[1] --)
 
@@ -31,6 +31,9 @@
 		if(@blockID == @id) {
 			msg(color(7).'Yay! A random "'.color(3).@blockID.color(7).'" block is located here: '.@xyz['x'].','.@xyz['y'].','.@xyz['z'].','.@xyz['world'])
 			if(player() != '~console') {
+				if($edity != 0) {
+					@xyz['y'] = @xyz['y'] - 2
+				}
 				set_ploc(@xyz)
 				msg(color(7).'Teleported you to the location!')
 			}

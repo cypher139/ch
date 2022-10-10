@@ -36,6 +36,9 @@ default:
 # Get rid of a 0 data value
 if(reg_count('[0-9]+:0', @id) == 1) {
 	@id = reg_split(':', @id)[0]
+	if(@dev == true) {
+		msg(color(7).'[DEV]: 0 removed')
+	}
 }
 # item:subitem argument syntax not supported internally anymore, translated here
 if(reg_count('[0-9]+:[0-9]+', @id) == 1) {
@@ -51,7 +54,7 @@ if(reg_count('[0-9]+:[0-9]+', @id) == 1) {
 		assign(@id, to_upper(@id))
 		assign(@idn, data_values(@id))
 		if(@idn == null) {
-			@idn = 'ID Not Found'
+			@idn = 'No ID'
 		}
 	}
 }

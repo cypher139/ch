@@ -9,6 +9,15 @@ msg(@player)
 
 switch(to_lower($action)) {
 
+case 'goto':
+	switch(to_lower($option1)) {
+	case 'spawn':
+		@spawnloc = get_spawn(pworld(player()))
+		msg(@spawnloc)
+		set_ploc(@spawnloc)
+	}
+
+
 case 'superjump':
 	assign(@player, player())
 	assign(@rand, rand(1, 10))

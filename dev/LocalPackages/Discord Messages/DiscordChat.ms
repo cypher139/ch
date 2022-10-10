@@ -11,11 +11,17 @@ proc _send_discord_message(@message, @from, @channel) {
 
 	if(@from == '', assign(@from, player()))
 	if(@channel == '', assign(@channel, 'minecraft'))
+	
+	@message = strip_colors(@message)
 
-	if(@from == 'none'){
+	switch(@from) {
+	case 'none':
 		assign(@sendmsg, @message)
-	} else {
+	case 'server':
+	case 'Server':
 		assign(@sendmsg, '['.@from.'] '.@message)
+	default:
+		assign(@sendmsg, '['.@from.'] '.'```'.@message.'```')
 	}
 	discord_broadcast(@channel, associative_array(content: @sendmsg))
 }
