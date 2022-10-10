@@ -1,12 +1,12 @@
 #version 1.1-tmc
-proc(_reloader_getplayerID, @option1,
+proc _reloader_getplayerID(@option1) {
 	@pid = array()
 	if(@option1 == '~console'){
 		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
 	} else {
 	@pid['display'] = pinfo(@option1)[0];
 	@pid['name'] = pinfo(@option1)[0];
-	@pid['id'] = puuid(@option1, dashless);
+	@pid['id'] = puuid(@option1, 'dashless');
 	@pid['nick'] = pinfo(@option1)[4];
 	}
 	#Bedrock to Java players come in with name ".NAME", remove dot
@@ -14,14 +14,56 @@ proc(_reloader_getplayerID, @option1,
 		assign(@pid['display'], reg_replace('^[\\.]','', @pid['name']))
 	)
 	return(@pid)
-)
+}
+
+proc _reloader_get_server_defaults(@option) {
+	assign(@name, string(import('dispenserreloader.name')))
+	switch(@option) {
+	case 'start':
+	case 'startup':
+		#load defaults into RAM
+		### What is the default item to use? (Note: this value can use ID or name. Default: arrows)
+		assign(@defaultitem, get_value(@name.'.default.item.type'))
+		if(@defaultitem == '' || @defaultitem == null,
+				assign(@defaultitem, 262)
+		)
+		#For other parts of the script, we'll export this value.
+		export(@name.'.default.item.type', @defaultitem)
+
+		### What is the default item to use for fuel mode? (Note: this value uses a ID, not a name. Default: coal)
+		assign(@fueldefaultitem, get_value(@name.'.default.item.type.fuel'))
+		if(@fueldefaultitem == '' || @fueldefaultitem == null,
+			assign(@fueldefaultitem, 263)
+		)
+		export(@name.'.default.item.type.fuel', @fueldefaultitem)
+
+		### What is the default item quantity to use? (Note: this value uses a number. Default: full stack (64))
+		assign(@defaultitemqty, get_value(@name.'.default.item.qty'))
+		if(@defaultitemqty == '' || @defaultitemqty == null,
+				assign(@defaultitemqty, 64)
+		)
+		export(@name.'.default.item.qty', @defaultitemqty)
+		
+		### What is the default fees to charge? (Note: this value uses a number. Default: tool: $5, area $35)
+		assign(@defaultfees, get_value(@name.'.default.fees'))
+		if(is_array(@defaultfees), null,
+				assign(@defaultfees, array(tool: 5, area: 35))
+		)
+		export(@name.'.default.fees', @defaultfees)
+		@return = array(type: @defaultitem, fuel: @fueldefaultitem, qty: @defaultitemqty, fee: @defaultfees)
+	default:
+		@return = array(type: import(@name.'.default.item.type'), fuel: import(@name.'.default.item.type.fuel'), qty: import(@name.'.default.item.qty'), fee: import(@name.'.default.fees'))
+	}
+	return(@return)
+}
 
 proc _reloader_item_name(@item) {
 	#Get rid of a 0 data value
 	if(reg_count('[0-9]+:0', @item) == 1) {
 			assign(@item, reg_split(':', @item)[0])
 	}
-	# item:subitem argument syntax not supported internally anymore, translated here
+	# Legacy Item data support: This checks for one : in the middle of the given item ID. A match means the ID has extra data to it to denote the item.
+	# This argument syntax is not supported internally anymore, translated here
 	if(reg_count('[0-9]+:[0-9]+', @item) == 1) {
 		@ids = reg_split(':', @item)
 		@name = data_name(array(name: data_name(@ids[0]), data: @ids[1]))
@@ -44,7 +86,7 @@ proc _reloader_item_name(@item) {
 		assign(@display, to_lower(reg_replace('_', ' ', @name)))
 	}
 	# Check: Is this air?
-	if(@item == '0') {
+	if(@item == '0' || string_contains_ic(@item, 'air')) {
         msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
 	}
 return(array(name: @name, id: @id, display: @display))

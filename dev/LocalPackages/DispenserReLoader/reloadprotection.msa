@@ -3,7 +3,7 @@
 #   ReLoad: Fill chests, dispensers, and furnaces in one click!
 #   This optional command provides protection from players inadvertently
 #   reloading the server while trying to access ReLoad.
-#   version 1.0-wzr
+#   version 1.1-tmc
 #
 ######################################################
 
@@ -12,21 +12,21 @@ msg(color('c').'Warning: /reload is not nice to servers.')
 msg(color('c').'Stop using /reload!!!!!!!!!!!!!')
 #if console, reload if an option given
 if(player() == '~console') {
-	msg('If a reload is required, type "/reload now".'color('c').' It is highly recommended that you stop and restart your server, rather than reload it.')
-	if($action == 'now',
-		run(/reload)
+	msg(color('c').'Are you sure you wish to reload your server? Reloading causes bugs and memory leaks. It is highly recommended to restart instead of using /reload. To start a server reload, please type '.color('e').'/reload confirm')
+	if($action == 'confirm',
+		run(/reload $)
 	)
 	die()	
 }
-msg(color(7).'To access the ReLoad plugin, please use "/reloader".')
+msg(color(7).'To access the ReLoad plugin, please use '.color('e').'/reloader')
 #if players, call alias
 call_alias(/reloader $action $)
 <<<
 
-/rl [$option1] [$option2] [$option3] [$option4] = >>>
-call_alias(/reloader $option1 $option2 $option3 $option4)
+/rl [$option1] [$option2] [$option3] [$option4] [$] = >>>
+call_alias(/reloader $option1 $option2 $option3 $option4 $)
 <<<
 
-/rladmin [$option1] [$option2] [$option3] [$option4] = >>>
-call_alias(/reloaderadmin $option1 $option2 $option3 $option4)
+/rladmin [$option1] [$option2] [$option3] [$option4] [$] = >>>
+call_alias(/reloaderadmin $option1 $option2 $option3 $option4 $)
 <<<

@@ -13,9 +13,6 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 	assign(@name, import('dispenserreloader.name'))
 	assign(@player, _reloader_getplayerID(@reload['player']))
 	assign(@verbose, import(@name.'.player.'.@player['id'].'.verbose'))
-	if(@verbose == null,
-		export(@name.'.player.'.@player['id'].'.verbose', get_value(@name.'.player.'.@player['id'].'.verbose'))
-	)
 
 	assign(@index, null)
 	assign(@tool, pinv(@player['name'], @index)['name'])
