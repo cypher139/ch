@@ -1,4 +1,0 @@
-Fixes:
-Compile error with newer CH versions, all switch cases must be quoted now.
-Add player persistance storage via UUID, required for newer versions and/or name prefixes using a dot (i.e. name defaults for Bedrock to Java players)
-switch to tool name over id, optimize some value importing

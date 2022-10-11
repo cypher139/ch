@@ -153,8 +153,7 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                 tmsg(@player['name'], color(7).'[DEV] _reloader_fill: '.color('f').'Evaluating block: '.@xyz)
         )
 # Check: null/air
-        assign(@itemname, data_name(@item))
-        if(@itemname == null || @item == 0,
+        if(@item == null || @item == 0,
                 return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!', size: 0, fail: true))
         )
 # Get the inventory size
@@ -182,7 +181,7 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                 assign(@qty, @maxstacksize)
         )      
 # Set array of item
-        assign(@itema, array(type: @item, qty: @qty))
+        assign(@itema, array(name: @item, qty: @qty))
  
 # Check: illegitimate stack perm
         if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate'),
@@ -207,7 +206,6 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                 )
                 #item already filled check
                 assign(@af, get_inventory_item(@xyz, @i))
-				msg(@af)
                 if(@af == '' || @af == null, assign(@af, array(name: null, qty: 0, meta: null)))
                 assign(@mqty, 0)
 
@@ -268,7 +266,7 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
         )
        
  
-        assign(@donemsg, color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! This '.to_lower(@filltype).' was '.@re.'filled, using a total of '.@fqty.' '.@itemname.'.')      
+        assign(@donemsg, color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! This '.to_lower(@filltype).' was '.@re.'filled, using a total of '.@fqty.' '.to_lower(@item).'.')      
  
         if(@fqty == 0, assign(@donemsg, '0'))
         return(array(msg: @donemsg, size: @size, type: @filltype, filledqty: @fqty, fail: false))

@@ -11,6 +11,7 @@ switch(to_lower($action)) {
 
 case 'test':
 msg(data_name($option1))
+msg(pinv(@player['name'], null))
 
 
 case 'goto':

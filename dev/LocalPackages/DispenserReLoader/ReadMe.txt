@@ -8,14 +8,13 @@ This script has required dependencies that must be installed in order to run cor
 -SKCompat extension (for accessing WorldEdit selection data in CH)
 -Vault plugin (for access to your economy plugin)
 -CHVault extension (For accessing economy functions in CH)
-Download CommandHelper extensions from http://forum.enginehub.org/threads/where-did-worldedit-and-worldguard-functions-go.15844/
+Download CommandHelper extensions from https://letsbuild.net/jenkins/job/CHVault/
 Install CommandHelper extensions by saving the extension .jar file to <server root>/plugins/CommandHelper/extensions.
-
-You can check the status of installed extensions by typing /rlversion.
+ --You can check the status of installed extensions by typing /rladmin info.
 
 For a list of permissions, see permissions.txt
 
-Note: This script uses CommandHelper plugin features that are not present in CH versions 3.3.0 or prior, you must use version 3.3.1 dev builds or higher. Since 3.3.0 doesn't run on newer servers anymore, this shouldn't be much of an issue.
+Note: This script uses CommandHelper plugin features and newer Minecraft item name IDs that are not present in CH versions 3.3.4 or prior, you must use version 3.3.5 builds or higher.
 
 
 

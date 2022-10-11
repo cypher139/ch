@@ -14,23 +14,20 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 	assign(@player, _reloader_getplayerID(@reload['player']))
 	assign(@verbose, import(@name.'.player.'.@player['id'].'.verbose'))
 
-	assign(@index, null)
-	assign(@tool, pinv(@player['name'], @index)['name'])
-	if(@tool == null) {
-		#ReLoad tool does not bind to Hand. 
+	#Find the tool in the players hand. Don't use just a hand, sorry.
+	assign(@tool, pinv(@player['name'], null))
+	if(@tool == null || !is_array(@tool)) {
+	#ReLoad tool does not bind to Hand.
 		die()
 	}
-	
-	
-	assign(@tooldata, import(@name.'.player.'.@player['id'].'.tool.id.'.@tool))
+
+	assign(@tooldata, import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name']))	
 	if(!is_array(@tooldata)) {
+		# No tool data set yet, nothing to do here.
 		die()
 	}
 	if(@tooldata['use'] == true && @reload['action'] == 'left_click_block' && has_permission(@player['name'], 'commandhelper.alias.reloader')) {
-	#	assign(@tooldata['item'], import(@name.'.player.'.@player['id'].'.tool.id.'.@usetool.'.item'))
-	#	assign(@tooldata['qty'], import(@name.'.player.'.@player['id'].'.tool.id.'.@usetool.'.qty'))
-	#	assign(@tooldata['fuel'], import(@name.'.player.'.@player['id'].'.tool.id.'.@usetool.'.fuel'))
-		assign(@tooldisplay, _reloader_item_name(@tool))
+		assign(@tooldisplay, _reloader_item_name(@tool['name']))
 		# Check: Item permissions
 		assign(@defaultitem, import(@name.'.default.item.type'))
 		if(@defaultitem != @tooldata['item'],
@@ -40,19 +37,19 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 				)
 			)
 		)
-		#assigning for return value
+		# Fill the Block, assigning for return value
 		assign(@fillreturn, _reloader_fill(@reload['location'][0], @reload['location'][1], @reload['location'][2], @reload['location'][3], @tooldata['item'], @player['name'], @tooldata['qty'], @tooldata['fuel'], @verbose))
-		#stats
-		if(@fillreturn['fail'] == true,
-			die(@return['msg'])
-		)
-		if(@fillreturn['msg'] == '0', 
+		# Stats messages
+		if(@fillreturn['fail'] == true) {
+			die(@fillreturn['msg'])
+		}
+		if(@fillreturn['msg'] == '0') {
 			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! However this '.to_lower(@fillreturn['type']).' was already full of '._reloader_item_name(@tooldata['item'])['display'].'!')
-		)
-		#record stats
+		}
+		# Record stats
 		_reloader_record_stats(@player['name'], tool, 1, @fillreturn['filledqty'], @tooldata['item'], @tooldata['qty'])
-		if(@verbose == true,
-			msg(@return['msg'])
-		)
+		if(@verbose == true) {
+			msg(@fillreturn['msg'])
+		}
 	}
 }

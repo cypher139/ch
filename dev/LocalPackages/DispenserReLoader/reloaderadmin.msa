@@ -82,7 +82,7 @@ case '-stats':
 	                )
 	        )
  
-	        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+	        msg(color(9).' -------')
  
 	        msg(color(7).'All time '.@name.' runs:')
 	        assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
@@ -91,18 +91,20 @@ case '-stats':
 	        assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
 	        if(@ttr == '' || @ttr == null, assign(@ttr, 0))
 	        msg(color(6).'/reload (tool): '.color(b)._number_commaize(@ttr).' runs')
-	        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+	        
+			msg(color(9).' -------')
  
 	        assign(@fb, get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks'))
 	        msg(color(7).'Total blocks filled: '.color(b)._number_commaize(@fb))
-	        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+	        
+			msg(color(9).' -------')
  
 	        assign(@lr, get_value(@name.'.player.'.@player['id'].'.stats.last.run'))
 	        msg(color(7).'Last run: '.color(6).@lr['action'].'.')
 	        if(@lr['blocks'] == 1, assign(@p, block) assign(@p2, was), assign(@p, blocks) assign(@p2, were))
-	        msg(color(a)._number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(b)._number_commaize(@lr['filledqty']).' '.color(3).data_name(@lr['item']).'.')
+	        msg(color(a)._number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(b)._number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
 
-	        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+	        msg(color(9).' -------')
  
 	        assign(@playeritems, get_value(@name.'.player.'.@player['id'].'.stats.alltime.items'))
 	        try(
@@ -112,8 +114,8 @@ case '-stats':
 	                assign(@playeritemsi, array_keys(@playeritems))
 	                foreach(@playeritems, @currentvar,
 	                        assign(@tiu, @tiu + @currentvar)
-	                        assign(@itemname, data_name(@playeritemsi[@j]))
-	                        msg(color(3).@itemname.': '.color(7)._number_commaize(@currentvar))
+	                        assign(@item, _reloader_item_name(@playeritemsi[@j]))
+							msg(color(3).@item['display'].': '.color(7)._number_commaize(@currentvar))
 	                        assign(@j, @j + 1)
 	                )      
 	                msg(color(9).'Total items used: '._number_commaize(@tiu))
@@ -125,7 +127,7 @@ case '-stats':
 	        die()
 	)
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' Global stats:') 
-	msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+	msg(color(9).' -------')
  
 	msg(color(7).'All time '.@name.' runs:')
 	assign(@atr, get_value(@name.'.stats.alltime.runs.area'))
@@ -137,19 +139,20 @@ case '-stats':
 	assign(@tr, @atr + @ttr)
 	if(@tr == '' || @tr == null, assign(@tr, 0))
 	msg(color(6).'Total '.@name.' runs: '.color(b)._number_commaize(@tr).' runs')
-	msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
- 
+	
+	msg(color(9).' -------')
  
 	assign(@fb, get_value(@name.'.stats.alltime.filled.blocks'))
 	msg(color(7).'Total blocks filled: '.color(b)._number_commaize(@fb))
-	msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
- 
+	
+	msg(color(9).' -------')
  
 	assign(@lr, get_value(@name.'.stats.last.run.1'))
 	msg(color(7).'Last run: '.color(6).@lr['action'].', by '.@lr['player'].'.')
 	if(@lr['blocks'] == 1, assign(@p, block) assign(@p2, was), assign(@p, blocks) assign(@p2, were))
-	msg(color(a)._number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(b)._number_commaize(@lr['filledqty']).' '.color(3).data_name(@lr['item']).'.')
-	msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+	msg(color(a)._number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(b)._number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
+	
+	msg(color(9).' -------')
  
 	assign(@items, get_value(@name.'.stats.alltime.items'))
 	try(
@@ -159,8 +162,8 @@ case '-stats':
 	        assign(@itemsi, array_keys(@items))
 	        foreach(@items, @currentvar,
 	                assign(@tiu, @tiu + @currentvar)
-	                assign(@itemname, data_name(@itemsi[@j]))
-	                msg(color(3).@itemname.': '.color(7)._number_commaize(@currentvar))
+	                assign(@item, _reloader_item_name(@itemsi[@j]))
+	                msg(color(3).@item['display'].': '.color(7)._number_commaize(@currentvar))
 	                assign(@j, @j + 1)
 	        )      
 	        msg(color(9).'Total items used: '._number_commaize(@tiu))

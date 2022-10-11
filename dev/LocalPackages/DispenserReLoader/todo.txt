@@ -1,0 +1,8 @@
+todo:
+- stats: show when item data is used
+- admins: unbind another players tool. If this was an admin who performed the unbind command, lock out tool usage for that player until re-login?
+-admin lock or unlock a spamming player's access to tool. if locked all modes are disabled for that player until an admin performs /rladmin unlock
+-support to empty instead of fill.
+-economy support. charge per fill, charge more for area. charge a lot for random.
+- economy - "item". enabled if a setting is set, or default for missing access to CHVault extension. Will take specified item from players inventory, in lieu of charging a fee.
+-randomizer - set all contents in an area to have random objects in each inventory slot, also most slots will have nothing at all. useful for survival games.

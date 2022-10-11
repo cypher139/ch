@@ -25,11 +25,7 @@ assign(@option4, $option4)
 assign(@player, _reloader_getplayerID(player()))
 assign(@verbose, get_value(@name.'.player.'.@player['id'].'.verbose'))
 #For other parts of the script, we'll use this value to enable/disable verbose messages.
-if(@verbose == true,
-	export(@name.'.player.'.@player['id'].'verbose', true)
-,
-	export(@name.'.player.'.@player['id'].'verbose', false)
-)
+export(@name.'.player.'.@player['id'].'.verbose', @verbose)
 assign(@dev, import('ch.player.'.@player['id'].'.developer'))
 
 /* 
@@ -213,6 +209,8 @@ case '-info':
 case '-stats':
 case 'stats':
 case 'statistics':
+case 'stat':
+case 'st':
         msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player['display'])     
         assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
         assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
@@ -223,7 +221,7 @@ case 'statistics':
                 )
         )
  
-        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+        msg(color(9).' -------')
  
         msg(color(7).'All time '.@name.' runs:')
         assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
@@ -232,18 +230,20 @@ case 'statistics':
         assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
         if(@ttr == '' || @ttr == null, assign(@ttr, 0))
         msg(color(6).'/reload (tool): '.color('b')._number_commaize(@ttr).' runs')
-        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+        
+		msg(color(9).' -------')
  
         assign(@fb, get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks'))
         msg(color(7).'Total blocks filled: '.color('b')._number_commaize(@fb))
-        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+        
+		msg(color(9).' -------')
  
         assign(@lr, get_value(@name.'.player.'.@player['id'].'.stats.last.run'))
         msg(color(7).'Last run: '.color(6).@lr['action'].'.')
         if(@lr['blocks'] == 1, assign(@p, block) assign(@p2, was), assign(@p, blocks) assign(@p2, were))
-	msg(color('a')._number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(3)._number_commaize(@lr['filledqty']).' '.color(3).data_name(@lr['item']).'.')
+		msg(color('a')._number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(3)._number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
  
-        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+        msg(color(9).' -------')
  
         assign(@playeritems, get_value(@name.'.player.'.@player['id'].'.stats.alltime.items'))
         try(
@@ -327,8 +327,19 @@ case '-a':
 case 'fuel':
 	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').'fuel'))
 	assign(@defaultitem, @serveritemdefaults['fuel'])
+case 'this':
+case 'that':
+#item - onhand tool
+	if(pinv(@player['name'], null) == null) {
+        assign(@option1, @defaultitem)
+	} else {
+	#use equipped item 
+		assign(@option1, pinv(@player['name'], null)['name'])
+	}
+	assign(@option2, max_stack_size(array(name: @option1, 'meta': null)))
+	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').' equipped: '.@option1.@option2))
 default:
-	# No more actions to perform, move options into proper places that checks expect values to be for tool usage.
+	# No more actions to perform, using tool. Move options into proper places that checks expect values to be for tool usage.
 	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').'tool'))
 	assign(@option3, @option2)
 	assign(@option2, @option1)
@@ -546,8 +557,8 @@ case '-a':
 					assign(@donemsg, 'There wasn\'t any '.@areamodedisplay.'(s) to fill in the area!')
 				}
 			}
-			msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@donemsg)
 		}
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@donemsg)
 #permission
 	} else {
 		msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permission to fill an area!')
@@ -560,15 +571,15 @@ case '-a':
 ### ReLoad tool
 assign(@index, null)
 #Find the tool in the players hand. Don't use just a hand, sorry.
-assign(@tool, pinv(@player['name'], @index)['name'])
-if(@tool == null) {
+assign(@tool, pinv(@player['name'], @index))
+if(@tool == null || !is_array(@tool)) {
         die(color('c').'['.color(6).@name.color('c').'] '.color(7).'Your hands aren\'t that magical! Equip a tool and use \'/reloader\' again.')
 }
 if(@dev == true,
-        msg(color(7).'[DEV] Tool to bind: '.color('f').pinv(@player['name'], @index)['name'])
+        msg(color(7).'[DEV] Tool to bind: '.color('f').@tool['name'])
 )
-assign(@tooldisplay, _reloader_item_name(@tool))
-assign(@toolcheck, import(@name.'.player.'.@player['id'].'.tool.'.@tool))
+assign(@tooldisplay, _reloader_item_name(@tool['name']))
+assign(@toolcheck, import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name']))
 
 # If existing tool, Disable tool.
 if(is_array(@toolcheck)) {
@@ -577,7 +588,7 @@ if(is_array(@toolcheck)) {
 		if(@toolcheck['use'] == true) {
 		# Disable tool.
 			@toolcheck['use'] = false
-			export(@name.'.player.'.@player['id'].'.tool.id.'.@tool, @toolcheck)
+			export(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'], @toolcheck)
 			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Tool unbound from your '.color('a').@tooldisplay['display'].'.')
 		}
 	}
@@ -590,7 +601,7 @@ if(@action == 'fuel') {
 	@tooldata['fuel'] = true
 }
 #done
-export(@name.'.player.'.@player['id'].'.tool.id.'.@tool, @tooldata)
+export(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'], @tooldata)
 assign(@fuelmsg, '')
 if(@fuel == true) {
 		@fuelmsg = 'Furnace'
