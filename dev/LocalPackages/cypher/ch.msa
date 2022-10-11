@@ -137,7 +137,7 @@ case 'hv':
 case 'storevalue':
 case 'sv':
 	msg(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Store value: '.color('d').@option1)
-	store_value(@option1, @option2 $)
+	store_value(@option1, @option2)
 	assign(@v, get_value(@option1))
 	msg(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Value '.@option1.' saved to: '.color(7).@v)
 
