@@ -25,7 +25,7 @@ proc _reloader_get_server_defaults(@option) {
 		### What is the default item to use? (Note: this value can use ID or name. Default: arrows)
 		assign(@defaultitem, get_value(@name.'.default.item.type'))
 		if(@defaultitem == '' || @defaultitem == null,
-				assign(@defaultitem, 262)
+				assign(@defaultitem, 'ARROW')
 		)
 		#For other parts of the script, we'll export this value.
 		export(@name.'.default.item.type', @defaultitem)
@@ -33,7 +33,7 @@ proc _reloader_get_server_defaults(@option) {
 		### What is the default item to use for fuel mode? (Note: this value uses a ID, not a name. Default: coal)
 		assign(@fueldefaultitem, get_value(@name.'.default.item.type.fuel'))
 		if(@fueldefaultitem == '' || @fueldefaultitem == null,
-			assign(@fueldefaultitem, 263)
+			assign(@fueldefaultitem, 'COAL')
 		)
 		export(@name.'.default.item.type.fuel', @fueldefaultitem)
 
@@ -50,14 +50,20 @@ proc _reloader_get_server_defaults(@option) {
 				assign(@defaultfees, array(tool: 5, area: 35))
 		)
 		export(@name.'.default.fees', @defaultfees)
-		@return = array(type: @defaultitem, fuel: @fueldefaultitem, qty: @defaultitemqty, fee: @defaultfees)
+		@return = array(type: @defaultitem, item: @defaultitem, fuel: @fueldefaultitem, qty: @defaultitemqty, fee: @defaultfees)
 	default:
-		@return = array(type: import(@name.'.default.item.type'), fuel: import(@name.'.default.item.type.fuel'), qty: import(@name.'.default.item.qty'), fee: import(@name.'.default.fees'))
+		@item = import(@name.'.default.item.type')
+		@return = array(type: @item, item: @item, fuel: import(@name.'.default.item.type.fuel'), qty: import(@name.'.default.item.qty'), fee: import(@name.'.default.fees'))
 	}
 	return(@return)
 }
 
 proc _reloader_item_name(@item) {
+	switch(@item) {
+	case '':
+	case null:
+		return(array(name: null, id: 0, display: 'Invalid item name or ID given'))
+	default:
 	#Get rid of a 0 data value
 	if(reg_count('[0-9]+:0', @item) == 1) {
 			assign(@item, reg_split(':', @item)[0])
@@ -66,7 +72,7 @@ proc _reloader_item_name(@item) {
 	# This argument syntax is not supported internally anymore, translated here
 	if(reg_count('[0-9]+:[0-9]+', @item) == 1) {
 		@ids = reg_split(':', @item)
-		@name = data_name(array(name: data_name(@ids[0]), data: @ids[1]))
+		@name = data_name(array(name: data_name(@ids[0]), data: integer(trim(@ids[1]))))
 		@display = to_lower(@name)
 		@id = @item
 	} else {
@@ -80,16 +86,22 @@ proc _reloader_item_name(@item) {
 			assign(@name, to_upper(@item))
 			assign(@display, to_lower(@item))
 			assign(@id, data_values(@item))
+			if(!array_contains(all_materials(), @name)) {
+				assign(@name, 0)
+				assign(@display, 'Invalid item name given')
+			}
 		}
 	}
 	if(reg_count('[a-zA-Z]+_[a-zA-Z]+', @name) == 1) {
 		assign(@display, to_lower(reg_replace('_', ' ', @name)))
 	}
 	# Check: Is this air?
-	if(@item == '0' || string_contains_ic(@item, 'air')) {
+	if(@name == '0' || string_contains_ic(@name, 'air')) {
         msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
+		assign(@name, null)
 	}
-return(array(name: @name, id: @id, display: @display))
+	return(array(name: @name, id: @id, display: @display))
+	}
 }
 
 
@@ -152,7 +164,7 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                 return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'This location isn\'t capable of having a inventory!', size: 0, fail: true))
         )
         assign(@filltype, get_inventory_type(@xyz))
-        assign(@maxstacksize, max_stack_size(@item))
+        assign(@maxstacksize, max_stack_size(array(name: @item, 'meta': null)))
         if(@verbose == 'yes',
                 tmsg(@player['name'], color(3).'['.color(6).@name.color(3).'] '.color(9).'A fillable item was found at: '.@xyz)
         )
@@ -166,9 +178,6 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                 return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot fill this item type!', size: 0, fail: true))
         )
 # Get specified item quantity
-        if(@qty == '' || @qty == null,
-                assign(@qty, import(@name.'.player.'.@player['id'].'.set.item.qty'))
-        )
         if(@qty == '' || @qty == null,
                 assign(@qty, @maxstacksize)
         )      
@@ -198,15 +207,11 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
                 )
                 #item already filled check
                 assign(@af, get_inventory_item(@xyz, @i))
-                if(@af == '' || @af == null, assign(@af, array(type: 0, qty: 0, data: 0)))
+				msg(@af)
+                if(@af == '' || @af == null, assign(@af, array(name: null, qty: 0, meta: null)))
                 assign(@mqty, 0)
-                #if block types match
-                if(reg_count('[0-9]:[0-9]', @item) == 1,
-                        assign(@checktype, @af['type'].':'.@af['data'])
-                ,
-                        assign(@checktype, @af['type'])
-                )
-                if(@item == @checktype,
+
+                if(@item == @af['name'],
                         assign(@re, 're-')
                         #quantity greater than current (eg qty 64, filled 23)
                         if(@qty > @af['qty'],

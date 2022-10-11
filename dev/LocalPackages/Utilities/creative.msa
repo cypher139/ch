@@ -10,8 +10,10 @@ switch(to_lower($id)) {
 case 'that':
 case 'look':
 	if(string_contains_ic(get_block(pcursor()), 'air')) {
+		if(@dev == true) {
+			msg('[DEV] block: '.get_block(pcursor()))
+		}
 		die(color('c').'No block in sight!')
-		@id = 'DIRT'
 	} else {
 		@id = get_block(pcursor())
 	}

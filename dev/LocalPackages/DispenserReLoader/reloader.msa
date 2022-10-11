@@ -31,16 +31,19 @@ if(@verbose == true,
 	export(@name.'.player.'.@player['id'].'verbose', false)
 )
 assign(@dev, import('ch.player.'.@player['id'].'.developer'))
- 
+
+/* 
 set_uncaught_exception_handler(closure(@ex){
 	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured.')
-	console(color('c').@ex[0].'! '.color(7).@ex[1])
-	console(color(1).'Path: '.@ex[2].color(7).' Line #: '.color('a').@ex[3])
+	msg(@ex)
+	console(color('c').@ex['classType'].'! '.color(7).@ex['message'])
+	console(color(1).'Path: '.@ex['file'].color(7).' Line #: '.color('a').@ex['line'].'.'.@ex['col'])
 	return(true)
 })
+*/
 
 ### Action list help
-proc(_reloader_help,
+proc _reloader_help() {
 	assign(@name, import('dispenserreloader.name'))
 	msg(color(3).'DispenserReLoader: Fill chests or dispensers in one click!')
 	msg(color(6).'- Help:')
@@ -59,7 +62,7 @@ proc(_reloader_help,
 	msg(color(7).'/reloader fuel [item] [qty]'.color(4).' - '.color('f').'This binds your tool to fill the fuel portion of a furnace, instead of filling the block to burn.')
 	msg(color(7).'/reloader mode <itemtype>'.color(4).' - '.color('f').'Sets /reloader area to only fill a chest, dispenser, or furnace, or all 3 types. Useful for not wiping chest contents ;)')
 	msg(color(7).'/reloader managebind'.color(4).' - '.color('f').'Unbind, or re-bind the '.@name.' tool to your currently held item!')
-)
+}
  
  
  
@@ -73,7 +76,7 @@ proc(_reloader_help,
 # More option conflicts:
 # /reloader area fuel needs option variable conversions, due to the extra action command.
 assign(@fuel, '')
-switch(@action){
+switch(@action) {
 case 'a':
 case 'area':
 	if(@option1 == 'fuel',
@@ -85,36 +88,27 @@ case 'area':
 	)
 }
  
- 
-#Values: previously set item type and quantity
+# Setup previously set item type and quantity
 assign(@setitem, get_value(@name.'.player.'.@player['id'].'.set.item.type'))
-if(@setitem != '' || @setitem != null,
-        #Check: Script expects item type to be a number. If it somehow isn't, convert it to a number.
-        if(is_integral(@setitem), null,
-		if(reg_count('[0-9]:[0-9]', @setitem) == 1,
-			if(@dev == true, msg(color(7).'[DEV] set item: '.color('f').'Set item type has item data.'))
-		, 
-		        assign(@setitem, data_values(@setitem))
-		        store_value(@name.'.player.'.@player['id'].'.set.item.type', @setitem)
-		        if(@dev == true, msg(color(7).'[DEV] Auto-fix: '.color('f').'Set item type was not a number.'))
-		)
-        )
-        assign(@setitemname, data_name(@setitem))
-)
 assign(@setitemqty, get_value(@name.'.player.'.@player['id'].'.set.item.qty'))
-#For other parts of script, we will export the values.
-export(@name.'.player.'.@player['id'].'.set.item.type', @setitem)
-export(@name.'.player.'.@player['id'].'.set.item.qty', @setitemqty)
- 
- 
-
+# Check: verify item name and qty is legit
+if(_reloader_item_name(@setitem)['name'] == null) {
+	assign(@setitem, 3)
+	clear_value(@name.'.player.'.@player['id'].'.set.item.type')
+	if(@dev == true, msg(color(7).'[DEV]: '.color('f').'Set item type was not valid, reset to dirt.'))
+}
+if(!is_integral(@setitemqty) || @setitemqty == 0) {
+	assign(@setitemqty, 3)
+	clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
+	if(@dev == true, msg(color(7).'[DEV]: '.color('f').'Set item qty was not valid, reset to 3.'))
+}
  
 ### These actions don't need the main parts of the script / the main checks to run, so they are listed here.
 
 switch(@action){
 
 case 'help':
-case '-help'
+case '-help':
 case '?':
 case '/?':
 	_reloader_help()
@@ -160,7 +154,7 @@ case 'areamode':
 		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).' Current Area mode: '.color(7).@areamode)
 		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify a type of item to fill. Accepted item types are chests, dispensers, and furnaces, or use "all" to use all 3 types.')
 	)
-	switch(to_lower(@option1)){
+	switch(to_lower(@option1)) {
 	case 'a':
 	case 'all':
 	case 'default':
@@ -178,7 +172,7 @@ case 'areamode':
                 store_value(@name.'.player.'.@player['id'].'.area.mode', 'Dispenser')
                 assign(@msg, 'Dispenser')
 	case 'f':
-	case 'fur'
+	case 'fur':
 	case 'furnace':
                 store_value(@name.'.player.'.@player['id'].'.area.mode', 'Furnace')
                 assign(@msg, 'Furnace')
@@ -192,8 +186,7 @@ case 'areamode':
 case 'info':
 case '-i':
 case '-info':
-        assign(@lastitemused, get_value(@name.'.player.'.@player['id'].'.last.item'))
-        assign(@lastitemname, data_name(@lastitemused))
+        assign(@lastitemused, _reloader_item_name(get_value(@name.'.player.'.@player['id'].'.last.item')))
         assign(@lastitemqty, get_value(@name.'.player.'.@player['id'].'.last.qty'))
         assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
         if(@areamode == '' || @areamode == null,
@@ -202,7 +195,7 @@ case '-info':
         if(@setitem == '' || @setitem == null,
                 assign(@setitemmsg, color(7).'Unset')
         ,
-                assign(@setitemmsg, color(2).@setitem.' ['.@setitemname.'] '.color(9).'(Qty: '.@setitemqty.')')
+                assign(@setitemmsg, color(2).@setitem.color(9).'(Qty: '.@setitemqty.')')
         )      
         if(@verbose == true,
                 assign(@vmsg, color('a').'Enabled')
@@ -211,7 +204,7 @@ case '-info':
         )
         msg(color(7).'['.color(6).@name.color(7).'] '.color(6).@name.' settings information for: '.color('a').@player['display'])
         msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color('a').@setitemmsg)
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemused.' ['.@lastitemname.'] '.color(9).'(Qty: '.@lastitemqty.')')
+        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemused['display'].' ['.@lastitemused['id'].'] '.color(9).'(Qty: '.@lastitemqty.')')
         msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7).@areamode)
         msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Verbose (extra) messages: '.@vmsg)
         die()
@@ -314,7 +307,7 @@ case 'unbind':
 
 ### Continuing on...
 
-switch(@action){
+switch(@action) {
 #Conflict: Since no action above was performed, we need to move the options into the correct order for the item and qty checks below,
 # as tool does not have an action but still specifies item type and quantity.
 #However 'set' and 'area' actions need these checks to run and pass,
@@ -333,7 +326,7 @@ case '-a':
 # Set Defaults for fuel 	
 case 'fuel':
 	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').'fuel'))
-	assign(@defaultitem, import(@name.'.default.item.type.fuel'))
+	assign(@defaultitem, @serveritemdefaults['fuel'])
 default:
 	# No more actions to perform, move options into proper places that checks expect values to be for tool usage.
 	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').'tool'))
@@ -385,40 +378,19 @@ case 'clear':
  
 # Check: Did you specify a item name or ID?
 # We need to translate the item given into the proper Item Name.
-# Item data support: This checks for one : in the middle of the given item ID. A match means the ID has extra data to it to denote the item.
-/*if(reg_count('[0-9]+:[0-9]+', @item) == 1,
-        #Get rid of a 0 data value
-        if(reg_count('[0-9]+:0', @item) == 1,
-                assign(@item, reg_split(':', @item)[0])
-        )
-        assign(@itemname, data_name(@item))
-        if(@dev == true, msg(color(7).'[DEV] Item data! '.color('f').@item.' ('.@itemname.')'))
-,
-        #No item data:
-        #Did you specify a item name or ID?
-        if(is_integral(@item),
-                if(@dev == true, msg(color(7).'[DEV] is_integral: '.color('f').'yes'))
-                assign(@itemname, data_name(@item))
-                ,
-                if(@dev == true, msg(color(7).'[DEV] is_integral: '.color('f').'no'))
-                assign(@realid, data_values(@item))
-                assign(@itemname, data_name(@realid))
-                assign(@item, @realid)
-        )
-)*/
 #Perform Name / ID checks.
 @itemids = _reloader_item_name(@item)
 @item = @itemids['name']
 @itemname = @itemids['name']
 
 # Check: Is this air?
-if(@item == '0' || string_contains_ic(@item, 'air'),
+if(@item == '0' || string_contains_ic(@item, 'air')) {
         die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
-)
+}
  
 # Check: Null.
-# WARNING: If data_name comes up with null, DIE!! As this indicates a unsupported, non-vanilla item,
-# and in setting items CH doesn't care if the item actually exists, it will just set the container full
+# WARNING: If data_name comes up with null, this probably indicates a unsupported, non-vanilla item.
+# In setting items CH doesn't care if the item actually exists, it will just set the container full
 # of what it was told to set it to.
 # If a client tries to view this non-existent item: Instant client crash.
 # (and the server might report that a entity ID has invalid items)
@@ -430,44 +402,44 @@ if(@item == null || @item == '',
  
 # Check: Item permissions
 if(@defaultitem != @item,
-        if(@dev == true,
-                msg(color(7).'[DEV] Not default item: '.color('f').@defaultitem.' != '.@item)
-        )
-        if(has_permission(@player['name'], 'commandhelper.alias.reloader.any.item.use'), if(@dev == true, msg(color(7).'[DEV] item: '.color('f').'Using any perm')),
-                if(has_permission(@player['name'], 'commandhelper.alias.reloader.use.'.@item), if(@dev == true, msg(color(7).'[DEV] item: '.color('f').'Using item perm')),
-                        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use this item type. ('.@itemids['display'].')')
-                )
-        )
+	if(@dev == true,
+		msg(color(7).'[DEV] Not default item: '.color('f').@defaultitem.' != '.@item)
+	)
+	if(has_permission(@player['name'], 'commandhelper.alias.reloader.any.item.use'), if(@dev == true, msg(color(7).'[DEV] item: '.color('f').'Using any perm')),
+		if(has_permission(@player['name'], 'commandhelper.alias.reloader.use.'.@item), if(@dev == true, msg(color(7).'[DEV] item: '.color('f').'Using item perm')),
+			die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use this item type. ('.@itemids['display'].')')
+		)
+	)
 )
  
 # Check: Legitimate quantity stacks
-assign(@itemstacksize, max_stack_size(@item))
+assign(@itemstacksize, max_stack_size(array(name: @item, 'meta': null)))
 if(@dev == true,
         msg(color(7).'[DEV] max_stack_size for '.color('f').@item.': '.@itemstacksize)
 )
 if(@isdefaultqty == true,
-        # This is the default quantity, the player hasn't set any different quantity.
-        if(@dev == true,
-                msg(color(7).'[DEV] default qty: '.color('f').@itemqty)
-        )
-        # Bump down the quantity according to the max stack size.
-        if(@itemqty > @itemstacksize,
-                assign(@itemqty, @itemstacksize)
-        )
-        ,
-	#Not using the default qty
-        if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate'),
-                if(@dev == true && @itemqty > @itemstacksize, 
-			msg(color(7).'[DEV] stack: '.color('f').'Using illegitimate stack perm')
-			,
-			msg(color(7).'[DEV] stack: '.color('f').'legit')
+	# This is the default quantity, the player hasn't set any different quantity.
+	if(@dev == true,
+			msg(color(7).'[DEV] default qty: '.color('f').@itemqty)
+	)
+	# Bump down the quantity according to the max stack size.
+	if(@itemqty > @itemstacksize,
+			assign(@itemqty, @itemstacksize)
+	)
+	,
+#Not using the default qty
+	if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate'),
+			if(@dev == true && @itemqty > @itemstacksize, 
+		msg(color(7).'[DEV] stack: '.color('f').'Using illegitimate stack perm')
+		,
+		msg(color(7).'[DEV] stack: '.color('f').'legit')
+	)
+	,
+		# perm check returns nope.
+		if(@itemqty > @itemstacksize,
+				die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to make an illegitimate stack!')
 		)
-        ,
-                # perm check returns nope.
-                if(@itemqty > @itemstacksize,
-                        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to make an illegitimate stack!')
-                )
-        )
+	)
 )
  
 #Quick Dev message...
@@ -477,25 +449,25 @@ if(@dev == true, msg(color(7).'[DEV] Final item & quantity: '.color('f').@item.'
 ### More actions:
  
 # Set the item type to automatically use on /reloader
-switch(@action){
+switch(@action) {
 case 's':
 case 'set':
 case '-set':
-        store_value(@name.'.player.'.@player['id'].'.set.item.type', @item)
-        store_value(@name.'.player.'.@player['id'].'.set.item.qty', @itemqty)
-	switch(@option1){
+	store_value(@name.'.player.'.@player['id'].'.set.item.type', @item)
+	store_value(@name.'.player.'.@player['id'].'.set.item.qty', @itemqty)
+	switch(@option1) {
 	case '-':
 	case 'remove':
 	case 'default':
 	case 'clear':
-                clear_value(@name.'.player.'.@player['id'].'.set.item.type')
-                clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
-        }
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set item was: '.color(7).@setitemname.' (Quantity: '.@setitemqty.')'.color(3).', and is now: '.color('a').data_name(@item).' (Quantity: '.@itemqty.')')
+		clear_value(@name.'.player.'.@player['id'].'.set.item.type')
+		clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
+	}
+        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set item was: '.color(7).@setitem.' (Quantity: '.@setitemqty.')'.color(3).', and is now: '.color('a').@itemids['display'].' (Quantity: '.@itemqty.')')
         die()
 }
  
- 
+### Continuing on to filling the block inventories! 
  
 # Store the item last used:
 store_value(@name.'.player.'.@player['id'].'.last.item', @item)
@@ -507,7 +479,7 @@ store_value(@name.'.player.'.@player['id'].'.last.qty', @itemqty)
 assign(@random, false)
 
 ### Fill an area
-switch(@action){
+switch(@action) {
 case 'a':
 case 'ar':
 case 'area':
@@ -516,7 +488,6 @@ case '-a':
 	assign(@fl, '\n')
 	if(has_permission(@player['name'], 'commandhelper.alias.reloader.area')) {
 		assign(@world, pworld(@player['name']))
-
 		# Area mode requires a extension to access WorldEdit selection data. Checking if extension is installed.
 		assign(@extok, '')
 		if(extension_exists('SKCompat')) {
@@ -525,19 +496,19 @@ case '-a':
 			@extok = false
 		}
 		include('includes.library/reload-functions-SKCompat-'.@extok.'.ms')
-  
+
 	  # Get the player's area mode
-        assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
-        if(@areamode == '' || @areamode == null,
-                assign(@areamode, 'ALL')
-        )
+		assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
+		if(@areamode == '' || @areamode == null,
+			assign(@areamode, 'ALL')
+		)
 		if(@areamode == 'ALL') {
 			@areamodedisplay = 'Chests, Dispensers, Furnaces'
 		} else {
 			@areamodedisplay = to_lower(@areamode)
 		}
-  
-        # Setup proc to use if random mode is enabled
+
+		# Setup proc to use if random mode is enabled
 		if(@random == true) {
 			assign(@areaprocname, _reloader_random)
 		} else {
@@ -568,17 +539,20 @@ case '-a':
 			if(@filled['blocks'] == 0) {
 			# nothing was filled, why?
 				if(@filled['found'] > 0) {
-				# Acceptable block entities were found but not touched due to inventory full.
-				assign(@donemsg, 'Any '.@areamodedisplay.'(s) in the area were already full!')
+					# Acceptable block entities were found but not touched due to inventory full.
+					assign(@donemsg, 'Any '.@areamodedisplay.'(s) in the area were already full!')
 				} else {
-				# Acceptable block entities were not found.
-				assign(@donemsg, 'There wasn\'t any '.@areamodedisplay.'(s) to fill in the area!')
+					# Acceptable block entities were not found.
+					assign(@donemsg, 'There wasn\'t any '.@areamodedisplay.'(s) to fill in the area!')
+				}
 			}
+			msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@donemsg)
 		}
-		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@donemsg)
+#permission
 	} else {
 		msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permission to fill an area!')
 	}
+#end of switch	
         die()
 }
  
@@ -609,7 +583,7 @@ if(is_array(@toolcheck)) {
 	}
 }
 # else, continue to enable tool.
-@tooldata = array(use: true, fuel: false, qty: @itemqty, item: @item))
+@tooldata = array(use: true, fuel: false, qty: @itemqty, item: @item)
 ### Tool fuel: Fill furnace fuel, not the top of it.
 if(@action == 'fuel') {
 	@fuel = true

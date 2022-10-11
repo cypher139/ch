@@ -14,7 +14,6 @@ include('includes.library/reload-functions-Core.ms')
 assign(@name, string(import('dispenserreloader.name')))
 assign(@player, _reloader_getplayerID(player()))
 if(player() == '~console') {
-#	msg(hi)
 	die(color(7).'['.color(6).@name.color(7).'] '.color('c').'The console cannot use a tool.')
 }
 
@@ -37,7 +36,7 @@ case 'undo':
 case 'u':
 	#check if tool has been previously bound
 	if(is_array(@tooldata)) {
-		if(array_index_exists(@tooldata, 'item') {
+		if(array_index_exists(@tooldata, 'item')) {
 		#A tool has previously existed
 			@tooldata['use'] = true
 			export(@name.'.player.'.@player['id'].'.tool.id.'.@tool, @tooldata)

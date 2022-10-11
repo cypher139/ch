@@ -9,6 +9,10 @@ msg(@player)
 
 switch(to_lower($action)) {
 
+case 'test':
+msg(data_name($option1))
+
+
 case 'goto':
 	switch(to_lower($option1)) {
 	case 'spawn':

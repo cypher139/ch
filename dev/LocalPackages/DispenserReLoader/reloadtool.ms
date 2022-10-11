@@ -23,7 +23,10 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 	
 	
 	assign(@tooldata, import(@name.'.player.'.@player['id'].'.tool.id.'.@tool))
-	if(@tooldata['use'] == true && @reload['action'] == 'left_click_block' && has_permission(@player['name'], 'commandhelper.alias.reloader'),
+	if(!is_array(@tooldata)) {
+		die()
+	}
+	if(@tooldata['use'] == true && @reload['action'] == 'left_click_block' && has_permission(@player['name'], 'commandhelper.alias.reloader')) {
 	#	assign(@tooldata['item'], import(@name.'.player.'.@player['id'].'.tool.id.'.@usetool.'.item'))
 	#	assign(@tooldata['qty'], import(@name.'.player.'.@player['id'].'.tool.id.'.@usetool.'.qty'))
 	#	assign(@tooldata['fuel'], import(@name.'.player.'.@player['id'].'.tool.id.'.@usetool.'.fuel'))
@@ -51,5 +54,5 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 		if(@verbose == true,
 			msg(@return['msg'])
 		)
-	)
+	}
 }
