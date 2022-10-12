@@ -93,7 +93,7 @@ if(@dev == true) {
 if(player() != '~console') {	
 	pgive_item(player(), @give)
 } else {
-	die(color(7).'Item IDs returned: '.color(3).@id.color(0).' ('.color('a').@idn.color(0).')')
+	die(color(7).'Item IDs returned: '.color(3).@id.color(8).' ('.color('a').@idn.color(8).') '.color(8).'[max:'.max_stack_size(array(name: to_upper(@id), 'meta': null)).']')
 }
 #setup messages
 if(has_permission(player(), 'commandhelper.alias.creative.see.id')) {
