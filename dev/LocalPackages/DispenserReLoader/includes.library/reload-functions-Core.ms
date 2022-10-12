@@ -18,6 +18,11 @@ proc _reloader_getplayerID(@option1) {
 
 proc _reloader_get_server_defaults(@option) {
 	assign(@name, string(import('dispenserreloader.name')))
+	#Script defaults, used to reset server defaults if requested
+	@sdi = 'ARROW'
+	@sdq = 64
+	@sdf = 'COAL'
+	@sdfee = array(tool: 5, area: 35)
 	switch(@option) {
 	case 'start':
 	case 'startup':
@@ -25,7 +30,7 @@ proc _reloader_get_server_defaults(@option) {
 		### What is the default item to use? (Note: this value can use ID or name. Default: arrows)
 		assign(@defaultitem, get_value(@name.'.default.item.type'))
 		if(@defaultitem == '' || @defaultitem == null,
-				assign(@defaultitem, 'ARROW')
+				assign(@defaultitem, @sdi)
 		)
 		#For other parts of the script, we'll export this value.
 		export(@name.'.default.item.type', @defaultitem)
@@ -33,24 +38,32 @@ proc _reloader_get_server_defaults(@option) {
 		### What is the default item to use for fuel mode? (Note: this value uses a ID, not a name. Default: coal)
 		assign(@fueldefaultitem, get_value(@name.'.default.item.type.fuel'))
 		if(@fueldefaultitem == '' || @fueldefaultitem == null,
-			assign(@fueldefaultitem, 'COAL')
+			assign(@fueldefaultitem, @sdf)
 		)
 		export(@name.'.default.item.type.fuel', @fueldefaultitem)
 
 		### What is the default item quantity to use? (Note: this value uses a number. Default: full stack (64))
 		assign(@defaultitemqty, get_value(@name.'.default.item.qty'))
 		if(@defaultitemqty == '' || @defaultitemqty == null,
-				assign(@defaultitemqty, 64)
+				assign(@defaultitemqty, @sdq)
 		)
 		export(@name.'.default.item.qty', @defaultitemqty)
 		
 		### What is the default fees to charge? (Note: this value uses a number. Default: tool: $5, area $35)
 		assign(@defaultfees, get_value(@name.'.default.fees'))
 		if(is_array(@defaultfees), null,
-				assign(@defaultfees, array(tool: 5, area: 35))
+				assign(@defaultfees, @sdfee)
 		)
 		export(@name.'.default.fees', @defaultfees)
 		@return = array(type: @defaultitem, item: @defaultitem, fuel: @fueldefaultitem, qty: @defaultitemqty, fee: @defaultfees)
+	case 'clearitem':
+		export(@name.'.default.item.type', @sdi)
+		export(@name.'.default.item.type.fuel', @sdf)
+		@return = array(type: @sdi, item: @sdi, fuel: @sdf, qty: import(@name.'.default.item.qty'), fee: import(@name.'.default.fees'))
+	case 'clearqty':
+		export(@name.'.default.item.qty', @sdq)
+		@item = import(@name.'.default.item.type')
+		@return = array(type: @item, item: @item, fuel: import(@name.'.default.item.type.fuel'), qty: @sdq, fee: @sdfee)
 	default:
 		@item = import(@name.'.default.item.type')
 		@return = array(type: @item, item: @item, fuel: import(@name.'.default.item.type.fuel'), qty: import(@name.'.default.item.qty'), fee: import(@name.'.default.fees'))
@@ -103,11 +116,9 @@ proc _reloader_item_name(@item) {
 	return(array(name: @name, id: @id, display: @display))
 	}
 }
-
-
  
-proc(_reloader_msgAdmins, @msg, @consolemsg, @consoleconcat,
-        if(@consolemsg == '' || @consolemsg == null, assign(@consolemsg, @msg))
+proc _reloader_msgAdmins(@msg, @consolemsg, @consoleconcat) {
+	if(@consolemsg == '' || @consolemsg == null, assign(@consolemsg, @msg))
 	if(@consoleconcat == true,
 		assign(@consolemsg, @msg.@consolemsg)
 	)
@@ -117,9 +128,9 @@ proc(_reloader_msgAdmins, @msg, @consolemsg, @consoleconcat,
                         tmsg(@p, @msg)
                 )
         )
-)
+}
  
-proc(_number_commaize, @number,
+proc _reloader_number_commaize(@number) {
         #catch numbers with decimal points, and only commaize the whole numbers.
         if(reg_match('[0-9]\\.[0-9]', @number),
                 assign(@n1, reg_split('\\.', @number))
@@ -135,10 +146,9 @@ proc(_number_commaize, @number,
         ,
                 return(@n)
         )
-)
+}
  
- 
-proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbose,
+proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbose) {
 	assign(@name, import('dispenserreloader.name'))
 	assign(@chmaxstacksize, 64)
 	assign(@player, _reloader_getplayerID(@playergiven))
@@ -172,7 +182,7 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
 		return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use a Chest or Dispenser while in Fuel mode!', size: 0, fail: true))
 	) 
 # Check: limit what you can fill
-        assign(@acceptfilltypes, array(CHEST, DISPENSER, FURNACE))
+        assign(@acceptfilltypes, array('CHEST', 'DISPENSER', 'FURNACE'))
         if(array_contains(@acceptfilltypes, @filltype), null,
                 return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot fill this item type!', size: 0, fail: true))
         )
@@ -270,11 +280,10 @@ proc(_reloader_fill, @x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verb
  
         if(@fqty == 0, assign(@donemsg, '0'))
         return(array(msg: @donemsg, size: @size, type: @filltype, filledqty: @fqty, fail: false))
-)
- 
+}
  
        
-proc(_reloader_record_stats, @playergiven, @action, @filledblocks, @totalitems, @item, @qty,
+proc _reloader_record_stats(@playergiven, @action, @filledblocks, @totalitems, @item, @qty) {
 	assign(@name, import('dispenserreloader.name'))
 	assign(@player, _reloader_getplayerID(@playergiven))
 #Start the Stats recording.
@@ -325,7 +334,7 @@ proc(_reloader_record_stats, @playergiven, @action, @filledblocks, @totalitems, 
         #last run - player
         store_value(@name.'.player.'.@player['id'].'.stats.last.run', array(action: @action, qty: @qty, filledqty: @totalitems, blocks: @filledblocks, item: @item))
  
-)
+}
 
 #reload random
 #meant to be called once per block, for area needs re called for each successful block - _iterate_cuboid can manage this

@@ -16,7 +16,6 @@ assign(@name, string(import('dispenserreloader.name')))
 @defaultitem = @serveritemdefaults['item']
 @defaultitemqty = @serveritemdefaults['qty']
  
-### Other dynamic vars, don't edit
 assign(@action, to_lower($action))
 assign(@option1, $option1)
 assign(@option2, $option2)
@@ -24,19 +23,18 @@ assign(@option3, $option3)
 assign(@option4, $option4)
 assign(@player, _reloader_getplayerID(player()))
 assign(@verbose, get_value(@name.'.player.'.@player['id'].'.verbose'))
-#For other parts of the script, we'll use this value to enable/disable verbose messages.
 export(@name.'.player.'.@player['id'].'.verbose', @verbose)
 assign(@dev, import('ch.player.'.@player['id'].'.developer'))
 
-/* 
 set_uncaught_exception_handler(closure(@ex){
-	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured.')
-	msg(@ex)
-	console(color('c').@ex['classType'].'! '.color(7).@ex['message'])
-	console(color(1).'Path: '.@ex['file'].color(7).' Line #: '.color('a').@ex['line'].'.'.@ex['col'])
+	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured:')
+	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).@ex['message'])
+	console(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message'])
+	assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @ex['stackTrace'][0]['file'])[1])
+	console(color('c').'['.color(6).@name.color('c').'] '.color(1).'Path: ../'.@pathdisplay.color(7).' Line: '.color('a').@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
+	if(@dev == true) {msg(@ex)}
 	return(true)
-})
-*/
+}) 
 
 ### Action list help
 proc _reloader_help() {
@@ -49,6 +47,9 @@ proc _reloader_help() {
 	msg(color(7).'/reloader info'.color(4).' - '.color('f').'Shows your settings, such as the currently set item, or extra messages.')
 	msg(color(7).'/reloader stats'.color(4).' - '.color('f').'Shows your statistics for '.@name.', such as the total area or tool runs, total blocks filled, total items used, etc.')
 	msg(color(7).'/reloader verbose'.color(4).' - '.color('f').'Allows you to turn on or off extra messages '.@name.' can display.')
+	msg(color(6).'- Special Item Types:')
+	msg(color(7).'clear'.color(4).' - '.color('f').' Uses the server default item or quantity.')
+	msg(color(7).'this'.color(4).' - '.color('f').' Uses what you are holding and its max stack size as the item and quantity to use.')
 	msg(color(6).'- Actions:')
 	msg(color(7).'Most commands support specifying the item type and quantity to use, or you can use "/reloader set" to always use a specific item without having to type it each time.')
 	msg(color(7).'/reloader [item] [qty]'.color(4).' - '.color('f').'Binds the tool you are holding to fill any chest, dispenser, or furnace block with the specified item (defaults to arrows).')
@@ -145,7 +146,7 @@ case 'areamode':
 	if(@option1 == '' || @option1 == null,
 		assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
 		if(@areamode == '' || @areamode == null,
-				assign(@areamode, All)
+				assign(@areamode, 'All')
 		)
 		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).' Current Area mode: '.color(7).@areamode)
 		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify a type of item to fill. Accepted item types are chests, dispensers, and furnaces, or use "all" to use all 3 types.')
@@ -186,7 +187,7 @@ case '-info':
         assign(@lastitemqty, get_value(@name.'.player.'.@player['id'].'.last.qty'))
         assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
         if(@areamode == '' || @areamode == null,
-                assign(@areamode, All)
+                assign(@areamode, 'All')
         )
         if(@setitem == '' || @setitem == null,
                 assign(@setitemmsg, color(7).'Unset')
@@ -226,22 +227,22 @@ case 'st':
         msg(color(7).'All time '.@name.' runs:')
         assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
         if(@atr == '' || @atr == null, assign(@atr, 0))
-        msg(color(6).'/reload area: '.color('b')._number_commaize(@atr).' runs')
+        msg(color(6).'/reload area: '.color('b')._reloader_number_commaize(@atr).' runs')
         assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
         if(@ttr == '' || @ttr == null, assign(@ttr, 0))
-        msg(color(6).'/reload (tool): '.color('b')._number_commaize(@ttr).' runs')
+        msg(color(6).'/reload (tool): '.color('b')._reloader_number_commaize(@ttr).' runs')
         
 		msg(color(9).' -------')
  
         assign(@fb, get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks'))
-        msg(color(7).'Total blocks filled: '.color('b')._number_commaize(@fb))
+        msg(color(7).'Total blocks filled: '.color('b')._reloader_number_commaize(@fb))
         
 		msg(color(9).' -------')
  
         assign(@lr, get_value(@name.'.player.'.@player['id'].'.stats.last.run'))
         msg(color(7).'Last run: '.color(6).@lr['action'].'.')
-        if(@lr['blocks'] == 1, assign(@p, block) assign(@p2, was), assign(@p, blocks) assign(@p2, were))
-		msg(color('a')._number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(3)._number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
+        if(@lr['blocks'] == 1, assign(@p, 'block') assign(@p2, 'was'), assign(@p, 'blocks') assign(@p2, 'were'))
+		msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(3)._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
  
         msg(color(9).' -------')
  
@@ -254,10 +255,10 @@ case 'st':
                 foreach(@playeritems, @currentvar,
                         assign(@tiu, @tiu + @currentvar)
                         assign(@item, _reloader_item_name(@playeritemsi[@j]))
-                        msg(color(3).@item['display'].': '.color(7)._number_commaize(@currentvar))
+                        msg(color(3).@item['display'].': '.color(7)._reloader_number_commaize(@currentvar))
                         assign(@j, @j + 1)
                 )      
-                msg(color(9).'Total items used: '._number_commaize(@tiu))
+                msg(color(9).'Total items used: '._reloader_number_commaize(@tiu))
         ,@fail,
                 msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'You haven\'t used '.@name.'!')
         )
@@ -521,9 +522,9 @@ case '-a':
 
 		# Setup proc to use if random mode is enabled
 		if(@random == true) {
-			assign(@areaprocname, _reloader_random)
+			assign(@areaprocname, '_reloader_random')
 		} else {
-			assign(@areaprocname, _reloader_fill)
+			assign(@areaprocname, '_reloader_fill')
 		}
 		
 		#It is now time to iterate through the area. Assigned a variable to get stats returned.
@@ -544,7 +545,7 @@ case '-a':
 			assign(@b, 'block')
 		}
 		if(@filled['blocks'] > 1) {
-			assign(@donemsg, 'Success! '.@filled['blocks'].' '.@b.'s were filled, using a total of '._number_commaize(@filled['items']).' '.@itemids['display'].'.'.@fl.color(7).@filledinfoc.@filledinfod.@filledinfof)
+			assign(@donemsg, 'Success! '.@filled['blocks'].' '.@b.'s were filled, using a total of '._reloader_number_commaize(@filled['items']).' '.@itemids['display'].'.'.@fl.color(7).@filledinfoc.@filledinfod.@filledinfof)
 		} else {
 			assign(@donemsg, 'Success! 1 '.@b.' was filled with '.@filled['items'].' '.@itemids['display'].'.'.@fl.color(7).@filledinfoc.@filledinfod.@filledinfof)
 			if(@filled['blocks'] == 0) {

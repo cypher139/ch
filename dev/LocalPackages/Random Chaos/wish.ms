@@ -235,6 +235,9 @@ bind('player_chat', array(id: 'Wish.granter.lolz', priority: 'LOW'), null, @chat
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'magenta')); })
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'orange')); })
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'white')); })
+				case 'poop':
+					drop_item(@vplayer, array(name: 'DIRT', qty: 3, meta: null), true)
+					broadcast(color(e).'['.color(gold).@name.color(e).'] '.color(6).@player.'s wish has been granted.')
 			#switch
 			}
 #		if(@dev == true, 

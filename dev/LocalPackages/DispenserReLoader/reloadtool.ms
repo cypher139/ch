@@ -33,7 +33,7 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 		if(@defaultitem != @tooldata['item'],
 			if(has_permission('commandhelper.alias.reloader.any.item.use'), null,
 				if(has_permission('commandhelper.alias.reloader.use.'.@tooldata['item']), null,
-					die(color(c).'['.color(6).@name.color(c).'] '.color(7).'You do not have permissions to use item type "'._reloader_item_name(@tooldata['item'])['display'].'".')
+					die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use item type "'._reloader_item_name(@tooldata['item'])['display'].'".')
 				)
 			)
 		)

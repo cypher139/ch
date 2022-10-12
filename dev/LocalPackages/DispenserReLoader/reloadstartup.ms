@@ -26,7 +26,7 @@ if(extension_exists('SKCompat'), null,
 	msg('\n'.moo(color(2).'https://letsbuild.net/jenkins/job/SKCompat/'.color('r')))
 )
 #CHVault - economy
-if(extension_exists('CHVault') || function_exists(acc_add), null,
+if(extension_exists('CHVault') || function_exists('acc_add'), null,
 	msg(color('c').'['.color(7).import('dispenserreloader.name').color('c').'] '.color('e').'CHVault: '.color('c').'NOT Installed'.color(7).' Missing access to Vault! '.import('dispenserreloader.name').' is unable to access economy account data.')
 	msg(color(3).'Download the CHVault extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
 	msg('\n'.moo(color(2).'https://letsbuild.net/jenkins/job/CHVault/'.color('r')))
