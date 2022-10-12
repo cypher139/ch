@@ -3,16 +3,17 @@ set_uncaught_exception_handler(closure(@ex){
      msg(color('c').@ex['message']);
      return(true);
    });
-assign(@dev, import('ch.player.'.puuid(player(), 'dashless').'.developer'))
+if(player() == '~console') {
+	assign(@dev, false)
+} else {
+	assign(@dev, import('ch.player.'.puuid(player(), 'dashless').'.developer'))
+}
 
 switch(to_lower($id)) {
 #gib me that block I'm looking at
 case 'that':
 case 'look':
-	if(string_contains_ic(get_block(pcursor()), 'air')) {
-		if(@dev == true) {
-			msg('[DEV] block: '.get_block(pcursor()))
-		}
+	if(player() == '~console' || string_contains_ic(get_block(pcursor()), 'air')) {
 		die(color('c').'No block in sight!')
 	} else {
 		@id = get_block(pcursor())
@@ -88,8 +89,12 @@ if(@dev == true) {
 }
 #setup final array datas
 @give = array('meta': null, 'name': to_upper(@id), 'qty': @amount)
-	
-pgive_item(player(), @give)
+
+if(player() != '~console') {	
+	pgive_item(player(), @give)
+} else {
+	die(color(7).'Item IDs returned: '.color(3).@id.color(0).' ('.color('a').@idn.color(0).')')
+}
 #setup messages
 if(has_permission(player(), 'commandhelper.alias.creative.see.id')) {
 	@msgid = color(7).' ('.@idn.')'
