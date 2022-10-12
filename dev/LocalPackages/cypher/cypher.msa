@@ -10,9 +10,19 @@ msg(@player)
 switch(to_lower($action)) {
 
 case 'test':
-msg(data_name($option1))
-msg(pinv(@player['name'], null))
-
+#msg(data_name($option1))
+#msg(pinv(@player['name'], null))
+for(assign(@i, 0), @i < 10, @i++) {
+switch(@i) {
+case '3':
+continue()
+msg('test')
+case '7':
+break(2)
+default:
+msg(@i)
+}
+}
 
 case 'goto':
 	switch(to_lower($option1)) {
