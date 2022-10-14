@@ -1,24 +1,58 @@
-creative:/i [$id=3] [$amount=1] [$rec] [$] = >>>
+#version 1.1-tmc
+creative:/i [$id=3] [$amount=1] [$] = >>>
 set_uncaught_exception_handler(closure(@ex){
-     msg(color('c').@ex['message']);
+	assign(@dev, import('ch.player.'.puuid(player(), 'dashless').'.developer'))
+	if(@dev == true) {
+		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
+	} else {
+		msg(color('c').@ex['message']);
+	}
      return(true);
    });
-if(player() == '~console') {
+  
+# Get player name  
+@args = parse_args($)
+@player = player()
+array_iterate(@args, closure(@k, @v){
+#	msg(@k.' '.@v)
+	if(array_contains(all_players(), @v)) {@player = @v}
+});
+
+if(@player == '~console') {
 	assign(@dev, false)
 } else {
-	assign(@dev, import('ch.player.'.puuid(player(), 'dashless').'.developer'))
+	assign(@dev, import('ch.player.'.puuid(@player, 'dashless').'.developer'))
 }
 
+#ID type Checks   
+@transparent = array('water', 'lava')
 switch(to_lower($id)) {
 #gib me that block I'm looking at
 case 'that':
 case 'look':
-	if(player() == '~console' || string_contains_ic(get_block(pcursor()), 'air')) {
+case 'want':
+	if(@player == '~console' || string_contains_ic(get_block(pcursor(@player, @transparent)), 'air')) {
 		die(color('c').'No block in sight!')
 	} else {
-		@id = get_block(pcursor())
+		@id = get_block(pcursor(@player, @transparent))
 	}
-
+#gib me more of item I'm holding	
+case 'this':
+case 'max':
+case 'trade':
+case 'refill':
+case 'fill':
+	if(@player == '~console') {
+		@slot = null
+	} else {	
+		assign(@slot, pinv(@player, null))
+	}
+	if(@slot == null) {
+	#cant give you a hand, sorry.
+		die(color('c').'You don\'t have an item equipped in this slot!')
+	} else {
+		@id = @slot['name']
+	}		
 # overrides for some Legacy IDs that are not being picked up by CH / minecraft data values
 # or seemingly obvious names that don't actually match to anything as too generic
 case '50':
@@ -34,7 +68,7 @@ default:
 # check complete, switch variable type
 	@id = $id
 }
-
+### Item Type
 @ids = array()
 # Get rid of a 0 data value
 if(reg_count('[0-9]+:0', @id) == 1) {
@@ -61,12 +95,23 @@ if(reg_count('[0-9]+:[0-9]+', @id) == 1) {
 		}
 	}
 }
-
+### Qty
+@amount = $amount
+switch(to_lower($id)) {
+case 'max':
+case 'refill':
+case 'trade':
+case 'fill':
+	@stack = max_stack_size(array(name: to_upper(@id), 'meta': null)) 
+	#give 1 more of tool
+	if(@stack == 1) { @stack = 2 }
+	@amount = @stack - @slot['qty']
+	if(@amount < 1) {
+		die(color('c').'This slot already has a full stack!')
+	}	
+}
 #no decimal points supported, this will round up
-if(is_integral($amount)) {
-#is a number
-	@amount = $amount
-} else {
+if(!is_integral(@amount)) {
 	if(reg_count('\\.', $amount) == 1) {
 	# Must be whole numbers, rounding if 1 decimal point detected. 
 	# If you are using multiple decimal points, tf are you trying to do?
@@ -78,11 +123,15 @@ if(is_integral($amount)) {
 		case 'm':
 		# shorthand for give a full item stack
 			@amount = max_stack_size(array(name: to_upper(@id), 'meta': null))
+		case '0':
 		default:
 		# Amount specified not accepted, using default of 1
 			@amount = 1
 		}
 	}
+}
+if(@amount < 1) {
+	@amount = 1
 }
 if(@dev == true) {
 	msg(color(7).'[DEV]: '.@id.' ('.@idn.')')
@@ -90,13 +139,13 @@ if(@dev == true) {
 #setup final array datas
 @give = array('meta': null, 'name': to_upper(@id), 'qty': @amount)
 
-if(player() != '~console') {	
-	pgive_item(player(), @give)
+if(@player != '~console') {	
+	pgive_item(@player, @give)
 } else {
 	die(color(7).'Item IDs returned: '.color(3).@id.color(8).' ('.color('a').@idn.color(8).') '.color(8).'[max:'.max_stack_size(array(name: to_upper(@id), 'meta': null)).']')
 }
 #setup messages
-if(has_permission(player(), 'commandhelper.alias.creative.see.id')) {
+if(has_permission(@player, 'commandhelper.alias.creative.see.id')) {
 	@msgid = color(7).' ('.@idn.')'
 } else {
 	@msgid = ''
@@ -107,4 +156,8 @@ if(reg_count('[a-zA-Z]+_[a-zA-Z]+', @id) == 1) {
 	@display = to_lower(@id)
 }
 msg(color(6).'Giving '.color(3).@amount.color(6).' of '.color('a').@display.@msgid)
+<<<
+
+creative:/give2 [$player] [$id=3] [$amount='max'] [$] = >>>
+call_alias(/i $id $amount $player)
 <<<

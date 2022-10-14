@@ -1,8 +1,19 @@
 Bucket
-
+Get block ID information by hitting it with a bucket!
 
 Creative
-adds /i command with support for exact block namesa nd legacy numeric IDs (if supported by the chosen block/item)
+Adds /i command with support for exact block names and legacy numeric IDs (if supported by the chosen block/item)
+You can also use the old ID:data syntax, e.g. 98:1 to give mossy stone bricks
+Also a few extra features:
+/i that - gives you whatever block you are looking at.
+/i this - gives you whatever item you are holding
+/i refill - refills current stack of what you are holding to full. (if stack of 1 it gives you another of that item)
+/i <id> max - gives you max stack size of specified item.
+if Console uses /i command Item IDs are returned instead.
+
+Permissions:
+commandhelper.alias.creative - use /i
+commandhelper.alias.creative.see.id - returns the legacy numeric ID when /i is used
 
 DeathTP
 Records where you died and what inventory you had, and alos records where you had previously.
