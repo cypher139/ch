@@ -12,10 +12,16 @@ proc _reloader_getplayerID(@option1) {
 	if(@option1 == '~console'){
 		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
 	} else {
-	@pid['display'] = pinfo(@option1)[0];
-	@pid['name'] = pinfo(@option1)[0];
+	if(ponline(@option1) == true) {
+		@pid['display'] = pinfo(@option1)[0];
+		@pid['name'] = pinfo(@option1)[0];
+		@pid['nick'] = pinfo(@option1)[4];
+	} else {
+		@pid['display'] = @option1
+		@pid['name'] = @option1
+		@pid['nick'] = 'Player Offline'		
+	}
 	@pid['id'] = puuid(@option1, 'dashless');
-	@pid['nick'] = pinfo(@option1)[4];
 	}
 	#Bedrock to Java players come in with name ".NAME", remove dot
 	if(reg_count('^[\\.].*', @pid['name']) == 1, 

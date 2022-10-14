@@ -8,7 +8,7 @@ This script has required dependencies that must be installed in order to run cor
 -SKCompat extension (for accessing WorldEdit selection data in CH)
 -Vault plugin (for access to your economy plugin)
 -CHVault extension (For accessing economy functions in CH)
-Download CommandHelper extensions from https://letsbuild.net/jenkins/job/CHVault/
+Download CommandHelper extensions from https://letsbuild.net/jenkins/job/CHVault/ and https://letsbuild.net/jenkins/job/SKCompat/
 Install CommandHelper extensions by saving the extension .jar file to <server root>/plugins/CommandHelper/extensions.
  --You can check the status of installed extensions by typing /rladmin info.
 
@@ -32,7 +32,6 @@ Your block will be instantly filled!
 
 To use the area fill mode:
 1. Make a selection with WorldEdit.
-(Go to http://wiki.sk89q.com/wiki/WorldEdit/Selection to learn how to make a WorldEdit selection.)
 2. Type /reloader area. 
 [optional] If you want to specify what to fill, and not use the default item or quantity, specify the item and then the quantity after the command.
 For example type "/reloader area <item> <quantity>", eg "/reloader area 12" to specify sand with default quantity, or "/reloader area sand 32" to specify to use sand with quantity 32 in each stack.
@@ -55,7 +54,7 @@ Settings:
 - To view your set settings, use: /reloader info
 - To view statistics of how you use ReLoader, use: /reloader stats
 - To re-bind a tool that has previously been unbound, type "/reloader managebind" (or the shortcut "/none undo" if installed)
-- To view extra messages from teh script, use "/reloader verbose"
+- To view extra messages from the script, use "/reloader verbose"
 
 Admin settings: /reloaderadmin
 - To see global statistics of how reloader is used (ex. Total items used, Total blocks filled, etc): /reloaderadmin stats
