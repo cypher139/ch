@@ -1,8 +1,8 @@
 ######################################################
 #
-#   ReLoad: Fill chests or dispensers in one click!
+#   ReLoad: Fill blocks that have inventories in one click!
 #   Administration: Manage settings for Reloader.
-#   version 1.1-tmc
+#   version 1.2-tmc
 #
 ######################################################
 
@@ -12,13 +12,32 @@ include('includes.library/reload-functions-Core.ms')
 #what is the name of this script?
 assign(@name, string(import('dispenserreloader.name')))
  
- 
-assign(@action, to_lower($action))
-assign(@option1, $option1)
-assign(@option2, $option2)
-assign(@option3, $option3)
-assign(@player, _reloader_getplayerID(player()))
+@action = to_lower($action)
+@option1 = $option1
+@option2 = $option2
+@option3 = $option3
+@player = _reloader_getplayerID(player())
 assign(@dev, import('ch.player.'.@player['id'].'.developer'))
+ 
+ 
+set_uncaught_exception_handler(closure(@ex){
+	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
+	msg(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['message'])
+	assign(@msg1, color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message'])
+	if(@dev == true) {msg(@msg1)}
+	console(@msg1, false)
+	array_iterate(@ex['stackTrace'], closure(@k, @v) {
+		assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @v['file'])[1])
+		if(reg_count('(includes.library)', @pathdisplay) > 0) {
+			assign(@pathdisplay, 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1])
+		}		
+		assign(@msg2, color(9).'../'.@pathdisplay.color(7).' Line: '.color('a').@v['line'].'.'.@v['col'])
+		console(color('c').'['.color(6).@name.color('c').'] '.@msg2, false)
+		if(@dev == true) {msg(@msg2)}
+	})
+	return(true)
+});
+ 
  
 proc _reloader_help() {
 	assign(@name, string(import('dispenserreloader.name')))
@@ -34,18 +53,10 @@ proc _reloader_help() {
 }
  
 
-set_uncaught_exception_handler(closure(@ex){
-	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured:')
-	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).@ex['message'])
-	console(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message'])
-	assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @ex['stackTrace'][0]['file'])[1])
-	console(color('c').'['.color(6).@name.color('c').'] '.color(1).'Path: ../'.@pathdisplay.color(7).' Line: '.color('a').@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
-	if(@dev == true) {msg(@ex)}
-	return(true)
-}) 
- 
- 
 switch(@action){
+
+case 'throw':
+	throw('ms.lang.CastException', 'testing throw')
 
 case 'help':
 case '-help':

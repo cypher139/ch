@@ -1,0 +1,27 @@
+######################################################
+#
+#   ReLoad: Fill blocks that have inventories in one click!
+#   These optional commands help extend your Reload experience!
+#   version 1.2-tmc
+#
+######################################################
+
+
+#Here is some mis-spelling redirects:
+
+reloader:/relaoder [$] = >>>
+call_alias(/reloader $)
+<<<
+reloader:/relaod [$] = >>>
+call_alias(/reloader $)
+<<<
+
+# Shorter commands
+# May conflict with other plugins?
+
+/rl [$option1] [$option2] [$option3] [$] = >>>
+call_alias(/reloader $option1 $option2 $option3 $)
+<<<
+/rladmin [$option1] [$option2] [$option3] [$option4] [$] = >>>
+call_alias(/reloaderadmin $option1 $option2 $option3 $option4 $)
+<<<

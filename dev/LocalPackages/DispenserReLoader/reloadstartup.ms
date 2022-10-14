@@ -1,6 +1,6 @@
 ######################################################
 #
-#   ReLoad: Fill chests or dispensers, or furnaces in one click!
+#   ReLoad: Fill blocks that have inventories in one click!
 #   Main.ms: Startup code to be used by other areas of the script.
 #   version 1.1-tmc
 #
@@ -10,7 +10,7 @@
 #This name is used in any chat messages, and all persistance values.
 #Any name changes will also change what values are loaded/saved in persistance!
 export('dispenserreloader.name', 'ReLoad')
-export('dispenserreloader.version', '1.1-tmc')
+export('dispenserreloader.version', '1.2-tmc')
 
 #Include required backend functions
 include('includes.library/reload-functions-Core.ms')

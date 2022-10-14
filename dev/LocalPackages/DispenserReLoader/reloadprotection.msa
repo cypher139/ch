@@ -1,9 +1,9 @@
 ######################################################
 #
-#   ReLoad: Fill chests, dispensers, and furnaces in one click!
-#   This optional command provides protection from players inadvertently
+#   ReLoad: Fill blocks that have inventories in one click!
+#   This command provides protection from players inadvertently
 #   reloading the server while trying to access ReLoad.
-#   version 1.1-tmc
+#   version 1.2-tmc
 #
 ######################################################
 
@@ -18,15 +18,7 @@ if(player() == '~console') {
 	)
 	die()	
 }
-msg(color(7).'To access the ReLoad plugin, please use '.color('e').'/reloader')
 #if players, call alias
+msg(color(7).'To access the ReLoad plugin, please use '.color('e').'/reloader')
 call_alias(/reloader $action $)
-<<<
-
-/rl [$option1] [$option2] [$option3] [$option4] [$] = >>>
-call_alias(/reloader $option1 $option2 $option3 $option4 $)
-<<<
-
-/rladmin [$option1] [$option2] [$option3] [$option4] [$] = >>>
-call_alias(/reloaderadmin $option1 $option2 $option3 $option4 $)
 <<<

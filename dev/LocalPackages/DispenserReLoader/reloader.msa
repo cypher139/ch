@@ -1,11 +1,11 @@
 ######################################################
 #
-#   ReLoad: Fill chests or dispensers in one click!
-#   version 1.1-tmc
+#   ReLoad: Fill blocks that have inventories in one click!
+#   version 1.2-tmc
 #
 ######################################################
 #test layout:/rl      area       fuel       263         64
-reloader:/reloader [$action] [$option1] [$option2] [$option3] [$option4] [$] = >>>
+reloader:/reloader [$action] [$option1] [$option2] [$option3] [$] = >>>
 #Include required backend functions
 include('includes.library/reload-functions-Core.ms')
 ### What is the name of this script?
@@ -16,25 +16,35 @@ assign(@name, string(import('dispenserreloader.name')))
 @defaultitem = @serveritemdefaults['item']
 @defaultitemqty = @serveritemdefaults['qty']
  
-assign(@action, to_lower($action))
-assign(@option1, $option1)
-assign(@option2, $option2)
-assign(@option3, $option3)
-assign(@option4, $option4)
-assign(@player, _reloader_getplayerID(player()))
-assign(@verbose, get_value(@name.'.player.'.@player['id'].'.verbose'))
-export(@name.'.player.'.@player['id'].'.verbose', @verbose)
+@action = to_lower($action)
+@option1 = $option1
+@option2 = $option2
+@option3 = $option3
+@player = _reloader_getplayerID(player())
+@verbose = import(@name.'.player.'.@player['id'].'.verbose')
+if(@verbose == null) {
+	assign(@verbose, get_value(@name.'.player.'.@player['id'].'.verbose'))
+	export(@name.'.player.'.@player['id'].'.verbose', @verbose)
+}
 assign(@dev, import('ch.player.'.@player['id'].'.developer'))
 
 set_uncaught_exception_handler(closure(@ex){
-	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured:')
-	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).@ex['message'])
-	console(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message'])
-	assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @ex['stackTrace'][0]['file'])[1])
-	console(color('c').'['.color(6).@name.color('c').'] '.color(1).'Path: ../'.@pathdisplay.color(7).' Line: '.color('a').@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
-	if(@dev == true) {msg(@ex)}
+	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
+	msg(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['message'])
+	assign(@msg1, color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message'])
+	if(@dev == true) {msg(@msg1)}
+	console(@msg1, false)
+	array_iterate(@ex['stackTrace'], closure(@k, @v) {
+		assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @v['file'])[1])
+		if(reg_count('(includes.library)', @pathdisplay) > 0) {
+			assign(@pathdisplay, 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1])
+		}		
+		assign(@msg2, color(9).'../'.@pathdisplay.color(7).' Line: '.color('a').@v['line'].'.'.@v['col'])
+		console(color('c').'['.color(6).@name.color('c').'] '.@msg2, false)
+		if(@dev == true) {msg(@msg2)}
+	})
 	return(true)
-}) 
+});
 
 ### Action list help
 proc _reloader_help() {
@@ -60,57 +70,66 @@ proc _reloader_help() {
 	msg(color(7).'/reloader mode <itemtype>'.color(4).' - '.color('f').'Sets /reloader area to only fill a chest, dispenser, or furnace, or all 3 types. Useful for not wiping chest contents ;)')
 	msg(color(7).'/reloader managebind'.color(4).' - '.color('f').'Unbind, or re-bind the '.@name.' tool to your currently held item!')
 }
- 
- 
- 
-#fix: move reassign options to  before tool part.
-#make /cmd $action $op1 $op2 $op3
-#all action expect /cmd ACTION op1 op2 op3
-# tool only ever expects /cmd op1 op2 op3
-#this way a list of actions is not needed in order to reassign options to correct order.
-#at tool reassign to (if != fuel) $action = @op1 etc, move 1 up.
 
 # More option conflicts:
 # /reloader area fuel needs option variable conversions, due to the extra action command.
 assign(@fuel, '')
 switch(@action) {
+case 's':
+case 'set':
+case '-set':
 case 'a':
+case 'ar':
 case 'area':
-	if(@option1 == 'fuel',
+case '-area':
+case '-a':
+	if(reg_count('^[fF]', @option1) > 0) {
 		#item type = @option1
 		assign(@option1, @option2)
 		#item quantity = @option2
 		assign(@option2, @option3)
 		assign(@fuel, true)
-	)
+		assign(@defaultitem, @serveritemdefaults['fuel'])
+	}
+case 'f':
+case 'fuel':
+	@fuel = true
 }
  
 # Setup previously set item type and quantity
 assign(@setitem, get_value(@name.'.player.'.@player['id'].'.set.item.type'))
 assign(@setitemqty, get_value(@name.'.player.'.@player['id'].'.set.item.qty'))
 # Check: verify item name and qty is legit
-if(_reloader_item_name(@setitem)['name'] == null) {
-	assign(@setitem, 3)
-	clear_value(@name.'.player.'.@player['id'].'.set.item.type')
-	if(@dev == true, msg(color(7).'[DEV]: '.color('f').'Set item type was not valid, reset to dirt.'))
+if(@fuel == true) {
+	assign(@setitem, get_value(@name.'.player.'.@player['id'].'.set.item.type.fuel'))
+	if(_reloader_item_name(@setitem)['name'] == null) {
+		@setitem = @serveritemdefaults['fuel']
+		clear_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+		if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set fuel type was not valid, reset to server default.')}
+	}
+} else {
+	if(_reloader_item_name(@setitem)['name'] == null) {
+		@setitem = @serveritemdefaults['item']
+		clear_value(@name.'.player.'.@player['id'].'.set.item.type')
+		if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set item type was not valid, reset to server default.')}
+	}
 }
 if(!is_integral(@setitemqty) || @setitemqty == 0) {
-	assign(@setitemqty, 3)
+	@setitemqty = @serveritemdefaults['qty']
 	clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
-	if(@dev == true, msg(color(7).'[DEV]: '.color('f').'Set item qty was not valid, reset to 3.'))
+	if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set item qty was not valid, reset to server default.')}
 }
  
-### These actions don't need the main parts of the script / the main checks to run, so they are listed here.
 
+### All Actions List:
 switch(@action){
-
+### These actions don't need the main parts of the script / the main checks to run, so they are listed here.
 case 'help':
 case '-help':
 case '?':
 case '/?':
 	_reloader_help()
 	die()
-
 # Version check
 case 'version':
 case 'build':
@@ -118,156 +137,153 @@ case '-version':
 case '-build':
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Version: '.import('dispenserreloader.version'))
 	die()
-
 # Extra messages
 case '-verbose':
 case 'verbose':
-	assign(@verbosesetting, get_value(@name.'.player.'.@player['id'].'.verbose'))
-	if(@verbosesetting == true,
+	#verbose already checked at start
+	if(@verbose == true) {
 		#disable
-	        store_value(@name.'.player.'.@player['id'].'.verbose', false)
-	        export(@name.'.player.'.@player['id'].'.verbose', false)
+		store_value(@name.'.player.'.@player['id'].'.verbose', false)
+		export(@name.'.player.'.@player['id'].'.verbose', false)
 		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Extra messages are '.color('c').'disabled! '.color(7).@name.' will display only normal messages')
-	,
+	} else {
 		#enable
-	        store_value(@name.'.player.'.@player['id'].'.verbose', true)
-	        export(@name.'.player.'.@player['id'].'.verbose', true)
+		store_value(@name.'.player.'.@player['id'].'.verbose', true)
+		export(@name.'.player.'.@player['id'].'.verbose', true)
 		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Extra messages are '.color('a').'enabled! '.color(7).@name.' will display more useful messages.')
-	)
-	die()
- 
-#set which item type to fill on /reloader area
+	}
+# Set which item type to fill on /reloader area
 case '-mode':
 case 'mode':
 case 'setmode':
 case 'areamode':
-	assign(@msg, '')
-	#nothing...
-	if(@option1 == '' || @option1 == null,
-		assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
-		if(@areamode == '' || @areamode == null,
-				assign(@areamode, 'All')
-		)
-		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).' Current Area mode: '.color(7).@areamode)
-		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify a type of item to fill. Accepted item types are chests, dispensers, and furnaces, or use "all" to use all 3 types.')
-	)
-	switch(to_lower(@option1)) {
-	case 'a':
-	case 'all':
-	case 'default':
-                store_value(@name.'.player.'.@player['id'].'.area.mode', 'All')
-                assign(@msg, 'All')
-        
-    case 'c':
-	case 'ch':
-	case 'chest':
-                store_value(@name.'.player.'.@player['id'].'.area.mode', 'Chest')
-                assign(@msg, 'Chest')
-	case 'd':
-	case 'dis':
-	case 'dispenser':
-                store_value(@name.'.player.'.@player['id'].'.area.mode', 'Dispenser')
-                assign(@msg, 'Dispenser')
-	case 'f':
-	case 'fur':
-	case 'furnace':
-                store_value(@name.'.player.'.@player['id'].'.area.mode', 'Furnace')
-                assign(@msg, 'Furnace')
-	default:
-		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify a VALID type of item to fill. Accepted item types are chests, dispensers, and furnaces, or use "all" to use all 3 types.')
+case 'm':
+	assign(@setareamode, 'unset')
+	assign(@msgaccepttypes, color(6).'Barrel'.color('f').', '.color(9).'Blast Furnace'.color('f').', '.color(6).'Brewing'.color('f').', '.color(9).'Chest'.color('f').', '.color(6).'Dispenser'.color('f').', '.color(9).'Furnace'.color('f').', '.color(6).'Shulker Box'.color('f').', '.color(9).'Smoker'.color('f').', '.color(6).'Trapped Chest.')
+	assign(@msggrouptypes, color(2).'Group Options: \n'.color('a')."All".color('7').' - Use all block types listed. \n'.color('a')."Chests".color(7).' - Use Barrel/Chest/Shulker Box/Trapped Chest. \n'.color('a')."Furnaces"color(7).' - Use Blast Furnace/Brewing/Furnace/Smoker.')
+	assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
+	if(@areamode == '' || @areamode == null) { @areamode = 'All' }
+	#Switch doesn't support wildcard matching, so regex route it is. saved 70+ lines of predefined switch cases :P
+	@option1 = to_lower(@option1)
+	if(reg_count('^[a]', @option1) > 0) {	@setareamode = 'All' }
+	if(reg_count('^[b][a]', @option1) > 0) { @setareamode = 'Barrel' }
+	if(reg_count('^[b][l]', @option1) > 0) { @setareamode = 'Blast_Furnace' }
+	if(reg_count('^[b][r]', @option1) > 0) { @setareamode = 'Brewing' }
+	if(reg_count('^[c]', @option1) > 0) { @setareamode = 'Chest'
+		if(reg_count('^[c].*[s]$', @option1) > 0) {
+			@setareamode = 'Group_Chest'
+		}
 	}
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode set to: '.@msg)
-	die()
-
+	if(reg_count('^[d]', @option1) > 0) {
+		@setareamode = 'Dispenser'
+	}
+	if(reg_count('^[f]', @option1) > 0) { @setareamode = 'Furnace'
+		if(reg_count('^[b]', @option2) > 0) {
+			@setareamode = 'Blast_Furnace'
+		}
+		if(reg_count('^[f].*[s]$', @option1) > 0) {
+			@setareamode = 'Group_Furnace'
+		}
+	}
+	if(reg_count('^[s][h]', @option1) > 0) { @setareamode = 'Shulker_Box' }
+	if(reg_count('^[s][m]', @option1) > 0) { @setareamode = 'Smoker' }
+	if(reg_count('^[t]', @option1) > 0) { @setareamode = 'Trapped_Chest' }
+	if(reg_count('^[g].*[c]', @option1) > 0) { @setareamode = 'Group_Chest' }
+	if(reg_count('^[g].*[f]', @option1) > 0) { @setareamode = 'Group_Furnace' }
+	
+	if(@setareamode == 'unset' || @option1 = '' || @option1 = null) {
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Current Area mode: '.@areamode)
+		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'To change your area mode, please specify a *valid* type of item. Accepted item types are: '.@msgaccepttypes.'\n'.@msggrouptypes)
+	}
+	store_value(@name.'.player.'.@player['id'].'.area.mode', @setareamode)
+	die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode set to: '.@setareamode)
 # Information, such as the last item used, set modes, etc.
 case 'info':
 case '-i':
+case 'i':
 case '-info':
-        assign(@lastitemused, _reloader_item_name(get_value(@name.'.player.'.@player['id'].'.last.item')))
-        assign(@lastitemqty, get_value(@name.'.player.'.@player['id'].'.last.qty'))
-        assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
-        if(@areamode == '' || @areamode == null,
-                assign(@areamode, 'All')
-        )
-        if(@setitem == '' || @setitem == null,
-                assign(@setitemmsg, color(7).'Unset')
-        ,
-                assign(@setitemmsg, color(2).@setitem.color(9).'(Qty: '.@setitemqty.')')
-        )      
-        if(@verbose == true,
-                assign(@vmsg, color('a').'Enabled')
-                ,
-                assign(@vmsg, color('c').'Disabled')
-        )
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(6).@name.' settings information for: '.color('a').@player['display'])
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color('a').@setitemmsg)
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemused['display'].' ['.@lastitemused['id'].'] '.color(9).'(Qty: '.@lastitemqty.')')
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7).@areamode)
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Verbose (extra) messages: '.@vmsg)
-        die()
-
-#Statistics: How many arrows have you used?
+case 'view':
+	assign(@lastitemused, _reloader_item_name(get_value(@name.'.player.'.@player['id'].'.last.item')))
+	assign(@lastitemqty, get_value(@name.'.player.'.@player['id'].'.last.qty'))
+	assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
+	if(@areamode == '' || @areamode == null) { @areamode = 'All' }
+	assign(@di, get_value(@name.'.player.'.@player['id'].'.set.item.type'))
+	if(@di == '' || @di == null) { @di = @serveritemdefaults['item'] }
+	assign(@diq, get_value(@name.'.player.'.@player['id'].'.set.item.qty'))
+	if(@diq == '' || @diq == null) { @diq = @serveritemdefaults['qty'] }
+	assign(@dif, get_value(@name.'.player.'.@player['id'].'.set.item.type.fuel'))
+	if(@dif == '' || @dif == null) { @dif = @serveritemdefaults['fuel'] }
+	if(@verbose == true) {
+		@vmsg = color('a').'Enabled'
+	} else {
+		@vmsg = color('c').'Disabled'
+	}
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).@name.' settings information for: '.color('a').@player['display'])
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color('a').@di.color(9).' (Qty: '.@diq.')')
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set fuel item: '.color('a').@dif)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemused['display'].' ['.@lastitemused['id'].'] '.color(9).'(Qty: '.@lastitemqty.')')
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7).@areamode)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Verbose (extra) messages: '.@vmsg)
+	die()
+# Statistics: How many items have you used? how many blocks filled? How many times have you run reload?
 case '-stats':
 case 'stats':
 case 'statistics':
 case 'stat':
 case 'st':
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player['display'])     
-        assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
-        assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
-        # Stop with 0/null stuff if the player hasn't actually done anything.
-        if(@atr == '' || @atr == null,
-                if(@ttr == '' || @ttr == null,
-                        die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You haven\'t done anything with '.@name.'!')
-                )
-        )
- 
-        msg(color(9).' -------')
- 
-        msg(color(7).'All time '.@name.' runs:')
-        assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
-        if(@atr == '' || @atr == null, assign(@atr, 0))
-        msg(color(6).'/reload area: '.color('b')._reloader_number_commaize(@atr).' runs')
-        assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
-        if(@ttr == '' || @ttr == null, assign(@ttr, 0))
-        msg(color(6).'/reload (tool): '.color('b')._reloader_number_commaize(@ttr).' runs')
-        
-		msg(color(9).' -------')
- 
-        assign(@fb, get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks'))
-        msg(color(7).'Total blocks filled: '.color('b')._reloader_number_commaize(@fb))
-        
-		msg(color(9).' -------')
- 
-        assign(@lr, get_value(@name.'.player.'.@player['id'].'.stats.last.run'))
-        msg(color(7).'Last run: '.color(6).@lr['action'].'.')
-        if(@lr['blocks'] == 1, assign(@p, 'block') assign(@p2, 'was'), assign(@p, 'blocks') assign(@p2, 'were'))
-		msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(3)._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
- 
-        msg(color(9).' -------')
- 
-        assign(@playeritems, get_value(@name.'.player.'.@player['id'].'.stats.alltime.items'))
-        try(
-                msg(color(9).'Total items used to fill blocks:')
-                assign(@tiu, 0)
-                assign(@j, 0)
-                assign(@playeritemsi, array_keys(@playeritems))
-                foreach(@playeritems, @currentvar,
-                        assign(@tiu, @tiu + @currentvar)
-                        assign(@item, _reloader_item_name(@playeritemsi[@j]))
-                        msg(color(3).@item['display'].': '.color(7)._reloader_number_commaize(@currentvar))
-                        assign(@j, @j + 1)
-                )      
-                msg(color(9).'Total items used: '._reloader_number_commaize(@tiu))
-        ,@fail,
-                msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'You haven\'t used '.@name.'!')
-        )
- 
-        msg(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
- 
-        die()
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player['display'])     
+	assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
+	assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
+	# Stop with 0/null stuff if the player hasn't actually done anything.
+	if(@atr == '' || @atr == null) {
+		if(@ttr == '' || @ttr == null) {
+			die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You haven\'t done anything with '.@name.'!')
+		}
+	}
 
-#Bind/Unbind reload tool
+	msg(color(9).' -------')
+
+	msg(color(7).'All time '.@name.' runs:')
+	assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
+	if(@atr == '' || @atr == null, assign(@atr, 0))
+	msg(color(6).'/reload area: '.color('b')._reloader_number_commaize(@atr).' runs')
+	assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
+	if(@ttr == '' || @ttr == null, assign(@ttr, 0))
+	msg(color(6).'/reload (tool): '.color('b')._reloader_number_commaize(@ttr).' runs')
+	
+	msg(color(9).' -------')
+
+	assign(@fb, get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks'))
+	msg(color(7).'Total blocks filled: '.color('b')._reloader_number_commaize(@fb))
+	
+	msg(color(9).' -------')
+
+	assign(@lr, get_value(@name.'.player.'.@player['id'].'.stats.last.run'))
+	msg(color(7).'Last run: '.color(6).@lr['action'].'.')
+	if(@lr['blocks'] == 1, assign(@p, 'block') assign(@p2, 'was'), assign(@p, 'blocks') assign(@p2, 'were'))
+	msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(3)._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
+
+	msg(color(9).' -------')
+
+	assign(@playeritems, get_value(@name.'.player.'.@player['id'].'.stats.alltime.items'))
+	try(
+		msg(color(9).'Total items used to fill blocks:')
+		assign(@tiu, 0)
+		assign(@j, 0)
+		assign(@playeritemsi, array_keys(@playeritems))
+		foreach(@playeritems, @currentvar,
+				assign(@tiu, @tiu + @currentvar)
+				assign(@item, _reloader_item_name(@playeritemsi[@j]))
+				msg(color(3).@item['display'].': '.color(7)._reloader_number_commaize(@currentvar))
+				assign(@j, @j + 1)
+		)      
+		msg(color(9).'Total items used: '._reloader_number_commaize(@tiu))
+	,@fail,
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'You haven\'t used '.@name.'!')
+	)
+
+	die(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+# Bind/Unbind reload tool
 case 'managebind':
 case 'bind':
 case 'unbind':
@@ -280,9 +296,7 @@ case 'unbind':
 	}
 	assign(@tooldisplay, _reloader_item_name(@tool))
 	assign(@tooldata, import(@name.'.player.'.@player['id'].'.tool.'.@tool))
-	if(@dev == true) {
-		msg(color(7).'[DEV] Tool to bind/unbind: '.color('f').@tool)
-	}
+	if(@dev == true) { msg(color(7).'[DEV] Tool to bind/unbind: '.color('f').@tool) }
 	
 	if(is_array(@tooldata)) {
 		if(array_index_exists(@tooldata, 'use')) {
@@ -304,15 +318,31 @@ case 'unbind':
 		#no data found
 		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'This tool was not previously bound. You need to use \'/reloader\' to setup this tool for use!') 
 	}
+# All other actions that can't be acted upon right here are still listed in order to detect an unknown action later.
+case 's':
+case 'set':
+case '-set':
+case 'a':
+case 'ar':
+case 'area':
+case '-area':
+case '-a':
+case 'fuel':
+case 'this':
+case 'that':
+# A null action is supported, as tool does not specify an action
+case '':
+case null:
+	if(@dev == true, msg(color(7).'[DEV] '.color('f').'passed info area'))
 }
 
 ### Continuing on...
 
 switch(@action) {
-#Conflict: Since no action above was performed, we need to move the options into the correct order for the item and qty checks below,
-# as tool does not have an action but still specifies item type and quantity.
-#However 'set' and 'area' actions need these checks to run and pass,
-# so those actions get escaped in switch() here to allow the below checks to have the correct values to check for both area and tool mode. 
+#Conflict: Since no action above was performed, we need to move the options into the correct order for the item and qty checks below.
+# The order is already set for commands with actions, 
+# but tool does not have an action yet still specifies item type and quantity.
+# so actions get escaped in switch() here to allow the below checks to have the correct values to check for both area and tool mode. 
 # Aliases for set & area action must be mentioned here too.
 case 's':
 case 'set':
@@ -323,24 +353,18 @@ case 'area':
 case '-area':
 case '-a':
 	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').'set or area'))
-### Continuing on...
 # Set Defaults for fuel 	
 case 'fuel':
+case 'f':
 	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').'fuel'))
 	assign(@defaultitem, @serveritemdefaults['fuel'])
+	
+### Continuing on... Tool usage:
+# No more actions to perform, we are now using tool. Move options into proper places that checks expect values to be for tool usage.	
 case 'this':
 case 'that':
-#item - onhand tool
-	if(pinv(@player['name'], null) == null) {
-        assign(@option1, @defaultitem)
-	} else {
-	#use equipped item 
-		assign(@option1, pinv(@player['name'], null)['name'])
-	}
-	assign(@option2, max_stack_size(array(name: @option1, 'meta': null)))
-	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').' equipped: '.@option1.@option2))
+# 'this/that' action is handled later, but need item and qty remapped properly if tool used.
 default:
-	# No more actions to perform, using tool. Move options into proper places that checks expect values to be for tool usage.
 	if(@dev == true, msg(color(7).'[DEV] remap:'.color('f').'tool'))
 	assign(@option3, @option2)
 	assign(@option2, @option1)
@@ -350,32 +374,43 @@ default:
 # Set defaults:
 # No set item? We'll load the variable with the default item then.
 assign(@isdefaultqty, '')
-if(@setitem == '' || @setitem == null, assign(@setitem, @defaultitem))
+if(@setitem == '' || @setitem == null) {@setitem = @defaultitem}
 # No set item quantity? We'll load the variable with the default qty then.
 if(@setitemqty == '' || @setitemqty == null,
         assign(@setitemqty, @defaultitemqty)
         assign(@isdefaultqty, true)
 )
+
  
 # Override set settings:
+# Did you use the 'that' acronym for item being held?
+switch(@option1) {
+case 'this':
+case 'that':
+#item - onhand tool
+	if(pinv(@player['name'], null) == null) {
+	#slot empty - is hand. use defaults.
+        assign(@option1, @defaultitem)
+	} else {
+	#use equipped item 
+		assign(@option1, pinv(@player['name'], null)['name'])
+	}
+	assign(@option2, max_stack_size(array(name: @option1, 'meta': null)))
+	if(@dev == true, msg(color(7).'[DEV] that item/qty:'.color('f').@option1.' '.@option2))
+}
 # Are you specifying the item type?
 assign(@item, @option1)
-if(@item == '' || @item == null,
-        assign(@item, @setitem)
-)
+if(@item == '' || @item == null) { @item = @setitem }
+
 # Are you specifying the quantity?
 assign(@itemqty, @option2)
-if(@itemqty == 0,
-        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify your quantity in a positive number.')
-)
-if(@itemqty == '' || @itemqty == null,
-        assign(@itemqty, @setitemqty)
-        ,
-        assign(@isdefaultqty, false)
-)
-if(is_integral(@itemqty), null,
-        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify your quantity in a number.')
-)
+if(@itemqty == 0) {die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify your quantity in a positive number.')}
+if(@itemqty == '' || @itemqty == null) {
+	assign(@itemqty, @setitemqty)
+} else {
+	assign(@isdefaultqty, false)
+}
+if(!is_integral(@itemqty)) {die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify your quantity in a number.')}
  
 #Did you say default?
 switch(@option1){
@@ -383,8 +418,8 @@ case '-':
 case 'remove':
 case 'default':
 case 'clear':
-	assign(@item, @defaultitem)
-	assign(@itemqty, @defaultitemqty)
+	@item = @defaultitem
+	@itemqty = @defaultitemqty
 }
 
  
@@ -395,69 +430,58 @@ case 'clear':
 @item = @itemids['name']
 @itemname = @itemids['name']
 
-# Check: Is this air?
-if(@item == '0' || string_contains_ic(@item, 'air')) {
-        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
-}
- 
 # Check: Null.
 # WARNING: If data_name comes up with null, this probably indicates a unsupported, non-vanilla item.
 # In setting items CH doesn't care if the item actually exists, it will just set the container full
 # of what it was told to set it to.
 # If a client tries to view this non-existent item: Instant client crash.
 # (and the server might report that a entity ID has invalid items)
-if(@item == null || @item == '',
-        msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'That item isn\'t supported!')
-        _reloader_msgAdmins(color('c').'['.color(6).@name.color('c').'] '.color('c').@player['display'].' tried to use a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', color('c').'['.color(6).@name.color('c').'] '.color('c').@player['display'].' tried to use a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', ' Note: If you are running a modded server, you will need to notify CommandHelper of the data names for blocks/items that mods add. Ask on CommandHelper\'s IRC channel for help in doing this.', true)
-        die()
-)
+if(@item == null || @item == '') {
+	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'That item isn\'t supported!')
+	_reloader_msgAdmins(color('c').'['.color(6).@name.color('c').'] '.color('c').@player['display'].' tried to use a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', color('c').'['.color(6).@name.color('c').'] '.color('c').@player['display'].' tried to use a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', ' Note: If you are running a modded server, you will need to notify CommandHelper of the data names for blocks/items that mods add. Ask on CommandHelper\'s IRC channel for help in doing this.', true)
+	die()
+}
+ 
+# Check: Is this air?
+if(@item == '0' || string_contains_ic(@item, 'air')) {
+        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
+} 
  
 # Check: Item permissions
-if(@defaultitem != @item,
-	if(@dev == true,
-		msg(color(7).'[DEV] Not default item: '.color('f').@defaultitem.' != '.@item)
-	)
-	if(has_permission(@player['name'], 'commandhelper.alias.reloader.any.item.use'), if(@dev == true, msg(color(7).'[DEV] item: '.color('f').'Using any perm')),
-		if(has_permission(@player['name'], 'commandhelper.alias.reloader.use.'.@item), if(@dev == true, msg(color(7).'[DEV] item: '.color('f').'Using item perm')),
-			die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use this item type. ('.@itemids['display'].')')
-		)
-	)
-)
+if(@defaultitem != @item) {
+	if(_reloader_check_perm(@player['name'], 'item', @item) == false) {
+		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use this item type. ('.@itemids['display'].')')
+	}
+}
  
 # Check: Legitimate quantity stacks
 assign(@itemstacksize, max_stack_size(array(name: @item, 'meta': null)))
-if(@dev == true,
-        msg(color(7).'[DEV] max_stack_size for '.color('f').@item.': '.@itemstacksize)
-)
-if(@isdefaultqty == true,
-	# This is the default quantity, the player hasn't set any different quantity.
-	if(@dev == true,
-			msg(color(7).'[DEV] default qty: '.color('f').@itemqty)
-	)
-	# Bump down the quantity according to the max stack size.
-	if(@itemqty > @itemstacksize,
-			assign(@itemqty, @itemstacksize)
-	)
-	,
-#Not using the default qty
-	if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate'),
-			if(@dev == true && @itemqty > @itemstacksize, 
-		msg(color(7).'[DEV] stack: '.color('f').'Using illegitimate stack perm')
-		,
-		msg(color(7).'[DEV] stack: '.color('f').'legit')
-	)
-	,
-		# perm check returns nope.
-		if(@itemqty > @itemstacksize,
-				die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to make an illegitimate stack!')
-		)
-	)
-)
- 
-#Quick Dev message...
-if(@dev == true, msg(color(7).'[DEV] Final item & quantity: '.color('f').@item.' ('.@itemqty.')'))
+if(@dev == true) {msg(color(7).'[DEV] max_stack_size for '.color('f').@item.': '.@itemstacksize)}
 
+if(@isdefaultqty == true) {
+	# This is the default quantity, the player hasn't set any different quantity.
+	if(@dev == true) {msg(color(7).'[DEV] default qty: '.color('f').@itemqty)}
+	# Bump down the quantity according to the max stack size.
+	if(@itemqty > @itemstacksize) {
+		@itemqty = @itemstacksize
+	}
+} else {
+#Not using the default qty
+	if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate')) {
+		if(@dev == true && @itemqty > @itemstacksize) { 
+			msg(color(7).'[DEV] stack: '.color('f').'Using illegitimate stack perm')
+		} else {
+			msg(color(7).'[DEV] stack: '.color('f').'legit')
+		}
+	} else {
+		# perm check returns nope.
+		if(@itemqty > @itemstacksize) {
+			die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to make an illegitimate stack!')
+		}
+	}
+}
  
+if(@dev == true) {msg(color(7).'[DEV] Final item & quantity: '.color('f').@item.' ('.@itemqty.')')}
 ### More actions:
  
 # Set the item type to automatically use on /reloader
@@ -465,18 +489,29 @@ switch(@action) {
 case 's':
 case 'set':
 case '-set':
-	store_value(@name.'.player.'.@player['id'].'.set.item.type', @item)
-	store_value(@name.'.player.'.@player['id'].'.set.item.qty', @itemqty)
+@msg1 = ''
 	switch(@option1) {
+	# at this point option1 is item id
 	case '-':
 	case 'remove':
 	case 'default':
 	case 'clear':
 		clear_value(@name.'.player.'.@player['id'].'.set.item.type')
 		clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
+		clear_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set item, quantity, and fuel item has been cleared!')
+	default:
+		if(@fuel == true) {
+			@setitem = get_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+			if(@setitem == '' || @setitem == null) { @setitem = @serveritemdefaults['fuel'] }
+			store_value(@name.'.player.'.@player['id'].'.set.item.type.fuel', @item)
+			@msg1 = 'Fuel '
+		} else {
+			store_value(@name.'.player.'.@player['id'].'.set.item.type', @item)
+			store_value(@name.'.player.'.@player['id'].'.set.item.qty', @itemqty)
+		}
+		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set '.@msg1.'item was: '.color(7).@setitem.' (Quantity: '.@setitemqty.')'.color(3).', and is now: '.color('a').@itemids['display'].' (Quantity: '.@itemqty.')')
 	}
-        msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set item was: '.color(7).@setitem.' (Quantity: '.@setitemqty.')'.color(3).', and is now: '.color('a').@itemids['display'].' (Quantity: '.@itemqty.')')
-        die()
 }
  
 ### Continuing on to filling the block inventories! 
@@ -484,10 +519,7 @@ case '-set':
 # Store the item last used:
 store_value(@name.'.player.'.@player['id'].'.last.item', @item)
 store_value(@name.'.player.'.@player['id'].'.last.qty', @itemqty)
- 
- 
 # Randomizer - area 
-#temp override
 assign(@random, false)
 
 ### Fill an area
@@ -500,24 +532,30 @@ case '-a':
 	assign(@fl, '\n')
 	if(has_permission(@player['name'], 'commandhelper.alias.reloader.area')) {
 		assign(@world, pworld(@player['name']))
-		# Area mode requires a extension to access WorldEdit selection data. Checking if extension is installed.
-		assign(@extok, '')
-		if(extension_exists('SKCompat')) {
-			@extok = true
-		} else {
-			@extok = false
-		}
-		include('includes.library/reload-functions-SKCompat-'.@extok.'.ms')
+		# Area mode requires an extension to access WorldEdit selection data.
+		include('includes.library/reload-functions-SKCompat-'.extension_exists('SKCompat').'.ms')
 
 	  # Get the player's area mode
 		assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
-		if(@areamode == '' || @areamode == null,
-			assign(@areamode, 'ALL')
-		)
-		if(@areamode == 'ALL') {
-			@areamodedisplay = 'Chests, Dispensers, Furnaces'
-		} else {
-			@areamodedisplay = to_lower(@areamode)
+		if(@areamode == '' || @areamode == null) {@areamode = 'ALL'}
+		#Area mode message display
+		switch(to_upper(@areamode)) {
+		case 'ALL':
+			@areamodedisplay = 'Items'
+		case 'BREWING':
+			@areamodedisplay = 'Brewing Stand'
+		case 'GROUP_CHEST':
+		case 'CHESTS':
+			@areamodedisplay = 'Chests'
+		case 'GROUP_FURNACE':
+		case 'FURNACES':
+			@areamodedisplay = 'Furnaces'
+		default:
+			if(reg_count('_', @areamode) > 0) {
+				@areamodedisplay = to_lower(reg_replace('_', ' ', @areamode))
+			} else {
+				@areamodedisplay = to_lower(@areamode)
+			}
 		}
 
 		# Setup proc to use if random mode is enabled
@@ -527,39 +565,47 @@ case '-a':
 			assign(@areaprocname, '_reloader_fill')
 		}
 		
-		#It is now time to iterate through the area. Assigned a variable to get stats returned.
+		# It is now time to iterate through the area. Assigned a variable to get stats returned.
 		assign(@filled, _reloader_iterate_cuboid(@areaprocname, @world, @item, @player['name'], @itemqty, @fuel, @verbose))
 		
-		if(@filled['fail'] == true,
-			die(@filled['failmsg'])
-		)
-		assign(@filledinfoc, '')
-		assign(@filledinfod, '')
-		assign(@filledinfof, '')
-		if(@filled['type']['chest'] == 0, null, assign(@filledinfoc, 'Chests filled: '.@filled['type']['chest'].' '))
-		if(@filled['type']['dispenser'] == 0, null, assign(@filledinfod, 'Dispensers filled: '.@filled['type']['dispenser'].' '))
-		if(@filled['type']['furnace'] == 0, null, if(@fuel == true, null, assign(@filledinfof, 'Furnaces filled: '.@filled['type']['furnace'])))
-		if(@fuel == true) {
-			assign(@b, 'Furnace')
-		} else {
-			assign(@b, 'block')
-		}
-		if(@filled['blocks'] > 1) {
-			assign(@donemsg, 'Success! '.@filled['blocks'].' '.@b.'s were filled, using a total of '._reloader_number_commaize(@filled['items']).' '.@itemids['display'].'.'.@fl.color(7).@filledinfoc.@filledinfod.@filledinfof)
-		} else {
-			assign(@donemsg, 'Success! 1 '.@b.' was filled with '.@filled['items'].' '.@itemids['display'].'.'.@fl.color(7).@filledinfoc.@filledinfod.@filledinfof)
-			if(@filled['blocks'] == 0) {
-			# nothing was filled, why?
-				if(@filled['found'] > 0) {
-					# Acceptable block entities were found but not touched due to inventory full.
-					assign(@donemsg, 'Any '.@areamodedisplay.'(s) in the area were already full!')
+		if(@filled['fail'] == true) {die(@filled['failmsg'])}
+		# Enumerate returned array into one output string to message
+		assign(@ftkeys, array_keys(@filled['type']))
+		assign(@filledinfo, '')
+		for(assign(@i, 0), @i < array_size(@filled['type']), @i++) {
+			if(@filled['type'][@ftkeys[@i]] > 0) {
+				if(reg_count('_', @ftkeys[@i]) > 0) {
+					@ftdisplay = _reloader_capitalize(to_lower(reg_replace('_', ' ', @ftkeys[@i])))
 				} else {
-					# Acceptable block entities were not found.
-					assign(@donemsg, 'There wasn\'t any '.@areamodedisplay.'(s) to fill in the area!')
+					@ftdisplay = _reloader_capitalize(to_lower(@ftkeys[@i]))
 				}
+				if(_is_even_number(@i) == true) {		
+					@color = '9'
+				} else {
+					@color = '7'
+				}
+				@filledinfo = @filledinfo.color(@color).@ftdisplay.': '.@filled['type'][@ftkeys[@i]].' '
 			}
 		}
-		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@donemsg)
+		if(@filled['blocks'] > 1) {
+			assign(@donemsg, @filled['blocks'].' '._reloader_capitalize(@areamodedisplay).' were filled, using a total of '.color('a')._reloader_number_commaize(@filled['items']).' '.@itemids['display'].'!'.@fl.color(7).@filledinfo)
+			@dmcolor = 'a'
+		} else {
+			assign(@donemsg, '1 '._reloader_capitalize(@areamodedisplay).' was filled with '.color('a').@filled['items'].' '.@itemids['display'].'!'.@fl.color(7).@filledinfo)
+			@dmcolor = 'a'
+		}
+		# Nothing was filled? why?
+		if(@filled['blocks'] == 0) {
+			@dmcolor = '8'
+			if(@filled['found'] > 0) {
+				# Acceptable block entities were found but not touched due to inventory full.
+				assign(@donemsg, 'Any '.@areamodedisplay.'(s) in the area were already full.')
+			} else {
+				# Acceptable block entities were not found.
+				assign(@donemsg, 'There wasn\'t any '.@areamodedisplay.'(s) to fill in the area!')
+			}
+		}
+		msg(color(@dmcolor).'['.color(6).@name.color(@dmcolor).'] '.color(3).@donemsg)
 #permission
 	} else {
 		msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permission to fill an area!')
@@ -567,7 +613,6 @@ case '-a':
 #end of switch	
         die()
 }
- 
  
 ### ReLoad tool
 assign(@index, null)

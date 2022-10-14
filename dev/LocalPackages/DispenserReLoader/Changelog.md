@@ -2,14 +2,23 @@
 
 ###### 2.0 (?)
 Additions:
+- Related block types Minecraft 1.14 added are now also supported: Barrel, Trapped Chest, Smoker, Blast Furnace, Shulker Box.
+	- Area mode: Dyed Shulker Boxes are also supported separately as well if it's desired to only fill a certain color Shulker Box.
 - /reloader this - when used with reloader tool binds the current item as tool, using settings of a max stack of whatever item you are holding.
+	- Area mode: uses item and qty of what you are holding.
+
 Fixes:
-- Compile errors with newer CH versions (all switch cases, array names, and color codes must be quoted)
-- Minecraft 1.13+ now uses item names instead of numeric IDs. Procedure rewrites as required for new item arrays and arguments for CH 3.3.3 / Minecraft 1.13 and newer.
+- Fuel mode: Now supports placing Blaze Powder in Brewing Stands (and nothing else as fuel in a brew stand.)
+- Minecraft 1.13+ now uses item names instead of numeric IDs. 
 	- Numeric IDs are still supported by the script. When such an ID is available for the item the script will automatically convert to the name instead.
 	- Legacy Item:data syntax is also supported still, script will automatically convert this to the name format as well.
+- Fixed several compile errors with newer CH versions (all switch cases, array names, and color codes must be quoted)
+	- Many procedure rewrites and upgrades as required for new item arrays and arguments for CH 3.3.3 / Minecraft 1.13 and newer.
 - Add player persistance storage via player UUID, required for name prefixes using a dot (i.e. name prefix defaults for Bedrock to Java players)
 - Persistence values: Use tool name over numeric ID, optimize some value importing, switch tool to use one array value.
+
+Notes:
+- Blocks not supported by design: Ender Chest, Hopper, Dropper. May revisit dropper? in future release.
 
 
 ###### 1.0 (1/1/16)

@@ -1,15 +1,15 @@
 ######################################################
 #
-#   ReLoad: Fill chests or dispensers, or furnaces in one click!
+#   ReLoad: Fill blocks that have inventories in one click!
 #   Main.ms: Tool interaction listener.
-#   version 1.1-tmc
+#   version 1.2-tmc
 #
 ######################################################
 #Include required backend functions
 include('includes.library/reload-functions-Core.ms')
 
 #Listen for interactions with the ReLoad tool
-bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
+bind('player_interact', array(id: 'ReLoad.tool'), array(button: 'left'), @reload) {
 	assign(@name, import('dispenserreloader.name'))
 	assign(@player, _reloader_getplayerID(@reload['player']))
 	assign(@verbose, import(@name.'.player.'.@player['id'].'.verbose'))
@@ -20,7 +20,6 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 	#ReLoad tool does not bind to Hand.
 		die()
 	}
-
 	assign(@tooldata, import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name']))	
 	if(!is_array(@tooldata)) {
 		# No tool data set yet, nothing to do here.
@@ -30,13 +29,23 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 		assign(@tooldisplay, _reloader_item_name(@tool['name']))
 		# Check: Item permissions
 		assign(@defaultitem, import(@name.'.default.item.type'))
-		if(@defaultitem != @tooldata['item'],
-			if(has_permission('commandhelper.alias.reloader.any.item.use'), null,
-				if(has_permission('commandhelper.alias.reloader.use.'.@tooldata['item']), null,
-					die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use item type "'._reloader_item_name(@tooldata['item'])['display'].'".')
-				)
-			)
-		)
+		if(@defaultitem != @tooldata['item']) {
+			if(_reloader_check_perm(@player['name'], 'item', @tooldata['item']) == false) {
+				die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use item type "'._reloader_item_name(@tooldata['item'])['display'].'".')
+			}
+		}
+		#Fuel: Item check:
+		#Brewing stand only supports Blaze Powder, continue to next block if this is not the fuel in use.
+		if(@tooldata['fuel'] == true) {
+			if(@reload['block'] == 'BREWING_STAND' && @tooldata['item'] != 'BLAZE_POWDER') {
+				die(color('c').'['.color(6).@name.color('c').'] '.color(7).'A Brewing Stand does not support any fuel other than Blaze Powder!')
+			}
+		# Vice Versa, Furnaces don't support Blaze Powder
+			if(@reload['block'] != 'BREWING_STAND' && @tooldata['item'] == 'BLAZE_POWDER') {
+				die(color('c').'['.color(6).@name.color('c').'] '.color(7).'Only Brewing Stands support Blaze Powder as fuel!')
+			}
+		}
+
 		# Fill the Block, assigning for return value
 		assign(@fillreturn, _reloader_fill(@reload['location'][0], @reload['location'][1], @reload['location'][2], @reload['location'][3], @tooldata['item'], @player['name'], @tooldata['qty'], @tooldata['fuel'], @verbose))
 		# Stats messages
@@ -44,10 +53,10 @@ bind('player_interact', array(id: 'ReLoad.tool'), null, @reload) {
 			die(@fillreturn['msg'])
 		}
 		if(@fillreturn['msg'] == '0') {
-			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! However this '.to_lower(@fillreturn['type']).' was already full of '._reloader_item_name(@tooldata['item'])['display'].'!')
+			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! However this '._reloader_capitalize(to_lower(@fillreturn['type'])).' was already full of '._reloader_item_name(@tooldata['item'])['display'].'!')
 		}
 		# Record stats
-		_reloader_record_stats(@player['name'], tool, 1, @fillreturn['filledqty'], @tooldata['item'], @tooldata['qty'])
+		_reloader_record_stats(@player['name'], 'tool', 1, @fillreturn['filledqty'], @tooldata['item'], @tooldata['qty'])
 		if(@verbose == true) {
 			msg(@fillreturn['msg'])
 		}

@@ -9,21 +9,21 @@ msg(@player)
 
 switch(to_lower($action)) {
 case 'test':
-#msg(data_name($option1))
-#msg(pinv(@player['name'], null))
-for(assign(@i, 0), @i < 10, @i++) {
-switch(@i) {
-case '3':
-continue()
-msg('test')
-case '7':
-break(2)
-default:
-msg(@i)
-}
-}
+msg(extension_exists('SKCompat'))
+
+
+
+
 @test1 = array(one: 1, two: 2, two_two: 22)
 msg(@test1['two_two'])
+
+array_set(@test1, 'three', '3')
+msg(@test1)
+
+array_set(@test1, 'three', '4')
+msg(@test1)
+
+msg(_is_even_number($option1))
 
 case 'goto':
 	switch(to_lower($option1)) {

@@ -1,4 +1,12 @@
-#version 1.1-tmc
+######################################################
+#
+#   ReLoad: Fill blocks that have inventories in one click!
+#   Core Functions: Fill block inventory, record stats, and other shared functions.
+#   version 1.2-tmc
+#
+######################################################
+proc _is_even_number(@number) {return(mod(@number, 2) == 0)}
+
 proc _reloader_getplayerID(@option1) {
 	@pid = array()
 	if(@option1 == '~console'){
@@ -15,6 +23,51 @@ proc _reloader_getplayerID(@option1) {
 	)
 	return(@pid)
 }
+
+proc _reloader_check_perm(@player, @option, @option2) {
+	switch(@option) {
+	case 'item':
+	#item
+	#Any item
+	#start with nope, only change to true on match
+		@permmsg = 'You do not have permissions to use this item type.'
+		@e = false
+		if(has_permission(@player, 'commandhelper.alias.reloader.any.item.use')) {
+			@permmsg = 'Using any item perm'
+			@e = true
+		}
+		#item NAME (use.COAL), also use.263 if old id used
+		if(has_permission(@player, 'commandhelper.alias.reloader.use.'.@option2)) {
+			if(is_numeric(@option2)) {
+				@permmsg = 'Using item ID perm'
+			} else {
+				@permmsg = 'Using item name perm'
+			}
+			@e = true
+		} else {
+		#extra check for item ID, one final translate check to "use.NAME"
+			if(is_numeric(@option2)) {
+				assign(@option2, data_name(@option2))
+				if(has_permission(@player, 'commandhelper.alias.reloader.use.'.@option2) && @option2 != null) {
+					@permmsg = 'Using item ID to name perm'
+					@e = true
+				}
+			}
+		}
+	case 'istack':
+		if(has_permission(@player, 'commandhelper.alias.reloader.stack.illegitimate')) {
+			@permmsg = color(7).'[DEV] stack: '.color('f').'Using illegitimate stack perm'
+		} else {
+			@permmsg = color(7).'[DEV] stack: '.color('f').'stack legit'
+		}
+	}	
+
+	if(import('ch.player.'._reloader_getplayerID(@player)['id'].'.developer') == true) {
+		tmsg(@player, color(7).'[DEV]: '.color('f').@permmsg)
+	}
+	return(@e)
+}
+
 
 proc _reloader_get_server_defaults(@option) {
 	assign(@name, string(import('dispenserreloader.name')))
@@ -109,10 +162,8 @@ proc _reloader_item_name(@item) {
 		assign(@display, to_lower(reg_replace('_', ' ', @name)))
 	}
 	# Check: Is this air?
-	if(@name == '0' || string_contains_ic(@name, 'air')) {
-        msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
-		assign(@name, null)
-	}
+	if(@name == '0' || string_contains_ic(@name, 'air')) { @name = null }
+	
 	return(array(name: @name, id: @id, display: @display))
 	}
 }
@@ -147,139 +198,180 @@ proc _reloader_number_commaize(@number) {
                 return(@n)
         )
 }
+
+proc _reloader_capitalize(@string) {
+	assign(@l1, to_upper(@string[0]))
+	assign(@length, length(@string) - 1)
+	assign(@newstring, @l1.@string[cslice(1, @length)])
+	if(reg_count('[_]', @newstring) > 0) {
+		@newstring = reg_replace('_', ' ', @newstring)
+	}
+	return(@newstring)
+}
  
 proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbose) {
+#throw('ms.lang.CastException', 'testing throwfill')
 	assign(@name, import('dispenserreloader.name'))
 	assign(@chmaxstacksize, 64)
 	assign(@player, _reloader_getplayerID(@playergiven))
 	assign(@dev, import('ch.player.'.@player['id'].'.developer'))
+	assign(@acceptfilltypes, array('BARREL', 'BLAST_FURNACE', 'BREWING', 'CHEST', 'DISPENSER', 'DROPPER', 'FURNACE', 'HOPPER', 'SHULKER_BOX', 'SMOKER', 'TRAPPED_CHEST'))
 # We need a real array
 	assign(@xyz, array())
-        assign(@xyz[0], @x)
-        assign(@xyz[1], @y)
-        assign(@xyz[2], @z)
-        assign(@xyz[3], @world)
-        if(@dev == true,
-                tmsg(@player['name'], color(7).'[DEV] _reloader_fill: '.color('f').'Evaluating block: '.@xyz)
-        )
+	assign(@xyz[0], @x)
+	assign(@xyz[1], @y)
+	assign(@xyz[2], @z)
+	assign(@xyz[3], @world)
+	if(@dev == true) {tmsg(@player['name'], color(7).'[DEV] _reloader_fill: '.color('f').'Evaluating block: '.@xyz)}
 # Check: null/air
-        if(@item == null || @item == 0,
-                return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!', size: 0, fail: true))
-        )
+	if(@item == null || @item == 0) {
+		return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!', size: 0, fail: true))
+	}
 # Get the inventory size
-        try(
-                assign(@size, get_inventory_size(@xyz))
-        ,@fail,
-                return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'This location isn\'t capable of having a inventory!', size: 0, fail: true))
-        )
-        assign(@filltype, get_inventory_type(@xyz))
-        assign(@maxstacksize, max_stack_size(array(name: @item, 'meta': null)))
-        if(@verbose == 'yes',
-                tmsg(@player['name'], color(3).'['.color(6).@name.color(3).'] '.color(9).'A fillable item was found at: '.@xyz)
-        )
-# Check for fuel mode: If enabled ignore chest/dispenser
-	if(@filltype != 'FURNACE' && @fuel == true,
-		return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use a Chest or Dispenser while in Fuel mode!', size: 0, fail: true))
-	) 
+	try(
+		assign(@size, get_inventory_size(@xyz))
+	,@fail,
+		return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'This location isn\'t capable of having a inventory!', size: 0, fail: true))
+	)
+	assign(@filltype, get_inventory_type(@xyz))
+	assign(@maxstacksize, max_stack_size(array(name: @item, 'meta': null)))
+	if(@verbose == true && @fuel == false) {
+		tmsg(@player['name'], color(3).'['.color(6).@name.color(3).'] '.color(9).'A fillable item was found at '.integer(@xyz[0]).', '.integer(@xyz[1]).', '.integer(@xyz[2]))
+	}
+# Fuel mode: If enabled ignore chest/dispenser types of blocks
+	if(@fuel == true) {
+		switch(@filltype) {
+		case 'FURNACE':
+		case 'BREWING':
+		case 'SMOKER':
+		case 'BLAST_FURNACE':
+			if(@verbose == true) {
+				tmsg(@player['name'], color(3).'['.color(6).@name.color(3).'] '.color(9).'A fillable furnace was found at '.integer(@xyz[0]).', '.integer(@xyz[1]).', '.integer(@xyz[2]))
+			}
+			if(@filltype == 'BREWING' && @item != 'BLAZE_POWDER') {
+				return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'A Brewing Stand does not support any fuel other than Blaze Powder!', size: 0, fail: true))
+			}
+		default:
+			return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'Fuel mode does not support Chest or Dispenser block types!', size: 0, fail: true))
+		}
+	}
 # Check: limit what you can fill
-        assign(@acceptfilltypes, array('CHEST', 'DISPENSER', 'FURNACE'))
-        if(array_contains(@acceptfilltypes, @filltype), null,
-                return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot fill this item type!', size: 0, fail: true))
-        )
+	if(!array_contains(@acceptfilltypes, @filltype)) {
+		return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot fill this item type!', size: 0, fail: true))
+	}
 # Get specified item quantity
-        if(@qty == '' || @qty == null,
-                assign(@qty, @maxstacksize)
-        )      
+	if(@qty == '' || @qty == null) {
+		assign(@qty, @maxstacksize)
+	}     
 # Set array of item
-        assign(@itema, array(name: @item, qty: @qty))
+	assign(@itema, array(name: @item, qty: @qty))
  
 # Check: illegitimate stack perm
-        if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate'),
-                assign(@istack, true)
-        ,
-                assign(@istack, false)
-        )
+	if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate'),
+			assign(@istack, true)
+	,
+			assign(@istack, false)
+	)
 
 
 # Set the items in the block.
-        assign(@fqty, 0)
+	assign(@fqty, 0)
 	assign(@re, '')
-        for(assign(@i, 0), @i < @size, @i++,
-                if(@filltype == 'FURNACE',
-                        if(@fuel == true,
-                                #this sets the fuel in the bottom of the furnace.
-                                assign(@i, 1)
-                        ,
-                                #this sets the top of the furnace.
-                                assign(@i, 0)
-                        )
-                )
-                #item already filled check
-                assign(@af, get_inventory_item(@xyz, @i))
-                if(@af == '' || @af == null, assign(@af, array(name: null, qty: 0, meta: null)))
-                assign(@mqty, 0)
+	for(assign(@i, 0), @i < @size, @i++) {
+		switch(@filltype) {
+		case 'FURNACE':
+		case 'SMOKER':
+		case 'BLAST_FURNACE':
+			if(@fuel == true) {
+				#this sets the fuel in the bottom of the furnace.
+				@i = 1
+			} else {
+				#this sets the item to cook in the top of furnace.
+				@i = 0
+			}
+		case 'BREWING':
+			if(@fuel == true) {
+				#this sets the fuel in the stand
+				@i = 4
+			} else {
+				#this sets the item to distill.
+				@i = 3
+			}
+		}
+		#item already filled check
+		assign(@af, get_inventory_item(@xyz, @i))
+		if(@af == '' || @af == null, assign(@af, array(name: null, qty: 0, meta: null)))
+		assign(@mqty, 0)
 
-                if(@item == @af['name'],
-                        assign(@re, 're-')
-                        #quantity greater than current (eg qty 64, filled 23)
-                        if(@qty > @af['qty'],
-                                #set_inventory_item needs what's already there plus the new items, as anything previously in there gets overwritten.
-                                assign(@nqty, @af['qty'] + @qty)
-                                #set_inventory_item has a max limit of 64
-                                if(@nqty > @chmaxstacksize,
-                                        assign(@mqty, @nqty - @chmaxstacksize)
-                                        assign(@nqty, @chmaxstacksize)
-                                )
-                                #Check: illegitimate stack
-                                if(@nqty > @maxstacksize,
-                                        if(@istack == true, null,
-                                                #no perm, so we will bump down the qty to the max stack size minus what's filled.
-                                                assign(@qty, @maxstacksize - @af['qty'])
-                                                if(0 > @qty, assign(@qty, 0))
-                                                assign(@mqty, @qty)
-                                                assign(@nqty, @qty)
-                                        )
-                                )
-                                assign(@itema['qty'], @nqty)
-                                #stats: quantity actually filled
-                                assign(@fqty1, @qty - @mqty)
-                        )
-                        #quantity is less than or equals filled
-                        if(@qty < @af['qty'] || @qty == @af['qty'],
-                                if(@filltype == 'FURNACE',
-                                        break()
-                                ,
-                                        continue()
-                                )
-                        )
-                ,
-                #item does not match whats being filled.
-                        #Check: illegitimate stack
-                        if(@qty > @maxstacksize,
-                                if(@istack == true, null,
-                                        #no perm, so we will bump down the qty to the max stack size.
-                                        assign(@qty, @maxstacksize)
-                                        if(0 > @qty, assign(@qty, 0))
-                                        assign(@fqty1, @qty)
-                                )
-                        )
-                        assign(@itema['qty'], @qty)
-                        assign(@fqty1, @qty)
-                )
-                if(@dev == true, msg('slot'.@i.': '.get_inventory_item(@xyz, @i)))
-        # Set the items
-                set_inventory_item(@xyz, @i, @itema)
-        # Stats: record amount of items used.
-                assign(@fqty, @fqty + @fqty1)
-        # If this is a furnace, there isn't anything left to fill, so stop the loop!
-                if(@filltype == 'FURNACE', break())
-        )
-       
- 
-        assign(@donemsg, color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! This '.to_lower(@filltype).' was '.@re.'filled, using a total of '.@fqty.' '.to_lower(@item).'.')      
- 
-        if(@fqty == 0, assign(@donemsg, '0'))
-        return(array(msg: @donemsg, size: @size, type: @filltype, filledqty: @fqty, fail: false))
+		if(@item == @af['name']) {
+			assign(@re, 're-')
+			#quantity greater than current (eg qty 64, filled 23)
+			if(@qty > @af['qty']) {
+				#set_inventory_item needs what's already there plus the new items, as anything previously in there gets overwritten.
+				assign(@nqty, @af['qty'] + @qty)
+				#set_inventory_item has a max limit of 64
+				if(@nqty > @chmaxstacksize) {
+					assign(@mqty, @nqty - @chmaxstacksize)
+					assign(@nqty, @chmaxstacksize)
+				}
+				#Check: illegitimate stack
+				if(@nqty > @maxstacksize) {
+					if(@istack == false) {
+						#no perm, so we will bump down the qty to the max stack size minus what's filled.
+						assign(@qty, @maxstacksize - @af['qty'])
+						if(0 > @qty, assign(@qty, 0))
+						assign(@mqty, @qty)
+						assign(@nqty, @qty)
+					}
+				}
+			assign(@itema['qty'], @nqty)
+			#stats: quantity actually filled
+			assign(@fqty1, @qty - @mqty)
+			}
+			#quantity is less than or equals filled
+			if(@qty < @af['qty'] || @qty == @af['qty']) {
+				switch(@filltype) {
+				case 'FURNACE':
+				case 'BREWING':
+				case 'SMOKER':
+				case 'BLAST_FURNACE':
+					break(2)
+				default:
+					continue()
+				}
+			}
+		} else {
+		#item does not match whats being filled.
+				#Check: illegitimate stack
+				if(@qty > @maxstacksize) {
+					if(@istack == false) {
+						#no perm, so we will bump down the qty to the max stack size.
+						assign(@qty, @maxstacksize)
+						if(0 > @qty, assign(@qty, 0))
+						assign(@fqty1, @qty)
+					}
+				}
+				assign(@itema['qty'], @qty)
+				assign(@fqty1, @qty)
+		}
+#		if(@dev == true, msg('slot'.@i.': '.get_inventory_item(@xyz, @i)))
+# Set the items
+		set_inventory_item(@xyz, @i, @itema)
+# Stats: record amount of items used.
+		assign(@fqty, @fqty + @fqty1)
+# If this is a furnace, there isn't anything left to fill, so stop the loop!
+		switch(@filltype) {
+		case 'FURNACE':
+		case 'BREWING':
+		case 'SMOKER':
+		case 'BLAST_FURNACE':
+			break(2)
+		}
+	}
+#return stats
+	assign(@donemsg, color('a').'['.color(6).@name.color('a').'] '.color(3).'Success! This '._reloader_capitalize(to_lower(@filltype)).' was '.@re.'filled, using a total of '.@fqty.' '.to_lower(@item).'.')      
+	if(@fqty == 0, assign(@donemsg, '0'))
+	return(array(msg: @donemsg, size: @size, type: @filltype, filledqty: @fqty, fail: false))
 }
  
        
