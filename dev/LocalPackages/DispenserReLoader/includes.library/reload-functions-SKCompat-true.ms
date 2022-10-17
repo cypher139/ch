@@ -64,20 +64,23 @@ proc _reloader_iterate_cuboid(@proc_name, @world, @item, @playergiven, @qty, @fu
 				case 'GROUP_FURNACE':
 				case 'FURNACES':
 					assign(@acceptfilltypes, array('BLAST_FURNACE', 'BREWING', 'FURNACE', 'SMOKER'))
-			
 				default:
 					# one block type only: 
-					# Trapped_CHEST is still a filltype of CHEST
+					# As of 1.19 the filltype for trapped chest is still 'CHEST', hence using getblock check
 					if(reg_count('(_CHEST)', @areamode) == 1) { 
-						if(@areamode != @getblock, continue())
+						if(@areamode != @getblock) { continue() }
+					} else {
+						# If this is a Dyed shulker box: only matches if exact match.
+						# As of 1.19 the filltype for any dyed shulker box is still 'SHULKER_BOX', hence using getblock check
+						if(reg_count('(_SHULKER_BOX)', @areamode) == 1) {				
+							if(@areamode != @getblock) { continue() }
+						} else {
+						# - all other block types
+						if(@areamode != @filltype) { continue() }
+						}
 					}
-					# If this is a Dyed shulker box: only matches if exact match.
-					if(reg_count('(_SHULKER_BOX)', @areamode) == 1) { 
-						if(@areamode != @getblock, continue())
-					}
-					# - all other block types
-					if(@areamode != @filltype, continue())
 				}
+
 				#Groups: check if block is part of group types
 				if(!array_contains(@acceptfilltypes, @filltype)) {continue()}
 				

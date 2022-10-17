@@ -163,7 +163,7 @@ case 'm':
 	assign(@msggrouptypes, color(2).'Group Options: \n'.color('a')."All".color('7').' - Use all block types listed. \n'.color('a')."Chests".color(7).' - Use Barrel/Chest/Shulker Box/Trapped Chest. \n'.color('a')."Furnaces"color(7).' - Use Blast Furnace/Brewing/Furnace/Smoker.')
 	assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
 	if(@areamode == '' || @areamode == null) { @areamode = 'All' }
-	#Switch doesn't support wildcard matching, so regex route it is. saved 70+ lines of predefined switch cases :P
+	#Switch doesn't support wildcard matching, so regex route it is.
 	@option1 = to_lower(@option1)
 	if(reg_count('^[a]', @option1) > 0) {	@setareamode = 'All' }
 	if(reg_count('^[b][a]', @option1) > 0) { @setareamode = 'Barrel' }
@@ -188,15 +188,27 @@ case 'm':
 	if(reg_count('^[s][h]', @option1) > 0) { @setareamode = 'Shulker_Box' }
 	if(reg_count('^[s][m]', @option1) > 0) { @setareamode = 'Smoker' }
 	if(reg_count('^[t]', @option1) > 0) { @setareamode = 'Trapped_Chest' }
+	# Groups
 	if(reg_count('^[g].*[c]', @option1) > 0) { @setareamode = 'Group_Chest' }
 	if(reg_count('^[g].*[f]', @option1) > 0) { @setareamode = 'Group_Furnace' }
+	
+	# Dyed shulker boxes
+	if(reg_count('^.+[-_][s][h]', @option1) > 0) {
+		@shcolor = reg_split('[-_][s]', @option1)
+		@acceptshcolor = array('black', 'blue', 'brown', 'cyan', 'gray', 'green', 'light-blue', 'light-gray', 'light_blue', 'light_gray', 'lime', 'magenta', 'orange', 'pink', 'purple', 'red', 'white', 'yellow')
+		if(array_contains(@acceptshcolor, @shcolor[0])) {	
+			@setareamode = _reloader_capitalize(@shcolor[0], null, 1).'_Shulker_Box' 
+		} else {
+			die(color('c').'['.color(6).@name.color('c').'] '.color(7).'Please specify a *valid* type of dyed Shulker Box. Accepted dye colors are: \n'.color(9).array_implode(@acceptshcolor, ', '))
+		}
+	}
 	
 	if(@setareamode == 'unset' || @option1 = '' || @option1 = null) {
 		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Current Area mode: '.@areamode)
 		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'To change your area mode, please specify a *valid* type of item. Accepted item types are: '.@msgaccepttypes.'\n'.@msggrouptypes)
 	}
 	store_value(@name.'.player.'.@player['id'].'.area.mode', @setareamode)
-	die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode set to: '.@setareamode)
+	die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode set to: '._reloader_capitalize(@setareamode, 1))
 # Information, such as the last item used, set modes, etc.
 case 'info':
 case '-i':
@@ -222,7 +234,7 @@ case 'view':
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color('a').@di.color(9).' (Qty: '.@diq.')')
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set fuel item: '.color('a').@dif)
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemused['display'].' ['.@lastitemused['id'].'] '.color(9).'(Qty: '.@lastitemqty.')')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7).@areamode)
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7)._reloader_capitalize(@areamode, 1))
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Verbose (extra) messages: '.@vmsg)
 	die()
 # Statistics: How many items have you used? how many blocks filled? How many times have you run reload?
@@ -529,7 +541,6 @@ case 'ar':
 case 'area':
 case '-area':
 case '-a':
-	assign(@fl, '\n')
 	if(has_permission(@player['name'], 'commandhelper.alias.reloader.area')) {
 		assign(@world, pworld(@player['name']))
 		# Area mode requires an extension to access WorldEdit selection data.
@@ -575,9 +586,9 @@ case '-a':
 		for(assign(@i, 0), @i < array_size(@filled['type']), @i++) {
 			if(@filled['type'][@ftkeys[@i]] > 0) {
 				if(reg_count('_', @ftkeys[@i]) > 0) {
-					@ftdisplay = _reloader_capitalize(to_lower(reg_replace('_', ' ', @ftkeys[@i])))
+					@ftdisplay = _reloader_capitalize(reg_replace('_', ' ', @ftkeys[@i]))
 				} else {
-					@ftdisplay = _reloader_capitalize(to_lower(@ftkeys[@i]))
+					@ftdisplay = _reloader_capitalize(@ftkeys[@i])
 				}
 				if(_is_even_number(@i) == true) {		
 					@color = '9'
@@ -588,10 +599,10 @@ case '-a':
 			}
 		}
 		if(@filled['blocks'] > 1) {
-			assign(@donemsg, @filled['blocks'].' '._reloader_capitalize(@areamodedisplay).' were filled, using a total of '.color('a')._reloader_number_commaize(@filled['items']).' '.@itemids['display'].'!'.@fl.color(7).@filledinfo)
+			assign(@donemsg, @filled['blocks'].' '._reloader_capitalize(@areamodedisplay).' were filled, using a total of '.color('a')._reloader_number_commaize(@filled['items']).' '.@itemids['display'].'!')
 			@dmcolor = 'a'
 		} else {
-			assign(@donemsg, '1 '._reloader_capitalize(@areamodedisplay).' was filled with '.color('a').@filled['items'].' '.@itemids['display'].'!'.@fl.color(7).@filledinfo)
+			assign(@donemsg, '1 '._reloader_capitalize(@areamodedisplay).' was filled with '.color('a').@filled['items'].' '.@itemids['display'].'!')
 			@dmcolor = 'a'
 		}
 		# Nothing was filled? why?
@@ -606,6 +617,7 @@ case '-a':
 			}
 		}
 		msg(color(@dmcolor).'['.color(6).@name.color(@dmcolor).'] '.color(3).@donemsg)
+		if(@verbose == true && @filled['blocks'] > 0) { msg(color(7).@filledinfo) }
 #permission
 	} else {
 		msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permission to fill an area!')

@@ -205,12 +205,15 @@ proc _reloader_number_commaize(@number) {
         )
 }
 
-proc _reloader_capitalize(@string) {
+proc _reloader_capitalize(@string, @lower, @u) {
+	if(@lower == '' || @lower == null) { @string = to_lower(@string) }
 	assign(@l1, to_upper(@string[0]))
 	assign(@length, length(@string) - 1)
 	assign(@newstring, @l1.@string[cslice(1, @length)])
-	if(reg_count('[_]', @newstring) > 0) {
-		@newstring = reg_replace('_', ' ', @newstring)
+	if(@u == '' || @u == null) {
+		if(reg_count('[_]', @newstring) > 0) {
+			@newstring = reg_replace('_', ' ', @newstring)
+		}
 	}
 	return(@newstring)
 }
@@ -228,7 +231,7 @@ proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbo
 	assign(@xyz[1], @y)
 	assign(@xyz[2], @z)
 	assign(@xyz[3], @world)
-	if(@dev == true) {tmsg(@player['name'], color(7).'[DEV] _reloader_fill: '.color('f').'Evaluating block: '.@xyz)}
+	if(@dev == true) {tmsg(@player['name'], color(7).'[DEV] _reloader_fill: '.color('f').'Evaluate: '.@xyz)}
 # Check: null/air
 	if(@item == null || @item == 0) {
 		return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!', size: 0, fail: true))
@@ -375,7 +378,7 @@ proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbo
 		}
 	}
 #return stats
-	assign(@donemsg, color('a').'['.color(6).@name.color('a').'] '.color(3).'Success! This '._reloader_capitalize(to_lower(@filltype)).' was '.@re.'filled, using a total of '.@fqty.' '.to_lower(@item).'.')      
+	assign(@donemsg, color('a').'['.color(6).@name.color('a').'] '.color(3).'Success! This '._reloader_capitalize(@filltype).' was '.@re.'filled, using a total of '.@fqty.' '.to_lower(@item).'.')      
 	if(@fqty == 0, assign(@donemsg, '0'))
 	return(array(msg: @donemsg, size: @size, type: @filltype, filledqty: @fqty, fail: false))
 }

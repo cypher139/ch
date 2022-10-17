@@ -53,7 +53,7 @@ bind('player_interact', array(id: 'ReLoad.tool'), array(button: 'left'), @reload
 			die(@fillreturn['msg'])
 		}
 		if(@fillreturn['msg'] == '0') {
-			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! However this '._reloader_capitalize(to_lower(@fillreturn['type'])).' was already full of '._reloader_item_name(@tooldata['item'])['display'].'!')
+			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Success! However this '._reloader_capitalize(@fillreturn['type']).' was already full of '._reloader_item_name(@tooldata['item'])['display'].'!')
 		}
 		# Record stats
 		_reloader_record_stats(@player['name'], 'tool', 1, @fillreturn['filledqty'], @tooldata['item'], @tooldata['qty'])
