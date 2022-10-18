@@ -8,6 +8,13 @@ admin:/bucket [$action] [$] = >>>
 assign(@name, 'Bucket')
 assign(@player, _getplayerID(player()))
 
+set_uncaught_exception_handler(closure(@ex){
+	if(@ex['message'] == 'The element at index "location" does not exist') {
+		msg(color(7).'['.color('gold').'Bucket'.color(7).'] '.color(7).'Block ID: '.color('b').@id.color(3).' ('.@idn.')')
+	}
+     return(true);
+   });
+
 proc _bucket_help() {
 	msg(color(6).'bucket: get block IDs by hitting blocks with a bucket!')
 	msg(color(6).'Actions:')
@@ -28,9 +35,17 @@ default:
 	assign(@bucketenabled, import('bucket.info.enabled.'.@player['id']))
 	if(@bucketenabled == false || @bucketenabled == '' || @bucketenabled == null) {
 		export('bucket.info.enabled.'.@player['id'], true)
+	#check inventory for a bucket
+		pgive_item(@player['name'], array(qty: '1', name: 'BUCKET'))
 	#then check if bind is added
 		if(has_bind('bucket.info'), null,
 			bind('player_interact', array(id: 'bucket.info'), array(itemname: 'BUCKET'), @bucket) {
+				set_uncaught_exception_handler(closure(@ex){
+				if(@ex['message'] == 'The element at index "location" does not exist') {
+					msg(color(7).'['.color('gold').'Bucket'.color(7).'] '.color(7).'Block ID: '.color('b').@id.color(3).' ('.@idn.') (possibly an entity?)')
+				}
+				return(true);
+				});
 				assign(@player, _getplayerID(@bucket['player']))
 					if(import('bucket.info.enabled.'.@player['id']) == true) {
 		     			if(equals(@bucket['action'], 'left_click_block' || 'right_click_block')) {

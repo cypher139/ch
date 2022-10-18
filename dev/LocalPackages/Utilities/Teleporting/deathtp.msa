@@ -1,0 +1,47 @@
+#version 1.1-tmc
+deathtp:/back [$option1=1] = >>>
+assign(@name, 'DeathTP')
+
+if(is_numeric($option1)) {
+	assign(@dropid, $option1)
+	if($option1 > 2) {assign(@dropid, 2)}
+} else {
+	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+}
+
+assign(@here, get_value('player.'.puuid(player(), 'dashless').'.last.death.loc.'.@dropid))
+
+switch(@here) {
+	case '':
+	case null:
+		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
+	default:
+		set_ploc(@here)
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'You were teleported to your death point.')
+}
+<<<
+
+deathitems:/backitems [$option1=1] = >>>
+assign(@name, 'DeathTP - GarbageManagement')
+if(is_numeric($option1)) {
+	assign(@dropid, $option1)
+	if($option1 > 2) {assign(@dropid, 2)}
+} else {
+	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+}
+
+assign(@bi, get_value('player.'.puuid(player(), 'dashless').'.last.death.drops.'.@dropid))
+
+switch(@bi) {
+	case '':
+	case null:
+		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
+	default:
+		foreach(@bi, @currentvar,
+		#mew MC versions do not need numeric id:data type. updated to just written name. 
+		#array: meta, qty, name
+			pgive_item(player(), @currentvar)
+		)
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
+}
+<<<

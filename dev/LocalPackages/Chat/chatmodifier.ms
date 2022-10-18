@@ -8,6 +8,8 @@ export('chatmodifier.version', '0.9-tmc')
 
 
 bind('player_chat', array(id: 'Chat.formatter'), null, @chat) {
+# Include required backend functions
+include('includes.library/chatfunctions.ms')
 	assign(@name, import('chatmodifier.name'))
 	assign(@player, _chat_getplayerID(player()))
 	assign(@group, pgroup(@player['name'])[0])
@@ -18,13 +20,6 @@ bind('player_chat', array(id: 'Chat.formatter'), null, @chat) {
 		return(true)
 	})
 
-
-#test
-	assign(@extok, '')
-	if(extension_exists(CHPex),	@extok = true, @extok = false)
-	include('includes.library/chatfunctions-extCHPex-'.@extok.'.ms')
-	
-	if(@dev == true, msg(color(7).'[ChatDEV] chat perms return: '.color(f)._chat_perms_options(@player['name'])))
 
 #Chat layout formatting: finalization
 	assign(@groupinfo, import(@name.'.format.groups'))

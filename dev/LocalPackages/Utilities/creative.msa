@@ -1,0 +1,165 @@
+#version 1.2-tmc
+creative:/i [$id=3] [$] = >>>
+set_uncaught_exception_handler(closure(@ex){
+	assign(@dev, import('ch.player.'.puuid(player(), 'dashless').'.developer'))
+	if(@dev == true) {
+		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
+	} else {
+		msg(color('c').@ex['message']);
+	}
+     return(true);
+   });
+  
+@args = parse_args($)
+@player = player()
+#initial populate giveplayer as the same so later functions can use a single variable for actions directed to you or others
+@giveplayer = player()
+@amount = 1
+# Get other player name  
+foreach(@v in @args) {
+	if(array_contains_ic(all_players(), @v)) {
+		@giveplayer = @v
+	}
+}
+if(@player == '~console') {
+	assign(@dev, false)
+} else {
+	assign(@dev, import('ch.player.'.puuid(@player, 'dashless').'.developer'))
+}
+
+#ID type Checks   
+@transparent = array('water', 'lava', 'air')
+switch(to_lower($id)) {
+#gib me that block I'm looking at
+case 'that':
+case 'look':
+case 'looks':
+case 'want':
+	if(@player == '~console' || string_contains_ic(get_block(pcursor(@giveplayer, @transparent)), 'air')) {
+	msg(@giveplayer)
+		die(color('c').'No block in sight!')
+	} else {
+		@id = get_block(pcursor(@giveplayer, @transparent))
+	}
+#gib me more of item I'm holding	
+case 'this':
+case 'max':
+case 'trade':
+case 'refill':
+case 'fill':
+case 'more':
+	if(@player == '~console') {
+		@slot = null
+	} else {	
+		assign(@slot, pinv(@player, null))
+	}
+	if(@slot == null) {
+	#cant give you a hand, sorry.
+		die(color('c').'You don\'t have an item equipped in this slot!')
+	} else {
+		@id = @slot['name']
+	}		
+# overrides for some Legacy IDs that are not being picked up by CH / minecraft data values
+# or seemingly obvious names that don't actually match to anything as too generic
+case '50':
+case 'wall_torch':
+	@id = 'TORCH'
+
+case 'sign':
+case 'wooden_sign':
+case 'wood_sign':
+	@id = 'OAK_SIGN'
+
+default:
+# check complete, switch variable type
+	@id = $id
+}
+### Item Type
+@ids = array()
+# Get rid of a 0 data value
+if(reg_count('[0-9]+:0', @id) == 1) {
+	@id = reg_split(':', @id)[0]
+	if(@dev == true) {
+		msg(color(7).'[DEV]: 0 removed')
+	}
+}
+# item:subitem argument syntax not supported internally anymore, translated here
+if(reg_count('[0-9]+:[0-9]+', @id) == 1) {
+	@ids = reg_split(':', @id)
+	@id = data_name(array(name: data_name(@ids[0]), data: @ids[1]))
+	@idn = $id
+} else {
+	# normal legacy ID or normal name
+	if(is_numeric(@id)) {
+		assign(@id, data_name(@id))
+		assign(@idn, $id)
+	} else {
+		assign(@id, to_upper(@id))
+		assign(@idn, data_values(@id))
+		if(@idn == null) {
+			@idn = 'No ID'
+		}
+	}
+}
+# error workaround for no name but found ID
+#if(@ id null, assign id nameidn
+
+### Quantity
+foreach(@v in @args) {
+	if(is_integral(@v)) {
+		@amount = @v
+	} else {
+		# No decimal points supported - round up.
+		if(reg_count('\\.', @v) == 1) {
+		# '== 1' ... If you are using multiple decimal points, tf are you trying to do?
+			@amount = integer(round(@v))
+		}
+		#Get Max Quantity
+		if(reg_count('^[Mm][Aa]?[Xx]?$', @v) > 0) { @amount = max_stack_size(array(name: to_upper(@id), 'meta': null)) }
+	}
+}
+switch(to_lower($id)) {
+case 'max':
+case 'refill':
+case 'trade':
+case 'fill':
+	@stack = max_stack_size(array(name: to_upper(@id), 'meta': null)) 
+	# Give 1 more of tool
+	if(@stack == 1) { @stack = 2 }
+	@amount = @stack - @slot['qty']
+	if(@amount < 1) {
+		die(color('c').'This slot already has a full stack!')
+	}	
+}
+if(@amount < 1) {
+	@amount = 1
+}
+if(@dev == true) {
+	msg(color(7).'[DEV]: '.@id.' ('.@idn.') [qty:'.@amount.']')
+}
+
+#setup final array datas
+@give = array('meta': null, 'name': to_upper(@id), 'qty': @amount)
+
+if(@player != '~console') {	
+	pgive_item(@giveplayer, @give)
+} else {
+	die(color(7).'Item IDs returned: '.color(3).@id.color(8).' ('.color('a').@idn.color(8).') '.color(8).'[max:'.max_stack_size(array(name: to_upper(@id), 'meta': null)).']')
+}
+#setup messages
+if(has_permission(@player, 'commandhelper.alias.creative.see.id')) {
+	@msgid = color(8).' ('.@idn.')'
+} else {
+	@msgid = ''
+}
+if(reg_count('_', @id) > 0) {
+	@display = to_lower(reg_replace('_', ' ', @id))
+} else {
+	@display = to_lower(@id)
+}
+msg(color(6).'Giving '.color(3).@amount.color(6).' of '.color('a').@display.@msgid)
+<<<
+
+creative:/give2 [$player] [$id=3] [$] = >>>
+call_alias(/i $id $player $)
+<<<

@@ -1,11 +1,11 @@
 #version 1.1-tmc
-bind('player_chat', array(id: 'Wish.granter.lolz'), null, @chat) {
+bind('player_chat', array(id: 'Wish.granter.lolz', priority: 'LOW'), null, @chat) {
 
 	assign(@name, 'Wish')
 	assign(@player, player())
 	assign(@allplayers, all_players())
 
-	assign(@dev, import('ch.player.'.pinfo(player())[20].'.developer'))
+	assign(@dev, import('ch.player.'.puuid(@player, 'dashless').'.developer'))
 
 
 #did you say a player name? this will catch it
@@ -235,6 +235,9 @@ bind('player_chat', array(id: 'Wish.granter.lolz'), null, @chat) {
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'magenta')); })
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'orange')); })
 					spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'white')); })
+				case 'poop':
+					drop_item(@vplayer, array(name: 'DIRT', qty: 3, meta: null), true)
+					broadcast(color(e).'['.color(gold).@name.color(e).'] '.color(6).@player.'s wish has been granted.')
 			#switch
 			}
 #		if(@dev == true, 

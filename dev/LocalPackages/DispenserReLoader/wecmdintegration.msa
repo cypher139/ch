@@ -9,44 +9,58 @@
 
 
 /none [$action] [$] = >>>
+#Include required backend functions
+include('includes.library/reload-functions-Core.ms')
 assign(@name, string(import('dispenserreloader.name')))
 assign(@player, _reloader_getplayerID(player()))
-if(player() == ~console,
-#	msg(hi)
-	die('The console cannot use a tool.')
-)
-
+if(player() == '~console') {
+	die(color(7).'['.color(6).@name.color(7).'] '.color('c').'The console cannot use a tool.')
+}
 
 assign(@index, null)
 #Find the tool in the players hand. Don't use just a hand, sorry.
-try(
-	assign(@tool, pinv(@player[name], @index)[type])
-,@fail,
+assign(@tool, pinv(@player['name'], @index))
+if(@tool == null || !is_array(@tool)) {
 	#ReLoad tool does not bind to Hand. Redirecting to WorldEdit.	
 	run(/none)
 	die()
-)
-
-assign(@isenabled, import(@name.'.player.'.@player[id].'.tool.id.'.@tool))
+}
+assign(@tooldisplay, _reloader_item_name(@tool['name']))
+assign(@tooldata, import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name']))
 
 #Shortcut to /reloader managebind
-if($action == 'undo',
+switch(to_lower($action)) {
+case 'undo':
+case 'u':
 	#check if tool has been previously bound
-	if(import(@name.'.player.'.@player[id].'.tool.id.'.@tool.'.item') == null,
-		die(color(c).'['.color(6).@name.color(c).'] '.color(7).'This tool was not previously bound. You need to use \'/reloader\' to setup this tool for use!')
-	)
-        #Enable
-        export(@name.'.player.'.@player[id].'.tool.id.'.@tool, true)
-	die(color(7).'['.color(6).@name.color(7).'] '.color(3).'ReLoad tool re-bound to your '.data_name(@tool).', utilizing previously used settings for this item.')	
-)
+	if(is_array(@tooldata)) {
+		if(array_index_exists(@tooldata, 'item')) {
+		#A tool has previously existed
+			@tooldata['use'] = true
+			export(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'], @tooldata)
+			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'ReLoad tool re-bound to your '.color('a').@tooldisplay['display'].color(3).', utilizing previously used settings for this item.')	
+		}
+	} else {
+	#no data found
+		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'This tool was not previously bound. You need to use \'/reloader\' to setup this tool for use!') 
+	}
+}
 
 #Check if ReLoad is bound to the tool, and unbind it if so. Otherwise redirect to WorldEdit to unbind a WE tool.
-if(@isenabled == true,
-        # Disable tool.
-        export(@name.'.player.'.@player[id].'.tool.id.'.@tool, false)
-        die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Tool unbound from your '.data_name(@tool).'.')
-,
-	#ReLoad not enabled on this tool. Redirecting to WorldEdit.
+if(is_array(@tooldata)) {
+	if(array_index_exists(@tooldata, 'use')) {
+		# Disable tool.
+		if(@tooldata['use'] == true) {
+			@tooldata['use'] = false
+			export(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'], @tooldata)
+			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Tool unbound from your '.color('a').@tooldisplay['display'].'.')
+		} else {
+			#ReLoad is turned off on this tool. Redirecting to WorldEdit.
+			run(/none)
+		}
+	}
+} else {
+	#ReLoad has not been setup on this tool. Redirecting to WorldEdit.
 	run(/none)
-)
+}
 <<<

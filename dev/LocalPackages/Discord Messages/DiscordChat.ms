@@ -10,12 +10,18 @@ discord_connect('discordCredentials', closure(){
 proc _send_discord_message(@message, @from, @channel) {
 
 	if(@from == '', assign(@from, player()))
-	if(@channel == '', assign(@channel, 'botspam'))
+	if(@channel == '', assign(@channel, 'minecraft'))
+	
+	@message = strip_colors(@message)
 
-	if(@from == 'none'){
+	switch(@from) {
+	case 'none':
 		assign(@sendmsg, @message)
-	} else {
+	case 'server':
+	case 'Server':
 		assign(@sendmsg, '['.@from.'] '.@message)
+	default:
+		assign(@sendmsg, '['.@from.'] '.'```'.@message.'```')
 	}
 	discord_broadcast(@channel, associative_array(content: @sendmsg))
 }
@@ -24,12 +30,12 @@ proc _send_discord_message(@message, @from, @channel) {
 #bind player chat, call proc
 bind('player_chat', array(id: 'message.to.Discord'), null, @chat) {
 
-assign(@channel, 'botspam')
+assign(@channel, 'minecraft')
 assign(@sendmsg, @chat['message'])
 #dev tmsg(@chat['player'], reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']))
 #channel override
 	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']) == 1) { 
-		assign(@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['']))
+		assign(@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']))
 		#returns 'channel' in '#channel message text'
 		assign(@channel, reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1])
 #dev		tmsg(@chat['player'], @sendmsg.' channel name:'.@channel)
@@ -44,7 +50,7 @@ assign(@sendmsg, @chat['message'])
 #bind discord message, send as broadcast
 bind('discord_message_received', array(id: 'message.from.Discord'), null, @discord) {
 
-	assign(@allowedChannels, array('general', 'Minecraft', 'other'))
+	assign(@allowedChannels, array('general', 'minecraft', 'MC server', 'voice-chat', 'other'))
 
 	if(array_contains(@allowedChannels, @discord['channel']) == true, 
 	assign(@sendmsg, '['.@discord['username'].'] '.@discord['message'])

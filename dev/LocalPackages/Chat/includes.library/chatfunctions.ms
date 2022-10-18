@@ -92,7 +92,7 @@ proc _rainbow(@msg, @type) {
 	if(@type == 'normal',
 		assign(@string, '')
 		for(assign(@i, 0), @i < length(@msg), @i++,
-			assign(@string, @string.'\u00a7'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i, @i + 1))
+			assign(@string, @string.'\u0026'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i, @i + 1))
 		)
 		return(@string)
 	)
@@ -114,7 +114,7 @@ proc _rainbow(@msg, @type) {
 	if(@type == 'all',
 		assign(@string, '')
 		for(assign(@i, 0), @i < length(@msg), @i++,
-			assign(@string, @string.'\u00a7'.array(0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f)[rand(16)].substr(@msg, @i, @i + 1))
+			assign(@string, @string.'\u0026'.array(0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f)[rand(16)].substr(@msg, @i, @i + 1))
 		)
 		return(@string)
 	)
