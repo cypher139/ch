@@ -18,7 +18,7 @@ Fixes:
 - Persistence values: Use tool name over numeric ID, optimize some value importing, switch tool to use one array value.
 
 Notes:
-- Blocks not supported by design: Ender Chest, Hopper, Dropper. May revisit dropper? in future release.
+- Blocks not supported by design: Ender Chest, Hopper, Dropper. May revisit this in a future release.
 
 
 ###### 1.0 (1/1/16)
