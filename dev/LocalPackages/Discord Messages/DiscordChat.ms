@@ -3,7 +3,11 @@ discord_connect('discordCredentials', closure(){
 #	discord_set_activity(DEFAULT, 'Minecraft');
 })
 
+
+#todo:
 #discord_set_activity(DEFAULT, 'Minecraft')
+#discord_member_get_roles(member) - make name colors somewhat match discord versions
+#color() Additionally, any RGB colour can be used in the hex format '#rrggbb'. 
 
 # proc to send message to discord. player, message
 
@@ -13,13 +17,14 @@ proc _send_discord_message(@message, @from, @channel) {
 	if(@channel == '', assign(@channel, 'minecraft'))
 	
 	@message = strip_colors(@message)
-
+broadcast(@from)
 	switch(@from) {
 	case 'none':
 		assign(@sendmsg, @message)
 	case 'server':
-	case 'Server':
 		assign(@sendmsg, '['.@from.'] '.@message)
+	case 'death':
+		assign(@sendmsg, ':skull_crossbones: '.@message)
 	default:
 		assign(@sendmsg, '['.@from.'] '.'```'.@message.'```')
 	}
@@ -31,6 +36,14 @@ proc _send_discord_message(@message, @from, @channel) {
 bind('player_chat', array(id: 'message.to.Discord'), null, @chat) {
 
 assign(@channel, 'minecraft')
+
+#automatically chat on last channel a message was received on.
+@lastmsg1 = import('Chat.Discord.last.msg.1')
+if(is_array(@lastmsg1)) {
+	if(array_index_exists(@lastmsg1, 'channel')) {
+		@channel = @lastmsg1['channel']
+	}	
+}
 assign(@sendmsg, @chat['message'])
 #dev tmsg(@chat['player'], reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']))
 #channel override
@@ -52,10 +65,15 @@ bind('discord_message_received', array(id: 'message.from.Discord'), null, @disco
 
 	assign(@allowedChannels, array('general', 'minecraft', 'MC server', 'voice-chat', 'other'))
 
-	if(array_contains(@allowedChannels, @discord['channel']) == true, 
-	assign(@sendmsg, '['.@discord['username'].'] '.@discord['message'])
+	if(array_contains(@allowedChannels, @discord['channel']) == true) {
+		export('Chat.Discord.last.msg.3', import('Chat.Discord.last.msg.2'))
+		export('Chat.Discord.last.msg.2', import('Chat.Discord.last.msg.1'))
+		export('Chat.Discord.last.msg.1', @discord)
+
+		assign(@sendmsg, color(3).'['.@discord['username'].'] '.color(7).@discord['message'])
+		
 		broadcast(@sendmsg, all_players())
-	)
+	}
 }
 
 
@@ -65,11 +83,10 @@ bind('player_quit', array(id: 'Discord.message.quit'), null, @quit) {
 }
 
 bind('player_death', array(id: 'Discord.message.death'), null, @death) {
-	assign(@player, _getplayerID(player()))
-	_send_discord_message(@death['death_message'], 'Server')
+	_send_discord_message(@death['death_message'], 'death')
 }
 	
 bind('player_join', array(id: 'Discord.message.login'), null, @login) {
-	assign(@player, _getplayerID(player()))
-	_send_discord_message('+ join: '.@player['name'], 'none')
+	assign(@playerID, _getplayerID(player()))
+	_send_discord_message('+ join: '.@playerID['name'], 'none')
 }

@@ -62,10 +62,16 @@ proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	)
 }
 
-proc _capitalize(@string) {
+proc _capitalize(@string, @lower, @u) {
+	if(@lower == '' || @lower == null) { @string = to_lower(@string) }
 	assign(@l1, to_upper(@string[0]))
 	assign(@length, length(@string) - 1)
 	assign(@newstring, @l1.@string[cslice(1, @length)])
+	if(@u == '' || @u == null) {
+		if(reg_count('[_]', @newstring) > 0) {
+			@newstring = reg_replace('_', ' ', @newstring)
+		}
+	}
 	return(@newstring)
 }
 
