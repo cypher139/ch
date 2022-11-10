@@ -1,0 +1,16 @@
+#version 1.0-tmc
+admin:/discordconsole [$] = >>>
+if(player() != '~console') {
+	die('Let the server console choose that setting!')
+}
+
+@consolerc = import('Chat.Discord.Console.receive')
+
+if(@consolerc == false) {
+export('Chat.Discord.Console.receive', true)
+console('Console will now receive chat Messages from Discord Users, until the next restart', false)
+} else {
+export('Chat.Discord.Console.receive', false)
+console('Console no longer receives chat Messages from Discord Users, until the next restart', false)
+}
+<<<

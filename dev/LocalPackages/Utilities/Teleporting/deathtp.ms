@@ -6,7 +6,7 @@ bind('player_death', array(id: 'DeathTP.event'), null, @death) {
 	assign(@oloc1, get_value('player.'.puuid(player(), 'dashless').'.last.death.loc.1'))
 	store_value('player.'.puuid(player(), 'dashless').'.last.death.loc.1', @here)
 	store_value('player.'.puuid(player(), 'dashless').'.last.death.loc.2', @oloc1)
-	tmsg(@death['player'], color(7).'Use the \'/back\' command to return to your death point.')
+	tmsg(@death['player'], color(7).'Use the '.color('c').'/back'.color(7).' command to return to your death point.')
 	
 	#save inventory
 	if(@dev == true) {msg('Drops:'.@death['drops'])}
