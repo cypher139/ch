@@ -3,3 +3,24 @@ death tp version 1.1
 - added 2nd location/drops
 - fixed item format
 - permission updated, deathtp
+- added death counter
+
+gamemode to version 2.0
+rewrite.
+- adds support for changing other players (With permission: commandhelper.alias.shiftmode.others)
+- adds support for Adventure and Spectator game modes. (only switches to those modes if asked for)
+-- /mode still switches only between survival and creative
+- adds permissions support for certain worlds and game modes.
+commandhelper.alias.shiftmode.any.world.survival
+commandhelper.alias.shiftmode.any.world.spectator
+commandhelper.alias.shiftmode.any.world.creative
+commandhelper.alias.shiftmode.any.world.adventure
+Allow specified game mode to be switvched to on all worlds
+commandhelper.alias.shiftmode.world.WORLDNAMEHERE.survival
+commandhelper.alias.shiftmode.world.WORLDNAMEHERE.spectator
+commandhelper.alias.shiftmode.world.WORLDNAMEHERE.creative
+commandhelper.alias.shiftmode.world.WORLDNAMEHERE.adventure
+Allow specified game mode to be switched to on the world specfied under WORLDNAMEHERE (lowercase only please)
+- disable tip message by giving permission: commandhelper.alias.shiftmode.notip
+- added mode lock function, prevents anyone form changing the player's game mode using /mode. Does not prevent changes from other plugins, scripts, or usage of /admingm
+- added /admingm, which will change mode even if player has locked it. 

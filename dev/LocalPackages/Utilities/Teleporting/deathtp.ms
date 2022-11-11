@@ -13,4 +13,7 @@ bind('player_death', array(id: 'DeathTP.event'), null, @death) {
 	assign(@odrops1, get_value('player.'.puuid(player(), 'dashless').'.last.death.drops.1'))
 	store_value('player.'.puuid(player(), 'dashless').'.last.death.drops.1', @death['drops'])
 	store_value('player.'.puuid(player(), 'dashless').'.last.death.drops.2', @odrops1)
+	
+	#save number of times died
+	store_value('player.'.puuid(player(), 'dashless').'.death.counter', get_value('player.'.puuid(player(), 'dashless').'.death.counter') + 1)
 }

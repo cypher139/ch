@@ -45,3 +45,24 @@ switch(@bi) {
 		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
 }
 <<<
+
+deathtp:/deathcounter [$player] = >>>
+assign(@name, 'DeathTP')
+@player = player()
+@otherplayer = 'You'
+if(array_contains_ic(all_players(), $player)) {
+	@player = $player
+	@otherplayer = $player
+}
+assign(@counter, get_value('player.'.puuid(@player, 'dashless').'.death.counter'))
+
+switch(@counter) {
+	case '':
+	case null:
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'The Reaper is currently suffering from memory loss. Please try again later.')
+	case 0:
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Those deaths have been erased!?')
+	default:
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).@otherplayer.' died a total of '.color('c').@counter.color(7).' times!')
+}
+<<<
