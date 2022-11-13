@@ -44,6 +44,8 @@ proc(_ch_help,
 
 )
 
+@prefix = color(7).'['.color(6).@name.color(7).'] '
+
 switch(@action){
 
 case 'r':
@@ -59,15 +61,15 @@ case '/?':
 case 'version':
 case 'build':
 case 'info':
-	msg(color(7).'['.color(6).@name.color(7).'] '.engine_build_date())
+	msg(@prefix.engine_build_date())
 
 
 case 'events':
 case 'dumpevents':
 case 'ev':
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'-----')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'Current binded events:')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'-----')
+	msg(@prefix.color(7).'-----')
+	msg(@prefix.color(7).'Current binded events:')
+	msg(@prefix.color(7).'-----')
 	assign(@j, 0)
 	foreach(@k: @v in dump_events()) {
 	# Parsing: (event_type) Event.ID:/file/system/path/file.ms:24
@@ -93,79 +95,79 @@ case 'ev':
 		}		
 		msg(color(8).'Path: '.color(0).'../'.color(8).@pathdisplay)
 	}
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'-----')
+	msg(@prefix.color(7).'-----')
 	msg(color(9).@j.color(7).' event types,  '.color(6).array_size(dump_events()).color(7).' total events found.')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'-----')
+	msg(@prefix.color(7).'-----')
 
 case 'pinfo':
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'-----')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'Player info:')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'-----')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(0) name: '.color('f').pinfo(@player)[0])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(1) location: '.color('f').pinfo(@player)[1])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(2) cursor: '.color('f').pinfo(@player)[2])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(3) ip: '.color('f').pinfo(@player)[3])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(4) displayname: '.color('f').pinfo(@player)[4])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(5) health: '.color('f').pinfo(@player)[5])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(6) iteminhand: '.color('f').pinfo(@player)[6])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(7) worldname: '.color('f').pinfo(@player)[7])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(8) isop: '.color('f').pinfo(@player)[8])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(9) groups: '.color('f').pinfo(@player)[9])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(10) hostname: '.color('f').pinfo(@player)[10])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(11) sneak: '.color('f').pinfo(@player)[11])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(12) host: '.color('f').pinfo(@player)[12])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(13) entity uuid: '.color('f').pinfo(@player)[13])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(14) vehicle: '.color('f').pinfo(@player)[14])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(15) current slot number: '.color('f').pinfo(@player)[15])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(16) sleeping: '.color('f').pinfo(@player)[16])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(17) blocking: '.color('f').pinfo(@player)[17])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(18) flying: '.color('f').pinfo(@player)[18])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(19) sprinting: '.color('f').pinfo(@player)[19])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'(20) Player UUID: '.color('f').pinfo(@player)[20])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'-----')
+	msg(@prefix.color(7).'-----')
+	msg(@prefix.color(7).'Player info:')
+	msg(@prefix.color(7).'-----')
+	msg(@prefix.color('d').'(0) name: '.color('f').pinfo(@player)[0])
+	msg(@prefix.color('d').'(1) location: '.color('f').pinfo(@player)[1])
+	msg(@prefix.color('d').'(2) cursor: '.color('f').pinfo(@player)[2])
+	msg(@prefix.color('d').'(3) ip: '.color('f').pinfo(@player)[3])
+	msg(@prefix.color('d').'(4) displayname: '.color('f').pinfo(@player)[4])
+	msg(@prefix.color('d').'(5) health: '.color('f').pinfo(@player)[5])
+	msg(@prefix.color('d').'(6) iteminhand: '.color('f').pinfo(@player)[6])
+	msg(@prefix.color('d').'(7) worldname: '.color('f').pinfo(@player)[7])
+	msg(@prefix.color('d').'(8) isop: '.color('f').pinfo(@player)[8])
+	msg(@prefix.color('d').'(9) groups: '.color('f').pinfo(@player)[9])
+	msg(@prefix.color('d').'(10) hostname: '.color('f').pinfo(@player)[10])
+	msg(@prefix.color('d').'(11) sneak: '.color('f').pinfo(@player)[11])
+	msg(@prefix.color('d').'(12) host: '.color('f').pinfo(@player)[12])
+	msg(@prefix.color('d').'(13) entity uuid: '.color('f').pinfo(@player)[13])
+	msg(@prefix.color('d').'(14) vehicle: '.color('f').pinfo(@player)[14])
+	msg(@prefix.color('d').'(15) current slot number: '.color('f').pinfo(@player)[15])
+	msg(@prefix.color('d').'(16) sleeping: '.color('f').pinfo(@player)[16])
+	msg(@prefix.color('d').'(17) blocking: '.color('f').pinfo(@player)[17])
+	msg(@prefix.color('d').'(18) flying: '.color('f').pinfo(@player)[18])
+	msg(@prefix.color('d').'(19) sprinting: '.color('f').pinfo(@player)[19])
+	msg(@prefix.color('d').'(20) Player UUID: '.color('f').pinfo(@player)[20])
+	msg(@prefix.color(7).'-----')
 
 
 case 'clearvalue':
 case 'cv':
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Clear value: '.color('d').@option1)
+	msg(@prefix.color(6).'Clear value: '.color('d').@option1)
 	clear_value(@option1)
 	if(has_value(@option1) == false,
-		msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Successfully cleared value.')
+		msg(@prefix.color(6).'Successfully cleared value.')
 	)
 
 
 case 'getvalue':
 case 'gv':
 	assign(@v, get_value(@option1))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Get value: '.color('d').@option1.color('f').' Value returned:')
+	msg(@prefix.color(6).'Get value: '.color('d').@option1.color('f').' Value returned:')
 	msg(color(7).@v)
 
 
 case 'hasvalue':
 case 'hv':
 	if(has_value(@option1) == true,
-		msg(color(7).'['.color(6).@name.color(7).'] '.color('a').'That value exists!')
+		msg(@prefix.color('a').'That value exists!')
 	)
 	if(has_value(@option1) == false,
-		msg(color(7).'['.color(6).@name.color(7).'] '.color('c').'That value does not exist.')
+		msg(@prefix.color('c').'That value does not exist.')
 	)
 
 
 case 'storevalue':
 case 'sv':
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Store value: '.color('d').@option1)
+	msg(@prefix.color(6).'Store value: '.color('d').@option1)
 	assign(@old, get_value(@option1))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Previously: '.color(7).@old)
+	msg(@prefix.color(6).'Previously: '.color(7).@old)
 	store_value(@option1, @option2)
 	assign(@v, get_value(@option1))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Saved: '.color(7).@v)
+	msg(@prefix.color(6).'Saved: '.color(7).@v)
 
 
 case 'getvalues':
 case 'gvs':
 	if(@option1 == '', assign(@option1, player()))
 	assign(@v, get_values(@option1))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Get values: '.color('d').@option1.color('f').' Value(s) returned:')
+	msg(@prefix.color(6).'Get values: '.color('d').@option1.color('f').' Value(s) returned:')
 	msg(color(7).@v)
 
 
@@ -176,9 +178,9 @@ case 'lower':
 		msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'You have to say something!')
 	)
 	assign(@r, to_lower(@text))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Convert to lowercase:')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'Original text: '.@text)
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'New text: '.color('f').@r)
+	msg(@prefix.color(6).'Convert to lowercase:')
+	msg(@prefix.color(7).'Original text: '.@text)
+	msg(@prefix.color('d').'New text: '.color('f').@r)
 
 
 case 'toupper':
@@ -188,15 +190,15 @@ case 'upper':
 		msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'You have to say something!')
 	)
 	assign(@r, to_upper(@text))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Convert to uppercase:')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'Original text: '.@text)
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'New text: '.color('f').@r)
+	msg(@prefix.color(6).'Convert to uppercase:')
+	msg(@prefix.color(7).'Original text: '.@text)
+	msg(@prefix.color('d').'New text: '.color('f').@r)
 
 
 case 'death':
 case 'deathmsg':
 	assign(@deathmsg, _deathmsg(@player, @option2, $))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'A random death message:')
+	msg(@prefix.color(7).'A random death message:')
 	msg(@deathmsg)
 
 	
@@ -206,12 +208,12 @@ case 'verbose':
 		#disable
 	        store_value(@name.'.player.'.@playerID['id'].'.verbose', false)
 	        export(@name.'.player.'.@playerID['id'].'.verbose', false)
-		die(color(7).'['.color(6).@name.color(7).'] '.color('c').'Disabled! '.color(7).' Extra messages from scripts won\'t be displayed.')
+		die(@prefix.color('c').'Disabled! '.color(7).' Extra messages from scripts won\'t be displayed.')
 	,
 		#enable
 	        store_value(@name.'.player.'.@playerID['id'].'.verbose', true)
 	        export(@name.'.player.'.@playerID['id'].'.verbose', true)
-		die(color(7).'['.color(6).@name.color(7).'] '.color('a').'Enabled! '.color(7).'Verbose messages are enabled! If the script you use supports displaying extra messages using a global value, they will be displayed.')
+		die(@prefix.color('a').'Enabled! '.color(7).'Verbose messages are enabled! If the script you use supports displaying extra messages using a global value, they will be displayed.')
 	)
 	
 
@@ -219,58 +221,62 @@ case 'verbose':
 case 'code':
 case 'codegen':
 	assign(@code, _codegen(@option1, @option2, $))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'A random generated code:')
+	msg(@prefix.color(7).'A random generated code:')
 	msg(@code)
 
 
 case 'dev':
 case 'devmsg':
-	assign(@importcheck, import(@name.'.player.'.@playerID['id'].'.developer'))
-	assign(@devsetting, get_value(@name.'.player.'.@playerID['id'].'.developer'))
+	assign(@importcheck, import('ch.player.'.@playerID['id'].'.developer'))
+	assign(@devsetting, get_value('ch.player.'.@playerID['id'].'.developer'))
 #	msg(@importcheck)
 	if(@importcheck == true || @importcheck == false) {
-		if(@devsetting == true,
+		if(@devsetting == true) {
 			#disable
-				store_value(@name.'.player.'.@playerID['id'].'.developer', false)
-				export(@name.'.player.'.@playerID['id'].'.developer', false)
-			die(color(7).'['.color(6).@name.color(7).'] '.color('c').'Developer messages are Disabled! '.color(7).'If the script you use supports dev messages, they will NOT be displayed.')
-		,
+			store_value('ch.player.'.@playerID['id'].'.developer', false)
+			export('ch.player.'.@playerID['id'].'.developer', false)
+			die(@prefix.color('c').'Developer messages are Disabled! '.color(7).'If the script you use supports dev messages, they will NOT be displayed.')
+		} else {
 			#enable
-				store_value(@name.'.player.'.@playerID['id'].'.developer', true)
-				export(@name.'.player.'.@playerID['id'].'.developer', true)
-			die(color(7).'['.color(6).@name.color(7).'] '.color('a').'Developer messages are Enabled! '.color(7).'If the script you use supports dev messages, they will be displayed.')
-		)
+			store_value(@name.'.player.'.@playerID['id'].'.developer', true)
+			export('ch.player.'.@playerID['id'].'.developer', true)
+			die(@prefix.color('a').'Developer messages are Enabled! '.color(7).'If the script you use supports dev messages, they will be displayed.')
+		}
 	} else {
 #	recompile wiped out imports
-		msg(color(7).'['.color(6).@name.color(7).'] '.color('a').'Developer messages are Re-Enabled!')
-		export(@name.'.player.'.@playerID['id'].'.developer', @devsetting)
+		msg(@prefix.color('a').'Developer messages are Re-Enabled!')
+		export('ch.player.'.@playerID['id'].'.developer', @devsetting)
+		export('ch.player.'.@playerID['id'].'.dev.scripts', get_value('ch.player.'.@playerID['id'].'.dev.scripts'))
 	}
 
 
 
 case 'export':
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Export: '.color('d').@option1)
+	msg(@prefix.color(6).'Export: '.color('d').@option1)
 	export($option1, @option2 $)
 	assign(@v, import($option1))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Value '.@option1.' exported to: '.color(7).@v)
+	msg(@prefix.color(6).'Value '.@option1.' exported to: '.color(7).@v)
 
 
 case 'import':
 	assign(@v, import($option1))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'Import: '.color('d').@option1.color('f').' Value(s) returned:')
+	msg(@prefix.color(6).'Import: '.color('d').@option1.color('f').' Value(s) returned:')
 	msg(color(7).@v)
 
 case 'extinfo':
 case 'ext':
 	assign(@v, extension_info())
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).'extension info: '.color('d').@option1.color('f').' Value(s) returned:')
+	msg(@prefix.color(6).'extension info: '.color('d').@option1.color('f').' Value(s) returned:')
         foreach(@key: @word in @v){
-		if(@key == 'Core', msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Hiding Core functions, to focus on extensions.') continue())
-                msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@key.' '.color(7).@word)
+		if(@key == 'Core', msg(@prefix.color(3).'Hiding Core functions, to focus on extensions.') continue())
+                msg(@prefix.color(3).@key.' '.color(7).@word)
         }   
 case 'test':
-	msg(vault_pgroup(@player, prefix))
-	msg(to_lower('50'))
+#	msg(vault_pgroup(@player, prefix))
+#	msg(to_lower('50'))
+	msg(puuid(@option1, 'dashless'))
+case 'test2':
+	msg(player(@option1))
 
 case 'randnumber':
 	assign(@rand, rand($option1, $option2))
@@ -290,7 +296,8 @@ default:
 	assign(@devsetting, get_value(@name.'.player.'.@playerID['id'].'.developer'))
 	if(@devsetting == true || @player == '~console') {
 		run(/reloadaliases)
-		export(@name.'.player.'.@playerID['id'].'.developer', @devsetting)
+		export('ch.player.'.@playerID['id'].'.developer', @devsetting)
+		export('ch.player.'.@playerID['id'].'.dev.scripts', get_value('ch.player.'.@playerID['id'].'.dev.scripts'))
 		die()
 	}
 	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'No action specified.')
