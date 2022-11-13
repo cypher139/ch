@@ -34,6 +34,8 @@ proc _send_discord_message(@message, @from, @channel) {
 		assign(@sendmsg, '['.@from.'] '.@message)
 	case 'death':
 		assign(@sendmsg, ':skull_crossbones: '.@message)
+	case 'command':
+		assign(@sendmsg, ':desktop: '.@message)
 	default:
 		assign(@sendmsg, '`['.@from.']` '.@message)
 	}
@@ -118,10 +120,46 @@ bind('player_quit', array(id: 'Chat.Discord.msg.Quit'), null, @quit) {
 	_send_discord_message('- part: '.@playerID['name'], 'none')
 }
 
-bind('player_death', array(id: 'Chat.Discord.msg.Death'), null, @death) {
-	_send_discord_message(@death['death_message'], 'death')
+bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), null, @death) {
+	assign(@counter, get_value('player.'.puuid(@death['player'], 'dashless').'.death.counter') + 1)
+
+	switch(@counter) {
+		case '':
+		case null:
+			@dc = ''
+			msg(color('e').'['.color('gold').'DeathCount'.color('e').'] '.color(7).'The Reaper\'s memory loss has been cured!')
+		case 0:
+			@dc = ''
+		default:
+			@dc = '[#'.@counter.'] '
+	}
+
+	if(@death['killer'] != null) {
+		@weapon = pinv(@death['killer'], null)
+		if(@weapon == null) { 
+			@kweapon = 'Hand' 
+		} else {
+			@kweapon = _capitalize(string(@weapon['name']))
+		}	
+		@pvpmsg = array(@death['killer'].' killed '.@death['player'].' wielding '.@kweapon, 
+			@death['killer'].' slays '.@death['player'].' with a '.@kweapon, 
+			@death['player'].' needs more practice and was killed by '.@death['killer'], 
+			@death['killer'].' hunts '.@death['player'].' down with a '.@kweapon, 
+			@death['player'].' took a leap of faith but landed on '.@death['killer'].'\'s '.@kweapon, 
+			'Score '.@death['killer'].' +1 - '.@death['player'].' 0', 
+			@death['player'].' was fragged by '.@death['killer'], 
+			@death['player'].' is now redstone thanks to '.@death['killer'].'\'s '.@kweapon, 
+			@death['killer'].' slapped '.@death['player'].' around a bit too hard.'
+		)
+		_send_discord_message(@dc, 'death')
+		_send_discord_message(@dc.'\n'.':put_litter_in_its_place: '.array_get_rand(@pvpmsg), 'none')
+	} else {
+		_send_discord_message(@dc.@death['death_message'], 'death')
+	}
 }
-	
+# :people_wrestling: :put_litter_in_its_place: 
+
+
 bind('player_join', array(id: 'Chat.Discord.msg.Join'), null, @login) {
 	assign(@playerID, _getplayerID(player()))
 	_send_discord_message('+ join: '.@playerID['name'], 'none')

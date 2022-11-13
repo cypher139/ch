@@ -17,10 +17,6 @@ bind('player_join', array(id: 'login'), null, @login) {
 	#event playername may return null for some unknown reason
 	assign(@player, _getplayerID(player()))
 
-#Get player group
-	assign(@group, pgroup(@player['name'])[0])
-	store_value(@player['id'].'.group', @group)
-
 #Are you a dev? Lets export the dev value!!!!!
 	assign(@dev, get_value('ch.player.'.@player['id'].'.developer'))
 	export('ch.player.'.@player['id'].'.developer', @dev)

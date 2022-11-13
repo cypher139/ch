@@ -61,7 +61,7 @@ proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 		)
 	)
 }
-
+#                message pass:disable pass:disable _ to ' '
 proc _capitalize(@string, @lower, @u) {
 	if(@lower == '' || @lower == null) { @string = to_lower(@string) }
 	assign(@l1, to_upper(@string[0]))
