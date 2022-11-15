@@ -1,10 +1,3 @@
-#server startup: set database
-if(is_array(get_value('primus.database.UUID'))) {
-	export('primus.database.UUID', get_value('primus.database.UUID'))
-} else {
-	export('primus.database.UUID', array('testid': array(1, 5, 10)))
-}
-
 #Setup Dev messages and update player database
 bind('player_join', array(id: 'cypher139.login'), null, @login) {
 #Event playername may sometimes return null? more testing needed

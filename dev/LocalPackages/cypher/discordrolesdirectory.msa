@@ -1,0 +1,233 @@
+######################################################
+#
+#   Discord: Record all of your server's roles and members, and what members belong in which roles.
+#   You can them message the results into a channel of your choosing!
+#
+######################################################
+
+admin:/discordroles [$] = >>>
+assign(@name, 'DiscordRoles')
+@prefix = color(7).'['.color(6).@name.color(7).'] '
+
+proc(_help,
+	msg(color(6).'script help:')
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color('a').'/discordroles <action> [option1] [option2]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/discordroles update 1'.color(4).' - '.color('f').'add initial user list array. this needs manually configured in this file. expects an entire array of Discord User IDs only. ex. array(1234567890, 234456576890, 2234523, 524352, 43523) etc')
+	msg(color(7).'/discordroles update 2'.color(4).' - '.color('f').'Takes members IDs and gets all roles each member belongs to, and also outputs list of total roles seen.')
+	msg(color(7).'/discordroles update 3'.color(4).' - '.color('f').'Takes list of members and their roles, output a list of roles and what members belong to that role.')
+)
+
+
+@args = parse_args($)
+@player = player()
+# Get other player name  
+foreach(@v in @args) {
+	if(array_contains_ic(all_players(), @v)) {
+		@otherplayer = player(@v)
+	}
+}
+
+if(array_size(@args) == 0) {
+	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'No action specified.')
+	_help()
+	die()
+}
+
+switch(@args[0]) {
+
+case 'u':
+case 'update':
+	switch(@args[1]) {
+	case 0:
+		@memberids = get_value('server.Discord.members.ID')
+		foreach(@k: @id in @memberids) {
+		@timeout = @k * 1000
+		set_timeout(@timeout, closure(){
+			msg(@k)
+		});
+		}
+	case 1:
+#part 1: MANUAL give array of all member ids {123, 456, 789}
+#(bind join to add new to a NEW array, MANUAL add them in)
+		store_value('server.Discord.previous.members.ID', get_value('server.Discord.members.ID'))
+		#store_value('server.Discord.members.ID', array())
+		store_value('server.Discord.members.ID', array())
+		msg(@prefix.'List Update: (blank) Part 1 Successful!')
+	case 2:
+#part 2: get all member roles, save 2 arrays:
+		msg(@prefix.'Please be patient! This task contacts Discord for each player ID. To avoid botspam limits this waits 2 seconds per player.')
+		x_new_thread(@name.'Update.2', closure(@player = player(), @args = @args){
+			@starttime = time()
+			@memberids = get_value('server.Discord.members.ID')
+			if(!is_array(@memberids)) { die('part1plz') }
+			@totalroles = array()
+			@servermemberroles = get_value('server.Discord.members.roles')
+			if(!is_array(@servermemberroles)) { @servermemberroles = array() }
+			@f = 0
+			@f1 = 0
+			@noarraycount = 0
+			@norolescount = 0
+			foreach(@timeid: @id in @memberids) {
+				@timeout = @timeid * 200
+				set_timeout(@timeout, closure(){
+
+
+				@memberroles = null
+			#	(key rolename, value roleid)
+				try(
+					#not found throws exception
+					#bots do this
+					@memberroles = discord_member_get_roles(@id)
+									tmsg(@player, 'id: '.@id)	
+			tmsg(@player, @memberroles)					
+					@f1 = @f1 + 1
+				,@fail,
+					if(@fail['message'] == 'A member with the id "'.@id.'" was not found on Discord server.') {
+					tmsg(@player, 'notfound: '.@id)		
+					} else {
+					tmsg(@player, 'error on id: '.@id)		
+					}
+					assign(@f, @f + 1)
+					continue()
+				)
+				if(!is_array(@memberroles)) {
+					@noarraycount = @noarraycount + 1
+					continue()
+				}
+				if(array_size(@memberroles) == 0) { 
+					@norolescount = @norolescount + 1
+					continue()
+				}
+				# server member roles array
+				# array 1: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
+				if(array_contains(array_keys(@servermemberroles), @id)) {
+					@servermemberroles[@id] = @memberroles 
+				} else {
+					array_set(@servermemberroles, @id, @memberroles)
+				}
+				  
+				# total roles array. reset per run
+				# array 2: {123: role 1, 456: roles2}
+				foreach(@k: @v in @memberroles) {
+					if(!array_contains(array_keys(@totalroles), @v)){
+						array_set(@totalroles, @v, @k)
+					}
+				  }
+				});
+			}
+			@timeout = @timeout + 2000
+			set_timeout(@timeout, closure(){
+			# save roles
+			store_value('server.Discord.previous.members.roles', get_value('server.Discord.members.roles'))
+			store_value('server.Discord.members.roles', @servermemberroles)
+			store_value('server.Discord.previous.roles.total', get_value('server.Discord.roles.total'))
+			store_value('server.Discord.roles.total', @totalroles)
+			# @servermemberroles = array of all members with all their roles
+			# @totalroles = array of all role names seen from computing members and their roles.
+
+			@endtime = (time() - @starttime) / 1000
+			tmsg(@player, @prefix.'List Update: Part 2 Success! Time Elapsed: '.@endtime.' seconds.')
+			tmsg(@player, 'Debug: memberid size: '.array_size(@memberids).', getroles success: '.@f1.', getroles fails: '.@f.', array fails: '.@noarraycount.', no roles found: '.@norolescount)
+			});
+		});
+	case 3:
+		#part 3: membersinrole array: formulate what members belong to each role
+	# version2:
+# loop through members, push their status to roleid lists.
+		x_new_thread(@name.'Update.3', closure(@player = @player, @args = @args){
+			@starttime = time()
+			@servermemberroles = get_value('server.Discord.members.roles')
+			@totalroles = get_value('server.Discord.roles.total')
+			if(!is_array(@servermemberroles)) { die('part2 plz') }
+			if(!is_array(@totalroles)) { die('part2 plz') }
+
+
+			@membersinrole = array()
+			foreach(@roleid: @rolename in @totalroles) {
+				array_set(@membersinrole, @roleid, array())
+			}
+			#  load in loop with info of that member's entire roles.
+			foreach(@memberid: @memberroles in @servermemberroles) {
+			# server member roles array: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
+				foreach(@k: @v in @memberroles) { 
+				#this foreach value sees: @k = role, @v = 123
+				#loop through each role present, push memberid to membersinrole[roleid]
+					array_push(@membersinrole[@v], @memberid)
+				}
+			}
+
+			store_value('server.Discord.previous.roles.members', get_value('server.Discord.roles.members'))
+			store_value('server.Discord.roles.members', @membersinrole)
+			@endtime = time()
+			# membersinrole
+			# {roleid: {memberid1, memberid2, }, roleid2: {memberid1, memberid2, }}
+			@endtime = (time() - @starttime) / 1000
+			tmsg(@player, @prefix.'List Update: Part 3 Success! Time Elapsed: '.@endtime.' seconds.')
+		});
+	case '3v1':
+	#part 3: membersinrole array: formulate what members belong to each role
+# version1:
+# loop through roles, check each member for status. push completed status update then repeat for next role
+		x_new_thread(@name.'Update.3test', closure(@player = @player, @args = @args){
+			@starttime = time()
+			@servermemberroles = get_value('server.Discord.members.roles')
+			@totalroles = get_value('server.Discord.roles.total')
+			if(!is_array(@servermemberroles)) { die('part2 plz') }
+			if(!is_array(@totalroles)) { die('part2 plz') }
+
+			@membersinrole = array()
+			@i = 0
+			foreach(@roleid: @rolename in @totalroles) {
+				# total roles array:
+				# {123: role 1, 456: roles2}
+				@roleidmemberlist = array()
+				@i = 0
+				foreach(@memberid: @memberroles in @servermemberroles) {
+				# server member roles array: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
+				#this if sees: {role: 123, role2: 4235}
+					if(array_contains(@memberroles, @roleid)) {
+						@roleidmemberlist[] = @memberid
+						assign(@i, @i + 1)
+					}
+				}
+				array_set(@membersinrole, @roleid, @roleidmemberlist)
+			}
+			store_value('server.Discord.previous.roles.members', get_value('server.Discord.roles.members'))
+			store_value('server.Discord.roles.members', @membersinrole)
+			@endtime = time() - @starttime
+			# membersinrole
+			# {roleid: {memberid1, memberid2, }, roleid2: {memberid1, memberid2, }}
+			@endtime = (time() - @starttime) / 1000
+			tmsg(@player, @prefix.'List Update: Part 3 (version1) Success! Time Elapsed: '.@endtime.' seconds.')
+		});
+	case 4:
+		msg('messages coming soon')
+	default:
+		msg('specify a update part number')
+	}
+case 'msg':
+case 'test':
+	msg('messages embed test coming soon')
+case 'help':
+case '-help':
+case '?':
+case '/?':
+	_help()
+
+default:
+	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'No action specified.')
+	_help()
+}
+
+/*
+
+part 4: Messages
+
+allowed lsit of roles to messages
+
+embed list?
+
+*/
+<<<

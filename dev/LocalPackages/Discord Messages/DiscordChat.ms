@@ -75,6 +75,13 @@ bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
 #Send Discord User message to Minecraft Players.
 bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @discord) {
 	@allowedChannels = import('Chat.Discord.Channels.receive')
+	
+	#temp array setup
+	@membersID = get_value('server.Discord.members.ID')
+	if(!array_contains(@membersID, @discord['userid'])) {
+		array_push(@membersID, @discord['userid'])
+		store_value('server.Discord.members.ID', @membersID)
+	}
 
 	if(array_contains(@allowedChannels, @discord['channel']) == true) {
 		export('Chat.Discord.last.msg.3', import('Chat.Discord.last.msg.2'))
