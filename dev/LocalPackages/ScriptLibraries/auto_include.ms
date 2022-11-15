@@ -37,7 +37,10 @@ proc _getplayerID(@option1) {
 			#puuid throws exception if not found.
 			#if ID not found: search uuid for playername
 			foreach(@k: @v in @uuiddata) {
-				if(equals_ic(@option1, @v[0])) { @pid['id'] = @k }
+				if(equals_ic(@option1, @v[0])) { 
+					@pid['id'] = @k
+					break()
+				}
 			}
 		)
 		#not sure what to return yet
@@ -93,7 +96,7 @@ proc _getplayerName(@findID) {
 		#throws exception if player offline
 			@pid['name'] = player(@findID)
 			@pid['display'] = player(@findID) 
-			@pid['nick'] = pinfo(@player)[4]
+			@pid['nick'] = pinfo(@pid['name'])[4]
 			@pid['id'] = @findID
 		,@fail,
 			#puuid/player throws exception if not found.
@@ -104,6 +107,7 @@ proc _getplayerName(@findID) {
 					@pid['name'] = @v[0] 
 					@pid['display'] = @v[0] 
 					@pid['nick'] = @v[2] 
+					break()
 				}
 			}
 		)
