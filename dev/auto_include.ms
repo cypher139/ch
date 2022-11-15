@@ -1,6 +1,6 @@
 #===============================================================================
 #
-#   auto_incude.ms - includes for CommandHelper
+#   auto_include.ms - includes for CommandHelper
 #
 #===============================================================================
 
@@ -33,7 +33,6 @@ proc _iterate_cuboid(@b1, @b2, @proc_name) {
     )
 }
 
-include('LocalPackages/Utilities/getplayerID.ms')
 #include('LocalPackages/Utilities/DiscordChat.ms')
 
 
@@ -41,9 +40,6 @@ include('LocalPackages/Utilities/getplayerID.ms')
 proc _bc(@label, @str) {
     broadcast(concat(color('yellow'), '[', color('gold'), @label, color('yellow'), '] ', color('white'), @str))
 }
-
-#is this a even number?
-    proc _is_even_number(@number) {return(mod(@number, 2) == 0)}
 
 
 #-----------------
@@ -61,26 +57,6 @@ proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 		)
 	)
 }
-#                message pass:disable pass:disable _ to ' '
-proc _capitalize(@string, @lower, @u) {
-	if(@lower == '' || @lower == null) { @string = to_lower(@string) }
-	assign(@l1, to_upper(@string[0]))
-	assign(@length, length(@string) - 1)
-	assign(@newstring, @l1.@string[cslice(1, @length)])
-	if(@u == '' || @u == null) {
-		if(reg_count('[_]', @newstring) > 0) {
-			@newstring = reg_replace('_', ' ', @newstring)
-		}
-	}
-	return(@newstring)
-}
-
-#supposed to work but doesnt:
-#proc(_capitalize, @string,
-#	assign(@l1, to_upper(@string[0]))
-#	assign(@newstring, @l1.@string[1..])
-#	return(@newstring)
-#)
 
 proc _getplayer(@name) {
 	assign(@chars, length(@name))

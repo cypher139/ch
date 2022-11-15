@@ -9,6 +9,16 @@ admin:/ch [$action] [$option1] [$option2] [$] = >>>
 #what is the name of this script?
 assign(@name, 'ch')
 
+@args = parse_args($)
+@player = player()
+# Get other player name  
+foreach(@v in @args) {
+	if(array_contains_ic(all_players(), @v)) {
+		@otherplayer = player(@v)
+	}
+}
+
+
 #dynamic vars, dont edit
 assign(@action, to_lower($action))
 assign(@option1, $option1)
@@ -32,7 +42,6 @@ proc(_ch_help,
 	msg(color(7).'/ch hasvalue <player> <value>'.color(4).' - '.color('f').'Returns if the specified value exists.')
 	msg(color(7).'/ch storevalue <value> <data>'.color(4).' - '.color('f').'Stores the data into the specified value in ch\'s persistance file. FOR DEBUG USE ONLY.')
 	msg(color(7).'/ch getvalues <player> [value]'.color(4).' - '.color('f').'Gets the values from the specified key. If none is provided, tries the current player.')
-	msg(color(7).'/ch regionat <player>'.color(4).' - '.color('f').'Returns what WG region(s) the specified player is currently in.')
 	msg(color(7).'/ch tolower <text>'.color(4).' - '.color('f').'Returns an all-lowercase version of the text provided.')
 	msg(color(7).'/ch toupper <text>'.color(4).' - '.color('f').'Returns an all-uppercase version of the text provided.')
 	msg(color(7).'/ch death <player> <deathtype> [deathmsg]'.color(4).' - '.color('f').'Random death messages on demand!')

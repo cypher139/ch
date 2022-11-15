@@ -10,7 +10,7 @@ export('Chat.Discord.Console.receive', false)
 #Prerequisites
 discord_connect('discordCredentials', closure(){
 	broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Now Connected to Discord');
-#	discord_set_activity(DEFAULT, 'Minecraft');
+#	discord_set_activity('DEFAULT', string('Minecraft'));
 })
 
 
@@ -121,7 +121,9 @@ bind('player_quit', array(id: 'Chat.Discord.msg.Quit'), null, @quit) {
 }
 
 bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), null, @death) {
-	assign(@counter, get_value('player.'.puuid(@death['player'], 'dashless').'.death.counter') + 1)
+	
+	assign(@counter, get_value('DeathCount.players.death.counter')[puuid(@death['player'], 'dashless')] + 1)
+#	assign(@counter, get_value('player.'.puuid(@death['player'], 'dashless').'.death.counter') + 1)
 
 	switch(@counter) {
 		case '':

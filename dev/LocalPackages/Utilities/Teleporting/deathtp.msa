@@ -7,7 +7,7 @@ if(is_numeric($option1)) {
 	assign(@dropid, $option1)
 	if($option1 > 3) {assign(@dropid, 3)}
 } else {
-	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
 assign(@here, get_value('player.'.puuid(player(), 'dashless').'.last.death.loc.'.@dropid))
@@ -15,10 +15,10 @@ assign(@here, get_value('player.'.puuid(player(), 'dashless').'.last.death.loc.'
 switch(@here) {
 	case '':
 	case null:
-		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
+		die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
 	default:
 		set_ploc(@here)
-		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'You were teleported to your death point.')
+		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'You were teleported to your death point.')
 }
 <<<
 
@@ -28,7 +28,7 @@ if(is_numeric($option1)) {
 	assign(@dropid, $option1)
 	if($option1 > 3) {assign(@dropid, 3)}
 } else {
-	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
 assign(@bi, get_value('player.'.puuid(player(), 'dashless').'.last.death.drops.'.@dropid))
@@ -36,29 +36,17 @@ assign(@bi, get_value('player.'.puuid(player(), 'dashless').'.last.death.drops.'
 switch(@bi) {
 	case '':
 	case null:
-		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
+		die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
 	default:
 		foreach(@bi, @currentvar,
-		#mew MC versions do not need numeric id:data type. updated to just written name. 
+		#new MC versions do not need numeric id:data type. updated to just written name. 
 		#array: meta, qty, name
 			pgive_item(player(), @currentvar)
 		)
-		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
+		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Respawning your items.')
 }
 <<<
 
-
-
-/*
-				#Report how many of each block type was filled, but only if it was filled!
-				if(@return['filledqty'] != 0) {
-					if(array_index_exists(@blocktypes, @ft)) {
-						@blocktypes[@ft] = @blocktypes[@ft] + 1
-					} else {
-						#if array key not set, @array[key] does not work
-						array_set(@blocktypes, @ft, 1)
-					}
-					*/
 deathtp:/deathcounter [$] = >>>
 set_uncaught_exception_handler(closure(@ex){
 	if(import('ch.player.'.puuid(player(), 'dashless').'.developer') == true) {
@@ -71,16 +59,21 @@ set_uncaught_exception_handler(closure(@ex){
    
 proc _msg_count(@count, @player) {
 	assign(@name, 'DeathCount')
-	@prefix = color('e').'['.color('gold').@name.color('e').'] '
+	@prefix = color('e').'['.color(6).@name.color('e').'] '
 	switch(@count) {
 		case '':
 		case null:
 			@dcmsg = 'Reaper reports '.@player.' never died, you lucky bastard.'
 		case 0:
 			@dcmsg = 'Reaper says his memory was wiped!?'
-		case 'n':
+		case 'ni':
 			@prefix = color(9).'['.color(0).@name.color(9).'] '
-			@dcmsg = color(8).' Player name not found for '.@player
+			@dcmsg = 'Reaper is currently suffering memory loss.'
+			console(@prefix.color(8).' Player UUID not found for '.@player, false)
+		case 'nn':
+			@prefix = color(9).'['.color(0).@name.color(9).'] '
+			@dcmsg = 'Reaper is currently suffering memory loss..'
+			console(@prefix.color(8).' Player name not found for '.@player, false)
 		case 'd':
 			@dcmsg = 'Reaper is currently suffering memory loss...'
 		default:
@@ -93,6 +86,7 @@ assign(@name, 'DeathCount')
 @args = parse_args($)
 @countdata = get_value('DeathCount.players.death.counter')
 @oplayer = get_offline_players()
+@prefix = color('e').'['.color(6).@name.color('e').'] '
 
 if(array_size(@args) == 0) {
 #No players, just you
@@ -105,11 +99,10 @@ if(array_size(@args) == 1) {
 		case 'leaderboard':
 		case 'all':
 		case 'players':
-		#get_offline_players() array remove found players in counter database, then state size left of players reaper does not remember
 			foreach(@k: @v in @countdata) {
 				@name = _getplayerName(@k)['name']
 				if(@name == null) {
-					_msg_count('n', @k)
+					_msg_count('nn', @k)
 					continue()
 				}
 				if(@v == 0) {continue()}
@@ -127,7 +120,7 @@ if(array_size(@args) == 1) {
 			}
 			@playerID = _getplayerID(@player)
 			#catches no UUID - offline Bedrock players may have this issue if not in internal database
-			if(@playerID['id'] == null) { _msg_count('n', @player) }
+			if(@playerID['id'] == null) { _msg_count('ni', @player) die() }
 			#
 			_msg_count(@countdata[@playerID['id']], @playerID['name'])
 	}
@@ -141,7 +134,7 @@ if(array_size(@args) > 1) {
 		}
 		@playerID = _getplayerID(@v)
 		#catches no UUID - offline Bedrock players may have this issue if not in internal database
-		if(@playerID['id'] == null) { _msg_count('n', @v) }
+		if(@playerID['id'] == null) { _msg_count('ni', @v) continue() }
 		#
 		_msg_count(@countdata[@playerID['id']], @playerID['name'])
 	}

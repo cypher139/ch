@@ -29,6 +29,6 @@ bind('player_death', array(id: 'DeathTP.event', priority: 'MONITOR'), null, @dea
 			array_set(@dc, @uuid, 1)
 		}
 		store_value('DeathCount.players.death.counter', @dc)
-		store_value('player.'.@uuid.'.death.counter', get_value('player.'.@uuid.'.death.counter') + 1)
+#		store_value('player.'.@uuid.'.death.counter', get_value('player.'.@uuid.'.death.counter') + 1)
 	});
 }
