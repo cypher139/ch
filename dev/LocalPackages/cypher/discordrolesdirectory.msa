@@ -15,6 +15,7 @@ proc(_help,
 	msg(color('a').'/discordroles <action> [option1] [option2]')
 	msg(color(6).'Actions:')
 	msg(color(7).'/discordroles update 1'.color(4).' - '.color('f').'add initial user list array. this needs manually configured in this file. expects an entire array of Discord User IDs only. ex. array(1234567890, 234456576890, 2234523, 524352, 43523) etc')
+	#MemberList bot /server filetype:csv flags:all . csv regex replace ^.+[#][0-9]{4}["][,]["] replace with '' and ["][,].+ replace with '' then replace \r\n with ', '. encase line in array()
 	msg(color(7).'/discordroles update 2'.color(4).' - '.color('f').'Takes members IDs and gets all roles each member belongs to, and also outputs list of total roles seen.')
 	msg(color(7).'/discordroles update 3'.color(4).' - '.color('f').'Takes list of members and their roles, output a list of roles and what members belong to that role.')
 )
@@ -203,7 +204,36 @@ case 'update':
 			tmsg(@player, @prefix.'List Update: Part 3 (version1) Success! Time Elapsed: '.@endtime.' seconds.')
 		});
 	case 4:
-		msg('messages coming soon')
+	#msg directory of who has what group and mod type in group
+		@sdrg = get_value('server.Discord.roles.groups')
+		if(!is_array(@memberids)) { die('part1plz') }
+		@totalroles = get_value('server.Discord.roles.total')
+		@membersinrole = get_value('server.Discord.roles.members')
+		@channel = 'mod-directory'
+		foreach(@index1: @currentgroup in array_unique(array_normalize(@sdrg))) {
+			discord_broadcast(@channel, associative_array(content: '```'.@currentgroup.'```'))
+			foreach(@k: @v in @sdrg) {
+				if(@currentgroup != @v) {continue()}
+				discord_broadcast(@channel, associative_array(content: '`'.@k.'`'))
+				#rolename: groupname
+				foreach(@k2: @v2 in @totalroles) {
+					if(@v2 == @k) {
+						@roleid = @k2
+						break()
+					}
+				}
+				@roletitlemsg = '`'.@k.'`'
+				@usermsg = '<@'.array_implode(@membersinrole[@roleid], '> <@').'>'
+				if(length(@usermsg) > 1999) {
+					@color2000 = 'c'
+				} else {
+					@color2000 = 'a'
+				}
+				msg(@k.' is '.color(@color2000).length(@usermsg).' chars')
+				discord_broadcast(@channel, associative_array(content: @usermsg))
+			}
+		}
+		tmsg(@player, @prefix.'List Update: Part 4 Success! Please wait for Discord Rate-limiting to catch up with the messages spam.')
 	default:
 		msg('specify a update part number')
 	}
