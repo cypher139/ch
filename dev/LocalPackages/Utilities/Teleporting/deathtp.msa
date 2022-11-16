@@ -75,6 +75,7 @@ proc _msg_count(@count, @player) {
 			@dcmsg = 'Reaper is currently suffering memory loss..'
 			console(@prefix.color(8).' Player name not found for '.@player, false)
 		case 'd':
+			@prefix = color(9).'['.color(0).@name.color(9).'] '
 			@dcmsg = 'Reaper is currently suffering memory loss...'
 		default:
 			@dcmsg = @player.' died a total of '.color('c').@count.color(7).' times!'

@@ -46,6 +46,19 @@ if(array_size(@args) > 0) {
 # Non-Player Arguments provided
 	@newmode = 'Unset'
 	foreach(@k: @v in @args) {
+		if(reg_count('^[Ww]', @v) > 0) { 
+			@gmpinv = get_value(@name.'player.'.puuid(player(), 'dashless').'.mode.inv')
+			if(!is_array(@gmpinv)) { @gmpinv = array('use': false, 'SURVIVAL': array(), 'CREATIVE': array(), 'ADVENTURE': array(), 'SPECTATOR': array()) }
+			if(@gmpinv['use'] == true) {
+				@gmpinv['use'] = false
+				msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your inventory will not be reset upon game mode change.')
+			} else {
+				@gmpinv['use'] = true
+				msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Upon game mode change your inventory will be set to the inventory for that game mode.')
+			}
+		store_value(@name.'player.'.puuid(player(), 'dashless').'.mode.inv', @gmpinv)
+		die()
+		}
 		if(reg_count('^[Aa]', @v) > 0) { @newmode = 'Adventure' }
 		if(reg_count('^[Cc]', @v) > 0) { @newmode = 'Creative' }
 		if(reg_count('^[Ss][Uu]', @v) > 0) { @newmode = 'Survival' }
