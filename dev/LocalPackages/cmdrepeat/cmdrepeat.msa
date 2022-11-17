@@ -3,6 +3,8 @@ everyone:/repeat [$action] = >>>
 @player = _cmd_getplayerID(player())
 
 switch(to_lower($action)) {
+	case 'allcmds':
+		msg(import('cmdrepeat.all.commands'))
 	case 'printrepeatcommand':
 	case 'printrepeatcmd':
 	case 'printrepeat':

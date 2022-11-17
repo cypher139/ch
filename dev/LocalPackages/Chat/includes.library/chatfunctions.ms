@@ -1,6 +1,4 @@
-#is this a even number?
-    proc(_is_even_number, @number, return(mod(@number, 2) == 0))
-
+proc _is_even_number(@number) { return(mod(@number, 2) == 0) }
 
 proc _chat_getplayerID(@option1) {
 	@pid = array()
