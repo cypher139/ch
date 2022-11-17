@@ -10,7 +10,7 @@
 
 everyone:/chat [$action] [$option1] [$option2] [$option3] [$option4] = >>>
 # What is the name of this script?
-assign(@name, Chat)
+assign(@name, 'Chat')
 # Include required backend functions
 include('includes.library/chatfunctions.ms')
 
@@ -180,7 +180,7 @@ default:
 *:/chatadmin [$action] [$option1] [$option2] [$option3] [$option4] = >>>
 
 #what is the name of this script?
-assign(@name, Chat)
+assign(@name, 'Chat')
 #Include required backend functions
 include('includes.library/chatfunctions.ms')
 

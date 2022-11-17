@@ -5,6 +5,8 @@ assign(@you, player())
 
 
 switch(to_lower($action)) {
+case 'gc':
+msg(get_commands())
 case 'test':
 msg(@you)
 msg(@player)

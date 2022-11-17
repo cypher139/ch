@@ -1,0 +1,35 @@
+#Worlds:
+#Information and teleporting
+world:/world [$world] = >>>
+assign(@world, $world)
+assign(@gotoworld, $world)
+if(@world == '',
+    assign(@pworld, pworld())
+    assign(@gworld, get_worlds())
+    assign(@aworld, concat(color(7),'Available worlds: ', color(7), @gworld))
+    msg(color(9).'You are in world: '.color('a').@pworld)
+    die(@aworld)
+)
+
+switch(@world) {
+case 'c':
+    @gotoworld = 'creative'
+case 'sky':
+    @gotoworld = 'skyblock'
+case 'f':
+    @gotoworld = 'fun'
+case 'end':
+    @gotoworld = 'creative_the_end'
+}
+
+@gotoloc = get_spawn(@gotoworld)
+
+
+if(!is_array(@gotoloc) || @gotoloc == '' || @gotoloc == null) {
+die('invalid world')
+}
+set_ploc(@gotoloc)
+msg('new world awaits!')
+
+
+<<<

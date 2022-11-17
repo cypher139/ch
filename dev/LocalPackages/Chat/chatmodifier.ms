@@ -36,9 +36,9 @@ include('includes.library/chatfunctions.ms')
 	)
     #Defaults
 	if(@groupinfo[@group]['showhealth'] == '' || @groupinfo[@group]['showhealth'] == null, assign(@groupinfo[@group]['showhealth'], true))
-	if(@groupinfo[@group]['namecolor'] == '' || @groupinfo[@group]['namecolor'] == null, assign(@groupinfo[@group]['namecolor'], e))
+	if(@groupinfo[@group]['namecolor'] == '' || @groupinfo[@group]['namecolor'] == null, assign(@groupinfo[@group]['namecolor'], 'e'))
 	if(@groupinfo[@group]['usercolor'] == '' || @groupinfo[@group]['usercolor'] == null, assign(@groupinfo[@group]['usercolor'], 3))
-	if(@groupinfo[@group]['chatcolor'] == '' || @groupinfo[@group]['chatcolor'] == null, assign(@groupinfo[@group]['chatcolor'], f))
+	if(@groupinfo[@group]['chatcolor'] == '' || @groupinfo[@group]['chatcolor'] == null, assign(@groupinfo[@group]['chatcolor'], 'f'))
 
 	if(@chatoptions['colorize'] == '' || @chatoptions['colorize'] == null, assign(@chatoptions['colorize'], true))
     #Health

@@ -34,5 +34,5 @@ bind('server_ping', array(id: 'Chat.Format.Ping'), null, @ping) {
 #Include required backend functions
 include('includes.library/chatfunctions.ms')
 	console(color(6).'['.color(9).'Notification'.color(6).'] '.color(7).'Received ping from '.@ping['ip'], false)
-	modify_event('motd', _rainbow(@ping['motd'], doubles))
+	modify_event('motd', _rainbow(@ping['motd'], 'doubles'))
 }

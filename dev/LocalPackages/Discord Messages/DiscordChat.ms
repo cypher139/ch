@@ -130,7 +130,6 @@ bind('player_quit', array(id: 'Chat.Discord.msg.Quit'), null, @quit) {
 bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), null, @death) {
 	
 	assign(@counter, get_value('DeathCount.players.death.counter')[puuid(@death['player'], 'dashless')] + 1)
-#	assign(@counter, get_value('player.'.puuid(@death['player'], 'dashless').'.death.counter') + 1)
 
 	switch(@counter) {
 		case '':
@@ -160,8 +159,7 @@ bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), n
 			@death['player'].' is now redstone thanks to '.@death['killer'].'\'s '.@kweapon, 
 			@death['killer'].' slapped '.@death['player'].' around a bit too hard.'
 		)
-		_send_discord_message(@dc, 'death')
-		_send_discord_message(@dc.'\n'.':put_litter_in_its_place: '.array_get_rand(@pvpmsg), 'none')
+		_send_discord_message(@dc.'\n'.':put_litter_in_its_place: '.array_get_rand(@pvpmsg), 'death')
 	} else {
 		_send_discord_message(@dc.@death['death_message'], 'death')
 	}

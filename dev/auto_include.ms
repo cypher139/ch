@@ -86,49 +86,5 @@ proc _getplayer(@name) {
 	)
 }
 
-proc _rainbow(@msg, @type) {
-#fabulous light colors: 6abcdef
-	if(@msg == '', return(color('c').'You didn\'t say anything!!'))
-	assign(@msg, strip_colors(@msg))
-	if(@type == '' || @type == null,
-		assign(@type, 'normal')
-	)
-#Standard Rainbow chat: This will select a new random color for every letter in the message.
-	if(@type == 'normal',
-		assign(@string, '')
-		for(assign(@i, 0), @i < length(@msg), @i++,
-			assign(@string, @string.'\u00a7'.array(6,7,9,'a','b','c','d','e','f')[rand(9)].substr(@msg, @i, @i + 1))
-		)
-		return(@string)
-	)
-
-#This selects a new random color for every other character in the message.
-	if(@type == 'doubles',
-		assign(@string, '')
-		for(assign(@i, 0), @i < length(@msg), @i++,
-			if(_is_even_number(@i) == true,
-				assign(@color, array(6,7,9,'a','b','c','d','e','f')[rand(9)])
-			)
-			assign(@string, @string.color(@color).substr(@msg, @i, @i + 1))
-		)
-		return(@string)
-	)
-
-
-#This uses all the minecraft colors, not just specific colors.
-	if(@type == 'all',
-		assign(@string, '')
-		for(assign(@i, 0), @i < length(@msg), @i++,
-			assign(@string, @string.'\u00a7'.array(0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f')[rand(16)].substr(@msg, @i, @i + 1))
-		)
-		return(@string)
-	)
-}
-
-
-#-----
-
-
-
 #Death messages
 #include('LocalPackages/deathmsg.ms')
