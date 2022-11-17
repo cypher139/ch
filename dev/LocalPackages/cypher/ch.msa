@@ -6,7 +6,6 @@
 ######################################################
 
 admin:/ch [$action] [$option1] [$option2] [$] = >>>
-#what is the name of this script?
 assign(@name, 'ch')
 
 @args = parse_args($)
@@ -18,18 +17,14 @@ foreach(@v in @args) {
 	}
 }
 
-
-#dynamic vars, dont edit
 assign(@action, to_lower($action))
 assign(@option1, $option1)
 assign(@option2, $option2)
-assign(@player, player())
 
 if(array_contains(all_players(), @option1)) {assign(@player, @option1)}
 assign(@playerID, _getplayerID(@player))
 
 #action list help
-#this appears on /ch, or when unsupported action variable is passed
 proc(_ch_help,
 	msg(color(6).'CommandHelper debug scripts help:')
 	msg(color('a').'Command usage: <required> [optional]')
@@ -68,13 +63,10 @@ case '-help':
 case '?':
 case '/?':
 	_ch_help()
-
-
 case 'version':
 case 'build':
 case 'info':
 	msg(@prefix.engine_build_date())
-
 
 case 'events':
 case 'dumpevents':
@@ -285,9 +277,10 @@ default:
 	if(!is_array(@ds)) { @ds = array() }
 	if(array_contains(@ds, 'all') || @player == '~console') {
 		run(/reloadaliases)
-		@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')
-		if(!is_array(@ds)) { @ds = array() }
-		if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
+		if(array_contains(@ds, 'all')) { @dsall = true } else { @dsall = false }
+		foreach(@script in @ds) {
+			export('ch.player.'.@playerID['id'].'.dev.scripts.'.@script, true)
+		}
 		export('ch.player.'.@playerID['id'].'.developer', @dsall)
 		export('ch.player.'.@playerID['id'].'.dev.scripts', @ds)
 		die()

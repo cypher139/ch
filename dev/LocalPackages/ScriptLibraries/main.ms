@@ -5,12 +5,17 @@ bind('player_join', array(id: 'cypher139.login'), null, @login) {
 	@puuid = puuid(@player, 'dashless')
 
 #Are you a dev for Cypher's scripts on this server?
+#Enables dev message settings.
+	@ds = get_value('ch.player.'.@puuid.'.dev.scripts')
+	if(!is_array(@ds)) { @ds = array() }
+	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
 	#Older scripts / blanket enable/Disable.
-	export('ch.player.'.@puuid.'.developer', get_value('ch.player.'.@puuid.'.developer'))
-	#Newer scripts, look for array(scriptname: true/false)
-	@scriptdev = get_value('ch.player.'.@puuid.'.dev.scripts')
-	if(!is_array(@scriptdev)) { @scriptdev = array() }
-	export('ch.player.'.@puuid.'.dev.scripts', @scriptdev)
+	export('ch.player.'.@uuid.'.developer', @dsall)
+	#Newer scripts, look for ...scripts.scriptname
+	foreach(@script in @ds) {
+		export('ch.player.'.@uuid.'.dev.scripts.'.@script, true)
+	}
+	export('ch.player.'.@uuid.'.dev.scripts', @ds)
 
 #Rei's minimap: Enable radar for everything, and cavemapping.
 # Uncomment to use

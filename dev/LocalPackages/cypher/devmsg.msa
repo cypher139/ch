@@ -94,8 +94,17 @@ if(array_size(@args) > 0) {
 			msg(@prefix.color(7).'-----')
 			msg(color(9).@j.color(7).' event types,  '.color(6).array_size(dump_events()).color(7).' total events found.')
 			msg(@prefix.color(7).'-----')
-			die()	
+			die()
+		case 'settings':
+		case 's':
+		case 'current':
+			msg(@prefix.' Dev messages are enabled for these scripts:')
+			msg(color(9).array_implode(@ds, ', '))
 		default:
+		#Note: Script namespace and arguments here does not support spaces or periods in name.
+			if(reg_count('[\\..*]', @arg) > 0) {
+				@arg = reg_replace('\\.', '', @arg)
+			}
 			if(array_contains(@ds, @arg)) {
 				array_remove_values(@ds, @arg)
 				msg(@prefix.color('f').'Developer messages are '.color('c').'disabled'.color('f').' for script: '.@arg)
@@ -105,18 +114,19 @@ if(array_size(@args) > 0) {
 			}
 		}
 	}
-} else {
+}
 	@check = import('ch.player.'.@uuid.'.dev.scripts')
 	if(!is_array(@check)) {
 		msg(@prefix.color('f').'Developer messages are '.color('a').'re-enabled!')
-	} else {
-		die(@prefix.color('f').'Developer messages were already enabled?! To change a setting, specify the script name.')
 	}
-}
+
 	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
+	foreach(@script in @ds) {
+		export('ch.player.'.@uuid.'.dev.scripts.'.@script, true)
+	}
 	export('ch.player.'.@uuid.'.developer', @dsall)
 	export('ch.player.'.@uuid.'.dev.scripts', @ds)
 	store_value('ch.player.'.@uuid.'.developer', @dsall)
 	store_value('ch.player.'.@uuid.'.dev.scripts', @ds)
-
+	if(@dev == true) { msg(@prefix.color('a').'Saved Settings!') }
 <<<

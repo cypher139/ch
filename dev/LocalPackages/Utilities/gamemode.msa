@@ -6,7 +6,7 @@ if(!has_permission(player(), 'commandhelper.alias.shiftmode')) {
 	die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
 }
 set_uncaught_exception_handler(closure(@ex){
-	if(import('ch.player.'.puuid(player(), 'dashless').'.developer') == true) {
+	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.all') == true) {
 		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
 	} else {
 		msg(color('c').@ex['message']);
@@ -29,15 +29,15 @@ foreach(@k: @v in @args) {
 		#No break, so finds all players and picks last mentioned.
 	}
 }
-
+/*
 if(@user == '~console') {
-	assign(@dev, false)
+	@dev = false
 } else {
-	assign(@dev, import('ch.player.'.puuid(@user, 'dashless').'.developer'))
+	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.gamemode') == true || import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.all') == true) { @dev = true }
 }
+*/
 assign(@user, _getplayerID(@user))
 
-#dev if(@dev == true) { msg(array_size(@args)) }
 #Arguments nag message
 if($ != '' && !has_permission('commandhelper.alias.shiftmode.notip')) {
 	msg(color(7).'['.color(3).@name.color(7).'] '.color(7).'Tip: Switch between '.color('c').'Survival'.color(7).' and '.color('b').'Creative'.color(7).' mode by just using '.color('a').'/mode')
@@ -46,7 +46,7 @@ if(array_size(@args) > 0) {
 # Non-Player Arguments provided
 	@newmode = 'Unset'
 	foreach(@k: @v in @args) {
-		if(reg_count('^[WwPpIiGg]', @v) > 0) { 
+		if(reg_count('^[GgIiPpWw]', @v) > 0) { 
 			@gmpinv = get_value(@name.'player.'.puuid(player(), 'dashless').'.mode.inv')
 			if(!is_array(@gmpinv)) { @gmpinv = array('use': false, 'SURVIVAL': array(), 'CREATIVE': array(), 'ADVENTURE': array(), 'SPECTATOR': array()) }
 			if(@gmpinv['use'] == true) {
