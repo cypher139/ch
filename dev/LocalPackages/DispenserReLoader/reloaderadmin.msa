@@ -17,7 +17,7 @@ assign(@name, string(import('dispenserreloader.name')))
 @option2 = $option2
 @option3 = $option3
 @player = _reloader_getplayerID(player())
-assign(@dev, import('ch.player.'.@player['id'].'.developer'))
+assign(@dev, import('ch.player.'.@player['id'].'.dev.scripts.reload'))
  
  
 set_uncaught_exception_handler(closure(@ex){

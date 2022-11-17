@@ -26,7 +26,7 @@ if(@verbose == null) {
 	assign(@verbose, get_value(@name.'.player.'.@player['id'].'.verbose'))
 	export(@name.'.player.'.@player['id'].'.verbose', @verbose)
 }
-assign(@dev, import('ch.player.'.@player['id'].'.developer'))
+assign(@dev, import('ch.player.'.@player['id'].'.dev.scripts.reload'))
 
 set_uncaught_exception_handler(closure(@ex){
 	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
@@ -544,7 +544,8 @@ case '-a':
 	if(has_permission(@player['name'], 'commandhelper.alias.reloader.area')) {
 		assign(@world, pworld(@player['name']))
 		# Area mode requires an extension to access WorldEdit selection data.
-		include('includes.library/reload-functions-SKCompat-'.extension_exists('SKCompat').'.ms')
+		if(extension_exists('SKCompat') == true || extension_exists('CHWorldEdit') == true) { @extok = true } else { @extok = false }
+		include('includes.library/reload-functions-Area-'.@extok.'.ms')
 
 	  # Get the player's area mode
 		assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))
