@@ -272,6 +272,9 @@ case 'number':
 	msg(reg_split('(\\.)', $option1))
 	msg(round($option1))
 
+case 'props':
+msg(ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties'))))
+
 default:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')
 	if(!is_array(@ds)) { @ds = array() }

@@ -1,15 +1,11 @@
 #Worlds:
 #Information and teleporting
 world:/world [$world] = >>>
+@name = 'World'
+@prefix = color(7).'['.color(9).@name.color(7).'] '
 assign(@world, $world)
 assign(@gotoworld, $world)
-if(@world == '',
-    assign(@pworld, pworld())
-    assign(@gworld, get_worlds())
-    assign(@aworld, concat(color(7),'Available worlds: ', color(7), @gworld))
-    msg(color(9).'You are in world: '.color('a').@pworld)
-    die(@aworld)
-)
+
 
 switch(@world) {
 case 'c':
@@ -19,17 +15,31 @@ case 'sky':
 case 'f':
     @gotoworld = 'fun'
 case 'end':
-    @gotoworld = 'creative_the_end'
+    @gotoworld = pworld().'_the_end'
+case 'n':
+	@gotoworld = pworld().'_nether'
+case 'default':
+case 'w':
+case '':
+	@gotoworld = ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties')))['level-name']
+default:
+    assign(@pworld, pworld())
+    msg(@prefix.color(9).'Available worlds:')
+	foreach(@w in get_worlds()) {
+		msg(color(7).@w)
+	}
+    die(@prefix.color(9).'You are in world: '.color('e').@pworld)
 }
 
-@gotoloc = get_spawn(@gotoworld)
-
+try( 
+	@gotoloc = get_spawn(@gotoworld)
+,@fail,
+	die(@prefix.' Cannot find spawn location for that world.')
+)
 
 if(!is_array(@gotoloc) || @gotoloc == '' || @gotoloc == null) {
-die('invalid world')
+die(@prefix.' That world was not loaded.')
 }
 set_ploc(@gotoloc)
-msg('new world awaits!')
-
-
+msg(@prefix.' A new world awaits you!')
 <<<
