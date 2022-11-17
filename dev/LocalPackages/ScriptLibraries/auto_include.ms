@@ -77,14 +77,6 @@ proc _getplayerID(@option1) {
 	return(@pid)
 }
 
-proc _getnick(@player) {
-	
-	assign(@player, pinfo(@player)[0])
-	assign(@nick, pinfo(@player)[4])
-
-	if(@player == @nick, return(@player), return(@nick))
-}
-
 #Find player NAME when given a UUID.
 proc _getplayerName(@findID) {
  	@pid = array()

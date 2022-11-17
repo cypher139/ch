@@ -1,7 +1,9 @@
 #version 1.2-tmc
 creative:/i [$id=3] [$] = >>>
 set_uncaught_exception_handler(closure(@ex){
-	assign(@dev, import('ch.player.'.puuid(player(), 'dashless').'.developer'))
+	@dev = import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts')
+	if(!is_array(@dev)) { @dev = array() }
+	if(array_contains(@dev, 'creative') || array_contains(@dev, 'all')) { @dev = true }
 	if(@dev == true) {
 		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
 	} else {
@@ -24,7 +26,9 @@ foreach(@v in @args) {
 if(@player == '~console') {
 	assign(@dev, false)
 } else {
-	assign(@dev, import('ch.player.'.puuid(@player, 'dashless').'.developer'))
+	@dev = import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts')
+	if(!is_array(@dev)) { @dev = array() }
+	if(array_contains(@dev, 'creative') || array_contains(@dev, 'all')) { @dev = true }
 }
 
 #ID type Checks   
