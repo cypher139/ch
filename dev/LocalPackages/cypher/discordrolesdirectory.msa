@@ -205,16 +205,23 @@ case 'update':
 		});
 	case 4:
 	#msg directory of who has what group and mod type in group
+		@usediscordmsg = false
+		@usewritefile = true
 		@sdrg = get_value('server.Discord.roles.groups')
-		if(!is_array(@memberids)) { die('part1plz') }
+		if(!is_array(@sdrg)) { die('part1plz') }
 		@totalroles = get_value('server.Discord.roles.total')
 		@membersinrole = get_value('server.Discord.roles.members')
+		@membersnames = get_value('server.Discord.members.names')
 		@channel = 'mod-directory'
+		@filearray = array()
+		@userarray = array()
 		foreach(@index1: @currentgroup in array_unique(array_normalize(@sdrg))) {
-			discord_broadcast(@channel, associative_array(content: '```'.@currentgroup.'```'))
+			if(@usediscordmsg == true) { discord_broadcast(@channel, associative_array(content: '```'.@currentgroup.'```')) }
+			if(@usewritefile == true) { array_push(@filearray, '"'.@currentgroup.'" \r\n') }
 			foreach(@k: @v in @sdrg) {
 				if(@currentgroup != @v) {continue()}
-				discord_broadcast(@channel, associative_array(content: '`'.@k.'`'))
+				if(@usediscordmsg == true) { discord_broadcast(@channel, associative_array(content: '`'.@k.'`')) }
+				if(@usewritefile == true) { array_push(@filearray, '"'.@k.'" \r\n') }
 				#rolename: groupname
 				foreach(@k2: @v2 in @totalroles) {
 					if(@v2 == @k) {
@@ -222,15 +229,56 @@ case 'update':
 						break()
 					}
 				}
-				@roletitlemsg = '`'.@k.'`'
-				@usermsg = '<@'.array_implode(@membersinrole[@roleid], '> <@').'>'
-				if(length(@usermsg) > 1999) {
-					@color2000 = 'c'
-				} else {
-					@color2000 = 'a'
+				if(@usewritefile == true) {
+					foreach(@k3: @v3 in @membersinrole[@roleid]) {
+						#get name of userid
+						@usernick = null
+		#				try(
+		#					@usernick = discord_member_get_nickname(@v3)
+		#				,@fail,
+		#					continue()
+		#				)
+		#				if(@usernick == '' || @usernick == null) {
+							foreach(@k4: @v4 in @membersnames) {
+								if(@v4 == @v3) {
+									@usernick = @k4
+									break()
+								}
+							}
+		#				}
+						array_push(@userarray, @usernick)
+					}
+					array_push(@filearray, '"@'.array_implode(@userarray, '", "@').'"')
+					@userarray = array()
 				}
-				msg(@k.' is '.color(@color2000).length(@usermsg).' chars')
-				discord_broadcast(@channel, associative_array(content: @usermsg))
+ # msg out to arrayarray_push
+ 
+ 
+ #msg to new array array(line1: array(rolename: membername, membername), line2,) etc. write file array_implode(@thisarray, '\r\n')	
+ 
+ 
+ 
+				if(@usediscordmsg == true) {
+				msg(yes)
+					@usermsg = '<@'.array_implode(@membersinrole[@roleid], '> <@').'>'
+					if(length(@usermsg) > 1999) {
+						@color2000 = 'c'
+					} else {
+						@color2000 = 'a'
+					}		
+					msg(@k.' is '.color(@color2000).length(@usermsg).' chars')
+					discord_broadcast(@channel, associative_array(content: 'f'))
+				#	discord_broadcast(@channel, associative_array(content: @usermsg))
+				}
+			}
+			if(@usewritefile == true) {
+				#msg(@filearray)
+				store_value('server.Discord.roles.directory', @filearray)
+				try (	
+					x_write('directory.txt', array_implode(@filearray, ''), OVERWRITE)  
+				,@fail,
+					msg('File not written, as it does not work in-game')
+				)
 			}
 		}
 		tmsg(@player, @prefix.'List Update: Part 4 Success! Please wait for Discord Rate-limiting to catch up with the messages spam.')
@@ -261,3 +309,13 @@ embed list?
 
 */
 <<<
+
+/*
+ for adding roles:
+ -get current roles @memberroles = get_value (members.roles)
+ -add new roles to array 
+ if(array_contains(@memberroles[memberid], roleid) continue()
+ array_push(@memberroles[memberid], role) loop
+ -set roles (@memberroles[memberid])
+ -save new array (store_value members.roles[memberid])
+ */
