@@ -46,7 +46,7 @@ if(array_size(@args) > 0) {
 # Non-Player Arguments provided
 	@newmode = 'Unset'
 	foreach(@k: @v in @args) {
-		if(reg_count('^[Ww]', @v) > 0) { 
+		if(reg_count('^[WwPpIiGg]', @v) > 0) { 
 			@gmpinv = get_value(@name.'player.'.puuid(player(), 'dashless').'.mode.inv')
 			if(!is_array(@gmpinv)) { @gmpinv = array('use': false, 'SURVIVAL': array(), 'CREATIVE': array(), 'ADVENTURE': array(), 'SPECTATOR': array()) }
 			if(@gmpinv['use'] == true) {
@@ -90,7 +90,7 @@ if(array_size(@args) > 0) {
 
 # mode lock/unlock - lock out other players and yourself from changing your game mode. Does not survive reboots by design for now.
 if(import(@name.'.player.'.puuid(@user['name'], 'dashless').'.lock') == true) {
-	die(color('d').'['.color(9).@name.color('d').'] '.color('5').'This player has requested that the server does not change their gamemode.')
+	die(color('d').'['.color(9).@name.color('d').'] '.color('5').'This player has requested to not change their gamemode.')
 }
 
 #World based permission
