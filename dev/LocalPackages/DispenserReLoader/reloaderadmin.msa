@@ -9,7 +9,6 @@
 admin:/reloaderadmin [$action] [$option1] [$option2] [$option3] [$] = >>>
 #Include required backend functions
 include('includes.library/reload-functions-Core.ms')
-#what is the name of this script?
 assign(@name, string(import('dispenserreloader.name')))
  
 @action = to_lower($action)
@@ -18,7 +17,6 @@ assign(@name, string(import('dispenserreloader.name')))
 @option3 = $option3
 @player = _reloader_getplayerID(player())
 assign(@dev, import('ch.player.'.@player['id'].'.dev.scripts.reload'))
- 
  
 set_uncaught_exception_handler(closure(@ex){
 	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
@@ -38,7 +36,6 @@ set_uncaught_exception_handler(closure(@ex){
 	return(true)
 });
  
- 
 proc _reloader_help() {
 	assign(@name, string(import('dispenserreloader.name')))
 	msg(color(6).'ReLoad admin help:')
@@ -52,7 +49,6 @@ proc _reloader_help() {
 	msg(color(7).'/reloaderadmin default item <type/qty/fuel> <value>'.color(4).' - '.color('f').'Allows you to set the server\'s default item type and quantity, or default item to use as fuel in Fuel mode. Use \'clear\' as the value to reset to script defaults.')
 }
  
-
 switch(@action){
 
 case 'throw':
@@ -67,21 +63,36 @@ case '/?':
 case 'version':
 case 'build':
 case 'info':
+	#Due to different extension names checking for functionality instead.
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).@name.' Version: '.import('dispenserreloader.version'))
-	msg(color(7).'['.color(6).@name.color(7).'] '.color('d').'Dependencies:')
-	#SKcompat - worldedit
-	if(extension_exists('SKCompat')) {
-		msg(color(7).'['.color(6).@name.color(7).'] '.color('e').'SKCompat: '.color('a').'Installed'.color(7).' (Version: '.extension_info('SKCompat')['version'].')')
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(1).'Required Extensions:')
+	#Area mode: uses WordlEdit selection data.
+	if(function_exists('sk_pos1')) {
+		foreach(@extname: @extinfo in extension_info()) {
+			if(array_contains(@extinfo['functions'], 'sk_pos1')) {
+				@ext = @extname
+				@extver = @extinfo['version']
+				break()
+			}
+		}
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(9).'Area Selection: '.color('a').@ext.color(7).' (Version: '.@extver.')')
 	} else {
-		msg(color('c').'['.color(7).@name.color('c').'] '.color('e').'SKCompat: '.color('c').'NOT Installed'.color(7).' Missing access to WorldEdit selection!  Area mode will be disabled without access to selection data.')
+		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').@name.' is missing access to WorldEdit selections!'.color(7).' Area mode is disabled without access to selection data.')
 		msg(color(3).'Download the SKCompat extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
 		msg('\n'.moo(color(2).'https://letsbuild.net/jenkins/job/SKCompat/'.color('r')))
 	}
-	#CHVault - economy
-	if(extension_exists('CHVault') || function_exists('acc_add')) {
-		msg(color(7).'['.color(6).@name.color(7).'] '.color('e').'CHVault: '.color('a').'Installed'.color(7).' (Version: '.extension_info('CHVault')['version'].')')
+	#Economy - Charges fees for usage of script
+	if(function_exists('acc_add')) {
+		foreach(@extname: @extinfo in extension_info()) {
+			if(array_contains(@extinfo['functions'], 'acc_add')) {
+				@ext = @extname
+				@extver = @extinfo['version']
+				break()
+			}
+		}
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(9).'Economy: '.color('a').@ext.color(7).' (Version: '.@extver.')')
 	} else {
-		msg(color('c').'['.color(7).@name.color('c').'] '.color('e').'CHVault: '.color('c').'NOT Installed'.color(7).' Missing access to Vault! '.@name.' is unable to access economy account data.')
+		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').@name.' is missing access to economy functions and account data!'.color(7).'All script functions will be unable to utilize your server economy!!')
 		msg(color(3).'Download the CHVault extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
 		msg('\n'.moo(color(2).'https://letsbuild.net/jenkins/job/CHVault/'.color('r')))
 	}

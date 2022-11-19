@@ -544,8 +544,8 @@ case '-a':
 	if(has_permission(@player['name'], 'commandhelper.alias.reloader.area')) {
 		assign(@world, pworld(@player['name']))
 		# Area mode requires an extension to access WorldEdit selection data.
-		if(extension_exists('SKCompat') == true || extension_exists('CHWorldEdit') == true) { @extok = true } else { @extok = false }
-		include('includes.library/reload-functions-Area-'.@extok.'.ms')
+		#SKCompat available in multiple versions, checking for functionality instead.
+		include('includes.library/reload-functions-Area-'.function_exists('sk_pos1').'.ms')
 
 	  # Get the player's area mode
 		assign(@areamode, get_value(@name.'.player.'.@player['id'].'.area.mode'))

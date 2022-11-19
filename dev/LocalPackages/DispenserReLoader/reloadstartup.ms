@@ -19,15 +19,16 @@ include('includes.library/reload-functions-Core.ms')
 _reloader_get_server_defaults('startup')
 
 #Startup extension check.
-#SKcompat - worldedit
-if(!extension_exists('SKCompat') || !extension_exists('CHWorldEdit') || !function_exists('sk_pos1')) {
-	msg(color('c').'['.color(7).import('dispenserreloader.name').color('c').'] '.color('e').'SKCompat: '.color('c').'NOT Installed'.color(7).' Missing access to WorldEdit selection!  Area mode will be disabled without access to selection data.')
+#Area mode: uses WordlEdit selection data.
+	#SKCompat available in multiple versions; best to check for functionality instead.
+if(!function_exists('sk_pos1')) {
+	msg(color('c').'['.color(7).import('dispenserreloader.name').color('c').'] '.color('c').import('dispenserreloader.name').' is missing access to WorldEdit selections!'.color(7).' Area mode is disabled without access to selection data.')
 	msg(color(3).'Download the SKCompat extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
 	msg('\n'.moo(color(2).'https://letsbuild.net/jenkins/job/SKCompat/'.color('r')))
 }
-#CHVault - economy
-if(!extension_exists('CHVault') || !function_exists('acc_add')) {
-	msg(color('c').'['.color(7).import('dispenserreloader.name').color('c').'] '.color('e').'CHVault: '.color('c').'NOT Installed'.color(7).' Missing access to Vault! '.import('dispenserreloader.name').' is unable to access economy account data.')
+#Economy - Charges fees for usage of script
+if(!function_exists('acc_add')) {
+	msg(color('c').'['.color(7).import('dispenserreloader.name').color('c').'] '.color('c').import('dispenserreloader.name').' is missing access to economy functions and account data!'.color(7).' All script functions will be unable to utilize your server economy!')
 	msg(color(3).'Download the CHVault extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
 	msg('\n'.moo(color(2).'https://letsbuild.net/jenkins/job/CHVault/'.color('r')))
 }
