@@ -35,4 +35,24 @@ bind('player_join', array(id: 'cypher139.login'), null, @login) {
 	}
 	store_value('primus.database.UUID', @uuiddata)
 	export('primus.database.UUID', @uuiddata)
+		
+	#Setup Player IP Database
+	@ipdata = import('primus.database.IP')
+	#entry found	
+	@ipnumbers = reg_replace('\\.*:*', '', pinfo(@player)[3])
+	if(array_index_exists(@ipdata, @ipnumbers)) {
+		#IP entry found
+		if(array_contains(@ipdata[@ipnumbers], @player)) {
+			#both IP and player found
+			msg(color('a').'Welcome back'.color(7).' to the server, glad you are here!')
+		} else {
+			#IP entry found, but player not found
+			array_push(@ipdata[@ipnumbers], @player)
+		}
+	} else {
+		#IP entry not found
+		array_set(@ipdata, @ipnumbers, array(@player))
+	}
+	store_value('primus.database.IP', @ipdata)
+	export('primus.database.IP', @ipdata)
 }

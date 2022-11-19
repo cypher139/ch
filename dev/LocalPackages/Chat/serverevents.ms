@@ -31,8 +31,25 @@ bind('player_quit', array(id: 'Chat.Format.Quit'), null, @quit) {
 }
 
 bind('server_ping', array(id: 'Chat.Format.Ping'), null, @ping) {
-#Include required backend functions
-include('includes.library/chatfunctions.ms')
-	console(color(6).'['.color(9).'Notification'.color(6).'] '.color(7).'Received ping from '.@ping['ip'], false)
-	modify_event('motd', _rainbow(@ping['motd'], 'doubles'))
+	#Include required backend functions
+	include('includes.library/chatfunctions.ms')
+	
+	modify_event('motd', _rainbow(@ping['motd'], 'words'))
+	
+	#Get playername from IP database
+	@ipdata = import('primus.database.IP')
+	@msgdisplay = ''
+	if(is_array(@ipdata)) {
+		#entry found	
+		@ipnumbers = reg_replace('\\.*:*', '', @ping['ip'])
+		if(array_index_exists(@ipdata, @ipnumbers)) {
+			if(array_size(@ipdata[@ipnumbers]) == 1) {
+				@players = array_implode(@ipdata[@ipnumbers], ', ')
+			} else {
+				@players = array_implode(@ipdata[@ipnumbers], ', ')
+			}
+			@msgdisplay = color(3).@players.color(7)
+		}
+	}
+	console(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from '.@ping['ip'].' ('.@msgdisplay.')', false)
 }

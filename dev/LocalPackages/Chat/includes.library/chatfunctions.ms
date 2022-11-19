@@ -80,49 +80,55 @@ proc _getnick(@player) {
 	
 
 proc _rainbow(@msg, @type) {
-#fabulous light colors: 6abcdef
-	if(@msg == '', return(color(c).'You didn\'t say anything!!'))
-	assign(@msg, strip_colors(@msg))
-	if(@type == '' || @type == null,
-		assign(@type, 'normal')
-	)
-#Standard Rainbow chat: This will select a new random color for every letter in the message.
-	if(@type == 'normal',
-		assign(@string, '')
-		for(assign(@i, 0), @i < length(@msg), @i++,
-			assign(@string, @string.'\u0026'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i, @i + 1))
-		)
-		return(@string)
-	)
+if(@msg == '') { return(color('c').'You didn\'t say anything!!') }
+assign(@msg, strip_colors(@msg))
+switch(@type) {
+	case 'all':
+		@colors = array(0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f')
+	case 'ps2':
+		@colors = array(3,7,8,9,'b','d','f')
+	case 'normal':
+	#Standard Rainbow chat: This will select a new random color for every letter in the message.
+	case 'doubles':
+	#selects a new random color for every other character in the message.
+	case 'words':
+	#selects a new random color for every word in the message.
+	default:
+	#fabulous light colors: 6abcdef
+		@colors = array(6,7,9,'a','b','c','d','e','f')
+}
+	@i = 0
+	@string = ''
+	@color = ''
+#if(@type != 'normal') {
+	foreach(@char in @msg) {
+	#words: need to change color on whitespace only, everyone else continue() if punctuation / spaces, as don't need to colorize those.
+		if(@type == 'words') { @regc = '\\S' } else { @regc = '\\W' }
+		#not an approved color change character
+		if(reg_count(@regc, @char) > 0) {
+			@string =  @string.@char
+			continue()
+		}
+		#counter for actual characters encountered, for doubles
+		@i++
+		if(@type == 'doubles') {
+			if(_is_even_number(@i) == true) { @color = array_get_rand(@colors) }
+		} else {
+			@color = array_get_rand(@colors)
+		}
+		@string = @string.color(@color).@char
 
-#This selects a new random color for every other character in the message.
-	if(@type == 'doubles',
-		assign(@string, '')
-		for(assign(@i, 0), @i < length(@msg), @i++,
-			if(_is_even_number(@i) == true,
-				assign(@color, array(6,7,9,a,b,c,d,e,f)[rand(9)])
-			)
-			assign(@string, @string.color(@color).substr(@msg, @i, @i + 1))
-		)
-		return(@string)
-	)
-
-
-#This uses all the minecraft colors, not just specific colors.
-	if(@type == 'all',
-		assign(@string, '')
-		for(assign(@i, 0), @i < length(@msg), @i++,
-			assign(@string, @string.'\u0026'.array(0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f)[rand(16)].substr(@msg, @i, @i + 1))
-		)
-		return(@string)
-	)
+	}
+	return(@string)
 }
 
 
-#-----
+#fabulous light colors: 6abcdef
+#			assign(@string, @string.'\u0026'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i, @i + 1))
+
+
 
 #ichat +healthbar replacement
-
 proc _healthbar(@player, @char) {
 	if(@char == '' || @char == null, assign(@char, '|'))
 	assign(@phealth, pinfo(@player)[5])

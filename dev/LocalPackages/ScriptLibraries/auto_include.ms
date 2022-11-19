@@ -1,8 +1,13 @@
-#server startup: set database
+#server startup: set UUID and IP databases
 if(is_array(get_value('primus.database.UUID'))) {
 	export('primus.database.UUID', get_value('primus.database.UUID'))
 } else {
 	export('primus.database.UUID', array('testid': array(1, 5, 10)))
+}
+if(is_array(get_value('primus.database.IP'))) {
+	export('primus.database.IP', get_value('primus.database.IP'))
+} else {
+	export('primus.database.IP', array(1000123: array('test')))
 }
 
 # String Capitalization or underscore removal features
