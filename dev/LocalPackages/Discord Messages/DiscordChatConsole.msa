@@ -4,13 +4,15 @@ if(player() != '~console') {
 	die('Let the server console choose that setting!')
 }
 
-@consolerc = import('Chat.Discord.Console.receive')
+@consolerc = get_value('Chat.Discord.Console.receive')
 
 if(@consolerc == false) {
 export('Chat.Discord.Console.receive', true)
-console('Console will now receive chat Messages from Discord Users, until the next restart', false)
+store_value('Chat.Discord.Console.receive', true)
+console('Console will now receive chat Messages from Discord Users.', false)
 } else {
 export('Chat.Discord.Console.receive', false)
-console('Console no longer receives chat Messages from Discord Users, until the next restart', false)
+store_value('Chat.Discord.Console.receive', false)
+console('Console no longer receives chat Messages from Discord Users.', false)
 }
 <<<

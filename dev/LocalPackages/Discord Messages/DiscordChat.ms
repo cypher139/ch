@@ -10,6 +10,13 @@ export('Chat.Discord.Console.receive', false)
 #Prerequisites
 discord_connect('discordCredentials', closure(){
 	broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Now Connected to Discord');
+	if(get_value('Chat.Discord.Console.receive') == true) {
+		export('Chat.Discord.Console.receive', true)
+		console('[Chat] Console will now receive chat Messages from Discord Users.', false)
+	} else {
+		export('Chat.Discord.Console.receive', false)
+		console('[Chat] Console no longer receives chat Messages from Discord Users.', false)
+	}
 #	discord_set_activity('DEFAULT', string('Minecraft'));
 })
 

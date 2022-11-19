@@ -47,7 +47,7 @@ if(array_size(@args) > 0) {
 	@newmode = 'Unset'
 	foreach(@k: @v in @args) {
 		if(reg_count('^[GgIiPpWw]', @v) > 0) { 
-			@gmpinv = get_value(@name.'player.'.puuid(player(), 'dashless').'.mode.inv')
+			@gmpinv = get_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv')
 			if(!is_array(@gmpinv)) { @gmpinv = array('use': false, 'SURVIVAL': array(), 'CREATIVE': array(), 'ADVENTURE': array(), 'SPECTATOR': array()) }
 			if(@gmpinv['use'] == true) {
 				@gmpinv['use'] = false
@@ -56,7 +56,7 @@ if(array_size(@args) > 0) {
 				@gmpinv['use'] = true
 				msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Upon game mode change your inventory will be set to the inventory for that game mode.')
 			}
-		store_value(@name.'player.'.puuid(player(), 'dashless').'.mode.inv', @gmpinv)
+		store_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv', @gmpinv)
 		die()
 		}
 		if(reg_count('^[Aa]', @v) > 0) { @newmode = 'Adventure' }
@@ -144,25 +144,32 @@ if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
 }
 <<<
 
+#
+##-------Admin: Bypass mode lock-------##
+#
+
 admin:/admingm [$] = >>>
-assign(@name, 'gameMode')
-@args = parse_args($)
-@playerfound = false
+@name = 'gameMode'
+@user = null
 if(!has_permission('commandhelper.alias.shiftmode.others')) { die(color('c').'['.color(8).@name.color('c').'] '.color('c').'You do not have permission to change other player\'s gamemodes!') }
-foreach(@k: @v in @args) {
+foreach(@k: @v in parse_args($)) {
 	if(array_contains_ic(all_players(), @v)) {
 		@user = @v
-		@playerfound = true
 	}
 }
-if(@playerfound != true) {
+if(@user == null) {
 	die(color('c').'['.color(8).@name.color('c').'] '.color('c').'Specify a valid player name!')
 }
-if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
-	export(@name.'.player.'.puuid(@user, 'dashless').'.lock', false)
-	call_alias(/mode $)
-	export(@name.'.player.'.puuid(@user, 'dashless').'.lock', true)
+@useruuid = puuid(@user, 'dashless')
+if(import(@name.'.player.'.@useruuid.'.lock') == true) {
+	if(has_permission(player(), 'commandhelper.alias.shiftmode.lock.bypass')) {
+		export(@name.'.player.'.@useruuid.'.lock', false)
+		call_alias(/mode $)
+		export(@name.'.player.'.@useruuid.'.lock', true)
+	} else {
+		die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change other player\'s gamemodes!')
+	}
 } else {
-	die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+	call_alias(/mode $)
 }
 <<<

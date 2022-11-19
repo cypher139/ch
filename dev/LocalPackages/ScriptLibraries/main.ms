@@ -10,12 +10,12 @@ bind('player_join', array(id: 'cypher139.login'), null, @login) {
 	if(!is_array(@ds)) { @ds = array() }
 	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
 	#Older scripts / blanket enable/Disable.
-	export('ch.player.'.@uuid.'.developer', @dsall)
+	export('ch.player.'.@puuid.'.developer', @dsall)
 	#Newer scripts, look for ...scripts.scriptname
 	foreach(@script in @ds) {
-		export('ch.player.'.@uuid.'.dev.scripts.'.@script, true)
+		export('ch.player.'.@puuid.'.dev.scripts.'.@script, true)
 	}
-	export('ch.player.'.@uuid.'.dev.scripts', @ds)
+	export('ch.player.'.@puuid.'.dev.scripts', @ds)
 
 #Rei's minimap: Enable radar for everything, and cavemapping.
 # Uncomment to use
