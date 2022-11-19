@@ -107,6 +107,7 @@ if(array_size(@args) > 0) {
 			}
 			if(array_contains(@ds, @arg)) {
 				array_remove_values(@ds, @arg)
+				export('ch.player.'.@uuid.'.dev.scripts.'.@arg, false)
 				msg(@prefix.color('f').'Developer messages are '.color('c').'disabled'.color('f').' for script: '.@arg)
 			} else {
 				array_push(@ds, @arg)

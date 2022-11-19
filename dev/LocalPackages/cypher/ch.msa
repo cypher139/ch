@@ -42,7 +42,6 @@ proc(_ch_help,
 	msg(color(7).'/ch death <player> <deathtype> [deathmsg]'.color(4).' - '.color('f').'Random death messages on demand!')
 	msg(color(7).'/ch verbose'.color(4).' - '.color('f').'Turns on/off "verbose": extra messages in scripts that primarily might be considered spam, hence a option to enable/disable them.')
 	msg(color(7).'/ch dev'.color(4).' - '.color('f').'Turns on/off "dev": developer messages in scripts primarily used in debugging.')
-	msg(color(7).'/ch code [codelength]'.color(4).' - '.color('f').'Give a randomly generated code. defaults to a code 7 characters in length, unless you specify something else.')
 	msg(color(7).'/ch export <value> <data>'.color(4).' - '.color('f').'Stores the data into the specified value into ch\'s memory persistance, that will be lost on server reboot. FOR DEBUG USE ONLY.')
 	msg(color(7).'/ch import <value>'.color(4).' - '.color('f').'Gets the specified value from ch\'s memory persistance.')
 	msg(color(7).'/ch extfunctions'.color(4).' - '.color('f').'Shows available Extension Events and Functions.')
@@ -211,12 +210,6 @@ case 'verbose':
 		die(@prefix.color('a').'Enabled! '.color(7).'Verbose messages are enabled! If the script you use supports displaying extra messages using a global value, they will be displayed.')
 	)
 
-case 'code':
-case 'codegen':
-	assign(@code, _codegen(@option1, @option2, $))
-	msg(@prefix.color(7).'A random generated code:')
-	msg(@code)
-
 case 'dev':
 case 'devmsg':
 	call_alias(/devmsg $option1 $option2 $)
@@ -251,12 +244,19 @@ case 'ext':
 		if(@key == 'Core') { continue() }
 		msg(@prefix.color(3).@key.' '.color(7).'( Version: '.@word['version'].' )')
 	}   
-case 'test':
+case 'player':
 #	msg(vault_pgroup(@player, prefix))
 #	msg(to_lower('50'))
-	msg(puuid(@option1, 'dashless'))
-case 'test2':
-	msg(player(@option1))
+	try(
+		msg(puuid(@option1, 'dashless'))
+	,@fail, 
+		msg('no puuid()')
+	)
+	try( 
+		msg(player(@option1))
+	,@fail, 
+		msg('no player()')
+	)
 
 case 'randnumber':
 	assign(@rand, rand($option1, $option2))
@@ -273,7 +273,10 @@ case 'number':
 	msg(round($option1))
 
 case 'props':
-msg(ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties'))))
+	msg(@prefix.color(6).'Server.properties:')
+	msg(ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties'))))
+case 'isproc':
+	msg(@prefix.color(6).'is proc "'.@option1.'? '.color('d').is_proc(@option1))
 
 default:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')

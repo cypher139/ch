@@ -1,4 +1,4 @@
-#version 1.1-tmc
+#version 1.2-tmc
 bind('player_chat', array(id: 'Wish.granter.lolz', priority: 'LOW'), null, @chat) {
 
 	assign(@name, 'Wish')

@@ -299,17 +299,7 @@ default:
 	_help()
 }
 
-/*
-
-part 4: Messages
-
-allowed lsit of roles to messages
-
-embed list?
-
-*/
 <<<
-
 /*
  for adding roles:
  -get current roles @memberroles = get_value (members.roles)

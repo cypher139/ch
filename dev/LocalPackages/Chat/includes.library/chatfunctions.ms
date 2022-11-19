@@ -7,7 +7,7 @@ proc _chat_getplayerID(@option1) {
 	} else {
 	@pid['display'] = pinfo(@option1)[0];
 	@pid['name'] = pinfo(@option1)[0];
-	@pid['id'] = puuid(@option1, dashless);
+	@pid['id'] = puuid(@option1, 'dashless');
 	@pid['nick'] = pinfo(@option1)[4];
 	}
 	#Bedrock to Java players come in with name ".NAME", remove dot
