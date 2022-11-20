@@ -1,0 +1,16 @@
+everyone:/hbtest [$player] = >>>
+# Include required backend functions
+include('includes.library/chatfunctions.ms')
+@player = $player
+if($player == '') { @player = player() }
+
+	assign(@hbmsg, _healthbar(@player))
+	msg(color(7).@player.' healthbar:')
+	msg(@hbmsg)
+	msg(pinfo(@player)[5])
+	msg(integer(pinfo(@player)[5]))
+	@phealth = integer(pinfo(@player)[5])
+	@phealthodd = ceil(@phealth / 2)
+	msg(ceil(@phealth / 2))
+
+<<<

@@ -9,69 +9,34 @@ assign(@name, 'Rainbow')
 include('includes.library/chatfunctions.ms')
 assign(@player, _chat_getplayerID(player()))
 
-if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'), null,
-	die(color('c').'['.color(7).'Rainbow'.color('c').'] '.color('c').'You do not have permission to use Rainbow chat!')
-)
+if(!has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow')) {
+	die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You do not have permission to use Rainbow chat!')
+}
+if($ == '') { die(color('c').'['.color(7).@name.color('c').'] '.'You didn\'t say anything!!') }
+@msg = strip_colors($)
 
-if($ == '', die(color('c').'You didn\'t say anything!!'))
-assign(@msg, strip_colors($))
-
-	assign(@string, _rainbow(@msg, 'normal'))
-	if(player() == '~console',
-		broadcast(@string)
-		,
-		export(@name.'.player.'.@player['id'].'.rainbow.cmd', true)
-		chat(@string)
-	)
+#get saved chat type
+@usertype = import(@name.'.player.'.@player['id'].'.rainbow.type')
+if(@usertype != '' || @usertype != null) {
+	@chattype = 'normal'
+} else {
+	@chattype = @usertype
+}
+#override with type specified
+if(reg_count('^[-][adwnp][los].*[ls2]$', to_lower(parse_args(@msg)[0])) > 0) {
+	@msg = parse_args(@msg)
+	@chattype = to_lower(reg_replace('-', '', @msg[0]))
+	array_remove(@msg, 0)
+	@msg = array_implode(@msg, ' ')
+}
+#chat:
+if(player() == '~console') {
+	broadcast(_rainbow(@msg, @chattype))
+} else {
+	export('Chat.player.'.@player['id'].'.chat.rainbow.cmd', true)
+	chat(_rainbow(@msg, @chattype, 'chat'))
+}
 <<<
-
-#This selects a new random color for every other character in the message.
-everyone:/rsay2 [$] = >>>
-assign(@name, 'Rainbow')
-# Include required backend functions
-include('includes.library/chatfunctions.ms')
-assign(@player, _chat_getplayerID(player()))
-
-if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'), null,
-	die(color('c').'['.color(7).'Rainbow'.color('c').'] '.color('c').'You do not have permission to use Rainbow chat!')
-)
-
-if($ == '', die(color('c').'You didn\'t say anything!!'))
-assign(@msg, strip_colors($))
-
-	assign(@string, _rainbow(@msg, 'doubles'))
-	if(player() == '~console',
-		broadcast(@string)
-		,
-		export(@name.'.player.'.@player['id'].'.rainbow.cmd', true)
-		chat(@string)
-	)
-<<<
-
-
-#This uses all the minecraft colors, not just specific colors.
-everyone:/rsayall [$] = >>>
-assign(@name, 'Rainbow')
-# Include required backend functions
-include('includes.library/chatfunctions.ms')
-assign(@player, _chat_getplayerID(player()))
-
-if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'), null,
-	die(color('c').'['.color(7).'Rainbow'.color('c').'] '.color('c').'You do not have permission to use Rainbow chat!')
-)
-
-if($ == '', die(color('c').'You didn\'t say anything!!'))
-assign(@msg, strip_colors($))
-
-	assign(@string, _rainbow(@msg, 'all'))
-	if(player() == '~console',
-		broadcast(@string)
-		,
-		export(@name.'.player.'.@player['id'].'.rainbow.cmd', true)
-		chat(@string)
-	)
-<<<
-
 
 everyone:/rainbow [$action] [$option1] [$] = >>>
 #toggle rainbow chat on/off
@@ -110,7 +75,7 @@ if(@action == 'toggle',
 		store_value(@name.'.player.'.@player['id'].'.rainbow.type', 'doubles')
 		export(@name.'.player.'.@player['id'].'.rainbow.toggle', true)
 		export(@name.'.player.'.@player['id'].'.rainbow.type', 'doubles')
-		assign(@successmsg, color(7).'['.color('gold').@name.color(7).'] '.color('d')._rainbow('Automatic rainbow chat is now enabled!', doubles).color('a').' Your chat will be like the colors of the rainbow now!')
+		assign(@successmsg, color(7).'['.color('gold').@name.color(7).'] '.color('d')._rainbow('Automatic rainbow chat is now enabled!', 'doubles').color('a').' Your chat will be like the colors of the rainbow now!')
 	)
 	die(@successmsg)
 )

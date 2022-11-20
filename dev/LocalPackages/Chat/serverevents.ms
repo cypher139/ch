@@ -48,8 +48,8 @@ bind('server_ping', array(id: 'Chat.Format.Ping'), null, @ping) {
 			} else {
 				@players = array_implode(@ipdata[@ipnumbers], ', ')
 			}
-			@msgdisplay = color(3).@players.color(7)
+			@msgdisplay = ' ('.color(3).@players.color(7).')'
 		}
 	}
-	console(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from '.@ping['ip'].' ('.@msgdisplay.')', false)
+	console(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from '.@ping['ip'].@msgdisplay, false)
 }

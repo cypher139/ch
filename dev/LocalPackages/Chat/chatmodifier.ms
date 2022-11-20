@@ -1,6 +1,6 @@
 #Export values, to allow for less database calls.
-export('chat.format.groups', get_value('chat.format.groups'))
-export('chat.format.options', get_value('chat.format.options'))
+export('Chat.format.groups', get_value('Chat.format.groups'))
+export('Chat.format.options', get_value('Chat.format.options'))
 
 
 export('chatmodifier.name', 'Chat')
@@ -28,11 +28,11 @@ include('includes.library/chatfunctions.ms')
 	)
 	assign(@groupinfokeys, array_keys(@groupinfo))
 	if(!array_contains_ic(@groupinfokeys, @group),
-		assign(@groupinfo[@group], array(namecolor: '', showhealth: '', usercolor: '', chatcolor: '', nickname: ''))
+		assign(@groupinfo[@group], array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': ''))
 	)
 	assign(@chatoptions, import(@name.'.format.options'))
 	if(@chatoptions == '' || @chatoptions == null || is_array(@chatoptions) == false,
-		assign(@chatoptions, array(colorize: '', randcolor: '', capitalizechat: '', capitalizegroupname: ''))
+		assign(@chatoptions, array('colorize': '', 'randcolor': '', 'capitalizechat': '', 'capitalizegroupname': ''))
 	)
     #Defaults
 	if(@groupinfo[@group]['showhealth'] == '' || @groupinfo[@group]['showhealth'] == null, assign(@groupinfo[@group]['showhealth'], true))
@@ -60,44 +60,44 @@ include('includes.library/chatfunctions.ms')
 	
 	#User options
     #User's name color
-	assign(@namecolor, import(@player['id'].'.chat.format.colors.username'))
+	assign(@namecolor, import(@name.'.player.'.@player['id'].'.chat.format.colors.username'))
 	if(@namecolor == '' || @namecolor == null,
 		#first chat, values not loaded
-		assign(@namecolor, get_value(@player['id'].'.chat.format.colors.username'))
-		export(@player['id'].'.chat.format.colors.username', @namecolor)
+		assign(@namecolor, get_value(@name.'.player.'.@player['id'].'.chat.format.colors.username'))
+		export(@name.'.player.'.@player['id'].'.chat.format.colors.username', @namecolor)
 	)
 	#if no value set, this will set the group's color.
 	if(@namecolor == '' || @namecolor == null,
 		assign(@namecolor, @groupinfo[@group]['usercolor'])
 	)
     #User's chat color
-	assign(@chatcolor, import(@player['id'].'.chat.format.colors.chat'))
+	assign(@chatcolor, import(@name.'.player.'.@player['id'].'.chat.format.colors.chat'))
 	if(@chatcolor == '' || @chatcolor == null,
 		#first chat, values not loaded
-		assign(@chatcolor, get_value(@player['id'].'.chat.format.colors.chat'))
-		export(@player['id'].'.chat.format.colors.chat', @chatcolor)
+		assign(@chatcolor, get_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat'))
+		export(@name.'.player.'.@player['id'].'.chat.format.colors.chat', @chatcolor)
 	)
 	#if no value set, this will set the group's color.
 	if(@chatcolor == '' || @chatcolor == null,
 		assign(@chatcolor, @groupinfo[@group]['chatcolor'])
 	)
     #Colorize user chat?
-	assign(@colorize, import(@player['id'].'.chat.format.colorize'))
+	assign(@colorize, import(@name.'.player.'.@player['id'].'.chat.format.colorize'))
 	if(@colorize == '' || @colorize == null,
 		#first chat, values not loaded
-		assign(@colorize, get_value(@player['id'].'.chat.format.colorize'))
-		export(@player['id'].'.chat.format.colorize', @colorize)
+		assign(@colorize, get_value(@name.'.player.'.@player['id'].'.chat.format.colorize'))
+		export(@name.'.player.'.@player['id'].'.chat.format.colorize', @colorize)
 	)
 	#if no value set, this will load the global default.
 	if(@colorize == '' || @colorize == null,
 		assign(@colorize, @chatoptions['colorize'])
 	)
     #Capitalize user chat?
-	assign(@capitalizechat, import(@player['id'].'.chat.format.capitalize'))
+	assign(@capitalizechat, import(@name.'.player.'.@player['id'].'.chat.format.capitalize'))
 	if(@capitalizechat == '' || @capitalizechat == null,
 		#first chat, values not loaded
-		assign(@capitalizechat, get_value(@player['id'].'.chat.format.capitalize'))
-		export(@player['id'].'.chat.format.capitalize', @capitalizechat)
+		assign(@capitalizechat, get_value(@name.'.player.'.@player['id'].'.chat.format.capitalize'))
+		export(@name.'.player.'.@player['id'].'.chat.format.capitalize', @capitalizechat)
 	)
 	#if no value set, this will load the global default.
 	if(@capitalizechat == '' || @capitalizechat == null,
@@ -106,29 +106,29 @@ include('includes.library/chatfunctions.ms')
 	
 	
     #Toggle Rainbow chat
-	assign(@rtoggle, import(@player['id'].'.chat.rainbow.toggle'))
+	assign(@rtoggle, import(@name.'.player.'.@player['id'].'.chat.rainbow.toggle'))
 	if(@rtoggle == '' || @rtoggle == null,
 		#first chat, values not loaded
-		assign(@rtoggle, get_value(@player['id'].'.chat.rainbow.toggle'))
-		export(@player['id'].'.chat.rainbow.toggle', @rtoggle)
+		assign(@rtoggle, get_value(@name.'.player.'.@player['id'].'.chat.rainbow.toggle'))
+		export(@name.'.player.'.@player['id'].'.chat.rainbow.toggle', @rtoggle)
 	)
-	if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'), null, assign(@rtoggle, false))
-	assign(@rtype, import(@player['id'].'.chat.rainbow.type'))
+	if(!has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow')) { @rtoggle = false }
+	assign(@rtype, import(@name.'.player.'.@player['id'].'.chat.rainbow.type'))
 	if(@rtype == '' || @rtype == null,
 		#first chat, values not loaded
-		assign(@rtype, get_value(@player['id'].'.chat.rainbow.type'))
-		export(@player['id'].'.chat.rainbow.type', @rtype)
+		assign(@rtype, get_value(@name.'.player.'.@player['id'].'.chat.rainbow.type'))
+		export(@name.'.player.'.@player['id'].'.chat.rainbow.type', @rtype)
 	)
-	assign(@rcmd, import(@player['id'].'.chat.rainbow.cmd'))
+	assign(@rcmd, import(@name.'.player.'.@player['id'].'.chat.rainbow.cmd'))
 	if(@rtype == '' || @rtype == null, assign(@rtype, 'normal'))
 	if(@rcmd == '' || @rcmd == null, assign(@rcmd, false))
-	if(@rtoggle == true && @rcmd == false, 
+	if(@rtoggle == true && @rcmd == false) {	
 		assign(@colorize, false)
 		assign(@say, _rainbow(@chat['message'], @rtype))
-	,
+	} else {
 		assign(@say, @chat['message'])
-		export(@player['id'].'.chat.rainbow.cmd', false)
-	)
+		export(@name.'.player.'.@player['id'].'.chat.rainbow.cmd', false)
+	}
 
     #Translate color codes into actual colors?
 	if(@colorize == true,
