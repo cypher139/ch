@@ -42,7 +42,7 @@ proc _capitalize(@string) {
 #	return(@newstring)
 #)
 
-proc(_getplayer, @name,
+proc _getplayer(@name) {
 	assign(@chars, length(@name))
 #returns the real player's name
 	assign(@isfound, false)
@@ -68,7 +68,7 @@ proc(_getplayer, @name,
 			return(pinfo(@name)[0])
 		)
 	)
-)
+}
 
 proc _getnick(@player) {
 	
@@ -148,7 +148,7 @@ proc _rainbow(@msg, @type, @returntype) {
 #ichat +healthbar replacement
 proc _healthbar(@player, @fchar, @echar) {
 	if(@fchar == '' || @fchar == null) { @fullchar = '|' } else { @fullchar = @fchar }
-	if(@echar == '' || @echar == null) { @emptychar = '|' } else { @emptychar = @echar }
+	if(@echar == '' || @echar == null) { @emptychar = '.' } else { @emptychar = @echar }
 	@mchar = ':'
 	if(is_numeric(@player)) { @phealth = @player } else { @phealth = ceil(pinfo(@player)[5]) }
 	@phealthodd = ceil(@phealth / 2)

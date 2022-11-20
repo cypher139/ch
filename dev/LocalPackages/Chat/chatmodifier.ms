@@ -10,11 +10,11 @@ export('chatmodifier.version', '0.9-tmc')
 bind('player_chat', array(id: 'Chat.formatter'), null, @chat) {
 # Include required backend functions
 include('includes.library/chatfunctions.ms')
-	assign(@name, import('chatmodifier.name'))
+	assign(@name, import('chatmodifier.name', 'Chat'))
 	assign(@player, _chat_getplayerID(player()))
 	assign(@group, pgroup(@player['name'])[0])
 	assign(@dev, import('ch.player.'.@player['id'].'.developer'))
-
+	@say = @chat['message']
 	set_uncaught_exception_handler(closure(@ex){
 		_msgAdmins(@player['name'].'\'s chat caused an exception!: '.@ex)
 		return(true)
@@ -107,11 +107,11 @@ include('includes.library/chatfunctions.ms')
 	
     #Toggle Rainbow chat
 	assign(@rtoggle, import(@name.'.player.'.@player['id'].'.chat.rainbow.toggle'))
-	if(@rtoggle == '' || @rtoggle == null,
+	if(@rtoggle == '' || @rtoggle == null) {
 		#first chat, values not loaded
 		assign(@rtoggle, get_value(@name.'.player.'.@player['id'].'.chat.rainbow.toggle'))
 		export(@name.'.player.'.@player['id'].'.chat.rainbow.toggle', @rtoggle)
-	)
+	}
 	if(!has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow')) { @rtoggle = false }
 	assign(@rtype, import(@name.'.player.'.@player['id'].'.chat.rainbow.type'))
 	if(@rtype == '' || @rtype == null,
@@ -119,25 +119,23 @@ include('includes.library/chatfunctions.ms')
 		assign(@rtype, get_value(@name.'.player.'.@player['id'].'.chat.rainbow.type'))
 		export(@name.'.player.'.@player['id'].'.chat.rainbow.type', @rtype)
 	)
-	assign(@rcmd, import(@name.'.player.'.@player['id'].'.chat.rainbow.cmd'))
+	assign(@rcmd, import(@name.'.player.'.@player['id'].'.chat.rainbow.cmd', false))
 	if(@rtype == '' || @rtype == null, assign(@rtype, 'normal'))
-	if(@rcmd == '' || @rcmd == null, assign(@rcmd, false))
-	if(@rtoggle == true && @rcmd == false) {	
-		assign(@colorize, false)
-		assign(@say, _rainbow(@chat['message'], @rtype))
-	} else {
-		assign(@say, @chat['message'])
-		export(@name.'.player.'.@player['id'].'.chat.rainbow.cmd', false)
+	if(@rtoggle == true) {
+		if(@rcmd == true) {	
+			assign(@say, @chat['message'])
+			export(@name.'.player.'.@player['id'].'.chat.rainbow.cmd', false)
+		} else {
+			assign(@colorize, false)
+			assign(@say, _rainbow(@chat['message'], @rtype))
+		}
 	}
 
     #Translate color codes into actual colors?
-	if(@colorize == true,
-		assign(@say, colorize(@say))
-	)
+	if(@colorize == true) { @say = colorize(@say) }
+
     #Capitalize the first letter in chat?
-	if(@capitalizechat == true,
-		assign(@say, _capitalize(@say))
-	)
+	if(@capitalizechat == true) { @say = _capitalize(@say) }
 
     #Finalize formatting
 	modify_event('format', @hb.color(7).'('.color(@groupinfo[@group]['namecolor']).@groupname.color(7).') '.color(7).'<'.color(@namecolor).pinfo(@player['name'])[4].color(7).'> '.color(@chatcolor).@say)

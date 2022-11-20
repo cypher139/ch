@@ -1,31 +1,75 @@
 #Rainbow chat!
-
+#version 1.1-tmc
 #todo? make actual rainbow colors, expanded to fit length(@msg) like ^0(...)
 
-#standard rainbow chat: this selects a new random color for every letter in the message.
-everyone:/rsay [$] = >>>
-assign(@name, 'Rainbow')
+everyone:/rainbow [$] = >>>
+@name = 'Rainbow'
+@chatname = import('chatmodifier.name', 'Chat')
 # Include required backend functions
 include('includes.library/chatfunctions.ms')
+assign(@args, parse_args($))
 assign(@player, _chat_getplayerID(player()))
+@prefix = color(7).'['.color(6).@name.color(7).'] '
 
-if(!has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow')) {
-	die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You do not have permission to use Rainbow chat!')
-}
+if(!has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow')) { die(color('c').'['.color(7).'Rainbow'.color('c').'] '.color('c').'You do not have permission to use Rainbow chat!') }
 if($ == '') { die(color('c').'['.color(7).@name.color('c').'] '.'You didn\'t say anything!!') }
 @msg = strip_colors($)
 
+#specify action
+@action = ''
+#toggle action
+if(reg_count('^[-\\/][Tt].*', @args[0]) > 0) {
+/*
+	@action = to_lower(reg_replace('[-\\/]', '', @msg[0]))
+	array_remove(@args, 0)
+	@msg = array_implode(@args, ' ')
+	*/
+	if(array_index_exists(@args, 1)) {
+		@settype = 'normal'
+		if(reg_count('^[Dd]', @args[1]) > 0) { @settype = 'doubles' }
+		if(reg_count('^[Nn]', @args[1]) > 0) { @settype = 'normal' }
+		if(reg_count('^[Aa]', @args[1]) > 0) { @settype = 'all' }
+		if(reg_count('^[Ww]', @args[1]) > 0) { @settype = 'words' }
+		if(reg_count('^[Pp]', @args[1]) > 0) { @settype = 'ps2' }
+
+		store_value(@chatname.'.player.'.@player['id'].'.chat.rainbow.toggle', true)
+		store_value(@chatname.'.player.'.@player['id'].'.chat.rainbow.type', @settype)
+		export(@chatname.'.player.'.@player['id'].'.chat.rainbow.toggle', true)
+		export(@chatname.'.player.'.@player['id'].'.chat.rainbow.type', @settype)
+		die(@prefix.color('d')._rainbow('Automatic rainbow chat is now enabled!', @settype).color('a').' Your chat will be like the colors of the rainbow now!')
+
+	} else {
+		if(get_value(@chatname.'.player.'.@player['id'].'.chat.rainbow.toggle') == true) {
+			store_value(@chatname.'.player.'.@player['id'].'.chat.rainbow.toggle', false)
+			export(@chatname.'.player.'.@player['id'].'.chat.rainbow.toggle', false)
+			die(@prefix.color('d'). 'Automatic rainbow chat is now disabled!')
+		} else {
+		#enable
+			store_value(@chatname.'.player.'.@player['id'].'.chat.rainbow.toggle', true)
+			export(@chatname.'.player.'.@player['id'].'.chat.rainbow.toggle', true)
+			die(@prefix.color('d')._rainbow('Automatic rainbow chat is now enabled!', import(@chatname.'.player.'.@player['id'].'.chat.rainbow.type', 'normal')).color('a').' Your chat will be like the colors of the rainbow now!')
+		}
+	}
+#	default:
+#		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'Invalid setting specified. '.color('r').'Leave blank for normal rainbow chat, or type \'-doubles\' to use doubles mode.')
+}	
+
+#No action? /say message
+#call_alias('/rsay '.@msg)
+
 #get saved chat type
-@usertype = import(@name.'.player.'.@player['id'].'.rainbow.type')
+@chattype = import(@chatname.'.player.'.@player['id'].'.chat.rainbow.type', 'normal')
+/*
 if(@usertype != '' || @usertype != null) {
 	@chattype = 'normal'
 } else {
 	@chattype = @usertype
 }
+*/
 #override with type specified
-if(reg_count('^[-][adwnp][los].*[ls2]$', to_lower(parse_args(@msg)[0])) > 0) {
+if(reg_count('^[-\\/][adwnp][los].*[ls2]$', to_lower(parse_args(@msg)[0])) > 0) {
 	@msg = parse_args(@msg)
-	@chattype = to_lower(reg_replace('-', '', @msg[0]))
+	@chattype = to_lower(reg_replace('[-\\/]', '', @msg[0]))
 	array_remove(@msg, 0)
 	@msg = array_implode(@msg, ' ')
 }
@@ -33,55 +77,9 @@ if(reg_count('^[-][adwnp][los].*[ls2]$', to_lower(parse_args(@msg)[0])) > 0) {
 if(player() == '~console') {
 	broadcast(_rainbow(@msg, @chattype))
 } else {
-	export('Chat.player.'.@player['id'].'.chat.rainbow.cmd', true)
+	export(@chatname.'.player.'.@player['id'].'.chat.rainbow.cmd', true)
 	chat(_rainbow(@msg, @chattype, 'chat'))
 }
 <<<
 
-everyone:/rainbow [$action] [$option1] [$] = >>>
-#toggle rainbow chat on/off
-assign(@name, 'Rainbow')
-# Include required backend functions
-include('includes.library/chatfunctions.ms')
-assign(@action, $action)
-assign(@option1, to_lower($option1))
-assign(@player, _chat_getplayerID(player()))
-
-
-if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'), null,
-	die(color('c').'['.color(7).'Rainbow'.color('c').'] '.color('c').'You do not have permission to use Rainbow chat!')
-)
-
-
-if(@action == 'toggle',
-	assign(@successmsg, color('red').'['.color('gold').@name.color('red').'] '.color('c').'Invalid setting specified. '.color('r').'Leave blank for normal rainbow chat, or type \'doubles\' to use doubles mode.')
-	if(@option1 == '' || @option1 == null,
-		assign(@oldvalue, get_value(@name.'.player.'.@player['id'].'.rainbow.toggle'))
-		if(@oldvalue == true,
-			store_value(@name.'.player.'.@player['id'].'.rainbow.toggle', false)
-			export(@name.'.player.'.@player['id'].'.rainbow.toggle', false)
-			assign(@successmsg, color(7).'['.color('gold').@name.color(7).'] '.color('d'). 'Automatic rainbow chat is now disabled!')
-		,
-		#enable
-			store_value(@name.'.player.'.@player['id'].'.rainbow.toggle', true)
-			store_value(@name.'.player.'.@player['id'].'.rainbow.type', 'normal')
-			export(@name.'.player.'.@player['id'].'.rainbow.toggle', true)
-			export(@name.'.player.'.@player['id'].'.rainbow.type', 'normal')
-			assign(@successmsg, color(7).'['.color('gold').@name.color(7).'] '.color('d')._rainbow('Automatic rainbow chat is now enabled!').color('a').' Your chat will be like the colors of the rainbow now!')
-		)
-	)
-	if(@option1 == 'doubles',
-		store_value(@name.'.player.'.@player['id'].'.rainbow.toggle', true)
-		store_value(@name.'.player.'.@player['id'].'.rainbow.type', 'doubles')
-		export(@name.'.player.'.@player['id'].'.rainbow.toggle', true)
-		export(@name.'.player.'.@player['id'].'.rainbow.type', 'doubles')
-		assign(@successmsg, color(7).'['.color('gold').@name.color(7).'] '.color('d')._rainbow('Automatic rainbow chat is now enabled!', 'doubles').color('a').' Your chat will be like the colors of the rainbow now!')
-	)
-	die(@successmsg)
-)
-
-
-#No action? /rsay
-assign(@string, @action @option1 $)
-call_alias('/rsay '.@string)
-<<<
+everyone:/rsay [$] = >>> call_alias('/rainbow' $) <<<

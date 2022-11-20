@@ -100,6 +100,7 @@ bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @d
 		@usernamecolor = 3
 		@rolecolors = import('Chat.Discord.Roles.colors')
 		@adminroles = import('Chat.Discord.Roles.admins')
+		@isAdmin = false
 		foreach(@role in @userroles) {
 			if(array_contains_ic(@adminroles, @role)) {
 				@isAdmin = true
