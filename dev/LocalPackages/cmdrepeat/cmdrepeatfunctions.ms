@@ -5,7 +5,6 @@ bind('player_command', array(id: 'cmdrepeat.cmd', priority: 'HIGH'), null, @cmde
 	@dev = import('ch.player.'.@player['id'].'.dev.scripts.cmdrepeat')
 	
 	#Automatically remove extra slashes not recognized by CH Aliases or Registered Commands.
-	if(@dev == true) { msg('o: '.@cmd[0]) }
 	# get_commands() is a huge array. sort into a single array:
 	@allcmds = import('cmdrepeat.all.commands')
 	if(!is_array(@allcmds)) {
@@ -20,6 +19,12 @@ bind('player_command', array(id: 'cmdrepeat.cmd', priority: 'HIGH'), null, @cmde
 	if(!is_alias(@cmd[0])) {
 		if(!array_contains(@allcmds, reg_replace('^\\/', '', @cmd[0]))) {
 			if(@dev == true) { msg('r') }
+		# Remove empty command slash
+			if(@cmd[0] == '/' && !array_index_exists(@cmd, 1)) {
+				if(@dev == true) { msg('r - "/"') }
+				cancel()
+				die()
+			}
 		# Space after slash check
 			if(reg_count('^\\/*$', @cmd[0]) > 0 && array_index_exists(@cmd, 1)) {
 			# added @cmd[1] check to allow for not calling WorldEdit's "//" command with extra arguments
