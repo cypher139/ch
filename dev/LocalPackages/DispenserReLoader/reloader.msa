@@ -243,57 +243,58 @@ case 'stats':
 case 'statistics':
 case 'stat':
 case 'st':
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player['display'])     
-	assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
-	assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
-	# Stop with 0/null stuff if the player hasn't actually done anything.
-	if(@atr == '' || @atr == null) {
-		if(@ttr == '' || @ttr == null) {
-			die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You haven\'t done anything with '.@name.'!')
-		}
-	}
-
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player['name']) 
 	msg(color(9).' -------')
-
+ 
+	@atr = get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area')
+	if(@atr == '' || @atr == null) { @atr = 0 }
+	@ttr = get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool')
+	if(@ttr == '' || @ttr == null) { @ttr = 0 }
+	# Stop with 0/null stuff if the player or server has not used the script.
+	if(@atr == 0 && @ttr == 0) { 	
+		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You have not used '.@name.'!') 
+	}
+	@tr = @atr + @ttr
+	if(@tr == '' || @tr == null) { @tr = 0 }
+	
 	msg(color(7).'All time '.@name.' runs:')
-	assign(@atr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area'))
-	if(@atr == '' || @atr == null, assign(@atr, 0))
 	msg(color(6).'/reload area: '.color('b')._reloader_number_commaize(@atr).' runs')
-	assign(@ttr, get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool'))
-	if(@ttr == '' || @ttr == null, assign(@ttr, 0))
 	msg(color(6).'/reload (tool): '.color('b')._reloader_number_commaize(@ttr).' runs')
+	msg(color(6).'Total '.@name.' runs: '.color('b')._reloader_number_commaize(@tr).' runs')
 	
 	msg(color(9).' -------')
-
+ 
 	assign(@fb, get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks'))
+	if(@fb == '' || @fb == null) { @fb = 0 }
 	msg(color(7).'Total blocks filled: '.color('b')._reloader_number_commaize(@fb))
 	
 	msg(color(9).' -------')
-
-	assign(@lr, get_value(@name.'.player.'.@player['id'].'.stats.last.run'))
-	msg(color(7).'Last run: '.color(6).@lr['action'].'.')
-	if(@lr['blocks'] == 1, assign(@p, 'block') assign(@p2, 'was'), assign(@p, 'blocks') assign(@p2, 'were'))
-	msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color(3)._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
-
+ 
+	@lr = get_value(@name.'.player.'.@player['id'].'.stats.last.run')
+	if(is_array(@lr)) {
+		if(array_index_exists(@lr, 'action')) {	
+			if(@viewplayer == false) { @lrpm = ', by '.@lr['player'].'.' } else { @lrpm = '.' }
+			msg(color(7).'Last run: '.color(6).@lr['action'].@lrpm)
+			if(@lr['blocks'] == 1) { assign(@p, 'block') assign(@p2, 'was') } else { assign(@p, 'blocks') assign(@p2, 'were') }
+			msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color('b')._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
+		}
+	}
 	msg(color(9).' -------')
-
-	assign(@playeritems, get_value(@name.'.player.'.@player['id'].'.stats.alltime.items'))
-	try(
-		msg(color(9).'Total items used to fill blocks:')
-		assign(@tiu, 0)
-		assign(@j, 0)
-		assign(@playeritemsi, array_keys(@playeritems))
-		foreach(@playeritems, @currentvar,
-				assign(@tiu, @tiu + @currentvar)
-				assign(@item, _reloader_item_name(@playeritemsi[@j]))
-				msg(color(3).@item['display'].': '.color(7)._reloader_number_commaize(@currentvar))
-				assign(@j, @j + 1)
-		)      
-		msg(color(9).'Total items used: '._reloader_number_commaize(@tiu))
-	,@fail,
-		msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'You haven\'t used '.@name.'!')
-	)
-
+ 
+	assign(@items, get_value(@name.'.player.'.@player['id'].'.stats.alltime.items'))
+	if(is_array(@items)) { 
+		msg(color(9).'Total items used to fill blocks:')	
+	} else {
+		@items = array()
+	}
+	@tiu = 0
+	foreach(@itemname: @itemqty in @items) {
+			@tiu = @tiu + @itemqty
+			msg(color(3)._reloader_item_name(@itemname)['display'].': '.color(7)._reloader_number_commaize(@itemqty))
+	} else {
+		die(color(7).'['.color(6).@name.color(7).'] '.color(7).'No blocks have been filled?! Try using /reload to refill your block inventories!')
+	}
+	msg(color(9).'Total items used: '._reloader_number_commaize(@tiu))
 	die(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
 # Bind/Unbind reload tool
 case 'managebind':
