@@ -217,6 +217,45 @@ proc _reloader_capitalize(@string, @lower, @u) {
 	}
 	return(@newstring)
 }
+
+proc _reloader_get_fuel_items(@option) {
+#no stairs, catches too many stone stairs
+#more are possible, intentional left out some types that have low usage times.
+	@allfuelitems = array('AZALEA', 'BAMBOO', 'BARREL', 'BLAZE_POWDER', 'BLAZE_ROD', 'COAL_BLOCK', 'BOOKSHELF', 'BOW', 'BOWL', 'CARTOGRAPHY_TABLE', 'CHARCOAL', 'CHEST', 
+	'COAL', 'COMPOSTER', 'CRAFTING_TABLE', 'CROSSBOW', 'DAYLIGHT_DETECTOR', 'DRIED_KELP_BLOCK', 'FISHING_ROD', 'FLETCHING_TABLE', 'JUKEBOX', 'LADDER', 'LAVA_BUCKET', 
+	'LECTERN', 'LOOM', 'MANGROVE_ROOTS', 'NOTE_BLOCK', 'SMITHING_TABLE', 'STICK', 'TRAPPED_CHEST', 'WOODEN_AXE', 'WOODEN_HOE', 'WOODEN_PICKAXE', 'WOODEN_SHOVEL', 'WOODEN_SWORD')
+
+	foreach(@k: @v in all_materials()) {
+	#3 and 4 letter words separated so as to not catch generic blocks that aren't usable. 'block' 'leaves' 'cake' 'fan' etc
+	# Overworld Log or Stripped Log 	15 - 300 ticks
+		if(reg_count('^.+[-_][L][O][G]', @v) > 0) {
+			array_push(@allfuelitems, @v)
+			continue()
+		}
+	# Any Wool 	5 - 100 ticks
+	# Overworld Wood or Stripped Wood 	15 - 300 ticks 	
+		if(reg_count('^.+[-_]WOO[DL]', @v) > 0) {
+			array_push(@allfuelitems, @v)
+			continue()
+		}
+	# Any Boat 	60 - 1200 ticks 
+	# Any Boat with Chest 
+	# Any Carpet 	3.35 - 67 ticks 
+	# Any Sapling  5 - 100 ticks 
+	# Overworld Fence Or Fence Gate 	15 - 300 ticks 	
+	# Overworld Planks 	15 - 300 ticks
+	# Overworld Pressure Plate 	15 - 300 ticks
+	# Overworld Sign 	10 - 200 ticks 	
+	# Overworld Wooden Trapdoor 	15 - 300 ticks
+		if(reg_count('^.+[-_][BCSFPT][OAELIR][ARPNG][TPLCND](?:[EIKD]|$)(?:[TNOS_]|$)(?:[GSO]|$)[RA]?', @v) > 0) {
+		# still catches 'fern' 'sand' 'iron', 'blackstone' 'stone'
+			if(reg_count('^.+STONE_', @v) > 0 || reg_count('^.+_BRICK', @v) > 0 || reg_count('^.*IRON_', @v) > 0 || reg_count('^.+_FER', @v) > 0 || reg_count('^.+_SAND', @v) > 0) { continue() } 
+			array_push(@allfuelitems, @v)
+			continue()
+		}
+	}
+	return(@allfuelitems)
+}
  
 proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbose) {
 #throw('ms.lang.CastException', 'testing throwfill')

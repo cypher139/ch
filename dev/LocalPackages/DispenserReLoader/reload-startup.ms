@@ -32,3 +32,6 @@ if(!function_exists('acc_add')) {
 	msg(color(3).'Download the CHVault extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
 	msg('\n'.moo(color(2).'https://letsbuild.net/jenkins/job/CHVault/'.color('r')))
 }
+
+#export usable fuel items array
+export('dispenserreloader.fuel.items', _reloader_get_fuel_items())

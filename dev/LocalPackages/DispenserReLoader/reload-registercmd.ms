@@ -31,9 +31,16 @@ register_command('reloader', array(
 			@tabs = array('help', 'info', 'stats', 'verbose', 'set', 'area', 'fuel', 'mode', 'bind', 'unbind', 'this', 'that', 'clear')
 			#get item name
 			if((array_size(@args) - 1) > 0)  {
+			@tabs = array('There are no further arguments', 'Note:')
 				if(array_contains_ic(array('set', 'area', 'fuel', 'mode'), @args[-2])) {
-					@usetabs = all_materials()
-					array_push(@usetabs, 'clear', 'default', 'this', 'fuel')
+					if(equals_ic('mode', @args[-2])) {
+						@usetabs = array('All', 'Barrel', 'Blast_Furnace', 'Brewing', 'Chest', 'Dispenser', 'Furnace', 'Shulker_Box', 'Smoker', 'Trapped_Chest', 'Group_Chest', 'Chests', 'Group_Furnace', 'Furnaces', 'Black_Shulker_Box', 'Blue_Shulker_Box', 'Brown_Shulker_Box', 'Cyan_Shulker_Box', 'Gray_Shulker_Box', 'Green_Shulker_Box', 'Light_Blue_Shulker_Box', 'Light_Gray_Shulker_Box', 'Lime_Shulker_Box', 'Magenta_Shulker_Box', 'Orange_Shulker_Box', 'Pink_Shulker_Box', 'Purple_Shulker_Box', 'Red_Shulker_Box', 'White_Shulker_Box', 'Yellow_Shulker_Box')
+					} else if(equals_ic('fuel', @args[-2])) {
+						@usetabs = import('dispenserreloader.fuel.items')			 
+					} else {
+						@usetabs = all_materials()
+						array_push(@usetabs, 'clear', 'default', 'this', 'fuel')
+					}
 					@areturn = array_filter(@usetabs, closure(@key, @value) {
 					return(length(@input) <= length(@value)
 							&& equals_ic(@input, substr(@value, 0, length(@input))));
@@ -155,7 +162,7 @@ register_command('reloaderadmin', array(
 	'aliases': array('reloadadmin', 'rladmin'),
 	'executor':
 		closure(@alias, @sender, @args) {
-			console(@alias.'  '.@sender)
+		#	console(@alias.'  '.@sender)
 			call_alias('/reloaderadmin' array_implode(@args, ' '))
 			return(true);
 		}
