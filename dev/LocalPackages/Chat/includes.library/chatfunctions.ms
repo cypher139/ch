@@ -177,3 +177,34 @@ proc _healthbar(@player, @fchar, @echar) {
 #msg(@healthbar)
 	return(array_implode(@healthbar, ''))
 }
+
+proc _send_discord_message(@message, @from, @channel) {
+
+	if(@from == '', assign(@from, player()))
+	if(@channel == '', assign(@channel, 'minecraft'))
+	
+	@message = strip_colors(@message)
+
+	switch(to_lower(@from)) {
+	case 'none':
+		assign(@sendmsg, @message)
+	case 'server':
+		assign(@sendmsg, '['.@from.'] '.@message)
+	case 'death':
+		assign(@sendmsg, ':skull_crossbones: '.@message)
+	case 'command':
+		assign(@sendmsg, ':desktop: '.@message)
+	default:
+		assign(@sendmsg, '`['.@from.']` '.@message)
+	}
+	if(function_exists('discord_broadcast')) {
+		try(
+			discord_broadcast(@channel, associative_array('content': @sendmsg))
+		,@fail,
+			msg(@fail)
+			if(@fail['message'] == 'Not connected to Discord server.') {
+				_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@fail['message'])
+			}
+		)
+	}
+}

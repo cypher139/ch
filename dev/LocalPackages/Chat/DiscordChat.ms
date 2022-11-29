@@ -1,11 +1,16 @@
 #version 1.2-tmc
 #Configurable options
 
-export('Chat.Discord.Channels.receive', array('general', 'news', 'minecraft', 'MC server', 'voice-chat', 'other', 'cross-server-chat'))
-export('Chat.Discord.Channels.send', array('general', 'minecraft', 'suggestions', 'MC server', 'voice-chat', 'other', 'botspam', 'cross-server-chat'))
+#Include required backend functions
+include('includes.library/chatfunctions.ms')
+
+
+export('Chat.Discord.Channels.receive', array('general', 'news', 'minecraft', 'MC server', 'voice-chat', 'other', 'cross-server-chat', 'cross-server'))
+export('Chat.Discord.Channels.send', array('general', 'minecraft', 'suggestions', 'MC server', 'voice-chat', 'other', 'botspam', 'cross-server-chat', 'cross-server'))
 export('Chat.Discord.Roles.colors', array('DiscordPurple': '8a00ff', 'Owner': 'fbff00', 'Modding Extraordinare': 'ff0000', 'Co-Owner': '1bae93', 'Server Admin': 'ba3e39', 'Most Active': 'f1c40f', 'Active Level 3': 'f1c40f', 'Active Level 2': 'f1c40f', 'Active Level 1': 'f1c40f', 'Member': '7289da'))
 export('Chat.Discord.Roles.admins', array('DiscordPurple', 'Owner', 'Modding Extraordinare', 'Co-Owner', 'Server Admin'))
 export('Chat.Discord.Console.receive', false)
+export('Chat.Discord.Broadcast.URLs', false)
 
 #Prerequisites
 discord_connect('discordCredentials', closure(){
@@ -20,35 +25,17 @@ discord_connect('discordCredentials', closure(){
 #	discord_set_activity('DEFAULT', string('Minecraft'));
 })
 
+/*
+discord_connect('discordCredentials2', closure(){
+	broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Now Connected to Discord #2');
+#	discord_set_activity('DEFAULT', string('Minecraft'));
+})
+*/
 
 #todo:
 #discord_set_activity(DEFAULT, 'Minecraft')
 #discord_member_get_roles(member) - make name colors somewhat match discord versions
 #color() Additionally, any RGB colour can be used in the hex format '#rrggbb'. 
-
-# final format setup checks before sending message
-proc _send_discord_message(@message, @from, @channel) {
-
-	if(@from == '', assign(@from, player()))
-	if(@channel == '', assign(@channel, 'minecraft'))
-	
-	@message = strip_colors(@message)
-
-	switch(to_lower(@from)) {
-	case 'none':
-		assign(@sendmsg, @message)
-	case 'server':
-		assign(@sendmsg, '['.@from.'] '.@message)
-	case 'death':
-		assign(@sendmsg, ':skull_crossbones: '.@message)
-	case 'command':
-		assign(@sendmsg, ':desktop: '.@message)
-	default:
-		assign(@sendmsg, '`['.@from.']` '.@message)
-	}
-	discord_broadcast(@channel, associative_array(content: @sendmsg))
-}
-
 
 #Send Minecraft Player message to Discord
 bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
@@ -82,15 +69,31 @@ bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
 #Send Discord User message to Minecraft Players.
 bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @discord) {
 	@allowedChannels = import('Chat.Discord.Channels.receive')
-	
+#dev	broadcast(@discord, all_players())
 	#temp array setup
+	/*
 	@membersID = get_value('server.Discord.members.ID')
 	if(!array_contains(@membersID, @discord['userid'])) {
 		array_push(@membersID, @discord['userid'])
 		store_value('server.Discord.members.ID', @membersID)
 	}
+	*/
 
 	if(array_contains(@allowedChannels, @discord['channel']) == true) {
+		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && import('Chat.Discord.Broadcast.URLs') == false) {
+			@discord['message'] = '<Sent a GIF>'
+		}
+		if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
+			if(@discord['message'] == '') {			
+				@discord['message'] = '<Sent a file> '
+			} else {
+				@discord['message'] = @discord['message'].'\n <Also attached file:> '
+			}
+			foreach(@num: @attach in @discord['attachments']) {
+				if(@num == 0) { @filenum = 'File: ' } else { @filenum = 'File #'.(@num + 1).': ' }
+				@discord['message'] = @discord['message'].@filenum.@attach['filename'].'  '
+			}
+		}
 		export('Chat.Discord.last.msg.3', import('Chat.Discord.last.msg.2'))
 		export('Chat.Discord.last.msg.2', import('Chat.Discord.last.msg.1'))
 		export('Chat.Discord.last.msg.1', @discord)
@@ -126,14 +129,14 @@ bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @d
 		if(import('Chat.Discord.Console.receive') == true) {
 			console(@sendmsg, false)
 		}
+		if(array_index_exists(@discord, 'attachments', 0, 'filename') && import('Chat.Discord.Broadcast.URLs') == true) {
+			foreach(@num: @attach in @discord['attachments']) {
+				broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], all_players())
+			}
+		}
 	}
 }
 
-
-bind('player_quit', array(id: 'Chat.Discord.msg.Quit'), null, @quit) {
-	assign(@playerID, _getplayerID(player()))
-	_send_discord_message('- part: '.@playerID['name'], 'none')
-}
 
 bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), null, @death) {
 	
@@ -173,9 +176,3 @@ bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), n
 	}
 }
 # :people_wrestling: :put_litter_in_its_place: 
-
-
-bind('player_join', array(id: 'Chat.Discord.msg.Join'), null, @login) {
-	assign(@playerID, _getplayerID(player()))
-	_send_discord_message('+ join: '.@playerID['name'], 'none')
-}

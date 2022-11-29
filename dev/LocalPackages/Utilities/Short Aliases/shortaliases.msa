@@ -1,7 +1,6 @@
 ###----Aliases----###
 
-#
-#worldedit
+# WorldEdit
 /1 = '//pos1'
 /2 = '//pos2'
 /s1 = '//hpos1'
@@ -18,33 +17,42 @@
 /clearinventory = /clear -a
 /sm [$data=pig] [$qty=3] = /spawnmob $data $qty
 #
-#time
+# World Time
 /ws = /weather sunny
 /wr = /weather rain
 /td = /time day
 /ts = /time sunrise
 /tn = /time night
 #
-#misc
-/food = /kit foodnow
-/foodi = /give player() pork 3
+# Misc
 /lw = /listwarps
 #/adopt $data = /spawnmob wolf:tame $data player()
-/give $0 $1 $2 $3 = /give $0 $1.':'.$3 $2
-#
-#uhoh need a short command to help me now!
+
+# Uhoh! I need a short command to help me now!
 /b [$data] = /butcher $data
 /g = /god
-/h [$player] = /heal $player
-/f [$data] = /butcher \ /heal \ /time day
+/h [$player] = >>>
+if($player == '' || $player == null) { @player = player() } else { @player = $player }
+set_phealth(@player, 20)
+set_phunger(@player, 20)
+<<<
+
 #
 #Kits
 /weapon = /kit weapon
 /red = /kit redstone
 /redi = /kit redstoneitems
+/food = /kit foodnow
+/foodi = /give player() pork 3
 
-citizen:/ow = >>>
-call_alias(/b)
+citizen:/ow [$] = >>>
+call_alias(/b $)
+call_alias(/td)
+call_alias(/h)
+<<<
+
+citizen:/f [$] = >>>
+call_alias(/b $)
 call_alias(/td)
 call_alias(/h)
 <<<

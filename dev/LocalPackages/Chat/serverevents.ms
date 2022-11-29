@@ -1,16 +1,14 @@
 #Include required backend functions
 include('includes.library/chatfunctions.ms')
-#binds
-#-------
+
 bind('player_join', array(id: 'Chat.Format.Join'), null, @login) {
-	#event playername may return null for some unknown reason
-	assign(@player, _getplayerID(player()))
+	@playerID = _getplayerID(player())
 
 #Console info
  	set_timeout(2000, closure(console(color(3).player().color('r').' connected with'.color(7).' IP: '.color('a').pinfo(player())[3].color(7).' hostname: '.pinfo(player())[10], false)))
 
 #Join Message
-	@joinmsg = color('a').'+ join'.color(7).': '.@player['display']
+	@joinmsg = color('a').'+ join'.color(7).': '.@playerID['display']
 	
 #Rei's minimap: Enable radar for everything, and cavemapping.
 	@enablereimap = true
@@ -21,13 +19,17 @@ bind('player_join', array(id: 'Chat.Format.Join'), null, @login) {
 		modify_event('join_message', @joinmsg)
 	}
 	
+# Send Join message to Discord as well (if enabled)
+	_send_discord_message('+ join: '.@playerID['name'], 'none')	
 }
 
 bind('player_quit', array(id: 'Chat.Format.Quit'), null, @quit) {
-	assign(@playerID, _getplayerID(player()))
-	#Quit Message
+	@playerID = _getplayerID(player())
+#Quit Message
 	@quitmsg = color('c').'- part'.color(7).': '.@playerID['display']
 	modify_event('message', @quitmsg)
+# Send Quit message to Discord as well (if enabled)
+	_send_discord_message('- part: '.@playerID['name'], 'none')
 }
 
 bind('server_ping', array(id: 'Chat.Format.Ping'), null, @ping) {
