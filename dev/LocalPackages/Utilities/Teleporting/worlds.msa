@@ -1,13 +1,57 @@
 #Worlds:
 #Information and teleporting
-world:/world [$world] = >>>
+world:/world [$] = >>>
 @name = 'World'
 @prefix = color(7).'['.color(9).@name.color(7).'] '
-assign(@world, $world)
-assign(@gotoworld, $world)
+@args = parse_args($)
+@gotoworld = ''
+
+proc _list_worlds() {
+	@prefix = color(7).'['.color(9).'World'.color(7).'] '
+    msg(@prefix.color(9).'Available worlds:')
+	foreach(@w in get_worlds()) {
+		msg(color(7).@w)
+	}
+    msg(@prefix.color(9).'You are in world: '.color('e').pworld())
+}
+
+if(array_index_exists(@args, 0)) { 
+	@world = @args[0]
+} else {
+	_list_worlds()
+	die()
+}
 
 
 switch(@world) {
+case 'load':
+	if(has_permission('commandhelper.alias.admin')) {
+		if(!array_index_exists(@args, 1)) { 
+			die(@prefix.'You need to specify a world name!')
+		}
+		if(array_index_exists(@args, 2)) { 
+			@type = null
+			if(reg_count('^[Nn]', @args[2]) > 0) { @type = 'NORMAL' }
+			if(reg_count('^[Ff]', @args[2]) > 0) { @type = 'FLAT' }
+			if(reg_count('^[Ll]', @args[2]) > 0) { @type = 'LARGE_BIOMES' }
+			if(reg_count('^[Aa]', @args[2]) > 0) { @type = 'AMPLIFIED' }
+			if(@type == null) { die(@prefix.'World type given was not recognized!') }
+		} else { @type = 'NORMAL' }	
+		if(array_index_exists(@args, 3)) { 
+			@env = null
+			if(reg_count('^[Nn][Oo]', @args[3]) > 0) { @env = 'NORMAL' }
+			if(reg_count('^[Nn][Ee]', @args[3]) > 0) { @env = 'NETHER' }
+			if(reg_count('^[TtEe]', @args[3]) > 0) { @env = 'THE_END' }
+			if(reg_count('^[Cc]', @args[3]) > 0) { @env = 'CUSTOM' }
+			if(@env == null) { die(@prefix.'World enviroment given was not recognized!') }
+		} else { @env = 'NORMAL' }	
+		if(array_index_exists(@args, 4)) { @seed = @args[4] } else { @seed = null }	
+		if(array_index_exists(@args, 5)) { @gen = @args[5] } else { @gen = null }	
+		create_world(@args[1], @type, @env, @seed, @gen)
+		die(@prefix.' Created or loaded world: '.color(9).@args[1])
+	} else {
+		die(@prefix.' Cannot find spawn location for that world...')
+	}
 case 'c':
     @gotoworld = 'creative'
 case 'sky':
@@ -17,18 +61,16 @@ case 'f':
 case 'end':
     @gotoworld = pworld().'_the_end'
 case 'n':
+case 'nether':
 	@gotoworld = pworld().'_nether'
 case 'default':
 case 'w':
 case '':
 	@gotoworld = ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties')))['level-name']
+case 'list':
+	_list_worlds()
 default:
-    assign(@pworld, pworld())
-    msg(@prefix.color(9).'Available worlds:')
-	foreach(@w in get_worlds()) {
-		msg(color(7).@w)
-	}
-    die(@prefix.color(9).'You are in world: '.color('e').@pworld)
+	@gotoworld = @world
 }
 
 try( 
