@@ -1,5 +1,11 @@
 ### codegen
 
+###### 2.2 (11/29/22)
+Fixes:
+- Fixed mis-named variables
+- Quoted array keys
+- Removed a foreach loop in favor of equivalent function
+
 ###### 2.1 (10/2/22)
 Added:
 - Swear replacement codegen (symbol)
