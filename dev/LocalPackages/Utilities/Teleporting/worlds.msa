@@ -5,12 +5,45 @@ world:/world [$] = >>>
 @prefix = color(7).'['.color(9).@name.color(7).'] '
 @args = parse_args($)
 @gotoworld = ''
+@showwt = has_permission(player(), 'commandhelper.alias.world.show.time')
 
 proc _list_worlds() {
+	@showwt = has_permission(player(), 'commandhelper.alias.world.show.time')
 	@prefix = color(7).'['.color(9).'World'.color(7).'] '
     msg(@prefix.color(9).'Available worlds:')
 	foreach(@w in get_worlds()) {
-		msg(color(7).@w)
+		if(@showwt == true) {
+			switch(get_world_time(@w)) {
+				case 0..1999:
+				@gwt = 'Morning'
+				case 2000..5999:
+				@gwt = 'Day'
+				case 6000..7999:
+				@gwt = 'Noon'
+				case 8000..11999:
+				@gwt = 'Afternoon'
+				case 12000..13000:
+				@gwt = 'Evening'
+				case 13000..13499:
+				@gwt = 'Sunset'
+				case 13499..13999:
+				@gwt = 'Dusk'
+				case 14000..17999:
+				@gwt = 'Night'
+				case 18000..19999:
+				@gwt = 'Midnight'
+				case 20000..22499:
+				@gwt = 'Early Morning'
+				case 22500..22999:
+				@gwt = 'Dawn'
+				case 23000..24000:
+				@gwt = 'Sunrise'
+			}
+			@wtdisplay = color(3).'   -- Time: '.get_world_time(@w).' ('.@gwt.')'
+		} else {
+			@wtdisplay = ''
+		}
+		msg(color(7).@w.@wtdisplay)
 	}
     msg(@prefix.color(9).'You are in world: '.color('e').pworld())
 }
