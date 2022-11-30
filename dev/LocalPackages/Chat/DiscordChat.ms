@@ -5,8 +5,8 @@
 include('includes.library/chatfunctions.ms')
 
 
-export('Chat.Discord.Channels.receive', array('general', 'news', 'minecraft', 'MC server', 'voice-chat', 'other', 'cross-server-chat', 'cross-server'))
-export('Chat.Discord.Channels.send', array('general', 'minecraft', 'suggestions', 'MC server', 'voice-chat', 'other', 'botspam', 'cross-server-chat', 'cross-server'))
+export('Chat.Discord.Channels.receive', array('general', 'news', 'minecraft', 'MC server', 'voice-chat', 'other', 'cross-server-chat', 'cross-server', 'mctest'))
+export('Chat.Discord.Channels.send', array('general', 'minecraft', 'suggestions', 'MC server', 'voice-chat', 'other', 'botspam', 'cross-server-chat', 'cross-server', 'mctest'))
 export('Chat.Discord.Roles.colors', array('DiscordPurple': '8a00ff', 'Owner': 'fbff00', 'Modding Extraordinare': 'ff0000', 'Co-Owner': '1bae93', 'Server Admin': 'ba3e39', 'Most Active': 'f1c40f', 'Active Level 3': 'f1c40f', 'Active Level 2': 'f1c40f', 'Active Level 1': 'f1c40f', 'Member': '7289da'))
 export('Chat.Discord.Roles.admins', array('DiscordPurple', 'Owner', 'Modding Extraordinare', 'Co-Owner', 'Server Admin'))
 export('Chat.Discord.Console.receive', false)
@@ -69,7 +69,7 @@ bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
 #Send Discord User message to Minecraft Players.
 bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @discord) {
 	@allowedChannels = import('Chat.Discord.Channels.receive')
-#dev	broadcast(@discord, all_players())
+#	broadcast(@discord, all_players())
 	#temp array setup
 	/*
 	@membersID = get_value('server.Discord.members.ID')

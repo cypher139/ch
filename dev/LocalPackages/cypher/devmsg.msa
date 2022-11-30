@@ -1,7 +1,7 @@
 ######################################################
 #
-#   Developer debug mseeage tools for Cypher's CommandHelper scripts..
-#   This can provide helpful debug messages, but can also spam you so you can enable/disable for certain scripts at will
+#   Developer debug message tools for Cypher's CommandHelper scripts..
+#   This can provide helpful debug messages, but can also spam you so you can enable/disable for certain scripts at will.
 #
 ######################################################
 
@@ -60,13 +60,15 @@ if(array_size(@args) > 0) {
 					msg(@prefix.color(3).@key.' '.color(9).'Functions: '.color(7).@word['functions'])
 				}
 			} 
+			die()
 		case 'extensions':
 		case 'ext':
 			msg(@prefix.color(6).'Installed Extensions:')
 			foreach(@key: @word in extension_info()) {
 				if(@key == 'Core') { continue() }
 				msg(@prefix.color(3).@key.' '.color(7).'( Version: '.@word['version'].' )')
-			}  			
+			}  
+			die()
 		case 'dumpevents':
 		case 'ev':
 			msg(@prefix.color(7).'-----')
@@ -98,8 +100,10 @@ if(array_size(@args) > 0) {
 		case 'settings':
 		case 's':
 		case 'current':
+		case '/':
 			msg(@prefix.' Dev messages are enabled for these scripts:')
-			msg(color(9).array_implode(@ds, ', '))
+			export('ch.player.'.@uuid.'.dev.scripts', @ds)
+			die(color(9).array_implode(@ds, ', '))
 		default:
 		#Note: Script namespace and arguments here does not support spaces or periods in name.
 			if(reg_count('[\\..*]', @arg) > 0) {
@@ -117,10 +121,6 @@ if(array_size(@args) > 0) {
 	}
 }
 	@check = import('ch.player.'.@uuid.'.dev.scripts')
-	if(!is_array(@check)) {
-		msg(@prefix.color('f').'Developer messages are '.color('a').'re-enabled!')
-	}
-
 	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
 	foreach(@script in @ds) {
 		export('ch.player.'.@uuid.'.dev.scripts.'.@script, true)
@@ -129,5 +129,10 @@ if(array_size(@args) > 0) {
 	export('ch.player.'.@uuid.'.dev.scripts', @ds)
 	store_value('ch.player.'.@uuid.'.developer', @dsall)
 	store_value('ch.player.'.@uuid.'.dev.scripts', @ds)
-	if(@dev == true) { msg(@prefix.color('a').'Saved Settings!') }
+	
+	if(!is_array(@check)) {
+		msg(@prefix.color('f').'Developer messages are '.color('a').'re-enabled!')
+	} else {
+		msg(@prefix.color('a').'Saved Settings!')
+	}
 <<<

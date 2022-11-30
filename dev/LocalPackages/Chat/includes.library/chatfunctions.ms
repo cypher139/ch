@@ -1,4 +1,4 @@
-proc _is_even_number(@number) { return(mod(@number, 2) == 0) }
+proc _chat_is_even_number(@number) { return(mod(@number, 2) == 0) }
 
 proc _chat_getplayerID(@option1) {
 	@pid = array()
@@ -28,6 +28,7 @@ proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	)
 }
 
+/*
 proc _capitalize(@string) {
 	assign(@l1, to_upper(@string[0]))
 	assign(@length, length(@string) - 1)
@@ -35,6 +36,7 @@ proc _capitalize(@string) {
 	return(@newstring)
 }
 
+*/
 #supposed to work but doesnt:
 #proc(_capitalize, @string,
 #	assign(@l1, to_upper(@string[0]))
@@ -201,10 +203,8 @@ proc _send_discord_message(@message, @from, @channel) {
 		try(
 			discord_broadcast(@channel, associative_array('content': @sendmsg))
 		,@fail,
-			msg(@fail)
-			if(@fail['message'] == 'Not connected to Discord server.') {
-				_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@fail['message'])
-			}
+#			msg(@fail)
+			_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@fail['message'])
 		)
 	}
 }
