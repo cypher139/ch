@@ -1,0 +1,212 @@
+#version 1.0-tmc
+
+teleporter:/setteleporter [$] = >>>
+@uuid = puuid(player(),'dashless')
+@dev = import('ch.player.'.@uuid.'.dev.scripts.tp')
+@prefix = color('#ffcc00').'['.color(7).'Teleporter'.color('#ffcc00').'] '
+@pworld = pworld()
+#msg(get_commands()['tp'])
+#if , and no space, add a space
+@args = reg_replace('[,]\\b', ' ', $)
+#if, and space remove comma
+@args = reg_replace('\\s?[,]\\s', ' ', @args)
+if(@dev == true) {
+msg($)
+msg(@args)
+}
+
+@args = parse_args(@args)
+@tptime = null
+@tpname = null
+@tpupdate = false
+#name: time: foreach args, if that found set var and remove index
+foreach(@k: @v in @args) {
+	if(reg_count('^[Nn].*:', @v) > 0) {
+		@tpname = reg_split(':', @v)[1]
+#		msg(@tpname)
+		array_remove(@args, @k)
+	}
+	#remove existing teleporter
+	if(reg_count('^[Rr].*:', @v) > 0) {
+		@rname = reg_split(':', @v)[1]
+		@i = 0
+		@allteleporters = get_value('server.Teleporters.registered')
+		if(!is_array(@allteleporters)) { @allteleporters = array() }
+		foreach(@k: @v in @allteleporters[@pworld]) {
+			if(array_contains_ic(@v, @rname)) {
+				if(@v['registrar'] != player()) { msg(@prefix.color('c').'You do not own this Teleporter!') continue() }
+				array_remove(@allteleporters[@pworld], @k)
+				store_value('server.Teleporters.registered', @allteleporters)
+				msg(@prefix.color(6).'"'.color(9).@v['name'].color(6).'" Teleporter Removed!')
+				@i++
+			}
+		} else {
+			msg(@prefix.color(6).'No Teleporters are registered in this world!')
+		}
+		if(@i == 0) { msg(@prefix.color(6).'A Teleporter with that name is not registered in this world!') }
+		if(@i > 1) { msg(@prefix.color(6).'Multiple "'.@rname.'" Teleporters were Removed! ('.@i.')') }
+		die()
+	}
+	#update existing teleporter
+	if(reg_count('^[Uu].*:', @v) > 0) {
+		@j = 0
+		@updatename = reg_split(':', @v)[1]	
+		@allteleporters = get_value('server.Teleporters.registered')
+		if(!is_array(@allteleporters)) { @allteleporters = array() }
+		foreach(@k2: @v2 in @allteleporters[@pworld]) {
+			if(array_contains_ic(@v2, @updatename)) {
+				@tpupdate = true
+				@updateindex = @k2
+				@j++
+			}
+		}
+		array_remove(@args, @k)
+		if(@tpupdate == false) { die(@prefix.color(6).'A Teleporter with that name is not registered in this world!') }
+		if(@j > 1) { msg(@prefix.color('c').@j.color(6)' "'.@updatename.'" Teleporters were discovered in this world!'.color(7).' We will only change the last one found, and automatically update the name to: '.@updatename.'-2') @tpname = @updatename.'-2' }
+	}
+	if(reg_count('^[TtAa].*:', @v) > 0) {
+		@tptime = reg_split(':', @v)
+		if(!array_index_exists(@tptime, 2)) { array_push(@tptime, @tptime[1] + 1000) }
+		if(@dev == true) { msg('2:   '.@tptime) }
+		if(!is_numeric(@tptime[1]) || !is_numeric(@tptime[2])) { die(@prefix.color('c').'Specify the teleporter active times in ticks, separated by a colon! ex. 21000:22000') } 
+		#hour = 1000 ticks
+		if(@tptime[2] < @tptime[1]) { die(@prefix.color('c').'Specify the teleporter active start time first, then the end time! ex. 21000:22000') } 
+		if(@tptime[1] > 24000 || @tptime[2] > 24000) { die(@prefix.color('c').'Minecraft\'s ticks are from 0 to 24000.') } 
+		@tptime = @tptime[1].':'.@tptime[2]
+		if(@dev == true) { msg(@tptime) }
+		array_remove(@args, @k)
+	}
+}		
+
+if(@dev == true) {msg(@args)}
+
+if(!array_index_exists(@args, 0)) { die(@prefix.color('c').'You need to specify the X, Y, Z coordinates to teleport to!') }
+if(!array_index_exists(@args, 1)) { die(@prefix.color('c').'You need to specify the Y coordinates to teleport to!') }
+if(!array_index_exists(@args, 2)) { die(@prefix.color('c').'You need to specify the Z coordinates to teleport to!') }
+if(array_index_exists(@args, 3)) {
+	if(!array_contains(get_worlds(), @args[3])) { @args[3] = pworld() }
+} else {
+	array_push(@args, pworld())
+}
+#valid location check
+try(
+	@check = get_block(@args)
+,@fail,
+	die(@prefix.color('c').'The coordinates given were not valid.')
+)
+	
+if(@dev == true) {
+msg(get_block_info(@args))
+msg(get_block(@args))
+msg(get_highest_block_at(@args))
+}
+
+if(!array_contains(array('AIR', 'WATER'), get_block(@args))) {
+	@args[1] = get_highest_block_at(@args)['y']
+	msg(@prefix.color('c').'Coordinates given is in solid matter!'.color(7).' Auto-correcting Y to highest block found: '.integer(@args[1]))
+}
+if(@dev == true) { set_ploc(@args) }
+
+if(@tpupdate == true) {
+	if(@tpname == null) { @tpname = @allteleporters[@pworld][@updateindex]['name'] }
+	if(@tptime == null) { @tptime = @allteleporters[@pworld][@updateindex]['activetime'] }
+	@allteleporters[@pworld][@updateindex] = array('location': array('x': @args[0], 'y': @args[1], 'z': @args[2], 'world': @args[3]), 'registrar': player(), 'name': @tpname, 'activetime': @tptime, 'allowedGroups': null, 'uses': @allteleporters[@pworld][@updateindex]['uses'])
+	store_value('server.Teleporters.registered', @allteleporters)
+	msg(@prefix.color(6).'Coordinates accepted!'.color(7).' Update completed for the '.@tpname.' teleporter!!')
+} else {
+	if(@tpname == null) {
+		@tpndisplay = 'this'
+	} else {
+		@tpndisplay = 'the "'.@tpname.'"'
+	}
+	export('player.'.@uuid.'.command.setteleporter', true)
+	export('player.'.@uuid.'.command.setteleporter.coords', array('x': @args[0], 'y': @args[1], 'z': @args[2], 'world': @args[3]))
+	export('player.'.@uuid.'.command.setteleporter.options', array('name': @tpname, 'time': @tptime))
+	msg(@prefix.color(6).'Coordinates accepted!'.color(7).' Step on any pressure plate to finish creating '.@tpndisplay.' teleporter!!')
+}
+<<<
+
+#update: allow update without coords
+
+# https://methodscript.com/docs/3.3.5/API/functions/spawn_particle.html
+
+
+
+
+admin:/teleporterinfo [$] = >>>
+@uuid = puuid(player(),'dashless')
+@dev = import('ch.player.'.@uuid.'.dev.scripts.tp')
+@prefix = color('#ffcc00').'['.color(7).'Teleporter'.color('#ffcc00').'] '
+@world = pworld()
+@allteleporters = get_value('server.Teleporters.registered')
+if(!is_array(@allteleporters)) { @allteleporters = array() }
+
+#if , and no space, add a space
+@args = reg_replace('[,]\\b', ' ', $)
+#if, and space remove comma
+@args = reg_replace('\\s?[,]\\s', ' ', @args)
+@args = parse_args(@args)
+
+@checkcoords = 'event'
+@namefound = false
+if(reg_count('^.+_PRESSURE_PLATE', get_block(pcursor())) > 0) {
+	#look at plate
+	@checkcoords = pcursor()
+	@world = pworld()
+} else if(array_size(@args) > 0) {
+#specify name
+	@j = 0
+	foreach(@k: @v in @args) {
+		foreach(@k2: @v2 in @allteleporters[@world]) {
+			if(array_contains_ic(@v2, @v)) {
+				@checkcoords = array()
+				@checkcoords['x'] = reg_split('\\.', @k2)[0]
+				@checkcoords['y'] = reg_split('\\.', @k2)[1]
+				@checkcoords['z'] = reg_split('\\.', @k2)[2]
+				@j++
+				msg(@checkcoords)
+				@namefound = true
+			}
+		}
+	}
+	if(@j > 1) { msg(@prefix.color('c').@j.color(6)' "'.@updatename.'" Teleporters were discovered in this world!'.color(7).' We will only state the last teleporter found.') }
+	if(@namefound == false) {		
+		#specify coordinates. 
+		if(array_index_exists(@args, 3)) {
+			if(!array_contains(get_worlds(), @args[3])) { @args[3] = pworld() }
+		} else {
+			array_push(@args, pworld())
+		}
+		#validate location check
+		try(
+			@check = get_block(@args)
+		,@fail,
+			die(@prefix.color('c').'The coordinates or teleporter name given was not valid.')
+		)
+		@world = @args[3]
+		@checkcoords = array()
+		@checkcoords['x'] = @args[0]
+		@checkcoords['y'] = @args[1]
+		@checkcoords['z'] = @args[2]
+		@checkcoords['world'] = @args[3]
+	}
+}
+if(@checkcoords == 'event') {
+	export('player.'.@uuid.'.command.setteleporter.info', true)
+	msg(@prefix.color(6).'No coordinates given! '.color(7).' Step on any pressure plate to obtain info about the related Teleporter.')
+} else {	
+	@implodeloc = integer(@checkcoords['x']).'.'.integer(@checkcoords['y']).'.'.integer(@checkcoords['z'])
+	msg(@implodeloc)
+	if(array_index_exists(@allteleporters, @world, @implodeloc)) {
+		msg(@prefix.'Teleporter at: '.integer(@checkcoords['x']).', '.integer(@checkcoords['y']).', '.integer(@checkcoords['z']))
+		msg(color(3).' Name: '@allteleporters[pworld()][@implodeloc]['name'])
+		msg(color(6).' Warps to: '. array_implode(@allteleporters[pworld()][@implodeloc]['location'], ', '))
+		msg(color(9).' Registered by: '.@allteleporters[pworld()][@implodeloc]['registrar'].'       Used '.@allteleporters[pworld()][@implodeloc]['uses'].' times')
+		msg(color(8).' Active times: '. @allteleporters[pworld()][@implodeloc]['activetime'])
+		
+	#	msg(color(8).' Allowed Groups: '. @allteleporters[pworld()][@implodeloc]['allowedGroups'])
+	} else {
+		msg(@prefix.color(6).'That Teleporter is not Registered in this world.')
+	}
+}	
+<<<
