@@ -1,49 +1,44 @@
 #version 1.3-tmc
 #requires ScriptLibraries - getplayerID and UUID database
-deathtp:/back [$option1=1] = >>>
+deathtp:/back [$id=1] = >>>
 assign(@name, 'DeathTP')
 
-if(is_numeric($option1)) {
-	assign(@dropid, $option1)
-	if($option1 > 3) {assign(@dropid, 3)}
+if(is_numeric($id) && $id > 0) {
+	if($id - 1 > 9) { @id = 9 } else { @id = $id - 1 }
 } else {
 	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
-assign(@here, get_value('player.'._getplayerID(player())['id'].'.last.death.loc.'.@dropid))
+@here = get_value('player.'._getplayerID(player())['id'].'.last.death.location')
+if(!is_array(@here)) { @here = array() }
 
-switch(@here) {
-	case '':
-	case null:
-		die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
-	default:
-		set_ploc(@here)
-		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'You were teleported to your death point.')
+if(array_index_exists(@here, @id, 'world')) {
+	set_ploc(@here[@id])
+	msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'You were teleported to your death point.')
+} else {
+	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
 }
 <<<
 
-deathitems:/backitems [$option1=1] = >>>
+deathitems:/backitems [$id=1] = >>>
 assign(@name, 'DeathTP - GarbageManagement')
-if(is_numeric($option1)) {
-	assign(@dropid, $option1)
-	if($option1 > 3) {assign(@dropid, 3)}
+if(is_numeric($id) && $id > 0) {
+	if($id - 1 > 9) { @id = 9 } else { @id = $id - 1 }
 } else {
 	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
-assign(@bi, get_value('player.'._getplayerID(player())['id'].'.last.death.drops.'.@dropid))
+@bi = get_value('player.'._getplayerID(player())['id'].'.last.death.drops')
+if(!is_array(@bi)) { @bi = array() }
 
-switch(@bi) {
-	case '':
-	case null:
-		die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
-	default:
-		foreach(@bi, @currentvar,
-		#new MC versions do not need numeric id:data type. updated to just written name. 
-		#array: meta, qty, name
-			pgive_item(player(), @currentvar)
-		)
-		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Respawning your items.')
+if(array_index_exists(@bi, @id, 'name')) {
+	foreach(@item in @bi) {
+	#array: meta, qty, name
+		pgive_item(player(), @item)
+	}
+	msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Respawning your items.')
+} else {
+	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
 }
 <<<
 
