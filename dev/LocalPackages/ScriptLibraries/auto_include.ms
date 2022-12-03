@@ -33,7 +33,7 @@ proc _is_even_number(@number) {return(mod(@number, 2) == 0)}
 proc _getplayerID(@option1) {
 	@pid = array()
 	@uuiddata = import('primus.database.UUID')
-	if(@option1 == '~console'){
+	if(reg_count('^~?console$', @option1) > 0) {
 		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
 	} else {
 		try(
@@ -86,7 +86,7 @@ proc _getplayerID(@option1) {
 proc _getplayerName(@findID) {
  	@pid = array()
 	@uuiddata = import('primus.database.UUID')
-	if(@findID == '~console'){
+	if(reg_count('^~?console$', @findID) > 0) {
 		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
 	} else {
 		try(

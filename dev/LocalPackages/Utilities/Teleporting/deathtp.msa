@@ -1,4 +1,4 @@
-#version 1.2-tmc
+#version 1.3-tmc
 #requires ScriptLibraries - getplayerID and UUID database
 deathtp:/back [$option1=1] = >>>
 assign(@name, 'DeathTP')
@@ -10,7 +10,7 @@ if(is_numeric($option1)) {
 	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
-assign(@here, get_value('player.'.puuid(player(), 'dashless').'.last.death.loc.'.@dropid))
+assign(@here, get_value('player.'._getplayerID(player())['id'].'.last.death.loc.'.@dropid))
 
 switch(@here) {
 	case '':
@@ -31,7 +31,7 @@ if(is_numeric($option1)) {
 	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
-assign(@bi, get_value('player.'.puuid(player(), 'dashless').'.last.death.drops.'.@dropid))
+assign(@bi, get_value('player.'._getplayerID(player())['id'].'.last.death.drops.'.@dropid))
 
 switch(@bi) {
 	case '':
@@ -49,7 +49,7 @@ switch(@bi) {
 
 deathtp:/deathcounter [$] = >>>
 set_uncaught_exception_handler(closure(@ex){
-	if(import('ch.player.'.puuid(player(), 'dashless').'.developer') == true) {
+	if(import('ch.player.'._getplayerID(player())['id'].'.developer') == true) {
 		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
 	} else {
 		msg(color('c').@ex['message']);
@@ -57,9 +57,10 @@ set_uncaught_exception_handler(closure(@ex){
      return(true);
    });
    
-proc _msg_count(@count, @player) {
+proc _msg_count(@count, @player, @pos) {
 	assign(@name, 'DeathCount')
 	@prefix = color('e').'['.color(6).@name.color('e').'] '
+	if(@pos == '' || @pos == null) { @posmsg = ''} else { @posmsg = ' ('.color(4).'#'.@pos.' on leaderboard'.color(7).')' }
 	switch(@count) {
 		case '':
 		case null:
@@ -80,24 +81,79 @@ proc _msg_count(@count, @player) {
 		default:
 			@dcmsg = @player.' died a total of '.color('c').@count.color(7).' times!'
 	}
-	msg(@prefix.color(7).@dcmsg)
+	msg(@prefix.color(7).@dcmsg.@posmsg)
 }
+
+proc _msg_leaderboard(@board, @max) {
+	assign(@name, 'DeathCount')
+	@prefix = color('e').'['.color(6).@name.color('e').'] '
+	msg(@prefix.color(7).' Top '.color('c').@max.color(7).' Deaths Leaderboard:')
+	for(@i = 0, @i < @max, @i++){
+		if(array_index_exists(@board, @i)) {
+			switch(@i) {
+			case 0:
+				@numcolor = 'b'
+			case 1:
+				@numcolor = 6
+			case 2:
+				@numcolor = 7
+			case 3:
+				@numcolor = '#ba3e39'
+			default:
+				@numcolor = 4
+			}
+			msg(color(@numcolor).'# '.(@i + 1).color(7).':  '.color(@numcolor).@board[@i][0].color(7).' -- '.color('c').@board[@i][1].color(7).' deaths')
+		} else {
+			msg(@prefix.color(9).' ------ End of Leaderboard ------')
+			break()
+		}
+	}
+}
+
 #puuid does not find offline bedrock players, does find any java even if never played
 assign(@name, 'DeathCount')
 @args = parse_args($)
 @countdata = get_value('DeathCount.players.death.counter')
 @oplayer = get_offline_players()
 @prefix = color('e').'['.color(6).@name.color('e').'] '
+@boardpos = 'Unlisted'
 
 if(array_size(@args) == 0) {
-#No players, just you
-	_msg_count(@countdata[puuid(player(), 'dashless')], 'You')
+	#Console's stats
+	if(player() == '~console') {
+		_msg_count(get_value('DeathCount.console.death.counter'), 'Console')
+		die()
+	} else {
+	#Your Own Stats
+		_msg_count(@countdata[_getplayerID(player())['id']], 'You')
+		die()
+	}
 }
+
+@leaderboard = array()
+foreach(@k: @v in @countdata) {
+	@name = _getplayerName(@k)['name']
+	if(@name == null) {	continue() }
+	array_push(@leaderboard, array(@name, @v))
+}
+array_sort(@leaderboard, closure(@left, @right) {
+	return(@left[1] < @right[1]);
+});
+
 if(array_size(@args) == 1) {
 	@player = array_implode(@args, '')
 	switch(@player) {
+		case 'c':
+		case 'console':
+		if(has_permission('commandhelper.alias.'.@name.'.console')) {
+			_msg_count(get_value('DeathCount.console.death.counter'), 'Console')
+		} else {
+			msg(@prefix.color('c').'You do not have permission to view Console stats.')
+		}
 		case 'leader':
 		case 'leaderboard':
+		case 'l':
+			_msg_leaderboard(@leaderboard, 10)		
 		case 'all':
 		case 'players':
 			foreach(@k: @v in @countdata) {
@@ -122,22 +178,40 @@ if(array_size(@args) == 1) {
 			@playerID = _getplayerID(@player)
 			#catches no UUID - offline Bedrock players may have this issue if not in internal database
 			if(@playerID['id'] == null) { _msg_count('ni', @player) die() }
-			#
-			_msg_count(@countdata[@playerID['id']], @playerID['name'])
+			foreach(@index: @p in @leaderboard) {
+				if(array_contains(@p, @playerID['name'])) { 
+					@boardpos = @index + 1
+					break()
+				}
+			}
+			_msg_count(@countdata[@playerID['id']], @playerID['name'], @boardpos)
 	}
 }
 
 if(array_size(@args) > 1) {
-	foreach(@k: @v in @args) {
-		if(!array_contains_ic(get_offline_players(), @v)) {
-			_msg_count('d', @v) 
-			continue()
-		}
-		@playerID = _getplayerID(@v)
-		#catches no UUID - offline Bedrock players may have this issue if not in internal database
-		if(@playerID['id'] == null) { _msg_count('ni', @v) continue() }
-		#
-		_msg_count(@countdata[@playerID['id']], @playerID['name'])
+	switch(@args[0]) {
+		case 'leader':
+		case 'leaderboard':
+		case 'l':
+			if(!is_numeric(@args[1])) { @args[1] = 10 } 
+			_msg_leaderboard(@leaderboard, @args[1])
+		default:
+			foreach(@k: @v in @args) {
+				if(!array_contains_ic(get_offline_players(), @v)) {
+					_msg_count('d', @v) 
+					continue()
+				}
+				@playerID = _getplayerID(@v)
+				#catches no UUID - offline Bedrock players may have this issue if not in internal database
+				if(@playerID['id'] == null) { _msg_count('ni', @v) continue() }
+				foreach(@index: @p in @leaderboard) {
+					if(array_contains(@p, @playerID['name'])) { 
+						@boardpos = @index + 1
+						break()
+					}
+				}
+				_msg_count(@countdata[@playerID['id']], @playerID['name'], @boardpos)
+			}
 	}
 }
 <<<

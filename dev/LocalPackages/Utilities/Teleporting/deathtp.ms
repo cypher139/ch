@@ -1,4 +1,11 @@
-#version 1.2-tmc
+#version 1.3-tmc
+
+#Console Deaths = amount of times server started / alias reloads
+@DeathCountConsole123 = get_value('DeathCount.console.death.counter')
+@DeathCountConsole123++
+store_value('DeathCount.console.death.counter', @DeathCountConsole123)
+
+#Player Deaths
 bind('player_death', array(id: 'DeathTP.event', priority: 'MONITOR'), null, @death) {
 	x_new_thread('DeathStats.'@death['player'], closure(@player = @death['player'], @drops = @death['drops']){
 		assign(@uuid, puuid(@player, 'dashless'))
