@@ -46,7 +46,7 @@ if(array_size(@args) > 0) {
 # Non-Player Arguments provided
 	@newmode = 'Unset'
 	foreach(@k: @v in @args) {
-		if(reg_count('^[GgIiPpWw]', @v) > 0) { 
+		if(reg_count('^[GgIiPp]', @v) > 0) { 
 			@gmpinv = get_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv')
 			if(!is_array(@gmpinv)) { @gmpinv = array('use': false, 'SURVIVAL': array(), 'CREATIVE': array(), 'ADVENTURE': array(), 'SPECTATOR': array()) }
 			if(@gmpinv['use'] == true) {
@@ -57,7 +57,7 @@ if(array_size(@args) > 0) {
 				msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Upon game mode change your inventory will be set to the inventory for that game mode.')
 			}
 		store_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv', @gmpinv)
-		die()
+		continue()
 		}
 		if(reg_count('^[Aa]', @v) > 0) { @newmode = 'Adventure' }
 		if(reg_count('^[Cc]', @v) > 0) { @newmode = 'Creative' }
@@ -65,11 +65,13 @@ if(array_size(@args) > 0) {
 		if(reg_count('^[Ss][Pp]', @v) > 0) { @newmode = 'Spectator' }
 		if(reg_count('^[Ll][Oo]', @v) > 0 && @user['name'] == player()) { 
 			export(@name.'.player.'.puuid(@user['name'], 'dashless').'.lock', true)
-			die(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your game mode setting is now locked to '.pmode(@user['name']).'.')
+			msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your game mode setting is now locked to '.pmode(@user['name']).'.')
+			continue()
 		}
 		if(reg_count('^[Uu][Nn]', @v) > 0 && @user['name'] == player()) { 
 			export(@name.'.player.'.puuid(@user['name'], 'dashless').'.lock', false)
-			die(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your game mode setting is now unlocked.')
+			msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your game mode setting is now unlocked.')
+			continue()
 		}
 		
 	}
