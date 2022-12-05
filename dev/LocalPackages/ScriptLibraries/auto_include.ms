@@ -7,21 +7,26 @@ if(is_array(get_value('primus.database.UUID'))) {
 if(is_array(get_value('primus.database.IP'))) {
 	export('primus.database.IP', get_value('primus.database.IP'))
 } else {
-	export('primus.database.IP', array(1000123: array('test')))
+	export('primus.database.IP', array(1000123: array()))
 }
 
 # String Capitalization or underscore removal features
-proc _capitalize(@string, @lower, @u) {
+proc _capitalize(@string, @lower, @u, @a) {
 	if(@lower == '' || @lower == null) { @string = to_lower(@string) }
-	assign(@l1, to_upper(@string[0]))
-	assign(@length, length(@string) - 1)
-	assign(@newstring, @l1.@string[cslice(1, @length)])
 	if(@u == '' || @u == null) {
-		if(reg_count('[_]', @newstring) > 0) {
-			@newstring = reg_replace('_', ' ', @newstring)
+		if(reg_count('[_]', @string) > 0) {
+			@string = reg_replace('_', ' ', @string)
 		}
 	}
-	return(@newstring)
+	if(@a == '' || @a == null) {
+		@string = to_upper(@string[0]).@string[cslice(1, length(@string) - 1)]
+	} else {
+		@astring = reg_split('\\s', @string)
+#		console(@astring)
+		foreach(@k: @v in @astring) { @astring[@k] = to_upper(@v[0]).@v[cslice(1, length(@v) - 1)] }
+		@string = array_implode(@astring, ' ')
+	}
+	return(@string)
 }
 
 #is this a even number?
@@ -34,7 +39,7 @@ proc _getplayerID(@option1) {
 	@pid = array()
 	@uuiddata = import('primus.database.UUID')
 	if(reg_count('^~?console$', @option1) > 0) {
-		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
+		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
 		try(
 			@pid['id'] = puuid(@option1, 'dashless');
@@ -87,7 +92,7 @@ proc _getplayerName(@findID) {
  	@pid = array()
 	@uuiddata = import('primus.database.UUID')
 	if(reg_count('^~?console$', @findID) > 0) {
-		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
+		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
 		try(
 		#throws exception if player offline
