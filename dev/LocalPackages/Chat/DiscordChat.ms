@@ -44,11 +44,13 @@ bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
 	assign(@sendmsg, @chat['message'])
 	
 	# Automatically chat on last channel a message was received on.
-	@lastmsg1 = import('Chat.Discord.last.msg.1')
-	if(is_array(@lastmsg1)) {
-		if(array_index_exists(@lastmsg1, 'channel')) {
-			@channel = @lastmsg1['channel']
-		}	
+	@lastmsg = import('Chat.Discord.last.msg.1')
+	if(is_array(@lastmsg)) {
+		if(array_index_exists(@lastmsg, 'channel')) {
+			if(time() < (@lastmsg['time'] + 234567)) {
+				@channel = @lastmsg['channel']
+			}	
+		}
 	}
 #dev tmsg(@chat['player'], reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']))
 	# Specify a channel name as first word in chat - Channel override
@@ -96,6 +98,7 @@ bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @d
 		}
 		export('Chat.Discord.last.msg.3', import('Chat.Discord.last.msg.2'))
 		export('Chat.Discord.last.msg.2', import('Chat.Discord.last.msg.1'))
+		array_set(@discord, 'time', time())
 		export('Chat.Discord.last.msg.1', @discord)
 		@userroles = array_keys(discord_member_get_roles(@discord['username']))
 	#Set username color based on data previously set from Discord colors
@@ -158,7 +161,7 @@ bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), n
 		if(@weapon == null) { 
 			@kweapon = 'Hand' 
 		} else {
-			@kweapon = _capitalize(string(@weapon['name']))
+			@kweapon = _capitalize(string(@weapon['name']), null, null, 'all')
 		}	
 		@pvpmsg = array(@death['killer'].' killed '.@death['player'].' wielding '.@kweapon, 
 			@death['killer'].' slays '.@death['player'].' with a '.@kweapon, 
