@@ -59,7 +59,7 @@ case 'update':
 	case 2:
 #part 2: get all member roles, save 2 arrays:
 		msg(@prefix.'Please be patient! This task contacts Discord for each player ID. To avoid botspam limits this waits 2 seconds per player.')
-		#x_new_thread(@name.'Update.2', closure(@player = player(), @args = @args){
+		x_new_thread(@name.'Update.2', closure(@player = player(), @args = @args){
 			@starttime = time()
 			@memberids = get_value('server.Discord.members.ID')
 			if(!is_array(@memberids)) { die('part1plz') }
@@ -132,7 +132,7 @@ case 'update':
 			tmsg(@player, @prefix.'List Update: Part 2 Success! Time Elapsed: '.@endtime.' seconds.')
 			tmsg(@player, 'Debug: memberid size: '.array_size(@memberids).', getroles success: '.@f1.', getroles fails: '.@f.', array fails: '.@noarraycount.', no roles found: '.@norolescount)
 			});
-		#});
+		});
 	case 3:
 		#part 3: membersinrole array: formulate what members belong to each role
 	# version2:
@@ -181,11 +181,11 @@ case 'update':
 		@userarray = array()
 		foreach(@index1: @currentgroup in array_unique(array_normalize(@sdrg))) {
 			if(@usediscordmsg == true) { discord_broadcast(@channel, associative_array(content: '```'.@currentgroup.'```')) }
-			if(@usewritefile == true) { array_push(@filearray, '"'.@currentgroup.'" \r\n') }
+			if(@usewritefile == true) { array_push(@filearray, @currentgroup.' \r\n') }
 			foreach(@k: @v in @sdrg) {
 				if(@currentgroup != @v) {continue()}
 				if(@usediscordmsg == true) { discord_broadcast(@channel, associative_array(content: '`'.@k.'`')) }
-				if(@usewritefile == true) { array_push(@filearray, '"'.@k.'" \r\n') }
+				if(@usewritefile == true) { array_push(@filearray, @k.' \r\n') }
 				#rolename: groupname
 				foreach(@k2: @v2 in @totalroles) {
 					if(@v2 == @k) {
@@ -212,18 +212,14 @@ case 'update':
 		#				}
 						array_push(@userarray, @usernick)
 					}
-					array_push(@filearray, '"@'.array_implode(@userarray, '", "@').'"')
+					array_push(@filearray, '@'.array_implode(@userarray, ', @').' \r\n')
 					@userarray = array()
 				}
  # msg out to arrayarray_push
  
- 
  #msg to new array array(line1: array(rolename: membername, membername), line2,) etc. write file array_implode(@thisarray, '\r\n')	
  
- 
- 
 				if(@usediscordmsg == true) {
-				msg(yes)
 					@usermsg = '<@'.array_implode(@membersinrole[@roleid], '> <@').'>'
 					if(length(@usermsg) > 1999) {
 						@color2000 = 'c'
@@ -235,17 +231,36 @@ case 'update':
 				#	discord_broadcast(@channel, associative_array(content: @usermsg))
 				}
 			}
-			if(@usewritefile == true) {
-				#msg(@filearray)
-				store_value('server.Discord.roles.directory', @filearray)
+		}
+		if(@usewritefile == true) {
+			#msg(@filearray)
+			store_value('server.Discord.roles.directory', @filearray)
+			if(function_exists('write_file')) { @writemethod = 1 }
+			if(function_exists('chf_write')) { @writemethod = 2 }
+			if(in_cmdline_mode()) { @writemethod = 3 }
+			switch(@writemethod) {
+			case 1:
+			if(extension_exists('CHFiles')) {
+				write_file('../directory.csv', array_implode(@filearray, ''), 'OVERWRITE')	
+			}
+			case 2:
+			if(extension_exists('CHFile')) {
+#				msg(chf_directory_list('../'))
+				#../ is parent folder of script location
+				chf_write('../directory.csv', array_implode(@filearray, ''), 'OVERWRITE')
+			}
+			case 3:
+			default:
 				try (	
-					x_write('directory.txt', array_implode(@filearray, ''), OVERWRITE)  
+					x_write('../directory.csv', array_implode(@filearray, ''), 'OVERWRITE')  
 				,@fail,
-					msg('File not written, as it does not work in-game')
+					msg('File not written, as CH\'s Core write files are commandline only functions.')
 				)
 			}
 		}
-		tmsg(@player, @prefix.'List Update: Part 4 Success! Please wait for Discord Rate-limiting to catch up with the messages spam.')
+		if(@usediscordmsg == true) { @dmsgdisplay = 'Please wait for Discord Rate-limiting to catch up with the messages spam.' } else { @dmsgdisplay = '' }
+		if(@usewritefile == true) { @filemsgdisplay = 'Check your CommandHelper folder for the directory CSV file.' } else { @filemsgdisplay = '' }
+		tmsg(@player, @prefix.'List Update: Part 4 Success! \n '.@dmsgdisplay.@filemsgdisplay)
 	default:
 		msg('specify a update part number')
 	}
