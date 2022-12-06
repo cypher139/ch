@@ -136,7 +136,10 @@ proc _healthbar(@player, @fchar, @echar) {
 	if(@fchar == '' || @fchar == null) { @fullchar = '|' } else { @fullchar = @fchar }
 	if(@echar == '' || @echar == null) { @emptychar = '.' } else { @emptychar = @echar }
 	@mchar = ':'
-	if(is_numeric(@player)) { @phealth = @player } else { @phealth = ceil(pinfo(@player)[5]) }
+	if(is_numeric(@player)) { 
+#		if(@player > 20) { @player = 20 }
+		@phealth = @player
+	} else { @phealth = ceil(pinfo(@player)[5]) }
 	@phealthodd = ceil(@phealth / 2)
 	@healthbar = array(0,0,0,0,0,0,0,0,0,0,0)
 	#dead.
@@ -147,6 +150,8 @@ proc _healthbar(@player, @fchar, @echar) {
 	if(@phealth >= 9 && @phealth <= 15) { @color = 'e' }
 	#green: 8-10 hearts
 	if(@phealth >= 16 && @phealth <= 20) { @color = 2 }
+	#blue: Somehow, more than 10 hearts
+	if(@phealth >= 21) { @color = 'b' }
 	#for each heart (2 phealth points):
 	foreach(@k: @v in @healthbar) {
 		if(@k == 0) { continue() }

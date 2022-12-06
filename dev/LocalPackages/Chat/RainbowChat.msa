@@ -2,7 +2,7 @@
 #version 1.1-tmc
 #todo? make actual rainbow colors, expanded to fit length(@msg) like ^0(...)
 
-everyone:/rainbow [$] = >>>
+*:/rainbow [$] = >>>
 @name = 'Rainbow'
 @chatname = import('chatmodifier.name', 'Chat')
 # Include required backend functions
@@ -19,11 +19,6 @@ if($ == '') { die(color('c').'['.color(7).@name.color('c').'] '.'You didn\'t say
 @action = ''
 #toggle action
 if(reg_count('^[-\\/][Tt].*', @args[0]) > 0) {
-/*
-	@action = to_lower(reg_replace('[-\\/]', '', @msg[0]))
-	array_remove(@args, 0)
-	@msg = array_implode(@args, ' ')
-	*/
 	if(array_index_exists(@args, 1)) {
 		@settype = 'normal'
 		if(reg_count('^[Dd]', @args[1]) > 0) { @settype = 'doubles' }
@@ -54,18 +49,8 @@ if(reg_count('^[-\\/][Tt].*', @args[0]) > 0) {
 #		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'Invalid setting specified. '.color('r').'Leave blank for normal rainbow chat, or type \'-doubles\' to use doubles mode.')
 }	
 
-#No action? /say message
-#call_alias('/rsay '.@msg)
-
 #get saved chat type
 @chattype = import(@chatname.'.player.'.@player['id'].'.chat.rainbow.type', 'normal')
-/*
-if(@usertype != '' || @usertype != null) {
-	@chattype = 'normal'
-} else {
-	@chattype = @usertype
-}
-*/
 #override with type specified
 if(reg_count('^[-\\/][adwnp][los].*[ls2]$', to_lower(parse_args(@msg)[0])) > 0) {
 	@msg = parse_args(@msg)
@@ -82,4 +67,4 @@ if(player() == '~console') {
 }
 <<<
 
-everyone:/rsay [$] = >>> call_alias('/rainbow' $) <<<
+*:/rsay [$] = call_alias('/rainbow' $)

@@ -215,7 +215,7 @@ ALLAY(true, false, MCVersion.MC1_19),
 			color(@colorplayer).@player.color(@colormsg).' needs more practice and was killed by '.color(@coloralt).@opponent,
 			color(@coloralt).@opponent.color(@colormsg).' hunts '.color(@colorplayer).@player.color(@colormsg).' down with a '.color(@colorweapon).@weapon,
 			color(@colorplayer).@player.color(@colormsg).' took a leap of faith but landed on '.color(@coloralt).@opponent.color(@colormsg).'\'s '.color(@colorweapon).@weapon,
-			color(8).'Score '.color(@coloralt).@opponent.color('a').' +1'.color(f).' - '.color(@colorplayer).@player.color('c').' 0',
+			color(8).'Score '.color(@coloralt).@opponent.color('a').' +1'.color('f').' - '.color(@colorplayer).@player.color('c').' 0',
 			color(@colorplayer).@player.color(@colormsg).' was fragged by '.color(@coloralt).@opponent,
 			color(@colorplayer).@player.color(@colormsg).' is now redstone thanks to '.color(@coloralt).@opponent.color(@colormsg).'\'s '.color(@colorweapon).@weapon,
 			color(@coloralt).@opponent.color(@colormsg).' slapped '.color(@colorplayer).@player.color(@colormsg).' around a bit too hard.'
