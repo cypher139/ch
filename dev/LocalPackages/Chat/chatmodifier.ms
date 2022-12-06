@@ -7,7 +7,7 @@ export('chatmodifier.name', 'Chat')
 export('chatmodifier.version', '0.9-tmc')
 
 
-bind('player_chat', array(id: 'Chat.formatter'), null, @chat) {
+bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 # Include required backend functions
 include('includes.library/chatfunctions.ms')
 	assign(@name, import('chatmodifier.name', 'Chat'))
@@ -15,10 +15,25 @@ include('includes.library/chatfunctions.ms')
 	assign(@group, pgroup(@player['name'])[0])
 	assign(@dev, import('ch.player.'.@player['id'].'.developer'))
 	@say = @chat['message']
-	set_uncaught_exception_handler(closure(@ex){
-		_msgAdmins(@player['name'].'\'s chat caused an exception!: '.@ex)
-		return(true)
+set_uncaught_exception_handler(closure(@ex){
+	@dev = import('ch.player.'.puuid(player(), 'dashless').'.developer'))
+	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
+	msg(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['message'])
+	assign(@msg1, color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message'])
+	if(@dev == true) {msg(@msg1)}
+	console(@msg1, false)
+	array_iterate(@ex['stackTrace'], closure(@k, @v) {
+		assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @v['file'])[1])
+		if(reg_count('(includes.library)', @pathdisplay) > 0) {
+			assign(@pathdisplay, 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1])
+		}		
+		assign(@msg2, color(9).'../'.@pathdisplay.color(7).' Line: '.color('a').@v['line'].'.'.@v['col'])
+		console(color('c').'['.color(6).@name.color('c').'] '.@msg2, false)
+		if(@dev == true) {msg(@msg2)}
 	})
+	return(true)
+});
+
 
 
 #Chat layout formatting: finalization

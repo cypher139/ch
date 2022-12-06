@@ -73,7 +73,7 @@ case 'ev':
 	msg(@prefix.color(7).'-----')
 	msg(@prefix.color(7).'Current binded events:')
 	msg(@prefix.color(7).'-----')
-	assign(@j, 0)
+	@j = 0
 	@previoustype = ''
 	foreach(@k: @v in dump_events()) {
 	# Parsing: (event_type) Event.ID:/file/system/path/file.ms:24
@@ -81,21 +81,15 @@ case 'ev':
 		@eventid = reg_replace('^\\((.+)\\)[ ]', '', reg_split('[:]', @v)[0])
 	#if last type matches, don't choose a new color. Otherwise inc unique types counter and colors.
 		if(@previoustype != @eventtype) {	
-			if(_is_even_number(@j) == true,
-				assign(@color, 'e')
-			,
-				assign(@color, 3)
-			)
-			assign(@j, @j + 1)
+			if(_is_even_number(@j) == true) { @color = 'e' } else { @color = 3 }
+			@j++
 		}
-	
-		msg(color(@color).@eventtype.'      [ '.color(9).@eventid.color(@color).' ]')
 		@previoustype = @eventtype
-	
-		assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @v)[1])
+		@pathdisplay = reg_split('\\/CommandHelper\\/', @v)[1]
 		if(reg_count('(includes.library)', @pathdisplay) > 0) {
-			assign(@pathdisplay, 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1])
-		}		
+			@pathdisplay = 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1]
+		}
+		msg(color(@color).@eventtype.'      [ '.color(9).@eventid.color(@color).' ]')		
 		msg(color(8).'Path: '.color(0).'../'.color(8).@pathdisplay)
 	}
 	msg(@prefix.color(7).'-----')
@@ -277,6 +271,8 @@ case 'props':
 	msg(ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties'))))
 case 'isproc':
 	msg(@prefix.color(6).'is proc "'.@option1.'? '.color('d').is_proc(@option1))
+case 'cap':
+	msg(_capitalize($, $option1, $option2))
 
 default:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')

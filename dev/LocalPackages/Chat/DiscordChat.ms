@@ -92,8 +92,8 @@ bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @d
 				@discord['message'] = @discord['message'].'\n <Also attached file:> '
 			}
 			foreach(@num: @attach in @discord['attachments']) {
-				if(@num == 0) { @filenum = 'File: ' } else { @filenum = 'File #'.(@num + 1).': ' }
-				@discord['message'] = @discord['message'].@filenum.@attach['filename'].'  '
+				if(@num == 0) { @filenum = 'File: ' } else { @filenum = '  File #'.(@num + 1).': ' }
+				@discord['message'] = @discord['message'].@filenum.@attach['filename']
 			}
 		}
 		export('Chat.Discord.last.msg.3', import('Chat.Discord.last.msg.2'))
@@ -157,23 +157,28 @@ bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), n
 	}
 
 	if(@death['killer'] != null) {
-		@weapon = pinv(@death['killer'], null)
-		if(@weapon == null) { 
-			@kweapon = 'Hand' 
+		if(event_exists('Chat.msg.Death')) {
+			@pvpmsg = strip_colors(@death['death_message'])
 		} else {
-			@kweapon = _capitalize(string(@weapon['name']), null, null, 'all')
-		}	
-		@pvpmsg = array(@death['killer'].' killed '.@death['player'].' wielding '.@kweapon, 
-			@death['killer'].' slays '.@death['player'].' with a '.@kweapon, 
-			@death['player'].' needs more practice and was killed by '.@death['killer'], 
-			@death['killer'].' hunts '.@death['player'].' down with a '.@kweapon, 
-			@death['player'].' took a leap of faith but landed on '.@death['killer'].'\'s '.@kweapon, 
-			'Score '.@death['killer'].' +1 - '.@death['player'].' 0', 
-			@death['player'].' was fragged by '.@death['killer'], 
-			@death['player'].' is now redstone thanks to '.@death['killer'].'\'s '.@kweapon, 
-			@death['killer'].' slapped '.@death['player'].' around a bit too hard.'
-		)
-		_send_discord_message(@dc.'\n'.':put_litter_in_its_place: '.array_get_rand(@pvpmsg), 'death')
+			@weapon = pinv(@death['killer'], null)
+			if(@weapon == null) { 
+				@weapon = 'Hand' 
+			} else {
+				@weapon = _capitalize(string(@weapon['name']), null, null, 'all')
+			}
+			@pvpmsg = array(
+				@death['killer'].' killed '.@death['player'].' wielding '.@weapon, 
+				@death['killer'].' slays '.@death['player'].' with a '.@weapon, 
+				@death['killer'].' hunts '.@death['player'].' down with a '.@weapon, 
+				@death['player'].' took a leap of faith but landed on '.@death['killer'].'\'s '.@weapon, 
+				'Score '.@death['killer'].' +1 - '.@death['player'].' 0', 
+				@death['player'].' was fragged by '.@death['killer'], 
+				@death['player'].' is now redstone thanks to '.@death['killer'].'\'s '.@weapon, 
+				@death['killer'].' slapped '.@death['player'].' around a bit too hard.'
+			)
+			@pvpmsg = array_get_rand(@pvpmsg)
+		}
+		_send_discord_message(@dc.'\n'.':put_litter_in_its_place: '.@pvpmsg, 'death')
 	} else {
 		_send_discord_message(@dc.@death['death_message'], 'death')
 	}

@@ -8,9 +8,8 @@
 reloader:/reloader [$action] [$option1] [$option2] [$option3] [$] = >>>
 #Include required backend functions
 include('includes.library/reload-functions-Core.ms')
-### What is the name of this script?
 assign(@name, string(import('dispenserreloader.name')))
- 
+@args = parse_args($)
 ### Get server item defaults
 @serveritemdefaults = _reloader_get_server_defaults()
 @defaultitem = @serveritemdefaults['item']
@@ -254,13 +253,10 @@ case 'st':
 	if(@atr == 0 && @ttr == 0) { 	
 		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You have not used '.@name.'!') 
 	}
-	@tr = @atr + @ttr
-	if(@tr == '' || @tr == null) { @tr = 0 }
-	
 	msg(color(7).'All time '.@name.' runs:')
 	msg(color(6).'/reload area: '.color('b')._reloader_number_commaize(@atr).' runs')
 	msg(color(6).'/reload (tool): '.color('b')._reloader_number_commaize(@ttr).' runs')
-	msg(color(6).'Total '.@name.' runs: '.color('b')._reloader_number_commaize(@tr).' runs')
+	msg(color(6).'Total '.@name.' runs: '.color('b')._reloader_number_commaize(@atr + @ttr).' runs')
 	
 	msg(color(9).' -------')
  
@@ -273,8 +269,7 @@ case 'st':
 	@lr = get_value(@name.'.player.'.@player['id'].'.stats.last.run')
 	if(is_array(@lr)) {
 		if(array_index_exists(@lr, 'action')) {	
-			if(@viewplayer == false) { @lrpm = ', by '.@lr['player'].'.' } else { @lrpm = '.' }
-			msg(color(7).'Last run: '.color(6).@lr['action'].@lrpm)
+			msg(color(7).'Last run: '.color(6).@lr['action'].'.')
 			if(@lr['blocks'] == 1) { assign(@p, 'block') assign(@p2, 'was') } else { assign(@p, 'blocks') assign(@p2, 'were') }
 			msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color('b')._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
 		}
@@ -620,12 +615,10 @@ case '-a':
 		}
 		msg(color(@dmcolor).'['.color(6).@name.color(@dmcolor).'] '.color(3).@donemsg)
 		if(@verbose == true && @filled['blocks'] > 0) { msg(color(7).@filledinfo) }
-#permission
 	} else {
 		msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permission to fill an area!')
 	}
-#end of switch	
-        die()
+	die()
 }
  
 ### ReLoad tool

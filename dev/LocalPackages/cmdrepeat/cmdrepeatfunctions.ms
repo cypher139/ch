@@ -1,5 +1,5 @@
 #version 1.2-tmc
-bind('player_command', array(id: 'cmdrepeat.cmd', priority: 'HIGH'), null, @cmdevent) {
+bind('player_command', array('id': 'cmdrepeat.cmd', 'priority': 'HIGH'), null, @cmdevent) {
 	assign(@player, _cmd_getplayerID(player()))
 	assign(@cmd, reg_split(' ', @cmdevent['command']))
 	@dev = import('ch.player.'.@player['id'].'.dev.scripts.cmdrepeat')

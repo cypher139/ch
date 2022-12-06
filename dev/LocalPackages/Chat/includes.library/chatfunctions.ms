@@ -180,7 +180,7 @@ proc _healthbar(@player, @fchar, @echar) {
 	return(array_implode(@healthbar, ''))
 }
 
-proc _send_discord_message(@message, @from, @channel) {
+proc _send_discord_message(@message, @from, @channel, @option) {
 
 	if(@from == '', assign(@from, player()))
 	if(@channel == '', assign(@channel, 'minecraft'))
@@ -194,6 +194,7 @@ proc _send_discord_message(@message, @from, @channel) {
 		assign(@sendmsg, '['.@from.'] '.@message)
 	case 'death':
 		assign(@sendmsg, ':skull_crossbones: '.@message)
+		
 	case 'command':
 		assign(@sendmsg, ':desktop: '.@message)
 	default:

@@ -31,8 +31,8 @@ if(is_numeric($id) && $id > 0) {
 @bi = get_value('player.'._getplayerID(player())['id'].'.last.death.drops')
 if(!is_array(@bi)) { @bi = array() }
 
-if(array_index_exists(@bi, @id, 'name')) {
-	foreach(@item in @bi) {
+if(array_index_exists(@bi, @id, 0, 'name')) {
+	foreach(@item in @bi[@id]) {
 	#array: meta, qty, name
 		pgive_item(player(), @item)
 	}
