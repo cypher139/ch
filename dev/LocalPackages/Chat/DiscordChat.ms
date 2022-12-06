@@ -157,8 +157,9 @@ bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), n
 	}
 
 	if(@death['killer'] != null) {
-		if(event_exists('Chat.msg.Death')) {
+		if(has_bind('Chat.msg.Death')) {
 			@pvpmsg = strip_colors(@death['death_message'])
+			@pvpmsg = reg_replace('^\\[#[0-9]+\\]\\s', '', @pvpmsg)
 		} else {
 			@weapon = pinv(@death['killer'], null)
 			if(@weapon == null) { 

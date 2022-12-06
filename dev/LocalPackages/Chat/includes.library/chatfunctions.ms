@@ -28,22 +28,6 @@ proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	)
 }
 
-/*
-proc _capitalize(@string) {
-	assign(@l1, to_upper(@string[0]))
-	assign(@length, length(@string) - 1)
-	assign(@newstring, @l1.@string[cslice(1, @length)])
-	return(@newstring)
-}
-
-*/
-#supposed to work but doesnt:
-#proc(_capitalize, @string,
-#	assign(@l1, to_upper(@string[0]))
-#	assign(@newstring, @l1.@string[1..])
-#	return(@newstring)
-#)
-
 proc _getplayer(@name) {
 	assign(@chars, length(@name))
 #returns the real player's name

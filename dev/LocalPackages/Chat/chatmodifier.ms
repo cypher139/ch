@@ -30,7 +30,7 @@ set_uncaught_exception_handler(closure(@ex){
 		assign(@msg2, color(9).'../'.@pathdisplay.color(7).' Line: '.color('a').@v['line'].'.'.@v['col'])
 		console(color('c').'['.color(6).@name.color('c').'] '.@msg2, false)
 		if(@dev == true) {msg(@msg2)}
-	})
+	}
 	return(true)
 });
 
