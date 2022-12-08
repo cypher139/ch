@@ -1,7 +1,7 @@
 #Setup Dev messages and update player database
 bind('player_join', array(id: 'cypher139.login'), null, @login) {
 #Event playername may sometimes return null? more testing needed
-	assign(@player, player())
+	@player = player()
 	@puuid = puuid(@player, 'dashless')
 
 #Are you a dev for Cypher's scripts on this server?

@@ -6,7 +6,7 @@
 ######################################################
 
 admin:/discordroles [$] = >>>
-assign(@name, 'DiscordRoles')
+@name = 'DiscordRoles'
 @prefix = color(7).'['.color(6).@name.color(7).'] '
 
 proc(_help,
@@ -90,7 +90,7 @@ case 'update':
 					} else {
 					tmsg(@player, 'error on id: '.@id)		
 					}
-					assign(@f, @f + 1)
+					@f++
 					continue()
 				)
 				if(!is_array(@memberroles)) {

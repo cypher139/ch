@@ -1,7 +1,7 @@
 #Per Game Mode Inventories / Game Mode Lock Enforcement
 #version 2.0-tmc
 bind('gamemode_change', array(id: 'gamemode.listener', priority: 'HIGH'), null, @gmc) {
-	assign(@name, 'gameMode')
+	@name = 'gameMode'
 	@uuid = puuid(@gmc['player'], 'dashless')
 	@dev = import('ch.player.'.@uuid.'.dev.scripts.gamemode')
 	if(@dev == true) {

@@ -10,25 +10,25 @@ include('includes.library/reload-functions-Core.ms')
 
 #Listen for interactions with the ReLoad tool
 bind('player_interact', array(id: 'ReLoad.tool'), array(button: 'left'), @reload) {
-	assign(@name, import('dispenserreloader.name'))
-	assign(@player, _reloader_getplayerID(@reload['player']))
-	assign(@verbose, import(@name.'.player.'.@player['id'].'.verbose'))
+	@name = import('dispenserreloader.name')
+	@player = _reloader_getplayerID(@reload['player'])
+	@verbose = import(@name.'.player.'.@player['id'].'.verbose')
 
 	#Find the tool in the players hand. Don't use just a hand, sorry.
-	assign(@tool, pinv(@player['name'], null))
+	@tool = pinv(@player['name'], null)
 	if(@tool == null || !is_array(@tool)) {
 	#ReLoad tool does not bind to Hand.
 		die()
 	}
-	assign(@tooldata, import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name']))	
+	@tooldata = import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'])
 	if(!is_array(@tooldata)) {
 		# No tool data set yet, nothing to do here.
 		die()
 	}
 	if(@tooldata['use'] == true && @reload['action'] == 'left_click_block' && has_permission(@player['name'], 'commandhelper.alias.reloader')) {
-		assign(@tooldisplay, _reloader_item_name(@tool['name']))
+		@tooldisplay = _reloader_item_name(@tool['name'])
 		# Check: Item permissions
-		assign(@defaultitem, import(@name.'.default.item.type'))
+		@defaultitem = import(@name.'.default.item.type')
 		if(@defaultitem != @tooldata['item']) {
 			if(_reloader_check_perm(@player['name'], 'item', @tooldata['item']) == false) {
 				die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use item type "'._reloader_item_name(@tooldata['item'])['display'].'".')
@@ -47,7 +47,7 @@ bind('player_interact', array(id: 'ReLoad.tool'), array(button: 'left'), @reload
 		}
 
 		# Fill the Block, assigning for return value
-		assign(@fillreturn, _reloader_fill(@reload['location'][0], @reload['location'][1], @reload['location'][2], @reload['location'][3], @tooldata['item'], @player['name'], @tooldata['qty'], @tooldata['fuel'], @verbose))
+		@fillreturn = _reloader_fill(@reload['location'][0], @reload['location'][1], @reload['location'][2], @reload['location'][3], @tooldata['item'], @player['name'], @tooldata['qty'], @tooldata['fuel'], @verbose)
 		# Stats messages
 		if(@fillreturn['fail'] == true) {
 			die(@fillreturn['msg'])

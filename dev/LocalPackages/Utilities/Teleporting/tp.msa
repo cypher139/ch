@@ -21,7 +21,7 @@ if(!array_index_exists(@args, 0)) {
 } else {
 	if(equals_ic('back', @args[0])) {
 		if(!has_permission(player(), 'commandhelper.alias.deathtp')) { die(color('c').'You do not have permission to teleport back!?') }
-		assign(@name, 'BackTP')
+		@name = 'BackTP'
 		@dropid = 1
 		if(array_index_exists(@args, 1)) {
 			if(is_numeric(@args[1])) {

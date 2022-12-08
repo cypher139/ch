@@ -81,9 +81,9 @@ proc _getplayerID(@option1) {
 		}
 	}
 	#Bedrock to Java players come in with name ".NAME", remove dot
-	if(reg_count('^[\\.].*', @pid['name']) == 1, 
-		assign(@pid['display'], reg_replace('^[\\.]','', @pid['name']))
-	)
+	if(reg_count('^[\\.].*', @pid['name']) == 1) {
+		@pid['display'] = reg_replace('^[\\.]', '', @pid['name'])
+	}
 	return(@pid)
 }
 

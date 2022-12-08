@@ -8,28 +8,28 @@
 admin:/reloaderadmin [$action] [$option1] [$option2] [$option3] [$] = >>>
 #Include required backend functions
 include('includes.library/reload-functions-Core.ms')
-assign(@name, string(import('dispenserreloader.name')))
-assign(@serverdefaults, _reloader_get_server_defaults())
+@name = string(import('dispenserreloader.name'))
+@serverdefaults = _reloader_get_server_defaults()
  
 @action = to_lower($action)
 @option1 = $option1
 @option2 = $option2
 @option3 = $option3
 @player = _reloader_getplayerID(player())
-assign(@dev, import('ch.player.'.@player['id'].'.dev.scripts.reload'))
+@dev = import('ch.player.'.@player['id'].'.dev.scripts.reload')
  
 set_uncaught_exception_handler(closure(@ex){
 	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
 	msg(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['message'])
-	assign(@msg1, color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message'])
+	@msg1 = color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message']
 	if(@dev == true) {msg(@msg1)}
 	console(@msg1, false)
 	array_iterate(@ex['stackTrace'], closure(@k, @v) {
-		assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @v['file'])[1])
+		@pathdisplay = reg_split('\\/CommandHelper\\/', @v['file'])[1]
 		if(reg_count('(includes.library)', @pathdisplay) > 0) {
-			assign(@pathdisplay, 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1])
+			@pathdisplay = 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1]
 		}		
-		assign(@msg2, color(9).'../'.@pathdisplay.color(7).' Line: '.color('a').@v['line'].'.'.@v['col'])
+		@msg2 = color(9).'../'.@pathdisplay.color(7).' Line: '.color('a').@v['line'].'.'.@v['col']
 		console(color('c').'['.color(6).@name.color('c').'] '.@msg2, false)
 		if(@dev == true) {msg(@msg2)}
 	})
@@ -37,7 +37,7 @@ set_uncaught_exception_handler(closure(@ex){
 });
  
 proc _reloader_help() {
-	assign(@name, string(import('dispenserreloader.name')))
+	@name = string(import('dispenserreloader.name'))
 	msg(color(6).'ReLoad admin help:')
 	msg(color('a').'Command usage: <required> [optional]')
 	msg(color('a').'/reloaderadmin <action> [option1] [option2] [option3]')
@@ -115,7 +115,8 @@ case 'st':
 	case false:
 		@idprefix = @name 
 		@startmsg = 'Global stats:'
-		@lr = get_value(@idprefix.'.stats.last.run.1')
+		@lr = get_value(@idprefix.'.stats.last.runs')
+		if(!is_array(@lr)) { @lr = array('action': 'Run Not Found', 'blocks': 0, 'filledqty': 0, 'item': 'DIRT') } else { @lr = @lr[0] }
 	default:
 		@player = _reloader_getplayerID(@option1)
 		@idprefix = @name.'.player.'.@player['id']
@@ -141,7 +142,7 @@ case 'st':
 	
 	msg(color(9).' -------')
  
-	assign(@fb, get_value(@idprefix.'.stats.alltime.filled.blocks'))
+	@fb = get_value(@idprefix.'.stats.alltime.filled.blocks')
 	if(@fb == '' || @fb == null) { @fb = 0 }
 	msg(color(7).'Total blocks filled: '.color('b')._reloader_number_commaize(@fb))
 	
@@ -157,7 +158,7 @@ case 'st':
 	}
 	msg(color(9).' -------')
  
-	assign(@items, get_value(@idprefix.'.stats.alltime.items'))
+	@items = get_value(@idprefix.'.stats.alltime.items')
 	if(is_array(@items)) { 
 		msg(color(9).'Total items used to fill blocks:')	
 	} else {
@@ -187,17 +188,17 @@ case 'set':
 	case 'f':
 	case 'item':
 	case 'i':
-		assign(@olditem, @serverdefaults['item'])
+		@olditem = @serverdefaults['item']
 		#fuel Check
 		switch(to_lower(@option1)) { 
 		case 'f':
 		case 'fuel':
-			assign(@fuel, true)
+			@fuel = true
 		default:
-			assign(@fuel, false)
+			@fuel = false
 		}
 		if(@fuel == true) {
-			assign(@olditem, @serverdefaults['fuel'])
+			@olditem = @serverdefaults['fuel']
 		}
 		#Clear check
 		switch(to_lower(@option2)) {
@@ -207,13 +208,13 @@ case 'set':
 		case 'clear':
 		case '0':
 		case 'air':
-			assign(@serverdefaults, _reloader_get_server_defaults('clearitem'))
-			assign(@item, @serverdefaults['item'])
+			@serverdefaults = _reloader_get_server_defaults('clearitem')
+			@item = @serverdefaults['item']
 			if(@fuel == true) {
-				assign(@item, @serverdefaults['fuel'])
+				@item = @serverdefaults['fuel']
 			}
 		default:
-			assign(@item, @option2)
+			@item = @option2
 			if(@option2 == '' || @option2 == null) {
 				die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You didn\'t specify the item to use!')
 			}
@@ -252,8 +253,8 @@ case 'set':
 		case 'remove':
 		case 'default':
 		case 'clear':
-			assign(@serverdefaults, _reloader_get_server_defaults('clearqty'))
-			assign(@option2, @serverdefaults['qty'])
+			@serverdefaults = _reloader_get_server_defaults('clearqty')
+			@option2 = @serverdefaults['qty']
 		case '0':
 			die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use a quantity of 0!')
 		case '':

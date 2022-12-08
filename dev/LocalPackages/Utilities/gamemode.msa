@@ -1,7 +1,7 @@
 #Idea based on ShiftMode (http://dev.bukkit.org/server-mods/shiftmode/)
 #version 2.0-tmc
 *:/mode [$] = >>>
-assign(@name, 'gameMode')
+@name = 'gameMode'
 if(!has_permission(player(), 'commandhelper.alias.shiftmode')) {
 	die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
 }
@@ -36,7 +36,7 @@ if(@user == '~console') {
 	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.gamemode') == true || import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.all') == true) { @dev = true }
 }
 */
-assign(@user, _getplayerID(@user))
+@user = _getplayerID(@user)
 
 #Arguments nag message
 if($ != '' && !has_permission('commandhelper.alias.shiftmode.notip')) {
@@ -129,7 +129,7 @@ if(@user['name'] == player()) {
 
 #TooManyItems: Creative mode setting
 *:/gamemode [$] = >>>
-assign(@name, 'gameMode')
+@name = 'gameMode'
 if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
 	call_alias(/mode $)
 } else {
@@ -138,7 +138,7 @@ if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
 <<<
 
 *:/gm [$] = >>>
-assign(@name, 'gameMode')
+@name = 'gameMode'
 if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
 	call_alias(/mode $)
 } else {

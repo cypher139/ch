@@ -39,9 +39,9 @@ discord_connect('discordCredentials2', closure(){
 
 #Send Minecraft Player message to Discord
 bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
-	assign(@channel, 'minecraft')
+	@channel = 'minecraft'
 	@allowedChannels = import('Chat.Discord.Channels.send')
-	assign(@sendmsg, @chat['message'])
+	@sendmsg = @chat['message']
 	
 	# Automatically chat on last channel a message was received on.
 	@lastmsg = import('Chat.Discord.last.msg.1')
@@ -56,14 +56,14 @@ bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
 	# Specify a channel name as first word in chat - Channel override
 	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']) == 1) {
 		# remove channel mention from message content	
-		assign(@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])
+		@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1]
 		# returns 'channel' in '#channel message text'
-		assign(@channel, reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1])
+		@channel, reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1]
 #dev		tmsg(@chat['player'], @sendmsg.' channel name:'.@channel)
 		modify_event('message', @sendmsg)
 	}
 	# Final Channel check: If not in allowed list, switch channel to default
-	if(!array_contains(@allowedChannels, @channel)) {assign(@channel, 'minecraft')}
+	if(!array_contains(@allowedChannels, @channel)) { @channel = 'minecraft' }
 	_send_discord_message(@sendmsg, player(), @channel)
 }
 
@@ -127,7 +127,7 @@ bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @d
 			}
 		}
 	#Send			
-		assign(@sendmsg, color(@usernamecolor).'['.@discord['username'].'] '.color(7).@discord['message'])
+		@sendmsg = color(@usernamecolor).'['.@discord['username'].'] '.color(7).@discord['message']
 		broadcast(@sendmsg, all_players())
 		if(import('Chat.Discord.Console.receive') == true) {
 			console(@sendmsg, false)
@@ -142,9 +142,7 @@ bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @d
 
 
 bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), null, @death) {
-	
-	assign(@counter, get_value('DeathCount.players.death.counter')[puuid(@death['player'], 'dashless')] + 1)
-
+	@counter = get_value('DeathCount.players.death.counter')[puuid(@death['player'], 'dashless')] + 1
 	switch(@counter) {
 		case '':
 		case null:
@@ -189,3 +187,29 @@ bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), n
 	}
 }
 # :people_wrestling: :put_litter_in_its_place: 
+
+bind('server_command', array('id': 'Chat.Discord.msg.Send.Console', priority: 'MONITOR'), (array('prefix': 'say', 'type': 'console')), @event) {
+if(@event['prefix'] == @event['command']) { console(color(4).'You need to actually say something with say!', false) die() }
+
+@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
+@channel = 'minecraft'
+
+	# Automatically chat on last channel a message was received on.
+	@lastmsg = import('Chat.Discord.last.msg.1')
+	if(is_array(@lastmsg)) {
+		if(array_index_exists(@lastmsg, 'channel')) {
+			if(time() < (@lastmsg['time'] + 234567)) {
+				@channel = @lastmsg['channel']
+			}	
+		}
+	}
+	# Specify a channel name as first word in chat - Channel override
+	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @sendmsg) == 1) {
+		# returns 'channel' in '#channel message text'
+		@channel = reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @sendmsg)[1])[1]
+		# remove channel mention from message content	
+		@sendmsg = reg_split('^(#+[a-zA-Z0-9-_]{1,})', @sendmsg)[1]
+	}
+
+	_send_discord_message(@sendmsg, 'Server', @channel)
+}	

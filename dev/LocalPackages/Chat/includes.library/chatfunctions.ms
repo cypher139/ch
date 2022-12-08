@@ -11,15 +11,15 @@ proc _chat_getplayerID(@option1) {
 	@pid['nick'] = pinfo(@option1)[4];
 	}
 	#Bedrock to Java players come in with name ".NAME", remove dot
-	if(reg_count('^[\\.].*', @pid['name']) == 1, 
-		assign(@pid['display'], reg_replace('^[\\.]','', @pid['name']))
-	)
+	if(reg_count('^[\\.].*', @pid['name']) == 1) {
+		@pid['display'] = reg_replace('^[\\.]','', @pid['name'])
+	}
 	return(@pid)
 }
 
 proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
-	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg', assign(@consolemsg, @msg))
-	if(@cmconcat == 'yes', assign(@consolemsg, @msg.@consolemsg))
+	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg', @consolemsg = @msg)
+	if(@cmconcat == 'yes', @consolemsg = @msg.@consolemsg)
 	console(@consolemsg, false)
 	foreach(all_players(), @p,
 		if(has_permission(@p, 'commandhelper.alias.admin.message') && @p != @hideplayer, 
@@ -29,20 +29,20 @@ proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 }
 
 proc _getplayer(@name) {
-	assign(@chars, length(@name))
+	@chars = length(@name)
 #returns the real player's name
-	assign(@isfound, false)
+	@isfound = false
 	foreach(all_players(), @player,
 		#if(@chars < length(@player),
 			if(equals_ic(@name, substr(@player, 0, @chars)),
-				assign(@isfound, true)
+				@isfound = true
 				broadcast(1)
 			)
 		#)
 		if(pinfo(@player)[4] != @player,
-			assign(@nick, pinfo(@player)[4])
+			@nick = pinfo(@player)[4]
 			if(equals_ic(@nick, substr(@name, 0, @chars)),
-				assign(@isfound, true)
+				@isfound = true
 				assign(@return, @player) 
 				broadcast(2)	
 			)
@@ -58,8 +58,8 @@ proc _getplayer(@name) {
 
 proc _getnick(@player) {
 	
-	assign(@player, pinfo(@player)[0])
-	assign(@nick, pinfo(@player)[4])
+	@player = pinfo(@player)[0]
+	@nick = pinfo(@player)[4]
 
 	if(@player == @nick, return(@player), return(@nick))
 }
@@ -67,7 +67,7 @@ proc _getnick(@player) {
 
 proc _rainbow(@msg, @type, @returntype) {
 	if(@msg == '') { return(color('c').'You didn\'t say anything!!') }
-	assign(@msg, strip_colors(@msg))
+	@msg = strip_colors(@msg)
 	switch(@type) {
 		case 'all':
 			@colors = array(0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f')
@@ -129,7 +129,7 @@ proc _rainbow(@msg, @type, @returntype) {
 }
 
 #fabulous light colors: 6abcdef
-#			assign(@string, @string.'\u0026'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i, @i + 1))
+#			@string, @string.'\u0026'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i = @i + 1)
 
 #ichat +healthbar replacement
 proc _healthbar(@player, @fchar, @echar) {
@@ -170,31 +170,34 @@ proc _healthbar(@player, @fchar, @echar) {
 }
 
 proc _send_discord_message(@message, @from, @channel, @option) {
-
-	if(@from == '', assign(@from, player()))
-	if(@channel == '', assign(@channel, 'minecraft'))
+	if(@message == '') { return(false) }
+	if(@from == '') { @from = player() }
+	if(@channel == '') { @channel = 'minecraft' }
 	
 	@message = strip_colors(@message)
 
 	switch(to_lower(@from)) {
 	case 'none':
-		assign(@sendmsg, @message)
+		@sendmsg = @message
 	case 'server':
-		assign(@sendmsg, '['.@from.'] '.@message)
+		@sendmsg = '['.@from.'] '.@message
 	case 'death':
-		assign(@sendmsg, ':skull_crossbones: '.@message)
-		
+		@sendmsg = ':skull_crossbones: '.@message
 	case 'command':
-		assign(@sendmsg, ':desktop: '.@message)
+		@sendmsg = ':desktop: '.@message
 	default:
-		assign(@sendmsg, '`['.@from.']` '.@message)
+		@sendmsg = '`['.@from.']` '.@message
 	}
 	if(function_exists('discord_broadcast')) {
 		try(
 			discord_broadcast(@channel, associative_array('content': @sendmsg))
+			return(true)
 		,@fail,
 #			msg(@fail)
 			_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@fail['message'])
+			return(false)
 		)
+	} else {
+		return(false)
 	}
 }

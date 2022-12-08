@@ -11,22 +11,22 @@
 /none [$action] [$] = >>>
 #Include required backend functions
 include('includes.library/reload-functions-Core.ms')
-assign(@name, string(import('dispenserreloader.name')))
-assign(@player, _reloader_getplayerID(player()))
+@name = string(import('dispenserreloader.name'))
+@player = _reloader_getplayerID(player())
 if(player() == '~console') {
 	die(color(7).'['.color(6).@name.color(7).'] '.color('c').'The console cannot use a tool.')
 }
 
-assign(@index, null)
+@index = null
 #Find the tool in the players hand. Don't use just a hand, sorry.
-assign(@tool, pinv(@player['name'], @index))
+@tool = pinv(@player['name'], @index)
 if(@tool == null || !is_array(@tool)) {
 	#ReLoad tool does not bind to Hand. Redirecting to WorldEdit.	
 	run(/none)
 	die()
 }
-assign(@tooldisplay, _reloader_item_name(@tool['name']))
-assign(@tooldata, import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name']))
+@tooldisplay = _reloader_item_name(@tool['name'])
+@tooldata = import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'])
 
 #Shortcut to /reloader managebind
 switch(to_lower($action)) {
