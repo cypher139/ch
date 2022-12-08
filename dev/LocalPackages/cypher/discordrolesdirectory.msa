@@ -12,12 +12,12 @@ assign(@name, 'DiscordRoles')
 proc(_help,
 	msg(color(6).'script help:')
 	msg(color('a').'Command usage: <required> [optional]')
-	msg(color('a').'/discordroles <action> [option1] [option2]')
 	msg(color(6).'Actions:')
 	msg(color(7).'/discordroles update 1'.color(4).' - '.color('f').'add initial user list array. this needs manually configured in this file. expects an entire array of Discord User IDs only. ex. array(1234567890, 234456576890, 2234523, 524352, 43523) etc')
 	#MemberList bot /server filetype:csv flags:all . csv regex replace ^.+[#][0-9]{4}["][,]["] replace with '' and ["][,].+ replace with '' then replace \r\n with ', '. encase line in array()
 	msg(color(7).'/discordroles update 2'.color(4).' - '.color('f').'Takes members IDs and gets all roles each member belongs to, and also outputs list of total roles seen.')
 	msg(color(7).'/discordroles update 3'.color(4).' - '.color('f').'Takes list of members and their roles, output a list of roles and what members belong to that role.')
+	msg(color(7).'/discordroles update 4'.color(4).' - '.color('f').'Outputs the list of role groups and what members belong to each role in that group. \n Outputs via Discord messages mentions and/or file output. \n -- We take no repsonsibility for users who are mad about many automated pings. \n -- **File output requires manually configured discord tags and IDs into persistance. ex. array(discorduser#0123: 2873654872153, ) etc.**')
 )
 
 
