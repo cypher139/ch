@@ -38,7 +38,7 @@ discord_connect('discordCredentials2', closure(){
 #color() Additionally, any RGB colour can be used in the hex format '#rrggbb'. 
 
 #Send Minecraft Player message to Discord
-bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
+bind('player_chat', array('id': 'Chat.Discord.msg.Send'), null, @chat) {
 	@channel = 'minecraft'
 	@allowedChannels = import('Chat.Discord.Channels.send')
 	@sendmsg = @chat['message']
@@ -56,9 +56,9 @@ bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
 	# Specify a channel name as first word in chat - Channel override
 	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']) == 1) {
 		# remove channel mention from message content	
-		@sendmsg, reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1]
+		@sendmsg = reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1]
 		# returns 'channel' in '#channel message text'
-		@channel, reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1]
+		@channel = reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1]
 #dev		tmsg(@chat['player'], @sendmsg.' channel name:'.@channel)
 		modify_event('message', @sendmsg)
 	}
@@ -69,7 +69,7 @@ bind('player_chat', array(id: 'Chat.Discord.msg.Send'), null, @chat) {
 
 
 #Send Discord User message to Minecraft Players.
-bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @discord) {
+bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, @discord) {
 	@allowedChannels = import('Chat.Discord.Channels.receive')
 #	broadcast(@discord, all_players())
 	#temp array setup
@@ -141,7 +141,7 @@ bind('discord_message_received', array(id: 'Chat.Discord.msg.Receive'), null, @d
 }
 
 
-bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), null, @death) {
+bind('player_death', array('id': 'Chat.Discord.msg.Death', 'priority': 'MONITOR'), null, @death) {
 	@counter = get_value('DeathCount.players.death.counter')[puuid(@death['player'], 'dashless')] + 1
 	switch(@counter) {
 		case '':
@@ -188,12 +188,10 @@ bind('player_death', array(id: 'Chat.Discord.msg.Death', priority: 'MONITOR'), n
 }
 # :people_wrestling: :put_litter_in_its_place: 
 
-bind('server_command', array('id': 'Chat.Discord.msg.Send.Console', priority: 'MONITOR'), (array('prefix': 'say', 'type': 'console')), @event) {
-if(@event['prefix'] == @event['command']) { console(color(4).'You need to actually say something with say!', false) die() }
-
-@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
-@channel = 'minecraft'
-
+bind('server_command', array('id': 'Chat.Discord.msg.Send.Console', 'priority': 'MONITOR'), array('prefix': 'say', 'type': 'console'), @event) {
+	if(@event['prefix'] == @event['command']) { console(color(4).'You need to actually say something with say!', false) die() }
+	@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
+	@channel = 'minecraft'
 	# Automatically chat on last channel a message was received on.
 	@lastmsg = import('Chat.Discord.last.msg.1')
 	if(is_array(@lastmsg)) {
@@ -210,6 +208,5 @@ if(@event['prefix'] == @event['command']) { console(color(4).'You need to actual
 		# remove channel mention from message content	
 		@sendmsg = reg_split('^(#+[a-zA-Z0-9-_]{1,})', @sendmsg)[1]
 	}
-
 	_send_discord_message(@sendmsg, 'Server', @channel)
 }	

@@ -71,7 +71,7 @@ case 'update':
 			@noarraycount = 0
 			@norolescount = 0
 			foreach(@timeid: @id in @memberids) {
-				@timeout = @timeid * 200
+				@timeout = @timeid * 2000
 				set_timeout(@timeout, closure(){
 
 
