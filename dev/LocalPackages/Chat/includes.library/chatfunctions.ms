@@ -43,7 +43,7 @@ proc _getplayer(@name) {
 			@nick = pinfo(@player)[4]
 			if(equals_ic(@nick, substr(@name, 0, @chars)),
 				@isfound = true
-				assign(@return, @player) 
+				@return = @player 
 				broadcast(2)	
 			)
 		)

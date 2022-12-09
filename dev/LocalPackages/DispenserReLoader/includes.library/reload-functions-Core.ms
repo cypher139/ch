@@ -308,7 +308,7 @@ proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbo
 # Set the items in the block.
 	@fqty = 0
 	@re = ''
-	for(assign(@i, 0), @i < @size, @i++) {
+	for(@i = 0, @i < @size, @i++) {
 		switch(@filltype) {
 		case 'FURNACE':
 		case 'SMOKER':

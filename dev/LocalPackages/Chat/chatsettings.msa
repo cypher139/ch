@@ -10,17 +10,17 @@
 
 everyone:/chat [$action] [$option1] [$option2] [$option3] [$option4] = >>>
 # What is the name of this script?
-assign(@name, 'Chat')
+@name = 'Chat'
 # Include required backend functions
 include('includes.library/chatfunctions.ms')
 
 
-assign(@action, to_lower($action))
-assign(@option1, $option1)
-assign(@option2, $option2)
-assign(@option3, $option3)
-assign(@option4, $option4)
-assign(@player, _getplayerID(player()))
+@action = to_lower($action)
+@option1 = $option1
+@option2 = $option2
+@option3 = $option3
+@option4 = $option4
+@player = _getplayerID(player())
 
 #Action list help: This appears on /chat, or when a unsupported action variable is passed
 proc _chat_help() {
@@ -46,23 +46,21 @@ case 'setcolor':
 case 'set':
 case 's':
 	#The next options require a valid color code.
-	assign(@color, strip_colors(@option2))
-	if(reg_count('^(&.*)', @color) > 0, null,
-		assign(@color, '&'.@color)
-	)
-	if(reg_match('^&[a-fA-f0-9]$', @color), null,
+	@color = strip_colors(@option2)
+	if(reg_count('^(&.*)', @color) == 0) { @color = '&'.@color }
+	if(!reg_match('^&[a-fA-f0-9]$', @color)) {
 		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'Invalid color code specified! '.color('f').'Use this list to figure out what color you would like, then re-type the command with your new color.')
 		call_alias(/colors)
 		die()
-	)
-    assign(@newc, reg_split('&', @color))
+	}
+    @newc = reg_split('&', @color)
 	switch(@option1) {
 	case 'username':
 	case 'user':
 	case 'u':
-		assign(@oldcolor, get_value(@name.'.player.'.@player['id'].'.chat.format.colors.username'))
-		if(@oldcolor == '' || @oldcolor == null, assign(@oldcolor, 'f'))
-		assign(@usernamecolor, @newc[1])
+		@oldcolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.username')
+		if(@oldcolor == '' || @oldcolor == null, @oldcolor = 'f')
+		@usernamecolor = @newc[1]
 		if(@oldcolor == @newc[1],
 			die(color('e').'['.color(7).@name.color('e').'] '.color(7).'Your username color is already '.color(@oldcolor).'&'.@oldcolor.color(7).'!')
 		)
@@ -73,9 +71,9 @@ case 's':
 	
 	case 'chat':
 	case 'c':
-		assign(@oldcolor, get_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat'))
-		if(@oldcolor == '' || @oldcolor == null, assign(@oldcolor, 'f'))
-		assign(@usernamecolor, @newc[1])
+		@oldcolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat')
+		if(@oldcolor == '' || @oldcolor == null, @oldcolor = 'f')
+		@usernamecolor = @newc[1]
 		if(@oldcolor == @newc[1],
 			die(color('e').'['.color(7).@name.color('e').'] '.color(7).'Your default chat color is already '.color(@oldcolor).'&'.@oldcolor.color(7).'!')
 		)
@@ -91,42 +89,50 @@ case 's':
 case 'view':
 case 'v':
 	msg(color(6).'['.color(7).@name.color(6).'] '.color('b').'Chat settings for: '.color('a').@player['display'])
-	assign(@usercolor, get_value(@name.'.player.'.@player['id'].'.chat.format.colors.username'))
+	@usercolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.username')
 	if(@usercolor == '' || @usercolor == null,
-		assign(@usercolor, 'f') assign(@say, 'Unset')
+		@usercolor = 'f' 
+		@say = 'Unset'
 	,
-		assign(@say, '&'.@usercolor)
+		@say = '&'.@usercolor
 	)
 	msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Username color: '.color(@usercolor).@say)
-	assign(@chatcolor, get_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat'))
+	@chatcolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat')
 	if(@chatcolor == '' || @chatcolor == null,
-		assign(@chatcolor, 'f') assign(@say, 'Unset')
+		@chatcolor = 'f'
+		@say = 'Unset'
 	,
-		assign(@say, '&'.@chatcolor)
+		@say = '&'.@chatcolor
 	)
 	msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'Chat color: '.color(@chatcolor).@say)
-	assign(@colorize, get_value(@player.'.chat.format.colorize'))
+	@colorize = get_value(@player.'.chat.format.colorize')
 	if(@colorize == true || @colorize == '' || @colorize == null,
-		assign(@ccolor, 'a') assign(@say, 'Yes')
+		@ccolor = 'a'
+		@say = 'Yes'
 	,
-		assign(@ccolor, 'c') assign(@say, 'No')
+		@ccolor = 'c' 
+		@say = 'No'
 	)
 	msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Colorize color codes in chat: '.color(@ccolor).@say)
 	if(has_permission(@player['name'], 'commandhelper.alias.chat.use.randcolor'),
-		assign(@rc, get_value(@name.'.player.'.@player['id'].'.chat.format.colorize'))
+		@rc = get_value(@name.'.player.'.@player['id'].'.chat.format.colorize')
 		if(@rc == true || @rc == '' || @rc == null ,
-			assign(@rccolor, 'a') assign(@say, 'Yes')
+			@rccolor = 'a'
+			@say = 'Yes'
 		,
-			assign(@rccolor, 'c') assign(@say, 'No')
+			@rccolor = 'c'
+			@say = 'No'
 		)
 		msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'Random starting color in chat: '.color(@rccolor).@say)
 	)
 	if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'),
-		assign(@rainbow, get_value(@name.'.player.'.@player['id'].'.chat.rainbow.toggle'))
+		@rainbow = get_value(@name.'.player.'.@player['id'].'.chat.rainbow.toggle')
 		if(@rainbow == true || @rainbow == '' || @rainbow == null,
-			assign(@racolor, 'a') assign(@say, 'Yes')
+			@racolor = 'a'
+			@say = 'Yes'
 		,
-			assign(@racolor, 'c') assign(@say, 'No')
+			@racolor = 'c'
+			@say = 'No'
 		)
 		msg(color(6).'['.color(7).@name.color(6).'] '._rainbow('Rainbow chat: ', 'doubles').color(@racolor).@say)
 	)

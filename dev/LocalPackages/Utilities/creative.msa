@@ -22,7 +22,7 @@ foreach(@v in @args) {
 	}
 }
 if(@player == '~console') {
-	assign(@dev, false)
+	@dev = false
 } else {
 	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.creative') == true) { @dev = true }
 }
@@ -51,7 +51,7 @@ case 'more':
 	if(@player == '~console') {
 		@slot = null
 	} else {	
-		assign(@slot, pinv(@player, null))
+		@slot = pinv(@player, null)
 	}
 	if(@slot == null) {
 	#cant give you a hand, sorry.
@@ -91,11 +91,11 @@ if(reg_count('[0-9]+:[0-9]+', @id) == 1) {
 } else {
 	# normal legacy ID or normal name
 	if(is_numeric(@id)) {
-		assign(@id, data_name(@id))
-		assign(@idn, $id)
+		@id = data_name(@id)
+		@idn = $id
 	} else {
-		assign(@id, to_upper(@id))
-		assign(@idn, data_values(@id))
+		@id = to_upper(@id)
+		@idn = data_values(@id)
 		if(@idn == null) {
 			@idn = 'No ID'
 		}

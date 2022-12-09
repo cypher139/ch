@@ -1,4 +1,4 @@
-#version 1.0-tmc
+#version 1.1-tmc
 
 teleport:/tp [$] = >>>
 @uuid = puuid(player(),'dashless')
@@ -22,22 +22,24 @@ if(!array_index_exists(@args, 0)) {
 	if(equals_ic('back', @args[0])) {
 		if(!has_permission(player(), 'commandhelper.alias.deathtp')) { die(color('c').'You do not have permission to teleport back!?') }
 		@name = 'BackTP'
-		@dropid = 1
+		@id = 1
 		if(array_index_exists(@args, 1)) {
-			if(is_numeric(@args[1])) {
-				@dropid = @args[1]
+			if(is_numeric(@args[1]) && @args[1] > 0) {
+				@id = @args[1]
 			}
+		} else {
+			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 		}
-		if(@dropid > 2) { @dropid = 2 }
+		if(@id - 1 > 9) { @id = 9 } else { @id = @id - 1 }
 
-		@here = get_value('player.'.puuid(player(), 'dashless').'.last.loc.'.@dropid)
-		switch(@here) {
-			case '':
-			case null:
-				die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, you don\'t have a saved teleport point to teleport to!')
-			default:
-				set_ploc(@here)
-				die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'You were teleported back to where you were before a teleport.')
+		@here = get_value('player.'.@uuid.'.last.location')
+		if(!is_array(@here)) { @here = array() }
+		
+		if(array_index_exists(@here, @id, 'world')) {
+			set_ploc(@here[@id])
+			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'You were teleported back to where you were before a teleport.')
+		} else {
+			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, you don\'t have a saved teleport point to teleport to!')
 		}
 	} 
 	#tp player, allow for partial matching
