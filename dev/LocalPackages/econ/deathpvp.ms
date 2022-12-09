@@ -8,9 +8,9 @@ bind('player_death', array('id': 'econ.death'), null, @death) {
 	if(@death['killer'] != null) {
 		if(function_exists('acc_subtract')) {
 			acc_subtract(@player['name'], @pay)
-			tmsg(@player, color('c')._getplayerID(@death['killer'])['nick'].' killed you. You lost $'.@pay.'.')
+			tmsg(@player['name'], color('c')._getplayerID(@death['killer'])['nick'].' killed you. You lost $'.@pay.'.')
 			acc_add(@death['killer'], @pay)
-			tmsg(@opponent, color('a').'You killed '.@player['nick'].' and earned $'.@pay.' from him.')
+			tmsg(@death['killer'], color('a').'You killed '.@player['nick'].' and earned $'.@pay.' from him.')
 		}
 	}	
 	#modify vanilla death messages

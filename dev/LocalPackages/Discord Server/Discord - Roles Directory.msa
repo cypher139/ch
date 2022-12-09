@@ -9,7 +9,7 @@ admin:/discordroles [$] = >>>
 @name = 'DiscordRoles'
 @prefix = color(7).'['.color(6).@name.color(7).'] '
 
-proc(_help,
+proc _help() {
 	msg(color(6).'script help:')
 	msg(color('a').'Command usage: <required> [optional]')
 	msg(color(6).'Actions:')
@@ -18,7 +18,7 @@ proc(_help,
 	msg(color(7).'/discordroles update 2'.color(4).' - '.color('f').'Takes members IDs and gets all roles each member belongs to, and also outputs list of total roles seen.')
 	msg(color(7).'/discordroles update 3'.color(4).' - '.color('f').'Takes list of members and their roles, output a list of roles and what members belong to that role.')
 	msg(color(7).'/discordroles update 4'.color(4).' - '.color('f').'Outputs the list of role groups and what members belong to each role in that group. \n Outputs via Discord messages mentions and/or file output. \n -- We take no repsonsibility for users who are mad about many automated pings. \n -- **File output requires manually configured discord tags and IDs into persistance. ex. array(discorduser#0123: 2873654872153, ) etc.**')
-)
+}
 
 
 @args = parse_args($)

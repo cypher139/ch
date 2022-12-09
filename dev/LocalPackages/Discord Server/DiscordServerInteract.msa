@@ -1,0 +1,34 @@
+admin:/discorddm [$id] [$] = >>>
+@DMsrec = get_value('server.Discord.DMs.received')
+if(!is_array(@DMsrec)) { @DMsrec = array(array('userid': 'none', 'message': 'initialized DM Array')) }
+switch($id) {
+	case '':
+	case null:
+		die(color('c').'You must specify a user ID to send a DM to!')
+	case 'r':
+	case 'reply':
+	case 're':
+		@id = @DMsrec[0]['userid']
+	default:
+		@id = $id
+}
+#if(!is_numeric($id)) {die(color('c').'You must specify a user ID numerically! Right click the user profile and select Copy ID.') } Not needed, username without tag accepted
+msg(color(4).'With Great Power comes Great Responsibility.'.color(3).' Please ensure the messages you send are family-friendly and do not harrass others.')
+
+@sendmsg = strip_colors($)
+
+try(
+	#Send Message
+	discord_private_message(@id, '`['.player().']` '.@sendmsg)
+	msg(color(6).'Message Sent')
+	#Save recent DMs for future reference if needed
+	@DMs = get_value('server.Discord.DMs.sent')
+	if(!is_array(@DMs)) { @DMs = array(array('message': 'initialized DM Array')) }
+	array_insert(@DMs, array('sender': player(), 'message': @sendmsg, 'time': time()), 0)
+	if(array_index_exists(@DMs, 20)) { array_remove(@DMs, 20) }
+	store_value('server.Discord.DMs.sent', @DMs)
+,@fail,
+	msg(color('c').'Message Not Sent')
+	msg(color('7').@fail['message'])
+)
+<<<
