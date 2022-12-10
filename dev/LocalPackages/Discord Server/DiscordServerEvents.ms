@@ -75,8 +75,8 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VCjoin'), null,
 			@lastping = time() - 864123456
 			store_value('server.Discord.last.ping.'.@VCRoleID, time())
 		}
-	# :angrypingemoji: 1 ping every 24 hours only!
-		if(time() > (@lastping + 86400000)) {
+	# :angrypingemoji: 1 ping every 12 hours only!
+		if(time() > (@lastping + 43200000)) {
 		#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
 		set_timeout(60000, closure(){
 			if(discord_member_get_voice_channel(@discord['userid']) == @ChannelID) {
