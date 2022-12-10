@@ -6,7 +6,7 @@
 #
 ######################################################
 proc(_reloader_econ_fee, @player, @amount,
-	assign(@name, import('dispenserreloader.name'))
+	@name = import('dispenserreloader.name')
 	_reloader_msgAdmins(color('c').'['.color(7).@name.color('c').'] '.color('c').'CHVault extension not installed! '.color(7).@name.' is unable to access economy account data.', color(3).'Download the CHVault extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions. \n'.color('r').moo(color(2).'https://letsbuild.net/jenkins/job/CHVault/'.color('r')), true) 
         return(array(fail: true, failmsg: color('c').'['.color(7).@name.color('c').'] '.color('c').'CHVault extension not installed! '.color('r').@name.' is unable to access economy account data.'))
 

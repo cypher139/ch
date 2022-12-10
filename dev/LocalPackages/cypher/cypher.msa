@@ -2,13 +2,14 @@ admin:/cypher [$action] [$option1] [$] = >>>
 
 assign(@player, _getplayerID(player()))
 assign(@you, player())
-msg(@you)
-msg(@player)
-
 
 
 switch(to_lower($action)) {
+case 'gc':
+msg(get_commands())
 case 'test':
+msg(@you)
+msg(@player)
 msg(extension_exists('SKCompat'))
 
 

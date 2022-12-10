@@ -1,0 +1,138 @@
+######################################################
+#
+#   Developer debug message tools for Cypher's CommandHelper scripts..
+#   This can provide helpful debug messages, but can also spam you so you can enable/disable for certain scripts at will.
+#
+######################################################
+
+admin:/devmsg [$] = >>>
+assign(@name, 'Dev')
+@prefix = color(7).'['.color(6).@name.color(7).'] '
+
+@args = parse_args($)
+@player = player()
+# Get other player name  
+foreach(@v in @args) {
+	if(array_contains_ic(get_offline_players(), @v)) {
+		@player = player(@v)
+		array_remove_values(@args, @v)
+	}
+}
+@uuid = puuid(@player, 'dashless')
+@ds = get_value('ch.player.'.@uuid.'.dev.scripts')
+if(!is_array(@ds)) { @ds = array() }
+
+if(@player != player() && !has_permission('commandhelper.alias.dev.msg.others')) {
+	die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change other\'s dev message settings.')
+}
+
+proc _help() {
+	msg(color(6).'Debug messages help:')
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color('a').'/devmsg [scriptname] [scriptname] [scriptname]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/devmsg'.color(4).' - '.color('f').'Reloads dev message settings in case of /reloadaliases')
+	msg(color(7).'/devmsg all'.color(4).' - '.color('f').'Enable/Disable dev message output from all scripts - if script name is not specifically mentioned.')
+	msg(color(7).'/devmsg scriptname'.color(4).' - '.color('f').'Enable/Disable dev message output from the script name mentioned.')
+	msg(color(7).'/devmsg extfunctions'.color(4).' - '.color('f').'Shows available Extension Events and Functions.')
+	msg(color(7).'/devmsg ext'.color(4).' - '.color('f').'Shows installed extensions.')
+	msg(color(7).'/devmsg ev'.color(4).' - '.color('f').'Shows current binded events.')
+}
+
+if(array_size(@args) > 0) {
+	foreach(@i: @argg in @args) {
+		@arg = to_lower(@argg)
+		switch(@arg) {	
+		case 'help':
+		case '-help':
+		case '?':
+		case '/?':
+			_help()
+			die()
+		case 'extfunctions':
+			msg(@prefix.color(6).'Available Extension Events / Functions:')
+			foreach(@key: @word in extension_info()) {
+				if(@key == 'Core') { continue() }
+				if(array_size(@word['events']) != 0) { 
+					msg(@prefix.color(3).@key.' '.color(2).'Events: '.color(7).@word['events'])
+				}
+				if(array_size(@word['functions']) != 0) { 
+					msg(@prefix.color(3).@key.' '.color(9).'Functions: '.color(7).@word['functions'])
+				}
+			} 
+			die()
+		case 'extensions':
+		case 'ext':
+			msg(@prefix.color(6).'Installed Extensions:')
+			foreach(@key: @word in extension_info()) {
+				if(@key == 'Core') { continue() }
+				msg(@prefix.color(3).@key.' '.color(7).'( Version: '.@word['version'].' )')
+			}  
+			die()
+		case 'dumpevents':
+		case 'ev':
+			msg(@prefix.color(7).'-----')
+			msg(@prefix.color(7).'Current binded events:')
+			msg(@prefix.color(7).'-----')
+			assign(@j, 0)
+			@previoustype = ''
+			foreach(@k: @v in dump_events()) {
+			# Parsing: (event_type) Event.ID:/file/system/path/file.ms:24
+				@eventtype = reg_split(' ', reg_replace('^\\((.+)\\)', '$1', @v))[0]
+				@eventid = reg_replace('^\\((.+)\\)[ ]', '', reg_split('[:]', @v)[0])
+			#if last type matches, don't choose a new color. Otherwise inc unique types counter and colors.
+				if(@previoustype != @eventtype) {	
+					if(_is_even_number(@j) == true) { @color = 'e' } else { @color = 3 }
+					assign(@j, @j + 1)
+				}
+				msg(color(@color).@eventtype.'      [ '.color(9).@eventid.color(@color).' ]')
+				@previoustype = @eventtype	
+				assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @v)[1])
+				if(reg_count('(includes.library)', @pathdisplay) > 0) {
+					assign(@pathdisplay, 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1])
+				}		
+				msg(color(8).'Path: '.color(0).'../'.color(8).@pathdisplay)
+			}
+			msg(@prefix.color(7).'-----')
+			msg(color(9).@j.color(7).' event types,  '.color(6).array_size(dump_events()).color(7).' total events found.')
+			msg(@prefix.color(7).'-----')
+			die()
+		case 'settings':
+		case 's':
+		case 'current':
+		case '/':
+			msg(@prefix.' Dev messages are enabled for these scripts:')
+			export('ch.player.'.@uuid.'.dev.scripts', @ds)
+			die(color(9).array_implode(@ds, ', '))
+		default:
+		#Note: Script namespace and arguments here does not support spaces or periods in name.
+			if(reg_count('[\\..*]', @arg) > 0) {
+				@arg = reg_replace('\\.', '', @arg)
+			}
+			if(array_contains(@ds, @arg)) {
+				array_remove_values(@ds, @arg)
+				export('ch.player.'.@uuid.'.dev.scripts.'.@arg, false)
+				msg(@prefix.color('f').'Developer messages are '.color('c').'disabled'.color('f').' for script: '.@arg)
+			} else {
+				array_push(@ds, @arg)
+				msg(@prefix.color('f').'Developer messages are '.color('a').'enabled'.color('f').' for script: '.@arg)
+			}
+		}
+	}
+}
+	@check = import('ch.player.'.@uuid.'.dev.scripts')
+	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
+	foreach(@script in @ds) {
+		export('ch.player.'.@uuid.'.dev.scripts.'.@script, true)
+	}
+	export('ch.player.'.@uuid.'.developer', @dsall)
+	export('ch.player.'.@uuid.'.dev.scripts', @ds)
+	store_value('ch.player.'.@uuid.'.developer', @dsall)
+	store_value('ch.player.'.@uuid.'.dev.scripts', @ds)
+	
+	if(!is_array(@check)) {
+		msg(@prefix.color('f').'Developer messages are '.color('a').'re-enabled!')
+	} else {
+		msg(@prefix.color('a').'Saved Settings!')
+	}
+<<<

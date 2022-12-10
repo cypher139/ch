@@ -1,44 +1,125 @@
-#ShiftMode (http://dev.bukkit.org/server-mods/shiftmode/)
-shiftmode:/mode [$] = >>>
-assign(@player, _getplayerID(player()))
-#argument check
-if($ != '') {
-	msg(color('red').'['.color('gold').'gameMode'.color('red').'] '.color('c').'You don\'t need to specify the mode you want, just type '.color(7).'/mode')
+#Idea based on ShiftMode (http://dev.bukkit.org/server-mods/shiftmode/)
+#version 2.0-tmc
+*:/mode [$] = >>>
+@name = 'gameMode'
+if(!has_permission(player(), 'commandhelper.alias.shiftmode')) {
+	die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+}
+set_uncaught_exception_handler(closure(@ex){
+	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.all') == true) {
+		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
+	} else {
+		msg(color('c').@ex['message']);
+	}
+     return(true);
+   });
+   
+@args = parse_args($)
+@user = player()
+
+# Get other player's name if provided 
+if(has_permission('commandhelper.alias.shiftmode.others')) { @otherperm = true } else { @otherperm = false }
+foreach(@k: @v in @args) {
+	if(array_contains_ic(all_players(), @v)) {
+		if(@otherperm == false) {
+			die(color('c').'['.color(8).@name.color('c').'] '.color('c').'You do not have permission to change other player\'s gamemodes!')
+		}
+		@user = @v
+		array_remove(@args, @k)
+		#No break, so finds all players and picks last mentioned.
+	}
+}
+/*
+if(@user == '~console') {
+	@dev = false
+} else {
+	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.gamemode') == true || import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.all') == true) { @dev = true }
+}
+*/
+@user = _getplayerID(@user)
+
+#Arguments nag message
+if($ != '' && !has_permission('commandhelper.alias.shiftmode.notip')) {
+	msg(color(7).'['.color(3).@name.color(7).'] '.color(7).'Tip: Switch between '.color('c').'Survival'.color(7).' and '.color('b').'Creative'.color(7).' mode by just using '.color('a').'/mode')
+} 
+if(array_size(@args) > 0) {
+# Non-Player Arguments provided
+	@newmode = 'Unset'
+	foreach(@k: @v in @args) {
+		if(reg_count('^[GgIiPp]', @v) > 0) { 
+			@gmpinv = get_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv')
+			if(!is_array(@gmpinv)) { @gmpinv = array('use': false, 'SURVIVAL': array(), 'CREATIVE': array(), 'ADVENTURE': array(), 'SPECTATOR': array()) }
+			if(@gmpinv['use'] == true) {
+				@gmpinv['use'] = false
+				msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your inventory will not be reset upon game mode change.')
+			} else {
+				@gmpinv['use'] = true
+				msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Upon game mode change your inventory will be set to the inventory for that game mode.')
+			}
+		store_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv', @gmpinv)
+		continue()
+		}
+		if(reg_count('^[Aa]', @v) > 0) { @newmode = 'Adventure' }
+		if(reg_count('^[Cc]', @v) > 0) { @newmode = 'Creative' }
+		if(reg_count('^[Ss][Uu]', @v) > 0) { @newmode = 'Survival' }
+		if(reg_count('^[Ss][Pp]', @v) > 0) { @newmode = 'Spectator' }
+		if(reg_count('^[Ll][Oo]', @v) > 0 && @user['name'] == player()) { 
+			export(@name.'.player.'.puuid(@user['name'], 'dashless').'.lock', true)
+			msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your game mode setting is now locked to '.pmode(@user['name']).'.')
+			continue()
+		}
+		if(reg_count('^[Uu][Nn]', @v) > 0 && @user['name'] == player()) { 
+			export(@name.'.player.'.puuid(@user['name'], 'dashless').'.lock', false)
+			msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your game mode setting is now unlocked.')
+			continue()
+		}
+		
+	}
+	if(@newmode == 'Unset') { die(color('c').'['.color(8).@name.color('c').'] '.color('c').'Please specify a valid game mode!') }
+} else {
+# /mode - No Arguments
+	switch(pmode(@user['name'])) {
+	case 'CREATIVE':
+		@newmode = 'Survival'
+	case 'SURVIVAL':
+		@newmode = 'Creative'
+	case 'SPECTATOR':
+		@newmode = 'Survival'
+	case 'ADVENTURE':
+		@newmode = 'Survival'
+	}
 }
 
-#/mode proc
-
-proc _set_S(@user, @msg, @name) {
-    set_pmode(@user, 'SURVIVAL')	
-    if(@msg == '', null,
-		if(@name == '', assign(@name, 'gameMode'))
-		tmsg(@user, color('yellow').'['.color('gold').@name.color('yellow').'] '.color('white').'Changed to '.color('c').'Survival'.color('white').' gamemode')
-	)
+# mode lock/unlock - lock out other players and yourself from changing your game mode. Does not survive reboots by design for now.
+if(import(@name.'.player.'.puuid(@user['name'], 'dashless').'.lock') == true) {
+	die(color('d').'['.color(9).@name.color('d').'] '.color('5').'This player has requested to not change their gamemode.')
 }
 
-proc _set_C(@user, @msg, @name) { 
-    set_pmode(@user, 'CREATIVE')
-    if(@msg == '', null,
-		if(@name == '', assign(@name, 'gameMode'))
-		tmsg(@user, color('yellow').'['.color('gold').@name.color('yellow').'] '.color('white').'Changed to '.color('b').'Creative'.color('white').' gamemode')
-	)
+#World based permission
+# Mode Allowed in any world
+if(!has_permission('commandhelper.alias.shiftmode.any.world.'.to_lower(@newmode))) {
+	# Mode Allowed in Specific world
+	if(!has_permission('commandhelper.alias.shiftmode.world.'.to_lower(pworld(@user['name'])).'.'.to_lower(@newmode))) {
+		die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change the gamemode to '.@newmode.' on this world.')
+	}
 }
-
-if(pmode() == 'CREATIVE') {
-	_set_S(@player['name'], 'y')
-	die()
+#End
+set_pmode(@user['name'], to_upper(@newmode))
+switch(to_lower(@newmode)) {
+	case 'survival':
+		@modecolor = 'c'
+	case 'spectator':
+		@modecolor = 'e'
+	case 'creative':
+		@modecolor = 'b'
+	case 'adventure':
+		@modecolor = 'a'
 }
-if(pmode() == 'SURVIVAL') {
-	_set_C(@player['name'], 'y')
-	die()
-}
-if(pmode() == 'SPECTATOR') {
-	_set_S(@player['name'], 'y')
-	die()
-}
-if(pmode() == 'ADVENTURE') {
-	_set_S(@player['name'], 'y')
-	die()
+if(@user['name'] == player()) {
+	msg(color(7).'['.color(9).@name.color(7).'] '.color('f').'Changed to '.color(@modecolor).@newmode.color('f').' gamemode.')
+} else {
+	tmsg(@user['name'], color(7).'['.color(9).@name.color(7).'] '.color(9).player().color('f').' has changed your gamemode to '.color(@modecolor).@newmode.color('f').'.')
+	msg(color(7).'['.color(9).@name.color(7).'] '.color('f').'Changed '.@user['name'].' to '.color(@modecolor).@newmode.color('f').' gamemode.')
 }
 <<<
 
@@ -48,23 +129,49 @@ if(pmode() == 'ADVENTURE') {
 
 #TooManyItems: Creative mode setting
 *:/gamemode [$] = >>>
-#name of script
-assign(@name, 'gameMode')
-
+@name = 'gameMode'
 if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
-	call_alias(/mode)
-	} else {
-	die(color('c').'['.color(6).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+	call_alias(/mode $)
+} else {
+	die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
 }
 <<<
 
 *:/gm [$] = >>>
-#name of script
-assign(@name, 'gameMode')
-
+@name = 'gameMode'
 if(has_permission(player(), 'commandhelper.alias.shiftmode')) {
-	call_alias(/mode)
+	call_alias(/mode $)
+} else {
+	die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+}
+<<<
+
+#
+##-------Admin: Bypass mode lock-------##
+#
+
+admin:/admingm [$] = >>>
+@name = 'gameMode'
+@user = null
+if(!has_permission('commandhelper.alias.shiftmode.others')) { die(color('c').'['.color(8).@name.color('c').'] '.color('c').'You do not have permission to change other player\'s gamemodes!') }
+foreach(@k: @v in parse_args($)) {
+	if(array_contains_ic(all_players(), @v)) {
+		@user = @v
+	}
+}
+if(@user == null) {
+	die(color('c').'['.color(8).@name.color('c').'] '.color('c').'Specify a valid player name!')
+}
+@useruuid = puuid(@user, 'dashless')
+if(import(@name.'.player.'.@useruuid.'.lock') == true) {
+	if(has_permission(player(), 'commandhelper.alias.shiftmode.lock.bypass')) {
+		export(@name.'.player.'.@useruuid.'.lock', false)
+		call_alias(/mode $)
+		export(@name.'.player.'.@useruuid.'.lock', true)
 	} else {
-	die(color('c').'['.color(6).@name.color('c').'] '.color('f').'You don\'t have permission to change your gamemode.')
+		die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change other player\'s gamemodes!')
+	}
+} else {
+	call_alias(/mode $)
 }
 <<<

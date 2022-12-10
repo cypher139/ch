@@ -91,6 +91,7 @@ proc(_deathmsg, @player, @deathtypeg, @odm,
 #The Messages
 
 # Damage notes from https://github.com/sk89q/commandhelper/blob/master/src/main/java/com/laytonsmith/abstraction/MCDamageCause.java
+#https://github.com/EngineHub/CommandHelper/blob/master/src/main/java/com/laytonsmith/abstraction/enums/MCDamageCause.java
 
 # Damage caused when an entity contacts a block such as a Cactus.
 # Damage: 1 (Cactus)

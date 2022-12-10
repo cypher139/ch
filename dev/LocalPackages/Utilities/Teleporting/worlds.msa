@@ -1,0 +1,120 @@
+#Worlds:
+#Information and teleporting
+world:/world [$] = >>>
+@name = 'World'
+@prefix = color(7).'['.color(9).@name.color(7).'] '
+@args = parse_args($)
+@gotoworld = ''
+@showwt = has_permission(player(), 'commandhelper.alias.world.show.time')
+
+proc _list_worlds() {
+	@showwt = has_permission(player(), 'commandhelper.alias.world.show.time')
+	@prefix = color(7).'['.color(9).'World'.color(7).'] '
+    msg(@prefix.color(9).'Available worlds:')
+	foreach(@w in get_worlds()) {
+		if(@showwt == true) {
+			switch(get_world_time(@w)) {
+				case 0..1999:
+				@gwt = 'Morning'
+				case 2000..5999:
+				@gwt = 'Day'
+				case 6000..7999:
+				@gwt = 'Noon'
+				case 8000..11999:
+				@gwt = 'Afternoon'
+				case 12000..13000:
+				@gwt = 'Evening'
+				case 13000..13499:
+				@gwt = 'Sunset'
+				case 13499..13999:
+				@gwt = 'Dusk'
+				case 14000..17999:
+				@gwt = 'Night'
+				case 18000..19999:
+				@gwt = 'Midnight'
+				case 20000..22499:
+				@gwt = 'Early Morning'
+				case 22500..22999:
+				@gwt = 'Dawn'
+				case 23000..24000:
+				@gwt = 'Sunrise'
+			}
+			@wtdisplay = color(3).'   -- Time: '.get_world_time(@w).' ('.@gwt.')'
+		} else {
+			@wtdisplay = ''
+		}
+		msg(color(7).@w.@wtdisplay)
+	}
+    msg(@prefix.color(9).'You are in world: '.color('e').pworld())
+}
+
+if(array_index_exists(@args, 0)) { 
+	@world = @args[0]
+} else {
+	_list_worlds()
+	die()
+}
+
+
+switch(@world) {
+case 'load':
+	if(has_permission('commandhelper.alias.admin')) {
+		if(!array_index_exists(@args, 1)) { 
+			die(@prefix.'You need to specify a world name!')
+		}
+		if(array_index_exists(@args, 2)) { 
+			@type = null
+			if(reg_count('^[Nn]', @args[2]) > 0) { @type = 'NORMAL' }
+			if(reg_count('^[Ff]', @args[2]) > 0) { @type = 'FLAT' }
+			if(reg_count('^[Ll]', @args[2]) > 0) { @type = 'LARGE_BIOMES' }
+			if(reg_count('^[Aa]', @args[2]) > 0) { @type = 'AMPLIFIED' }
+			if(@type == null) { die(@prefix.'World type given was not recognized!') }
+		} else { @type = 'NORMAL' }	
+		if(array_index_exists(@args, 3)) { 
+			@env = null
+			if(reg_count('^[Nn][Oo]', @args[3]) > 0) { @env = 'NORMAL' }
+			if(reg_count('^[Nn][Ee]', @args[3]) > 0) { @env = 'NETHER' }
+			if(reg_count('^[TtEe]', @args[3]) > 0) { @env = 'THE_END' }
+			if(reg_count('^[Cc]', @args[3]) > 0) { @env = 'CUSTOM' }
+			if(@env == null) { die(@prefix.'World enviroment given was not recognized!') }
+		} else { @env = 'NORMAL' }	
+		if(array_index_exists(@args, 4)) { @seed = @args[4] } else { @seed = null }	
+		if(array_index_exists(@args, 5)) { @gen = @args[5] } else { @gen = null }	
+		create_world(@args[1], @type, @env, @seed, @gen)
+		die(@prefix.' Created or loaded world: '.color(9).@args[1])
+	} else {
+		die(@prefix.' Cannot find spawn location for that world...')
+	}
+case 'c':
+    @gotoworld = 'creative'
+case 'sky':
+    @gotoworld = 'skyblock'
+case 'f':
+    @gotoworld = 'fun'
+case 'end':
+    @gotoworld = pworld().'_the_end'
+case 'n':
+case 'nether':
+	@gotoworld = pworld().'_nether'
+case 'default':
+case 'w':
+case '':
+	@gotoworld = ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties')))['level-name']
+case 'list':
+	_list_worlds()
+default:
+	@gotoworld = @world
+}
+
+try( 
+	@gotoloc = get_spawn(@gotoworld)
+,@fail,
+	die(@prefix.' Cannot find spawn location for that world.')
+)
+
+if(!is_array(@gotoloc) || @gotoloc == '' || @gotoloc == null) {
+die(@prefix.' That world was not loaded.')
+}
+set_ploc(@gotoloc)
+msg(@prefix.' A new world awaits you!')
+<<<

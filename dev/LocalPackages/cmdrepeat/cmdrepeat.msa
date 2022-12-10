@@ -3,6 +3,8 @@ everyone:/repeat [$action] = >>>
 @player = _cmd_getplayerID(player())
 
 switch(to_lower($action)) {
+	case 'allcmds':
+		msg(import('cmdrepeat.all.commands'))
 	case 'printrepeatcommand':
 	case 'printrepeatcmd':
 	case 'printrepeat':
@@ -11,7 +13,7 @@ switch(to_lower($action)) {
 	case 'showr':
 	case 'hider':
 	case 'pr':
-		assign(@setting, get_value('cmdrepeat.player.'.@player['id'].'.command.show'))
+		@setting = get_value('cmdrepeat.player.'.@player['id'].'.command.show')
 		if(@setting == true) {
 			#disable
 			store_value('cmdrepeat.player.'.@player['id'].'.command.show', false)
@@ -30,7 +32,7 @@ switch(to_lower($action)) {
 	case 'hide':
 	case 'printall':
 	case 'p':
-		assign(@setting, get_value('cmdrepeat.player.'.@player['id'].'.command.show.all'))
+		@setting = get_value('cmdrepeat.player.'.@player['id'].'.command.show.all')
 		if(@setting == true) {
 			#disable
 			store_value('cmdrepeat.player.'.@player['id'].'.command.show.all', false)
@@ -46,7 +48,7 @@ switch(to_lower($action)) {
 	case 'console':
 	case 'consolecommand':
 	case 'cc':
-		assign(@setting, get_value('cmdrepeat.console.command.show'))
+		@setting = get_value('cmdrepeat.console.command.show')
 		if(has_permission(@player['name'], 'commandhelper.alias.admin')) {
 			if(@setting == true) {
 				#disable
@@ -70,7 +72,7 @@ switch(to_lower($action)) {
 	case 'list':
 		msg(color(7).'['.color(6).'Command'.color(7).'] '.color(3).'Your 3 Recent Commands:')
 		for(assign(@i, 1), @i < 4, @i++) {
-			assign(@lastcmd, import('cmdrepeat.player.'.@player['id'].'.last.command.'.@i))
+			@lastcmd = import('cmdrepeat.player.'.@player['id'].'.last.command.'.@i)
 			if(@lastcmd) {			
 				msg('> '.@lastcmd)
 			}	
@@ -81,18 +83,18 @@ switch(to_lower($action)) {
 	case '2':
 	case '3':
 		if($action == '' || $action == null) {
-			assign(@cmdid, 1)
+			@cmdid = 1
 		} else {
-			assign(@cmdid, $action)
+			@cmdid = $action
 		}
 		if(@player['name'] == '~console', die(color('c').'['.color(7).'Command'.color('c').'] '.color(3).'Console cannot repeat commands. Use the Up arrow to repeat a command.'))
-		assign(@lastcmd, import('cmdrepeat.player.'.@player['id'].'.last.command.'.@cmdid))
-		assign(@showcmd, get_value('cmdrepeat.player.'.@player['id'].'.command.show'))
+		@lastcmd = import('cmdrepeat.player.'.@player['id'].'.last.command.'.@cmdid)
+		@showcmd = get_value('cmdrepeat.player.'.@player['id'].'.command.show')
 			if(@lastcmd == '' || @lastcmd == null,
 				die(color('c').'['.color(7).'Command'.color('c').'] '.color('c').'A Recent command was not found.'.color('r').' Did you just login? ('.@cmdid.')')
 			)
 		#List cmd used, with CH aliases showing as a different color.
-		if(is_alias(reg_split(' ', @lastcmd)[0]), assign(@cmdcolor, 3), assign(@cmdcolor, 6))
+		if(is_alias(reg_split(' ', @lastcmd)[0])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
 		#msg(@lastcmd)
 		msg(color(3).'Re-ran your last command. (#: '.@cmdid.')')
 		if(@showcmd == true,

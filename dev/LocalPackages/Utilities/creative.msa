@@ -1,7 +1,7 @@
 #version 1.2-tmc
 creative:/i [$id=3] [$] = >>>
 set_uncaught_exception_handler(closure(@ex){
-	assign(@dev, import('ch.player.'.puuid(player(), 'dashless').'.developer'))
+	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.creative') == true || import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.all') == true) { @dev = true }
 	if(@dev == true) {
 		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
 	} else {
@@ -22,9 +22,9 @@ foreach(@v in @args) {
 	}
 }
 if(@player == '~console') {
-	assign(@dev, false)
+	@dev = false
 } else {
-	assign(@dev, import('ch.player.'.puuid(@player, 'dashless').'.developer'))
+	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.creative') == true) { @dev = true }
 }
 
 #ID type Checks   
@@ -51,7 +51,7 @@ case 'more':
 	if(@player == '~console') {
 		@slot = null
 	} else {	
-		assign(@slot, pinv(@player, null))
+		@slot = pinv(@player, null)
 	}
 	if(@slot == null) {
 	#cant give you a hand, sorry.
@@ -86,16 +86,16 @@ if(reg_count('[0-9]+:0', @id) == 1) {
 # item:subitem argument syntax not supported internally anymore, translated here
 if(reg_count('[0-9]+:[0-9]+', @id) == 1) {
 	@ids = reg_split(':', @id)
-	@id = data_name(array(name: data_name(@ids[0]), data: @ids[1]))
+	@id = data_name(array('name': data_name(@ids[0]), 'data': @ids[1]))
 	@idn = $id
 } else {
 	# normal legacy ID or normal name
 	if(is_numeric(@id)) {
-		assign(@id, data_name(@id))
-		assign(@idn, $id)
+		@id = data_name(@id)
+		@idn = $id
 	} else {
-		assign(@id, to_upper(@id))
-		assign(@idn, data_values(@id))
+		@id = to_upper(@id)
+		@idn = data_values(@id)
 		if(@idn == null) {
 			@idn = 'No ID'
 		}
@@ -115,7 +115,7 @@ foreach(@v in @args) {
 			@amount = integer(round(@v))
 		}
 		#Get Max Quantity
-		if(reg_count('^[Mm][Aa]?[Xx]?$', @v) > 0) { @amount = max_stack_size(array(name: to_upper(@id), 'meta': null)) }
+		if(reg_count('^[Mm][Aa]?[Xx]?$', @v) > 0) { @amount = max_stack_size(array('name': to_upper(@id), 'meta': null)) }
 	}
 }
 switch(to_lower($id)) {
@@ -144,7 +144,7 @@ if(@dev == true) {
 if(@player != '~console') {	
 	pgive_item(@giveplayer, @give)
 } else {
-	die(color(7).'Item IDs returned: '.color(3).@id.color(8).' ('.color('a').@idn.color(8).') '.color(8).'[max:'.max_stack_size(array(name: to_upper(@id), 'meta': null)).']')
+	die(color(7).'Item IDs returned: '.color(3).@id.color(8).' ('.color('a').@idn.color(8).') '.color(8).'[max:'.max_stack_size(array('name': to_upper(@id), 'meta': null)).']')
 }
 #setup messages
 if(has_permission(@player, 'commandhelper.alias.creative.see.id')) {

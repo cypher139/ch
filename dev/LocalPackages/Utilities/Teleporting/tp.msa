@@ -1,0 +1,83 @@
+#version 1.1-tmc
+
+teleport:/tp [$] = >>>
+@uuid = puuid(player(),'dashless')
+@dev = import('ch.player.'.@uuid.'.dev.scripts.tp')
+
+#if , and no space, add a space
+@args = reg_replace('[,]\\b', ' ', $)
+#if, and space remove comma
+@args = reg_replace('\\s?[,]\\s', ' ', @args)
+if(@dev == true) {
+msg($)
+msg(@args)
+}
+
+@args = parse_args(@args)
+@tptime = null
+@tpname = null
+if(!array_index_exists(@args, 0)) {
+	die(color('c').'To teleport somewhere you need to specify either X, Y, Z coordinates, or a player!') 
+} else {
+	if(equals_ic('back', @args[0])) {
+		if(!has_permission(player(), 'commandhelper.alias.deathtp')) { die(color('c').'You do not have permission to teleport back!?') }
+		@name = 'BackTP'
+		@id = 1
+		if(array_index_exists(@args, 1)) {
+			if(is_numeric(@args[1]) && @args[1] > 0) {
+				@id = @args[1]
+			}
+		} else {
+			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+		}
+		if(@id - 1 > 9) { @id = 9 } else { @id = @id - 1 }
+
+		@here = get_value('player.'.@uuid.'.last.location')
+		if(!is_array(@here)) { @here = array() }
+		
+		if(array_index_exists(@here, @id, 'world')) {
+			set_ploc(@here[@id])
+			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'You were teleported back to where you were before a teleport.')
+		} else {
+			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, you don\'t have a saved teleport point to teleport to!')
+		}
+	} 
+	#tp player, allow for partial matching
+	if(!is_numeric(@args[0])) {
+		run(/tp $)
+		die()
+	}
+}
+
+if(!array_index_exists(@args, 1)) { die(color('c').'You need to specify the Y coordinates to teleport to!') }
+if(!array_index_exists(@args, 2)) { die(color('c').'You need to specify the Z coordinates to teleport to!') }
+if(array_index_exists(@args, 3)) {
+	if(!array_contains(get_worlds(), @args[3])) { @args[3] = pworld() }
+} else {
+	array_push(@args, pworld())
+}
+		
+
+if(@dev == true) {msg(@args)}
+
+#valid location check
+try(
+	@check = get_block(@args)
+,@fail,
+	die(color('c').'Error: '.color(4).'The coordinates given were not valid.')
+)
+	
+if(@dev == true) {
+msg(get_block_info(@args))
+msg(get_block(@args))
+msg(get_highest_block_at(@args))
+}
+
+if(!array_contains(array('AIR', 'WATER'), get_block(@args))) {
+	@args[1] = get_highest_block_at(@args)['y']
+	msg(color('c').'Coordinates given is located in solid matter!'.color(7).' Auto-correcting Y to highest block found: '.integer(@args[1]))
+}
+
+msg(color(6).'Teleporting to '.color(9).array_implode(@args, ', '))
+set_ploc(@args)
+<<<

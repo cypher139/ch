@@ -1,47 +1,212 @@
-#version 1.1-tmc
-deathtp:/back [$option1=1] = >>>
-assign(@name, 'DeathTP')
+#version 1.3-tmc
+#requires ScriptLibraries - getplayerID and UUID database
+deathtp:/back [$id=1] = >>>
+@name = 'DeathTP'
 
-if(is_numeric($option1)) {
-	assign(@dropid, $option1)
-	if($option1 > 2) {assign(@dropid, 2)}
+if(is_numeric($id) && $id > 0) {
+	if($id - 1 > 9) { @id = 9 } else { @id = $id - 1 }
 } else {
-	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
-assign(@here, get_value('player.'.puuid(player(), 'dashless').'.last.death.loc.'.@dropid))
+@here = get_value('player.'._getplayerID(player())['id'].'.last.death.location')
+if(!is_array(@here)) { @here = array() }
 
-switch(@here) {
-	case '':
-	case null:
-		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
-	default:
-		set_ploc(@here)
-		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'You were teleported to your death point.')
+if(array_index_exists(@here, @id, 'world')) {
+	set_ploc(@here[@id])
+	msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'You were teleported to your death point.')
+} else {
+	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
 }
 <<<
 
-deathitems:/backitems [$option1=1] = >>>
-assign(@name, 'DeathTP - GarbageManagement')
-if(is_numeric($option1)) {
-	assign(@dropid, $option1)
-	if($option1 > 2) {assign(@dropid, 2)}
+deathitems:/backitems [$id=1] = >>>
+@name = 'DeathTP - GarbageManagement'
+if(is_numeric($id) && $id > 0) {
+	if($id - 1 > 9) { @id = 9 } else { @id = $id - 1 }
 } else {
-	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }
 
-assign(@bi, get_value('player.'.puuid(player(), 'dashless').'.last.death.drops.'.@dropid))
+@bi = get_value('player.'._getplayerID(player())['id'].'.last.death.drops')
+if(!is_array(@bi)) { @bi = array() }
 
-switch(@bi) {
-	case '':
-	case null:
-		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
-	default:
-		foreach(@bi, @currentvar,
-		#mew MC versions do not need numeric id:data type. updated to just written name. 
-		#array: meta, qty, name
-			pgive_item(player(), @currentvar)
-		)
-		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
+if(array_index_exists(@bi, @id, 0, 'name')) {
+	foreach(@item in @bi[@id]) {
+	#array: meta, qty, name
+		pgive_item(player(), @item)
+	}
+	msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Respawning your items.')
+} else {
+	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
+}
+<<<
+
+deathtp:/deathcounter [$] = >>>
+set_uncaught_exception_handler(closure(@ex){
+	if(import('ch.player.'._getplayerID(player())['id'].'.developer') == true) {
+		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
+	} else {
+		msg(color('c').@ex['message']);
+	}
+     return(true);
+   });
+   
+proc _msg_count(@count, @player, @pos) {
+	@name = 'DeathCount'
+	@prefix = color('e').'['.color(6).@name.color('e').'] '
+	if(@pos == '' || @pos == null) { @posmsg = ''} else { @posmsg = ' ('.color(4).'#'.@pos.' on leaderboard'.color(7).')' }
+	switch(@count) {
+		case '':
+		case null:
+			@dcmsg = 'Reaper reports '.@player.' never died, you lucky bastard.'
+		case 0:
+			@dcmsg = 'Reaper says his memory was wiped!?'
+		case 'ni':
+			@prefix = color(9).'['.color(0).@name.color(9).'] '
+			@dcmsg = 'Reaper is currently suffering memory loss.'
+			console(@prefix.color(8).' Player UUID not found for '.@player, false)
+		case 'nn':
+			@prefix = color(9).'['.color(0).@name.color(9).'] '
+			@dcmsg = 'Reaper is currently suffering memory loss..'
+			console(@prefix.color(8).' Player name not found for '.@player, false)
+		case 'd':
+			@prefix = color(9).'['.color(0).@name.color(9).'] '
+			@dcmsg = 'Reaper is currently suffering memory loss...'
+		default:
+			@dcmsg = @player.' died a total of '.color('c').@count.color(7).' times!'
+	}
+	msg(@prefix.color(7).@dcmsg.@posmsg)
+}
+
+proc _msg_leaderboard(@board, @max) {
+	@name = 'DeathCount'
+	@prefix = color('e').'['.color(6).@name.color('e').'] '
+	msg(@prefix.color(7).' Top '.color('c').@max.color(7).' Deaths Leaderboard:')
+	for(@i = 0, @i < @max, @i++){
+		if(array_index_exists(@board, @i)) {
+			switch(@i) {
+			case 0:
+				@numcolor = 'b'
+			case 1:
+				@numcolor = 6
+			case 2:
+				@numcolor = 7
+			case 3:
+				@numcolor = '#ba3e39'
+			default:
+				@numcolor = 4
+			}
+			msg(color(@numcolor).'# '.(@i + 1).color(7).':  '.color(@numcolor).@board[@i][0].color(7).' -- '.color('c').@board[@i][1].color(7).' deaths')
+		} else {
+			msg(@prefix.color(9).' ------ End of Leaderboard ------')
+			break()
+		}
+	}
+}
+
+#puuid does not find offline bedrock players, does find any java even if never played
+@name = 'DeathCount'
+@args = parse_args($)
+@countdata = get_value('DeathCount.players.death.counter')
+@oplayer = get_offline_players()
+@prefix = color('e').'['.color(6).@name.color('e').'] '
+@boardpos = 'Unlisted'
+
+if(array_size(@args) == 0) {
+	#Console's stats
+	if(player() == '~console') {
+		_msg_count(get_value('DeathCount.console.death.counter'), 'Console')
+		die()
+	} else {
+	#Your Own Stats
+		_msg_count(@countdata[_getplayerID(player())['id']], 'You')
+		die()
+	}
+}
+
+@leaderboard = array()
+foreach(@k: @v in @countdata) {
+	@name = _getplayerName(@k)['name']
+	if(@name == null) {	continue() }
+	array_push(@leaderboard, array(@name, @v))
+}
+array_sort(@leaderboard, closure(@left, @right) {
+	return(@left[1] < @right[1]);
+});
+
+if(array_size(@args) == 1) {
+	@player = array_implode(@args, '')
+	switch(@player) {
+		case 'c':
+		case 'console':
+		if(has_permission('commandhelper.alias.'.@name.'.console')) {
+			_msg_count(get_value('DeathCount.console.death.counter'), 'Console')
+		} else {
+			msg(@prefix.color('c').'You do not have permission to view Console stats.')
+		}
+		case 'leader':
+		case 'leaderboard':
+		case 'l':
+			_msg_leaderboard(@leaderboard, 10)		
+		case 'all':
+		case 'players':
+			foreach(@k: @v in @countdata) {
+				@name = _getplayerName(@k)['name']
+				if(@name == null) {
+					_msg_count('nn', @k)
+					continue()
+				}
+				if(@v == 0) {continue()}
+				array_remove_values(@oplayer, @name)
+				msg(color(9).@name.color(7).' -- '.color('c').@v.color(7).' deaths')
+			}
+			if(array_size(@oplayer) > 0) {
+				msg(@prefix.color(9).'Reaper'.color(7).' forgot about '.color('c').array_size(@oplayer).color(7).' players!')
+			}
+		default:
+			#catches valid Minecraft player but never played here.
+			if(!array_contains_ic(get_offline_players(), @player)) {
+				_msg_count('d', @v) 
+				die()
+			}
+			@playerID = _getplayerID(@player)
+			#catches no UUID - offline Bedrock players may have this issue if not in internal database
+			if(@playerID['id'] == null) { _msg_count('ni', @player) die() }
+			foreach(@index: @p in @leaderboard) {
+				if(array_contains(@p, @playerID['name'])) { 
+					@boardpos = @index + 1
+					break()
+				}
+			}
+			_msg_count(@countdata[@playerID['id']], @playerID['name'], @boardpos)
+	}
+}
+
+if(array_size(@args) > 1) {
+	switch(@args[0]) {
+		case 'leader':
+		case 'leaderboard':
+		case 'l':
+			if(!is_numeric(@args[1])) { @args[1] = 10 } 
+			_msg_leaderboard(@leaderboard, @args[1])
+		default:
+			foreach(@k: @v in @args) {
+				if(!array_contains_ic(get_offline_players(), @v)) {
+					_msg_count('d', @v) 
+					continue()
+				}
+				@playerID = _getplayerID(@v)
+				#catches no UUID - offline Bedrock players may have this issue if not in internal database
+				if(@playerID['id'] == null) { _msg_count('ni', @v) continue() }
+				foreach(@index: @p in @leaderboard) {
+					if(array_contains(@p, @playerID['name'])) { 
+						@boardpos = @index + 1
+						break()
+					}
+				}
+				_msg_count(@countdata[@playerID['id']], @playerID['name'], @boardpos)
+			}
+	}
 }
 <<<

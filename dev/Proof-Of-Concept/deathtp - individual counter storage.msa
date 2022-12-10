@@ -1,0 +1,139 @@
+#version 1.1-tmc
+deathtp:/back [$option1=1] = >>>
+assign(@name, 'DeathTP')
+
+if(is_numeric($option1)) {
+	assign(@dropid, $option1)
+	if($option1 > 3) {assign(@dropid, 3)}
+} else {
+	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+}
+
+assign(@here, get_value('player.'.puuid(player(), 'dashless').'.last.death.loc.'.@dropid))
+
+switch(@here) {
+	case '':
+	case null:
+		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
+	default:
+		set_ploc(@here)
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'You were teleported to your death point.')
+}
+<<<
+
+deathitems:/backitems [$option1=1] = >>>
+assign(@name, 'DeathTP - GarbageManagement')
+if(is_numeric($option1)) {
+	assign(@dropid, $option1)
+	if($option1 > 3) {assign(@dropid, 3)}
+} else {
+	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+}
+
+assign(@bi, get_value('player.'.puuid(player(), 'dashless').'.last.death.drops.'.@dropid))
+
+switch(@bi) {
+	case '':
+	case null:
+		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
+	default:
+		foreach(@bi, @currentvar,
+		#mew MC versions do not need numeric id:data type. updated to just written name. 
+		#array: meta, qty, name
+			pgive_item(player(), @currentvar)
+		)
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Respawning your items.')
+}
+<<<
+
+deathtp:/deathcounter [$] = >>>
+set_uncaught_exception_handler(closure(@ex){
+	if(import('ch.player.'.puuid(player(), 'dashless').'.developer') == true) {
+		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
+	} else {
+		msg(color('c').@ex['message']);
+	}
+     return(true);
+   });
+   
+proc _msg_count(@count, @player) {
+	assign(@name, 'DeathCount')
+	@prefix = color('e').'['.color('gold').@name.color('e').'] '
+	switch(@count) {
+		case '':
+		case null:
+			@dcmsg = 'Reaper reports '.@player.' never died, you lucky bastard.'
+		case 0:
+			@dcmsg = 'Reaper says his memory was wiped!?'
+		case 'n':
+			@prefix = color(9).'['.color(0).@name.color(9).'] '
+			@dcmsg = color(8).' Player ID not found for '.@player
+		case 'd':
+			@dcmsg = 'Reaper is currently suffering memory loss...'
+		default:
+			@dcmsg = @player.' died a total of '.color('c').@count.color(7).' times!'
+	}
+	msg(@prefix.color(7).@dcmsg)
+}
+#puuid does not find offline bedrock players, does find any java even if never played
+assign(@name, 'DeathCount')
+@args = parse_args($)
+
+if(array_size(@args) == 0) {
+#No players, just you
+	assign(@counter, get_value('player.'.puuid(player(), 'dashless').'.death.counter'))
+	_msg_count(@counter, 'You')
+}
+if(array_size(@args) == 1) {
+	@player = array_implode(@args, '')
+	switch(@player) {
+		case 'leader':
+		case 'leaderboard':
+		case 'all':
+		case 'players':
+			foreach(@k: @v in get_offline_players()) {
+				try(
+					@uuid = puuid(@v, 'dashless')
+				,@fail,
+					_msg_count('n', @v)
+					continue()
+				)
+				assign(@counter, get_value('player.'.puuid(@v, 'dashless').'.death.counter'))
+				if(@counter == '' || @counter == null) {continue()}
+				msg(color(9).@v.color(7).' -- '.color('c').@counter.color(7).' deaths')
+			}
+		default:
+			#catches valid Minecraft player but never played here.
+			if(!array_contains_ic(get_offline_players(), @player)) {
+				_msg_count('d', @v) 
+				die()
+			}
+			#catches no UUID - offline Bedrock players may have this issue
+			try(
+				@uuid = puuid(@player, 'dashless')
+			,@fail,
+				_msg_count('n', @player)
+				die()
+			)
+			assign(@counter, get_value('player.'.puuid(@player, 'dashless').'.death.counter'))
+			_msg_count(@counter, @player)
+	}
+}
+
+if(array_size(@args) > 1) {
+	foreach(@k: @v in @args) {
+		if(!array_contains_ic(get_offline_players(), @v)) {
+			_msg_count('d', @v) 
+			continue()
+		}
+		try(
+			@uuid = puuid(@v, 'dashless')
+		,@fail,
+			_msg_count('n', @v)
+			continue()
+		)
+		assign(@counter, get_value('player.'.puuid(@v, 'dashless').'.death.counter'))
+		_msg_count(@counter, @v)
+	}
+}
+<<<

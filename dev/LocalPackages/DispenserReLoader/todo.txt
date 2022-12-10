@@ -6,3 +6,15 @@ todo:
 -economy support. charge per fill, charge more for area. charge a lot for random.
 - economy - "item". enabled if a setting is set, or default for missing access to CHVault extension. Will take specified item from players inventory, in lieu of charging a fee.
 -randomizer - set all contents in an area to have random objects in each inventory slot, also most slots will have nothing at all. useful for survival games.
+
+#reload random
+#meant to be called once per block, for area needs re called for each successful block - _iterate_cuboid can manage this
+#acts as wrapper for fill, managing random - whether or not it calls it.
+#first get block types that can be used array
+#2: assign action, yes or no. 50/50.
+#if nothing, return(nofilled
+#if yes continues
+#3: assign choices, high percentage of nothing! each block/item to fill gets a weight. highest weight goes to nothing.
+#if block, iterate inventory slots. send _reloader_fill the needed information to fill the slot if something was chosen. - must retrofit to not fill entire slots, only a specific slot.
+#for stats you must return what / how much was filled.
+
