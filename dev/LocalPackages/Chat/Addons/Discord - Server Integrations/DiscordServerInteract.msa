@@ -1,5 +1,7 @@
 #version 1.0-tmc
-admin:/discorddm [$id] [$] = >>>
+#add setup for welcome message/dm, or file.
+# %USER% = etc
+admin:/discorddm123 [$id] [$] = >>>
 @name = 'Discord'
 @DMsrec = get_value('server.Discord.DMs.received')
 if(!is_array(@DMsrec)) { @DMsrec = array(array('userid': 'none', 'message': 'initialized DM Array')) }

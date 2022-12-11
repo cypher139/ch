@@ -1,3 +1,6 @@
+#version 1.1-tmc
+
+# todo: port death messages to yml file
 bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, @death) {
 	# Include required backend functions
 	include('includes.library/DeathMessagesList.ms')

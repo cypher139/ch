@@ -1,15 +1,5 @@
-#Export values, to allow for less database calls.
-export('Chat.format.groups', get_value('Chat.format.groups'))
-export('Chat.format.options', get_value('Chat.format.options'))
-
-
-export('chatmodifier.name', 'Chat')
-export('chatmodifier.version', '0.9-tmc')
-
-
+#version 1.0-tmc
 bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
-# Include required backend functions
-include('includes.library/chatfunctions.ms')
 	@name = import('chatmodifier.name', 'Chat')
 	@player = _getplayerID(player())
 	@group = pgroup(@player['name'])[0]

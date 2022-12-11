@@ -13,7 +13,4 @@ bind('player_death', array('id': 'econ.death'), null, @death) {
 			tmsg(@death['killer'], color('a').'You killed '.@player['nick'].' and earned $'.@pay.' from him.')
 		}
 	}	
-	#modify vanilla death messages
-#	@deathmsg = _deathmsg(@player[name], @death[cause], @death[death_message])
-#	modify_event('death_message', @deathmsg)
 }

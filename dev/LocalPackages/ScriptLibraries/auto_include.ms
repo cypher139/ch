@@ -114,7 +114,7 @@ proc _getplayerName(@findID) {
 			}
 		)
 		if(!array_index_exists(@pid, 'name')) {
-			@pid = array(display: 'null', name: null, id: null, nick: 'ID not Valid')
+			@pid = array('display': 'null', 'name': null, 'id': null, 'nick': 'ID not Valid')
 		}
 	}
 	return(@pid)

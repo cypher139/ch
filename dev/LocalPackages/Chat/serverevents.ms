@@ -1,7 +1,5 @@
-#Include required backend functions
-include('includes.library/chatfunctions.ms')
-
-bind('player_join', array(id: 'Chat.Format.Join'), null, @login) {
+#version 1.1-tmc
+bind('player_join', array('id': 'Chat.Format.Join'), null, @login) {
 	@playerID = _getplayerID(player())
 
 #Console info
@@ -23,7 +21,7 @@ bind('player_join', array(id: 'Chat.Format.Join'), null, @login) {
 	_send_discord_message('+ join: '.@playerID['name'], 'none')	
 }
 
-bind('player_quit', array(id: 'Chat.Format.Quit'), null, @quit) {
+bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	@playerID = _getplayerID(player())
 #Quit Message
 	@quitmsg = color('c').'- part'.color(7).': '.@playerID['display']
@@ -32,9 +30,9 @@ bind('player_quit', array(id: 'Chat.Format.Quit'), null, @quit) {
 	_send_discord_message('- part: '.@playerID['name'], 'none')
 }
 
-bind('server_ping', array(id: 'Chat.Format.Ping'), null, @ping) {
+bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	#Include required backend functions
-	include('includes.library/chatfunctions.ms')
+#	include('includes.library/chatfunctions.ms')
 	
 	modify_event('motd', _rainbow(@ping['motd'], 'words'))
 	

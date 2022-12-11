@@ -14,7 +14,7 @@
 #what is the name of this script?
 @name = 'Chat'
 #Include required backend functions
-include('includes.library/chatfunctions.ms')
+#include('includes.library/chatfunctions.ms')
 
 
 @action = to_lower($action)
