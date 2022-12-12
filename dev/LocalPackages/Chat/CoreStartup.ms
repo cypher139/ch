@@ -33,6 +33,12 @@ if(function_exists('discord_connect')) {
 			}
 		#	discord_set_activity('DEFAULT', string('Minecraft'));
 		})
+/*
+		if(import('Chat.Discord.Has.Started') == false) {
+			_send_discord_message('I\'m Alive once more, come join the Minecraft server!', 'Server')
+			export('Chat.Discord.Has.Started', true)
+		}
+*/
 		if(import('Chat.Discord.Enable.Server2') == true) {
 			discord_connect('discordCredentials2', closure(){
 				broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Now Connected to Discord #2');

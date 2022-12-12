@@ -141,6 +141,9 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 
     #Capitalize the first letter in chat?
 	if(@capitalizechat == true) { @say = _capitalize(@say) }
+	
+	#Bug: ms.lang.FormatException! The "format" key in modify_event for the player_chat event only accepts %1$s and %2$s as format specifiers. Use a "%%" to display a single "%".
+	@say = reg_replace('\\%', '%%', @say)
 
     #Finalize formatting
 	modify_event('format', @hb.color(7).'('.color(@groupinfo[@group]['namecolor']).@groupname.color(7).') '.color(7).'<'.color(@namecolor).pinfo(@player['name'])[4].color(7).'> '.color(@chatcolor).@say)

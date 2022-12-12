@@ -2,6 +2,8 @@
 
 # todo: port death messages to yml file
 bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, @death) {
+	# Include required backend functions
+	include('MessageList.library/DMList-placeholder-'.function_exists('set_placeholders').'.ms')
 	@uuid = puuid(@death['player'], 'dashless')
 	@dev = import('ch.player.'.@uuid.'.dev.scripts.test')
 	if(@dev == true) { msg('p: '.@death['player'].'   c: '.@death['cause'].'   k:'.@death['killer']) }
@@ -30,18 +32,24 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 	if(@dev == true) { msg(@entitytype) }
 # @entitytypedisplay = _capitalize(@entitytype, null, null, 'all')
   
-
+/*
+ checking og death message for mentions superseded by entity id and checks
+ $player killed by $entity wielding $weapon
+if(string_contains_ic(@death['death_message'], 'by')) {
+	@ds = reg_split('by', @death['death_message']) 
+	msg(@ds)
+}
+*/	
 # Load master custom messages list
-	try(
-		@newmsg = yml_decode(read('Messages.yml'))
-	,@fail,
-		_msgAdmins('Death Messages List file could not be read. '.@fail['message'])
-		die()
-	)
-		if(!is_array(@newmsg)) { 
-		_msgAdmins('Death Messages List file is not properly formatted.') 
-		die()
-	}
+	@newmsg = _chat_death_msg_list(@death['player'], @death['death_message'], @death['killer'], @weapon)
+	
+	
+#---TEST	
+#	die(@newmsg)
+#---TEST	
+
+
+	if(!is_array(@newmsg)) { return(@newmsg) }
 # Unload non-matching array IDs
 	switch(@death['cause']['cause']) {
 	case 'ENTITY_ATTACK':
@@ -65,8 +73,10 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 	if(@dev == true) { msg(@newmsg) }
 	@selectedmsg = array_get_rand(@newmsg)
 #Setup Format
-	@selectedmsg = colorize(_chat_death_msg_format(@death['player'], @selectedmsg, @death['killer'], @weapon))
-
+	if(function_exists('set_placeholders') == true) {
+	array(@death['player'], 'weaponnn', 'opponent': 'op')
+		@selectedmsg = set_placeholders(array('player': @death['player'], 'weapon': @weapon, 'opponent': @death['killer']), @selectedmsg)
+	}
 
 #debug save stats
 	#message sent and death types
@@ -78,4 +88,51 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 	store_value('server.debug.stats.last.death', @lastd)
 	
 	modify_event('death_message', @dcdisplay.@selectedmsg)
+}
+
+
+#https://letsbuild.net/jenkins/job/CHPlaceholderAPI/
+if(function_exists('register_placeholder_hook')) {
+	register_placeholder_hook('dm', closure(@player, @placeholder){
+		#Death message colors.
+		#Color of victim's name.
+		@colorplayer = '&7'
+		#Color of message.
+		@colormsg = '&c'
+		#Color of alternate item, such as the person/entity who killed the victim.
+		@coloralt = '&9'
+		#Color of weapon used in a PvP battle
+		@colorweapon = '&3'   
+		if(is_array(@player)) {
+			@weapon = @player['weapon']
+			@opponent = @player['opponent']
+			@user = @player['player']
+		} else {
+			@weapon = 'test1'
+			@opponent = 'test2'
+			@user = @player
+		}
+
+		if(@placeholder == 'weapon') {
+			return(@weapon);
+		}
+		if(@placeholder == 'opponent') {
+			return(@opponent);
+		}
+		if(@placeholder == 'player') {
+			return(@user);
+		}
+		if(@placeholder == 'color_alt') {
+			return(@coloralt);
+		}
+		if(@placeholder == 'color_msg') {
+			return(@colormsg);
+		}
+		if(@placeholder == 'color_player') {
+			return(@colorplayer);
+		}
+		if(@placeholder == 'color_weapon') {
+			return(@colorweapon);
+		}
+	});
 }

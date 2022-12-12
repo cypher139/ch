@@ -1,0 +1,163 @@
+BLOCK_EXPLOSION: 
+- "%dm_color_player%%dm_player%%dm_color_msg% was blown to bits by a pile of %dm_color_alt%TNT!" 
+- "%dm_color_player%%dm_player%%dm_color_msg% tried to launch himself into orbit using %dm_color_alt%TNT%dm_color_msg%. Result: &4Failure!" 
+- "%dm_color_player%%dm_player%%dm_color_msg% apparently has an explosive personality" 
+- "%dm_color_msg%Careful %dm_color_player%%dm_player%%dm_color_msg%, %dm_color_alt%TNT %dm_color_msg%goes boom" 
+- "%dm_color_player%%dm_player%%dm_color_msg% cut the wrong wire" 
+- "%dm_color_player%%dm_player%%dm_color_msg% was attempting to exterminate gophers with %dm_color_alt%TNT" 
+- "%dm_color_player%%dm_player%%dm_color_msg% failed at Hot Potato." 
+CONTACT: 
+- "%dm_color_player%%dm_player%%dm_color_msg% poked a %dm_color_alt%Cactus%dm_color_msg%, but the cactus poked back." 
+- "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 
+- "%dm_color_player%%dm_player%%dm_color_msg% mistook the %dm_color_alt%Cactus%dm_color_msg% for a creeper and went in for a hug. %dm_color_alt%Cactus %dm_color_msg%won." 
+CUSTOM: 
+- "%dm_color_player%%dm_player%%dm_color_msg% died from unknown causes." 
+- "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 
+- "%dm_color_player%%dm_player%%dm_color_msg% has been vaporized." 
+- "%dm_color_player%%dm_player%%dm_color_msg% went mental." 
+- "%dm_color_player%%dm_player%%dm_color_msg% was running with scissors...now he runs no more." 
+- "%dm_color_player%%dm_player%%dm_color_msg% was hit by a falling piano!" 
+- "%dm_color_player%%dm_player%%dm_color_msg% made a trap but could not get out without setting it off." 
+- "%dm_color_player%%dm_player%%dm_color_msg% choked on a ham sandwich." 
+- "%dm_color_player%%dm_player%%dm_color_msg% died at the hands of ninja assassins." 
+- "%dm_color_player%%dm_player%%dm_color_msg% became %dm_color_player%inFamous." 
+- "%dm_color_player%%dm_player%%dm_color_msg% accidentally pulled the pin on his grenade." 
+DROWNING: 
+- "%dm_color_player%%dm_player%%dm_color_msg% is swimming with the fishes" 
+- "%dm_color_player%%dm_player%%dm_color_msg% sunk to the bottom of the ocean" 
+- "%dm_color_player%%dm_player%%dm_color_msg% went diving but forgot the diving gear" 
+- "%dm_color_player%%dm_player%%dm_color_msg% took too long of a bath" 
+ENTITY_ATTACK: 
+  CAVE_SPIDER: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% got poisoned by a %dm_color_alt%Cave Spider." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% was out treasure hunting but ended up as lunch for a %dm_color_alt%Cave Spider." 
+  ENDERMAN: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% looked at a %dm_color_alt%Enderman%dm_color_msg% the wrong way." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% said Hi to an %dm_color_alt%Enderman%dm_color_msg%, and then was killed by said %dm_color_alt%Enderman." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% was killed by %dm_color_alt%Herobrine%dm_color_msg%  ... I mean %dm_color_alt%Enderman." 
+  ENDER_DRAGON: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% met with the lord of the End. The End. " 
+  - "%dm_color_player%%dm_player%%dm_color_msg% tried to steal %dm_color_alt%Herobrine's%dm_color_msg% sweet ride. Turned into lunch." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% became redstone in the fight against the %dm_color_alt% Ender Dragon." 
+  GENERIC: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% got attacked by a ... um, I just forgot." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% died at the hands of ninja assassins." 
+  GIANT: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% just got stomped on by a %dm_color_alt%Giant!" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% is now a waffle." 
+  IRON_GOLEM: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% got stomped on by a %dm_color_alt%Iron Golem." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% forgot to run away from the angry %dm_color_alt%Iron Golem." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 
+  MAGMA_CUBE: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% introduced himself to the kind and gentle %dm_color_alt%Magma Cube. %dm_color_msg%Since you are seeing this message, it wasn't terribly kind nor gentle." 
+  PVP: 
+  - "%dm_color_alt%%dm_opponent%%dm_color_msg% killed %dm_color_player%%dm_player%%dm_color_msg% wielding %dm_color_weapon%%dm_weapon%" 
+  - "%dm_color_alt%%dm_opponent%%dm_color_msg% slays %dm_color_player%%dm_player%%dm_color_msg% with a %dm_color_weapon%%dm_weapon%" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% needs more practice and was killed by %dm_color_alt%%dm_opponent%" 
+  - "%dm_color_alt%%dm_opponent%%dm_color_msg% hunts %dm_color_player%%dm_player%%dm_color_msg% down with a %dm_color_weapon%%dm_weapon%" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% took a leap of faith but landed on %dm_color_alt%%dm_opponent%%dm_color_msg%'s %dm_color_weapon%%dm_weapon%" 
+  - "&8Score %dm_color_alt%%dm_opponent%&a +1&f - %dm_color_player%%dm_player%%dm_color_msg% 0" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% was fragged by %dm_color_alt%%dm_opponent%" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% is now redstone thanks to %dm_color_alt%%dm_opponent%%dm_color_msg%'s %dm_color_weapon%%dm_weapon%" 
+  - "%dm_color_alt%%dm_opponent%%dm_color_msg% slapped %dm_color_player%%dm_player%%dm_color_msg% around a bit too hard." 
+  SILVERFISH: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% just got stealth-killed by an ankle-biting %dm_color_alt%Silverfish%dm_color_msg%. Yikes." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% mined the wrong block and got ate by %dm_color_alt%Silverfish%dm_color_msg%." 
+  SLIME: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% just got Slimed!" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% discovered that %dm_color_alt%Slime %dm_color_msg%is not something you wear." 
+  SPIDER: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% forgot how to get a spider out of his clothes." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% is all webbed up." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% got trampled by arachnids!" 
+  WOLF: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% became a wolf's lunch" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% tried to befriend a wolf with an axe." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 
+  ZOMBIE: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% became breakfast for a hungry %dm_color_alt%Zombie!" 
+  ZOMBIFIED_PIGLIN: 
+  - "%dm_color_player%%dm_player%%dm_color_msg%angered the %dm_color_alt%Pig Zombies!" 
+  - "%dm_color_msg%All the Gold in the world could not save %dm_color_player%%dm_player%" 
+ENTITY_EXPLOSION: 
+- "%dm_color_player%%dm_player%%dm_color_msg% was blown to bits by a %dm_color_alt%Creeper!" 
+- "%dm_color_player%%dm_player%%dm_color_msg% forgot to run away from the %dm_color_alt%Creeper!" 
+- "%dm_color_msg%Hugging %dm_color_alt%Creepers%dm_color_msg% is not recommended, %dm_color_player%%dm_player%." 
+FALL: 
+- "%dm_color_player%%dm_player%%dm_color_msg% fell to their death" 
+- "%dm_color_player%%dm_player%%dm_color_msg% tripped and fell...down a cliff" 
+- "%dm_color_player%%dm_player%%dm_color_msg% leapt before looking" 
+- "%dm_color_player%%dm_player%%dm_color_msg% forgot to bring a parachute" 
+- "%dm_color_player%%dm_player%%dm_color_msg% learned to fly...briefly..." 
+- "%dm_color_player%%dm_player%%dm_color_msg% just experienced physics in action" 
+- "%dm_color_player%%dm_player%%dm_color_msg% forgot to look out below" 
+- "%dm_color_player%%dm_player%%dm_color_msg% got a little too close to the edge" 
+- "%dm_color_player%%dm_player%%dm_color_msg% faceplanted into the ground" 
+- "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 
+- "%dm_color_msg% Skydiving without a parachute again, %dm_color_player%%dm_player%%dm_color_msg%?" 
+- "%dm_color_player%%dm_player%%dm_color_msg% forgot about the ejector seat." 
+FIRE: 
+- "%dm_color_player%%dm_player%%dm_color_msg% has a new, slightly charred look!" 
+- "%dm_color_player%%dm_player%%dm_color_msg% melted." 
+- "%dm_color_player%%dm_player%%dm_color_msg% is toast! Literally..." 
+- "%dm_color_player%%dm_player%%dm_color_msg% just got barbequed" 
+- "%dm_color_player%%dm_player%%dm_color_msg% forgot to stop, drop, and roll" 
+- "%dm_color_player%%dm_player%%dm_color_msg% spontaneously combusted" 
+FIRE_TICK: 
+- "%dm_color_player%%dm_player%%dm_color_msg% melted." 
+- "%dm_color_player%%dm_player%%dm_color_msg% is toast! Literally..." 
+- "%dm_color_player%%dm_player%%dm_color_msg% just got barbequed" 
+- "%dm_color_player%%dm_player%%dm_color_msg% forgot to stop, drop, and roll" 
+LAVA: 
+- "%dm_color_player%%dm_player%%dm_color_msg% just got splattered with %dm_color_alt%hot magma." 
+- "%dm_color_player%%dm_player%%dm_color_msg% became obsidian" 
+- "%dm_color_player%%dm_player%%dm_color_msg% was caught in an active volanic eruption" 
+- "%dm_color_player%%dm_player%%dm_color_msg% found out how to encase himself in carbonite" 
+LIGHTNING: 
+- "%dm_color_player%%dm_player%%dm_color_msg% became %dm_color_player%inFamous." 
+- "%dm_color_player%%dm_player%%dm_color_msg% has an electrifying personality." 
+- "%dm_color_player%%dm_player%%dm_color_msg% made a suitable ground." 
+MAGIC: 
+- "%dm_color_player%%dm_player%%dm_color_msg% was killed by a potion." 
+- "%dm_color_player%%dm_player%%dm_color_msg% was magically killed" 
+POISON: 
+- "%dm_color_player%%dm_player%%dm_color_msg% shouldn't have drank that poison." 
+- "%dm_color_player%%dm_player%%dm_color_msg% should be more careful." 
+PROJECTILE: 
+  ARROW: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% did not see the %dm_color_alt%Dispenser %dm_color_msg%and is now full of holes." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% did not need a %dm_color_alt%Dispenser %dm_color_msg%there." 
+  - "%dm_color_msg%Be careful to not hit stray arrows, %dm_color_player%%dm_player%%dm_color_msg%!" 
+  BLAZE: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% was set ablaze by a %dm_color_alt%Blaze." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% is smokin' ... Needs to avoid the %dm_color_alt%Blaze." 
+  GENERIC: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% got attacked by a ... um, I just forgot." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% died at the hands of ninja assassins." 
+  PVP: 
+  - "%dm_color_alt%%dm_opponent%%dm_color_msg% shot %dm_color_player%%dm_player%%dm_color_msg% in the knee." 
+  - "%dm_color_player%%dm_player%%dm_color_msg% is now redstone thanks to %dm_color_alt%%dm_opponent%%dm_color_msg%" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% just got snipe'd by %dm_color_alt%%dm_opponent%!" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% needs more practice and was killed by the %dm_color_weapon%%dm_weapon%%dm_color_msg% of %dm_color_alt%%dm_opponent%" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 
+  SKELETON: 
+  - "%dm_color_player%%dm_player%%dm_color_msg% just got snipe'd by a %dm_color_alt%Skeleton!" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% was on the wrong end of the bow" 
+  - "%dm_color_player%%dm_player%%dm_color_msg% found out %dm_color_alt%Skeletons %dm_color_msg%know how to aim their arrows." 
+STARVATION: 
+- "%dm_color_player%%dm_player%%dm_color_msg% threw up the raw pork he just ate." 
+- "%dm_color_player%%dm_player%%dm_color_msg% forgot to eat." 
+SUFFOCATION: 
+- "%dm_color_player%%dm_player%%dm_color_msg% suffocated" 
+- "%dm_color_player%%dm_player%%dm_color_msg% choked on a ham sandwich" 
+- "%dm_color_player%%dm_player%%dm_color_msg% successfully held his breath until he died! I think we need a new definition for 'success'." 
+SUICIDE: 
+- "%dm_color_player%%dm_player%%dm_color_msg% died at the hands of ninja assassins." 
+- "%dm_color_player%%dm_player%%dm_color_msg% discovered %dm_color_alt%Herobrine's%dm_color_msg% realm. It did not end well." 
+VOID: 
+- "%dm_color_player%%dm_player%%dm_color_msg% fell into the Big Gap" 
+- "%dm_color_player%%dm_player%%dm_color_msg% ran out of rocket fuel for their RocketBoots" 
+- "%dm_color_player%%dm_player%%dm_color_msg% tripped and fell...down a BIG cliff" 
+- "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 

@@ -5,8 +5,6 @@
 *:/rainbow [$] = >>>
 @name = 'Rainbow'
 @chatname = import('chatmodifier.name', 'Chat')
-# Include required backend functions
-include('includes.library/chatfunctions.ms')
 assign(@args, parse_args($))
 assign(@player, _chat_getplayerID(player()))
 @prefix = color(7).'['.color(6).@name.color(7).'] '

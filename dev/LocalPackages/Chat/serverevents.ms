@@ -31,9 +31,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 }
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
-	#Include required backend functions
-#	include('includes.library/chatfunctions.ms')
-	
+	#Colorize MOTD
 	modify_event('motd', _rainbow(@ping['motd'], 'words'))
 	
 	#Get playername from IP database

@@ -412,5 +412,10 @@ ALLAY(true, false, MCVersion.MC1_19),
 	)
 )
 
+if(function_exists('chf_write')) {
+	chf_write('test.yml', yml_encode(@messages, true), 'OVERWRITE')
+}
+console('This Death Message List is not maintained, please use the Placeholder API for the latest list format! Visit the link below to download the required extension.', false)
+console(moo('https://letsbuild.net/jenkins/job/CHPlaceholderAPI/'), false)
 return(@messages)
 }

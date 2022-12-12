@@ -5,20 +5,29 @@ bind('discord_member_joined', array('id': 'Discord.Server.userjoin'), null, @eve
 	@welcomeDM = get_value('server.Discord.Welcome.DM')
 	@welcomemsg = get_value('server.Discord.Welcome.msg')
 	if(@welcomemsg == '' || @welcomemsg == null) { @welcomemsg = ' to our Discord Server!' }
-#Welcome User DM
-	if(@welcomeDM != '') { discord_private_message(@event['userid'], associative_array('content': @welcomeDM)) }
-#Wait 20 seconds to avoid mention spam right at first.	
-	set_timeout(20000, closure(){ 
-#Get current roles, add a couple delineator roles?
-		@currentroles = discord_member_get_roles(@event['userid'])
-		@welcomeroles = get_value('server.Discord.Welcome.roles')
-		#console(@currentroles)
-		if(!is_array(@currentroles)) { @currentroles = array() }
-		if(is_array(@welcomeroles)) {
-			array_push_all(@currentroles, @welcomeroles)
-		}
 
-		discord_member_set_roles(@event['userid'], @currentroles)
+#Wait a few seconds to avoid mention spam right at first.	
+	set_timeout(5000, closure(){ 
+		try {
+			@currentroles = discord_member_get_roles(@event['userid'])
+		} catch (NotFoundException @ex) {
+	#Assume user was insta-kick (such as account age does not meet server req.)
+			console('New Join '.@event['username'].' "'.@event['userid'].'" was not found on server. Were they insta-kicked??', false)
+			die()
+		}
+#Welcome User DM
+		if(@welcomeDM != '') { discord_private_message(@event['userid'], associative_array('content': @welcomeDM)) }
+#Add Delineator roles, or roles new users need to have to access server
+		if(has_value('server.Discord.Welcome.roles')) {
+			@welcomeroles = get_value('server.Discord.Welcome.roles')
+			#console(@currentroles)
+			if(is_array(@welcomeroles)) {
+				array_push_all(@currentroles, @welcomeroles)
+				discord_member_set_roles(@event['userid'], @currentroles)
+			} else {
+				console('Welcome roles array not configured', false)
+			}
+		}
 #Welcome User Messages
 		discord_broadcast('general', associative_array('content': 'Welcome <@'.@event['userid'].'> '.@welcomemsg))
 	})

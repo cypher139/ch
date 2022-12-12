@@ -16,8 +16,6 @@ msg(@color)
 <<<
 
 everyone:/hb [$] = >>>
-# Include required backend functions
-include('includes.library/chatfunctions.ms')
 @dev = import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.chat')
 @args = parse_args($)
 if($ == '' || $ == null) { @args = array(player()) }
