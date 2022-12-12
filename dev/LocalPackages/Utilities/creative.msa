@@ -21,6 +21,7 @@ foreach(@v in @args) {
 		@giveplayer = @v
 	}
 }
+@dev = false
 if(@player == '~console') {
 	@dev = false
 } else {

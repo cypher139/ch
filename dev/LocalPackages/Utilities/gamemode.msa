@@ -45,6 +45,7 @@ if($ != '' && !has_permission('commandhelper.alias.shiftmode.notip')) {
 if(array_size(@args) > 0) {
 # Non-Player Arguments provided
 	@newmode = 'Unset'
+	@fc = 0
 	foreach(@k: @v in @args) {
 		if(reg_count('^[GgIiPp]', @v) > 0) { 
 			@gmpinv = get_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv')
@@ -56,8 +57,9 @@ if(array_size(@args) > 0) {
 				@gmpinv['use'] = true
 				msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Upon game mode change your inventory will be set to the inventory for that game mode.')
 			}
-		store_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv', @gmpinv)
-		continue()
+			store_value(@name.'player.'.puuid(@user['name'], 'dashless').'.mode.inv', @gmpinv)
+			@fc++
+			continue()
 		}
 		if(reg_count('^[Aa]', @v) > 0) { @newmode = 'Adventure' }
 		if(reg_count('^[Cc]', @v) > 0) { @newmode = 'Creative' }
@@ -66,16 +68,20 @@ if(array_size(@args) > 0) {
 		if(reg_count('^[Ll][Oo]', @v) > 0 && @user['name'] == player()) { 
 			export(@name.'.player.'.puuid(@user['name'], 'dashless').'.lock', true)
 			msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your game mode setting is now locked to '.pmode(@user['name']).'.')
+			@fc++
 			continue()
 		}
 		if(reg_count('^[Uu][Nn]', @v) > 0 && @user['name'] == player()) { 
 			export(@name.'.player.'.puuid(@user['name'], 'dashless').'.lock', false)
 			msg(color('d').'['.color(9).@name.color('d').'] '.color('5').'Your game mode setting is now unlocked.')
+			@fc++
 			continue()
 		}
 		
 	}
-	if(@newmode == 'Unset') { die(color('c').'['.color(8).@name.color('c').'] '.color('c').'Please specify a valid game mode!') }
+	if(@newmode == 'Unset') {
+		if(@fc == 0) { die(color('c').'['.color(8).@name.color('c').'] '.color('c').'Please specify a valid game mode!') } else { die() }
+	}
 } else {
 # /mode - No Arguments
 	switch(pmode(@user['name'])) {

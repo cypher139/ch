@@ -1,3 +1,5 @@
+#setup some values
+_read_essentials_usermap()
 #Setup Dev messages and update player database
 bind('player_join', array(id: 'cypher139.login'), null, @login) {
 #Event playername may sometimes return null? more testing needed
