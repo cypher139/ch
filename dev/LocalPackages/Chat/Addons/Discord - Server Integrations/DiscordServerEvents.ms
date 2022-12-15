@@ -56,21 +56,26 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VCjoin'), null,
 
 	# get last ping time
 		@lastping = get_value('server.Discord.last.ping.'.@VCRoleID)
-		if(@lastping == '' || @lastping == null) { 
-			@lastping = time() - 864123456
-			store_value('server.Discord.last.ping.'.@VCRoleID, time())
-		}
+		if(@lastping == '' || @lastping == null) { @lastping = 1230768000000 }
+		if(import('server.Discord.VC.ping.in.progress') == true) { die() } else {
+			@timeout = 60000
 	# :angrypingemoji: 1 ping every 12 hours only!
-		if(time() > (@lastping + 43200000)) {
-		#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
-		set_timeout(60000, closure(){
-			if(discord_member_get_voice_channel(@discord['userid']) == @ChannelID) {
-	#			console('still here')
-				discord_broadcast('voice-chat', array('content': '<@&'.@VCRoleID.'> <@'.@discord['userid'].'> is ready to voice chat in the General channel! Come join for another fun time talking with your fellow members!'))
-				broadcast(all_players(), @discord['username'].' is ready to voice chat in the General voice chat channel! If you are on the Discord, Come join for another fun time talking with your fellow members!')
-				store_value('server.Discord.last.ping.'.@VCRoleID, time())
+			if(time() > (@lastping + 43200000)) {
+				export('server.Discord.VC.ping.in.progress', true)
+			#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
+				set_timeout(@timeout, closure(){
+					if(discord_member_get_voice_channel(@discord['userid']) == @ChannelID) {
+#						console('still here')
+						discord_broadcast('voice-chat', array('content': '<@&'.@VCRoleID.'> <@'.@discord['userid'].'> is ready to voice chat in the General channel! Come join for another fun time talking with your fellow members!'))
+						broadcast(@discord['username'].' is ready to voice chat in the General voice chat channel! If you are on the Discord, Come join for another fun time talking with your fellow members!', all_players())
+						store_value('server.Discord.last.ping.'.@VCRoleID, time())
+					}
+				});
+				set_timeout((@timeout + 10000), closure(){
+					export('server.Discord.VC.ping.in.progress', false)
+				});
 			}
-		})
+# time test			} else {console('nope')}
 		}
 	}
 }

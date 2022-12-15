@@ -24,7 +24,7 @@ proc _chat_death_msg_format(@player, @msg, @opponent, @weapon) {
 
 /*
   - "%dm_color_player%%dm_player%%dm_color_msg% took a leap of faith but landed on %dm_color_alt%%dm_opponent%%dm_color_msg%'s %dm_color_weapon%%dm_weapon%" 
-
+*/
 
 # Damage notes from:
 #https://github.com/EngineHub/CommandHelper/blob/master/src/main/java/com/laytonsmith/abstraction/enums/MCDamageCause.java

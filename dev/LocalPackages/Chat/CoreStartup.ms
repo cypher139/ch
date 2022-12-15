@@ -17,7 +17,6 @@ export('Chat.Discord.Roles.admins', array('DiscordPurple', 'Owner', 'Modding Ext
 export('Chat.Discord.Broadcast.URLs', false)
 export('Chat.Discord.Enable.Server2', false)
 
-#		msg(file_resolve('Server.library'))
 		
 #Prerequisites for Discord functions: Connect to Server!
 if(function_exists('discord_connect')) {

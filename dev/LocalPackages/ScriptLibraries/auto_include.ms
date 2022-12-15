@@ -56,9 +56,6 @@ proc _capitalize(@string, @lower, @u, @a) {
 proc _is_even_number(@number) {return(mod(@number, 2) == 0)}
 
 
-#todo essnetials usermap.csv has player, uuid with dash
-#also find the prefix floodgate
-
 
 #Find player UUID when given a player NAME.
 #returns array of name, displayname, nickname, and UUID

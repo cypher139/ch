@@ -28,6 +28,10 @@ proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	)
 }
 
+proc _is_Command(@line) {
+	return(string_starts_with(@line, '~'));
+}
+
 proc _getplayer(@name) {
 	@chars = length(@name)
 #returns the real player's name
