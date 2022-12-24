@@ -102,6 +102,8 @@ case '':
 	@gotoworld = ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties')))['level-name']
 case 'list':
 	_list_worlds()
+case 'spawn':
+	@gotoworld = pworld(player())
 default:
 	@gotoworld = @world
 }

@@ -1,0 +1,16 @@
+admin:/itemname [$option1] [$] = >>>
+#testing
+assign(@player, _getplayerID(player()))
+assign(@you, player())
+
+
+	assign(@item, $option1)
+	assign(@realid, data_values(@item))
+	assign(@itemname, data_name(@realid))
+	if(reg_count('[0-9]:[0-9]', @item) == 1, msg('":data" : Yes'), msg('":data" : No'))
+	msg('realid: '.@realid)
+	msg('itemname: '.@itemname)
+	msg('data_values: '.data_values(@item))
+	msg('data_name: '.data_name(@item))
+	die()
+<<<

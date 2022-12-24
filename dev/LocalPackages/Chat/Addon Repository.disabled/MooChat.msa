@@ -1,0 +1,16 @@
+#version 1.0-tmc
+
+*:/moochat [$] = >>>
+@name = 'Moo'
+@chatname = import('chatmodifier.name', 'Chat')
+
+if(!has_permission(player(), 'commandhelper.alias.chat.use.rainbow')) { die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You do not have permission to use Rainbow chat!') }
+if($ == '') { die(color('c').'['.color(7).@name.color('c').'] '.'You didn\'t say anything!!') }
+@msg = strip_colors($)
+
+if(player() == '~console') {
+	broadcast(moo(@msg))
+} else {
+	chat(moo(@msg))
+}
+<<<
