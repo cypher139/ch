@@ -8,21 +8,30 @@
 	
 proc _wish_finder(@type, @message, @player, @option1) {
 	@name = 'Wish'
-	@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish')
+	try(@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish'),@fail, @dev = false)
 	@primaryword = import('wish.words.primary', 'wish')
 	@secondaryword = import('wish.words.secondary', 'i')
 	if(@option1 == '') { @usesecondaryword = true } else { @usesecondaryword = false } 
 	
 	if(@message == '' || @message  == null) { return(array('wish': 'fail', 'message': 'Message Not Given')) }
-	if(@player == '' || @player == null) { 
-		@player = player()
-	} else {
-		try( 
-			@player = player(@player)
-		,@fail,
-			return(array('wish': 'fail', 'message': 'Player Name Not Found'))
-		)
+	if(@type == '' || @type  == null) { return(array('wish': 'fail', 'message': 'Type Not Given')) }
+	if(@player == '' || @player == null) { return(array('wish': 'fail', 'message': 'Player Not Given')) } else {
+#Load Last Chat	
+		switch(@type) {
+		case 'chat':
+		case 'game':
+		case 'minecraft':
+			try( 
+				@player = player(@player)
+			,@fail,
+				return(array('wish': 'fail', 'message': 'Player Name Not Found'))
+			)
+			@lastchatter = import('wish.last.player.chat')
+		case 'discord':
+			@lastchatter = import('Chat.Discord.last.message')
+		}
 	}
+	if(!is_array(@lastchatter)) { @lastchatter = array(array('player': '~default1', 'message': '0')) }
 	
 	@messagewords = reg_split(' ', @message)
 	@iswish = false
@@ -42,9 +51,7 @@ proc _wish_finder(@type, @message, @player, @option1) {
 
 
 	if(@dev == true) { msg(color(7).'[DEV] msg: '.color('f').@messagewords) }
-#Load Last Chat
-	@lastchatter = import('wish.last.player.chat', array(array('player': '~default', 'message': '0')))
-	if(!is_array(@lastchatter)) { @lastchatter = array(array('player': '~default1', 'message': '0')) }
+
 
 	@registeredactions = array('kick', 'die', 'kill', 'dead', 'off', 'dust', 'death', 'fly', 'flew', 'google', 'googling', 'explode', 'explosion', 'friend', 'friends', 'artist', 'poop')
 	@action == ''
@@ -70,6 +77,9 @@ proc _wish_finder(@type, @message, @player, @option1) {
 	#You were Referring to a recent player
 		if(reg_count('^[YyFfUuIi][^\\W][OoUuDd]*[UuIi]*[Oo]*[CcTt]*[YySs]*$', @word) > 0) {
 		#yo, you, fu, idiot/s/cy. no y or i or f.
+		switch(@type) {
+		case 'chat':
+		case 'game':
 			#Checking recent chat for last player name who chatted
 			foreach(@v in @lastchatter) {
 				if(@v['player'] != @player) {
@@ -90,7 +100,12 @@ proc _wish_finder(@type, @message, @player, @option1) {
 				@targettype = 0
 				if(@dev == true) { msg(color(7).'[DEV] player: '.color('f').'No other players online, or no players matching that name! Using @player') }
 			}
-			break()
+			break(2)
+		case 'discord':
+		#check recent discord chat for match username
+		#check if is mc or discord username
+		export('test', 'test')
+		}
 		}
 	# Referring to yourself
 		if(reg_count('^[IiMm]+[eE]*$', @word) > 0) {

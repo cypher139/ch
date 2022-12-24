@@ -1,11 +1,6 @@
 #version 1.3-tmc
 #Configurable options
 
-#Include required backend functions
-#include('includes.library/chatfunctions.ms')
-
-
-
 #todo:
 #discord_set_activity(DEFAULT, 'Minecraft')
 #discord_member_get_roles(member) - make name colors somewhat match discord versions
@@ -18,22 +13,20 @@ bind('player_chat', array('id': 'Chat.Discord.msg.Send'), null, @chat) {
 	@sendmsg = @chat['message']
 	
 	# Automatically chat on last channel a message was received on.
-	@lastmsg = import('Chat.Discord.last.msg.1')
+	@lastmsg = import('Chat.Discord.last.message')
 	if(is_array(@lastmsg)) {
-		if(array_index_exists(@lastmsg, 'channel')) {
+		if(array_index_exists(@lastmsg, 0, 'channel')) {
 			if(time() < (@lastmsg['time'] + 234567)) {
 				@channel = @lastmsg['channel']
 			}	
 		}
 	}
-#dev tmsg(@chat['player'], reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']))
 	# Specify a channel name as first word in chat - Channel override
 	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']) == 1) {
 		# remove channel mention from message content	
 		@sendmsg = reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1]
 		# returns 'channel' in '#channel message text'
 		@channel = reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1]
-#dev		tmsg(@chat['player'], @sendmsg.' channel name:'.@channel)
 		modify_event('message', @sendmsg)
 	}
 	# Final Channel check: If not in allowed list, switch channel to default
@@ -45,17 +38,16 @@ bind('player_chat', array('id': 'Chat.Discord.msg.Send'), null, @chat) {
 #Send Discord User message to Minecraft Players.
 bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, @discord) {
 	@allowedChannels = import('Chat.Discord.Channels.receive')
-#	broadcast(@discord, all_players())
-	#temp array setup
-	/*
+	#Setup list of server members
 	@membersID = get_value('server.Discord.members.ID')
 	if(!array_contains(@membersID, @discord['userid'])) {
 		array_push(@membersID, @discord['userid'])
 		store_value('server.Discord.members.ID', @membersID)
 	}
-	*/
 
 	if(array_contains(@allowedChannels, @discord['channel']) == true) {
+		array_set(@discord, 'time', time())
+	#Message Formatting
 		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && import('Chat.Discord.Broadcast.URLs') == false) {
 			@discord['message'] = '<Sent a GIF>'
 		}
@@ -70,10 +62,13 @@ bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, 
 				@discord['message'] = @discord['message'].@filenum.@attach['filename']
 			}
 		}
-		export('Chat.Discord.last.msg.3', import('Chat.Discord.last.msg.2'))
-		export('Chat.Discord.last.msg.2', import('Chat.Discord.last.msg.1'))
-		array_set(@discord, 'time', time())
-		export('Chat.Discord.last.msg.1', @discord)
+	#Save Recent Messages for reference	
+		@lastmsgs = import('Chat.Discord.last.message')
+		if(!is_array(@lastmsgs)) { @lastmsgs = array(@discord) }
+		array_insert(@lastmsgs, @discord, 0)
+		if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
+		export('Chat.Discord.last.message', @lastmsgs)
+		
 		@userroles = array_keys(discord_member_get_roles(@discord['username']))
 	#Set username color based on data previously set from Discord colors
 	#keys system gives roles alphabetically, not server's order
@@ -121,7 +116,7 @@ bind('player_death', array('id': 'Chat.Discord.msg.Death', 'priority': 'MONITOR'
 		case '':
 		case null:
 			@dc = ''
-			msg(color('e').'['.color('gold').'DeathCount'.color('e').'] '.color(7).'The Reaper\'s memory loss has been cured!')
+			msg(color('e').'['.color(6).'DeathCount'.color('e').'] '.color(7).'The Reaper\'s memory loss has been cured!')
 		case 0:
 			@dc = ''
 		default:
@@ -167,9 +162,9 @@ bind('server_command', array('id': 'Chat.Discord.msg.Send.Console', 'priority': 
 	@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
 	@channel = 'minecraft'
 	# Automatically chat on last channel a message was received on.
-	@lastmsg = import('Chat.Discord.last.msg.1')
+	@lastmsg = import('Chat.Discord.last.message')
 	if(is_array(@lastmsg)) {
-		if(array_index_exists(@lastmsg, 'channel')) {
+		if(array_index_exists(@lastmsg, 0, 'channel')) {
 			if(time() < (@lastmsg['time'] + 234567)) {
 				@channel = @lastmsg['channel']
 			}	

@@ -38,7 +38,7 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 		_msgAdmins('Death Messages List file could not be read. '.@fail['message'])
 		die()
 	)
-		if(!is_array(@newmsg)) { 
+	if(!is_array(@newmsg)) { 
 		_msgAdmins('Death Messages List file is not properly formatted.') 
 		die()
 	}

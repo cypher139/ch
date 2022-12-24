@@ -16,7 +16,7 @@ bind('discord_member_joined', array('id': 'Discord.Server.userjoin'), null, @eve
 			die()
 		}
 #Welcome User DM
-		if(@welcomeDM != '') { discord_private_message(@event['userid'], associative_array('content': @welcomeDM)) }
+		if(@welcomeDM != '') { try(discord_private_message(@event['userid'], associative_array('content': @welcomeDM)),@fail, console('Cannot message '.@event['username'].' "'.@event['userid'].'", are they a bot?', false)) }
 #Add Delineator roles, or roles new users need to have to access server
 		if(has_value('server.Discord.Welcome.roles')) {
 			@welcomeroles = get_value('server.Discord.Welcome.roles')
@@ -33,7 +33,6 @@ bind('discord_member_joined', array('id': 'Discord.Server.userjoin'), null, @eve
 	})
 }
 
-
 #Voice Chat monitor:
 /*
 If:
@@ -45,29 +44,40 @@ Then this will send a message to the ping role to come join voice chat
 */
 bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VCjoin'), null, @discord) {
 # Data: userid, username, nickname, channel (name)
-# -- after 60 seconds if user still in channel, and their roles have vc, and vc role not pinged by ch in over 24 hours, and in general, ping vc
+	@VCTextChannel = 'voice-chat'
 	@ChannelID = get_value('server.Discord.VC.channel')
 	@VCRoleID = get_value('server.Discord.VC.role')
+	@VCRoleName = get_value('server.Discord.VC.role.name')
 	if(@ChannelID == '' || @VCRoleID == '') { die() }
 
 	#Discord User: Must have VC role
 	@userroles = discord_member_get_roles(@discord['userid'])
-	if(array_contains(@userroles, @VCRoleID)) {
+	if(array_contains(@userroles, @VCRoleID) && @discord['channel'] == 'General') {
 
-	# get last ping time
+	# Get last time the bot pinged the role
 		@lastping = get_value('server.Discord.last.ping.'.@VCRoleID)
 		if(@lastping == '' || @lastping == null) { @lastping = 1230768000000 }
 		if(import('server.Discord.VC.ping.in.progress') == true) { die() } else {
 			@timeout = 60000
+			@pingmsg = '<@&'.@VCRoleID.'> <@'.@discord['userid'].'> is ready to voice chat in the '.@discord['channel'].' channel! Come join for another fun time talking with your fellow members!'
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping + 43200000)) {
 				export('server.Discord.VC.ping.in.progress', true)
 			#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
 				set_timeout(@timeout, closure(){
 					if(discord_member_get_voice_channel(@discord['userid']) == @ChannelID) {
-#						console('still here')
-						discord_broadcast('voice-chat', array('content': '<@&'.@VCRoleID.'> <@'.@discord['userid'].'> is ready to voice chat in the General channel! Come join for another fun time talking with your fellow members!'))
-						broadcast(@discord['username'].' is ready to voice chat in the General voice chat channel! If you are on the Discord, Come join for another fun time talking with your fellow members!', all_players())
+	#						console('still here')
+						#Has the role just been mentioned?
+						if(is_array(@lastmsgs)) {
+						@lastmsgs = import('Chat.Discord.last.message')
+							foreach(@index: @message in @lastmsgs) {
+								if(reg_count('@'.@VCRoleName, @message['message']) > 0) {
+									@pingmsg = 'Hey I was going to do that ping!'
+								}
+							}
+						}					
+						discord_broadcast(@VCTextChannel, array('content': @pingmsg))
+						broadcast(@discord['username'].' is ready to voice chat in the "'.@discord['channel'].'" channel! Come join the Discord server for another fun time talking with your fellow members!', all_players())
 						store_value('server.Discord.last.ping.'.@VCRoleID, time())
 					}
 				});
