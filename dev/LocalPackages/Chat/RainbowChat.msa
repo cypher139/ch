@@ -56,6 +56,14 @@ if(reg_count('^[-\\/][adwnp][los].*[ls2]$', to_lower(parse_args(@msg)[0])) > 0) 
 	array_remove(@msg, 0)
 	@msg = array_implode(@msg, ' ')
 }
+if(reg_count('^[-\\/][m][o].*[o].*$', to_lower(parse_args(@msg)[0])) > 0) {
+	if(function_exists('moo')) { 
+		@msg = parse_args(@msg)
+		array_remove(@msg, 0)
+		@msg = array_implode(@msg, ' ')
+		@msg = moo(@msg)
+	}
+}
 #chat:
 if(player() == '~console') {
 	broadcast(_rainbow(@msg, @chattype))

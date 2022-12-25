@@ -1,3 +1,11 @@
+#Core Startup
+export('chatmodifier.name', 'Chat')
+export('chatmodifier.version', '1.0-tmc')
+export('Chat.config.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Configs'))
+
+
+
+
 proc _chat_is_even_number(@number) { return(mod(@number, 2) == 0) }
 
 proc _chat_getplayerID(@option1) {

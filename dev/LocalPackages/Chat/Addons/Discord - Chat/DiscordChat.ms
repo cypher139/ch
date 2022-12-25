@@ -8,16 +8,16 @@
 
 #Send Minecraft Player message to Discord
 bind('player_chat', array('id': 'Chat.Discord.msg.Send'), null, @chat) {
-	@channel = 'minecraft'
-	@allowedChannels = import('Chat.Discord.Channels.send')
+	@config = import('Chat.config.Discord')
+	@channel = @config['Default_Channel']
 	@sendmsg = @chat['message']
 	
 	# Automatically chat on last channel a message was received on.
 	@lastmsg = import('Chat.Discord.last.message')
 	if(is_array(@lastmsg)) {
 		if(array_index_exists(@lastmsg, 0, 'channel')) {
-			if(time() < (@lastmsg['time'] + 234567)) {
-				@channel = @lastmsg['channel']
+			if(time() < (@lastmsg[0]['time'] + 234567)) {
+				@channel = @lastmsg[0]['channel']
 			}	
 		}
 	}
@@ -30,14 +30,14 @@ bind('player_chat', array('id': 'Chat.Discord.msg.Send'), null, @chat) {
 		modify_event('message', @sendmsg)
 	}
 	# Final Channel check: If not in allowed list, switch channel to default
-	if(!array_contains(@allowedChannels, @channel)) { @channel = 'minecraft' }
+	if(!array_contains(@config['Channels_Send'], @channel)) { @channel = @config['Default_Channel'] }
 	_send_discord_message(@sendmsg, player(), @channel)
 }
 
 
 #Send Discord User message to Minecraft Players.
 bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, @discord) {
-	@allowedChannels = import('Chat.Discord.Channels.receive')
+	@config = import('Chat.config.Discord')
 	#Setup list of server members
 	@membersID = get_value('server.Discord.members.ID')
 	if(!array_contains(@membersID, @discord['userid'])) {
@@ -45,10 +45,10 @@ bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, 
 		store_value('server.Discord.members.ID', @membersID)
 	}
 
-	if(array_contains(@allowedChannels, @discord['channel']) == true) {
+	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true) {
 		array_set(@discord, 'time', time())
 	#Message Formatting
-		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && import('Chat.Discord.Broadcast.URLs') == false) {
+		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 			@discord['message'] = '<Sent a GIF>'
 		}
 		if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
@@ -64,7 +64,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, 
 		}
 	#Save Recent Messages for reference	
 		@lastmsgs = import('Chat.Discord.last.message')
-		if(!is_array(@lastmsgs)) { @lastmsgs = array(@discord) }
+		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
 		if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
 		export('Chat.Discord.last.message', @lastmsgs)
@@ -73,23 +73,21 @@ bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, 
 	#Set username color based on data previously set from Discord colors
 	#keys system gives roles alphabetically, not server's order
 		@usernamecolor = 3
-		@rolecolors = import('Chat.Discord.Roles.colors')
-		@adminroles = import('Chat.Discord.Roles.admins')
 		@isAdmin = false
 		foreach(@role in @userroles) {
-			if(array_contains_ic(@adminroles, @role)) {
+			if(array_contains_ic(@config['Role_Admins'], @role)) {
 				@isAdmin = true
 				break()
 			}
 		}
 #dev		broadcast(discord_member_get_roles(@discord['username']))
 		foreach(@role in @userroles) {
-			if(array_contains_ic(array_keys(@rolecolors), @role)) {
+			if(array_contains_ic(array_keys(@config['Role_Colors']), @role)) {
 				#admin colors: ensure an admin role gets picked for color
-				if(@isAdmin == true && !array_contains_ic(@adminroles, @role)) {
+				if(@isAdmin == true && !array_contains_ic(@config['Role_Admins'], @role)) {
 					continue()
 				}		
-				@usernamecolor = '#'.@rolecolors[@role]
+				@usernamecolor = '#'.@config['Role_Colors'][@role]
 #dev				broadcast(@role, all_players())
 				#Only go with first role found
 				break()
@@ -101,7 +99,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, 
 		if(import('Chat.Discord.Console.receive') == true) {
 			console(@sendmsg, false)
 		}
-		if(array_index_exists(@discord, 'attachments', 0, 'filename') && import('Chat.Discord.Broadcast.URLs') == true) {
+		if(array_index_exists(@discord, 'attachments', 0, 'filename') && @config['URL_Broadcast'] == true) {
 			foreach(@num: @attach in @discord['attachments']) {
 				broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], all_players())
 			}
@@ -160,13 +158,13 @@ bind('player_death', array('id': 'Chat.Discord.msg.Death', 'priority': 'MONITOR'
 bind('server_command', array('id': 'Chat.Discord.msg.Send.Console', 'priority': 'MONITOR'), array('prefix': 'say', 'type': 'console'), @event) {
 	if(@event['prefix'] == @event['command']) { console(color(4).'You need to actually say something with say!', false) die() }
 	@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
-	@channel = 'minecraft'
+	@channel = import('Chat.config.Discord')['Default_Channel']
 	# Automatically chat on last channel a message was received on.
 	@lastmsg = import('Chat.Discord.last.message')
 	if(is_array(@lastmsg)) {
 		if(array_index_exists(@lastmsg, 0, 'channel')) {
-			if(time() < (@lastmsg['time'] + 234567)) {
-				@channel = @lastmsg['channel']
+			if(time() < (@lastmsg[0]['time'] + 234567)) {
+				@channel = @lastmsg[0]['channel']
 			}	
 		}
 	}
