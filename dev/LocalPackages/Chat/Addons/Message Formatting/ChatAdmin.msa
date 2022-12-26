@@ -8,15 +8,8 @@
 #caps check, user and global option
 #chpe: prefix suffix
 
-# add discord console setting
-
 *:/chatadmin [$action] [$option1] [$option2] [$option3] [$option4] = >>>
-#what is the name of this script?
 @name = 'Chat'
-#Include required backend functions
-#include('includes.library/chatfunctions.ms')
-
-
 @action = to_lower($action)
 @option1 = $option1
 @option2 = $option2
@@ -67,7 +60,7 @@ case 'view':
 case 'v':
 	if(@option1 == '' || @option1 == null) {
 	#view global settings
-		@chatoptions = get_value('chat.format.options')
+		@chatoptions = get_value('Chat.format.options')
 		if(@chatoptions == '' || @chatoptions == null,
 			@chatoptions = array('colorize': '', 'randcolor': '', 'capitalizechat': '', 'capitalizegroupname': '')
 			msg(color('e').'['.color(7).@name.color('e').'] '.color('c').'No global options have been set! Showing defaults:')
@@ -102,7 +95,7 @@ case 'v':
 		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Capitalize the first letter in the group name: '.color(@color).@say)
 	} else {
 	#view group settings
-		@groupinfo = get_value('chat.format.groups')
+		@groupinfo = get_value('Chat.format.groups')
 		@group = @option1
 		if(@group == '' || @group == null) { die(color('c').'['.color(7).@name.color('c').'] '.color(7).'You need to specify a group.') }
 		if(@groupinfo == '' || @groupinfo == null,
@@ -162,21 +155,23 @@ case 'v':
 case 'setcolor':
 case 'set':
 case 's':
-	@groupinfo = get_value('chat.format.groups')
+	@groupinfo = get_value('Chat.format.groups')
 	@group = @option2 
 	if(@groupinfo == '' || @groupinfo == null,
 		@groupinfo = array()
-		@groupinfo[@group] = array('namecolor': '', 'showhealt': '', 'usercolor': '', 'chatcolor': '', 'nickname': '')
+		@groupinfo[@group] = array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': '')
 	)
 	@groupinfokeys = array_keys(@groupinfo)
 	if(!array_contains_ic(@groupinfokeys, @group),
 		@groupinfo[@group] = array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': '')
 	)
-	@chatoptions = get_value('chat.format.options')
+	@chatoptions = get_value('Chat.format.options')
 	if(@chatoptions == '' || @chatoptions == null,
 		@chatoptions = array('colorize': '', 'randcolor': '', 'capitalizechat': '', 'capitalizegroupname': '')
 	)
 				@entry = array()
+				msg(@groupinfo)
+	if(@groupinfo[@group]['showhealth']) { msg('yes') } else { msg('n0')}
 	switch(@option1) {
 	case 'option':
 	case 'o':
@@ -190,8 +185,8 @@ case 's':
 				@chatoptions['colorize'] = true
 				@successmsg = color(6).'['.color(7).@name.color(6).'] '.colorize('Color codes will display &ain the specified &ecolor in &9chat!')
 			}
-			store_value('chat.format.options', @chatoptions)
-			export('chat.format.options', @chatoptions)
+			store_value('Chat.format.options', @chatoptions)
+			export('Chat.format.options', @chatoptions)
 			die(@successmsg)
 		case 'capital':
 		case 'cap':
@@ -206,8 +201,8 @@ case 's':
 				@chatoptions['capitalizechat'] = true
 				@successmsg = color(6).'['.color(7).@name.color(6).'] '.color('a').'The first letter of chat will be capitalized!'
 			}
-			store_value('chat.format.options', @chatoptions)
-			export('chat.format.options', @chatoptions)
+			store_value('Chat.format.options', @chatoptions)
+			export('Chat.format.options', @chatoptions)
 			die(@successmsg)
 			
 			case 'groupname':
@@ -219,8 +214,8 @@ case 's':
 				@chatoptions['capitalizegroupname'] = true
 				@successmsg = color(6).'['.color(7).@name.color(6).'] '.color('a').'The first letter of a group\'s name will be capitalized!'
 			}
-			store_value('chat.format.options', @chatoptions)
-			export('chat.format.options', @chatoptions)
+			store_value('Chat.format.options', @chatoptions)
+			export('Chat.format.options', @chatoptions)
 			die(@successmsg)
 			default:
 				die(color('c').'['.color(7).@name.color('c').'] '.color(7).'Unrecognized option! (3)')
@@ -246,8 +241,8 @@ case 's':
 				@groupinfo[@group]['showhealth'] = true
 				@successmsg = color(6).'['.color(7).@name.color(6).'] '.color('d').'The "'.@group.'" group will now show the player\'s health in chat.'
 			}
-			store_value('chat.format.groups', @groupinfo)
-			export('chat.format.groups', @groupinfo)
+			store_value('Chat.format.groups', @groupinfo)
+			export('Chat.format.groups', @groupinfo)
 			die(@successmsg)
 
 		case 'nickname':	
@@ -257,8 +252,8 @@ case 's':
 				die(color('c').'['.color(7).@name.color('c').'] '.color('c').'No nickname was specified!')
 			)
 			@groupinfo[@group]['nickname'] = @option4
-			store_value('chat.format.groups', @groupinfo)
-			export('chat.format.groups', @groupinfo)
+			store_value('Chat.format.groups', @groupinfo)
+			export('Chat.format.groups', @groupinfo)
 			msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'The previous nickname for the "'.@group.'" group was '.color(9).@oldcolor.color(7).', and is now: '.color('a').@option4)
 			die()
 		}
@@ -279,8 +274,8 @@ case 's':
 			@oldcolor = @groupinfo[@group]['namecolor'] 
 			if(@oldcolor == '', @oldcolor = 'e')
 			@groupinfo[@group]['namecolor'] = @newc[1]
-			store_value('chat.format.groups', @groupinfo)
-			export('chat.format.groups', @groupinfo)
+			store_value('Chat.format.groups', @groupinfo)
+			export('Chat.format.groups', @groupinfo)
 			msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'The previous color for the "'.@group.'" group\'s name was '.color(@oldcolor).'&'.@oldcolor.color(7).', and is now: '.color(@newc[1]).@color)
 			die()
 		)
@@ -289,8 +284,8 @@ case 's':
 			@oldcolor = @groupinfo[@group]['usercolor'] 
 			if(@oldcolor == '', @oldcolor = '3')
 			@groupinfo[@group]['usercolor'] = @newc[1]
-			store_value('chat.format.groups', @groupinfo)
-			export('chat.format.groups', @groupinfo)
+			store_value('Chat.format.groups', @groupinfo)
+			export('Chat.format.groups', @groupinfo)
 			msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'The previous color for a player\'s username in the "'.@group.'" group\'s was '.color(@oldcolor).'&'.@oldcolor.color(7).', and is now: '.color(@newc[1]).@color)
 			die()
 		)
@@ -299,8 +294,8 @@ case 's':
 			@oldcolor = @groupinfo[@group]['chatcolor'] 
 			if(@oldcolor == '', @oldcolor = 'f')
 			@groupinfo[@group]['chatcolor'] = @newc[1]
-			store_value('chat.format.groups', @groupinfo)
-			export('chat.format.groups', @groupinfo)
+			store_value('Chat.format.groups', @groupinfo)
+			export('Chat.format.groups', @groupinfo)
 			msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'The previous color for a player\'s chat in the "'.@group.'" group\'s was '.color(@oldcolor).'&'.@oldcolor.color(7).', and is now: '.color(@newc[1]).@color)
 			die()
 		)

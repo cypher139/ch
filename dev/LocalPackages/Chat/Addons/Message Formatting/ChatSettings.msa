@@ -9,12 +9,7 @@
 #chpe: prefix suffix
 
 everyone:/chat [$action] [$option1] [$option2] [$option3] [$option4] = >>>
-# What is the name of this script?
 @name = 'Chat'
-# Include required backend functions
-#include('includes.library/chatfunctions.ms')
-
-
 @action = to_lower($action)
 @option1 = $option1
 @option2 = $option2
@@ -22,7 +17,6 @@ everyone:/chat [$action] [$option1] [$option2] [$option3] [$option4] = >>>
 @option4 = $option4
 @player = _getplayerID(player())
 
-#Action list help: This appears on /chat, or when a unsupported action variable is passed
 proc _chat_help() {
 	msg(color(6).'Chat: Help:')
 	msg(color('a').'Command usage: <required> [optional]')
@@ -45,127 +39,148 @@ case '/?':
 case 'setcolor':
 case 'set':
 case 's':
+case 'format':
+	proc _chat_msg_invalid_color() {
+		msg(color('c').'['.color(7).'Chat'.color('c').'] '.color('c').'Invalid color code specified! '.color('f').'Use this list to find what color you prefer, then re-type the command with your new color.')
+		call_alias(/colors)
+	}
+	@userconfig = get_value(@name.'.format.users.'.@player['id'])
+	if(!is_array(@userconfig)) { @userconfig = array('usernamecolor': '', 'chatcolor': '', 'colorize': '', 'capitalizechat': '', 'rainbow': false, 'rainbow_type': 'normal', 'randomcolor': '') }
+	
 	#The next options require a valid color code.
 	@color = strip_colors(@option2)
-	if(reg_count('^(&.*)', @color) == 0) { @color = '&'.@color }
-	if(!reg_match('^&[a-fA-f0-9]$', @color)) {
-		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'Invalid color code specified! '.color('f').'Use this list to figure out what color you would like, then re-type the command with your new color.')
-		call_alias(/colors)
-		die()
+	#see if starts with & or #, strip out if so
+	if(reg_count('^[&#]+', @color) > 0) { @color = reg_replace('^[&#]+', '', @color) }
+#does not currently support name color codes
+	switch(length(@color)) {
+	case 1:
+	#0-9, a-f, k-o, r
+		if(reg_count('^[0-9a-fk-or]$', to_lower(@color)) == 0) { die(_chat_msg_invalid_color()) }
+	case 2:
+	#10-15
+		if(reg_count('^1[0-5]$', @color) == 0) { die(_chat_msg_invalid_color()) }
+	case 3:
+	#short html, expand to 6
+		if(reg_count('^[0-9a-f]{3}$', to_lower(@color)) == 0) { die(_chat_msg_invalid_color()) }
+		@color = '#'.@color[0].@color[0].@color[1].@color[1].@color[2].@color[2]
+	case 6:
+	#html
+		if(reg_count('^[0-9a-f]{6}$', to_lower(@color)) == 0) { die(_chat_msg_invalid_color()) }
+		@color = '#'.@color
+	default:
+		die(_chat_msg_invalid_color())
 	}
-    @newc = reg_split('&', @color)
+
 	switch(@option1) {
 	case 'username':
 	case 'user':
 	case 'u':
-		@oldcolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.username')
-		if(@oldcolor == '' || @oldcolor == null, @oldcolor = 'f')
-		@usernamecolor = @newc[1]
-		if(@oldcolor == @newc[1],
-			die(color('e').'['.color(7).@name.color('e').'] '.color(7).'Your username color is already '.color(@oldcolor).'&'.@oldcolor.color(7).'!')
-		)
-		store_value(@name.'.player.'.@player['id'].'.chat.format.colors.username', @usernamecolor)
-		export(@name.'.player.'.@player['id'].'.chat.format.colors.username', @usernamecolor)
-		msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'Your previous username color was: '.color(@oldcolor).'&'.@oldcolor.color(7).', and is now: '.color(@newc[1]).@color)
+		@oldcolor = @userconfig['usernamecolor']
+		if(@oldcolor == '' || @oldcolor == null) { @oldcolor = 'f' }
+		if(@oldcolor == @color) { die(color('e').'['.color(7).@name.color('e').'] '.color(7).'Your username color is already '.color(@oldcolor).@oldcolor.color(7).' !') }	
+		@userconfig['usernamecolor'] = @color
+		store_value(@name.'.format.users.'.@player['id'], @userconfig)
+		export(@name.'.format.users.'.@player['id'], @userconfig)
+		msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'Your previous username color was: '.color(@oldcolor).@oldcolor.color(7).', and is now: '.color(@color).@color)
 		die()
-	
 	case 'chat':
 	case 'c':
-		@oldcolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat')
-		if(@oldcolor == '' || @oldcolor == null, @oldcolor = 'f')
-		@usernamecolor = @newc[1]
-		if(@oldcolor == @newc[1],
-			die(color('e').'['.color(7).@name.color('e').'] '.color(7).'Your default chat color is already '.color(@oldcolor).'&'.@oldcolor.color(7).'!')
-		)
-		store_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat', @usernamecolor)
-		export(@name.'.player.'.@player['id'].'.chat.format.colors.chat', @usernamecolor)
-		msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'Your previous chat color was: '.color(@oldcolor).'&'.@oldcolor.color(7).', and is now: '.color(@newc[1]).@color)
+		@oldcolor = @userconfig['chatcolor']
+		if(@oldcolor == '' || @oldcolor == null) { @oldcolor = 'f' }
+		if(@oldcolor == @color) { die(color('e').'['.color(7).@name.color('e').'] '.color(7).'Your chat color is already '.color(@oldcolor).@oldcolor.color(7).' !') }	
+		@userconfig['chatcolor'] = @color
+		store_value(@name.'.format.users.'.@player['id'], @userconfig)
+		export(@name.'.format.users.'.@player['id'], @userconfig)
+		msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'Your previous chat color was: '.color(@oldcolor).@oldcolor.color(7).', and is now: '.color(@color).@color)
 		die()
 	default:
-		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'No color code was specified!')
+		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'Setting specified was not recognized!')
 	}
 
 
 case 'view':
 case 'v':
+	@userconfig = get_value(@name.'.format.users.'.@player['id'])
+	if(!is_array(@userconfig)) { @userconfig = array('usernamecolor': '', 'chatcolor': '', 'colorize': '', 'capitalizechat': '', 'rainbow': false, 'rainbow_type': 'normal', 'randomcolor': '') }
+
 	msg(color(6).'['.color(7).@name.color(6).'] '.color('b').'Chat settings for: '.color('a').@player['display'])
-	@usercolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.username')
-	if(@usercolor == '' || @usercolor == null,
+	if(@userconfig['usernamecolor'] == '' || @userconfig['usernamecolor'] == null) {
 		@usercolor = 'f' 
 		@say = 'Unset'
-	,
-		@say = '&'.@usercolor
-	)
-	msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Username color: '.color(@usercolor).@say)
-	@chatcolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat')
-	if(@chatcolor == '' || @chatcolor == null,
-		@chatcolor = 'f'
+	} else {
+		@usercolor = @userconfig['usernamecolor']
+		@say = @usercolor
+	}
+	msg(color(7).'Username color: '.color(@usercolor).@say)
+	if(@userconfig['chatcolor'] == '' || @userconfig['chatcolor'] == null) {
+		@chatcolor = 'f' 
 		@say = 'Unset'
-	,
-		@say = '&'.@chatcolor
-	)
-	msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'Chat color: '.color(@chatcolor).@say)
+	} else {
+		@chatcolor = @userconfig['usernamecolor']
+		@say = @chatcolor
+	}
+	msg(color(9).'Chat color: '.color(@chatcolor).@say)
 	@colorize = get_value(@player.'.chat.format.colorize')
-	if(@colorize == true || @colorize == '' || @colorize == null,
+	if(@userconfig['colorize'] == true) {
 		@ccolor = 'a'
 		@say = 'Yes'
-	,
+	} else {
 		@ccolor = 'c' 
 		@say = 'No'
-	)
-	msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Colorize color codes in chat: '.color(@ccolor).@say)
-	if(has_permission(@player['name'], 'commandhelper.alias.chat.use.randcolor'),
-		@rc = get_value(@name.'.player.'.@player['id'].'.chat.format.colorize')
-		if(@rc == true || @rc == '' || @rc == null ,
+	}
+	msg(color(7).'Colorize color codes in chat: '.color(@ccolor).@say)
+	if(has_permission(@player['name'], 'commandhelper.alias.chat.use.randcolor')) {
+		if(@userconfig['randomcolor'] == true) {
 			@rccolor = 'a'
 			@say = 'Yes'
-		,
-			@rccolor = 'c'
+		} else {
+			@rccolor = 'c' 
 			@say = 'No'
-		)
-		msg(color(6).'['.color(7).@name.color(6).'] '.color(9).'Random starting color in chat: '.color(@rccolor).@say)
-	)
-	if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow'),
-		@rainbow = get_value(@name.'.player.'.@player['id'].'.chat.rainbow.toggle')
-		if(@rainbow == true || @rainbow == '' || @rainbow == null,
+		}
+		msg(color(9).'Random starting color in chat: '.color(@rccolor).@say)
+	}
+	if(has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow')) {
+		if(@userconfig['rainbow'] == true) {
 			@racolor = 'a'
 			@say = 'Yes'
-		,
-			@racolor = 'c'
+		} else {
+			@racolor = 'c' 
 			@say = 'No'
-		)
-		msg(color(6).'['.color(7).@name.color(6).'] '._rainbow('Rainbow chat: ', 'doubles').color(@racolor).@say)
-	)
-	die()
-
+		}
+		msg(_rainbow('Rainbow chat: ', 'doubles').color(@racolor).@say)
+		msg(color(9).'Rainbow type: '._rainbow(@userconfig['rainbow_type'], @userconfig['rainbow_type']))
+	}
+	die(color(6).'['.color(7).@name.color(6).']  --------')
 
 
 case 'toggle':
 case 't':
 case 'switch':
+	@userconfig = get_value(@name.'.format.users.'.@player['id'])
+	if(!is_array(@userconfig)) { @userconfig = array('usernamecolor': '', 'chatcolor': '', 'colorize': '', 'capitalizechat': '', 'rainbow': false, 'rainbow_type': 'normal', 'randomcolor': '') }
 	switch(@option1) {
 	case 'colorize':
 	case 'c':
-		if(get_value(@name.'.player.'.@player['id'].'.chat.format.colorize') == true) {
-			@newsetting = false
+		if(@userconfig['colorize'] == true) {
+			@userconfig['colorize'] = false
 			@successmsg = color(6).'['.color(7).@name.color(6).'] '.color(6).'Color codes will display &aas the &ecode in &9chat!'
 		} else {
-			@newsetting = true
+			@userconfig['colorize'] = true
 			@successmsg = color(6).'['.color(7).@name.color(6).'] '.colorize('Color codes will display &ain the specified &ecolor in &9chat!')
 		}
-		store_value(@name.'.player.'.@player['id'].'.chat.format.colorize', @newsetting)
-		export(@name.'.player.'.@player['id'].'.chat.format.colorize', @newsetting)
+		store_value(@name.'.format.users.'.@player['id'], @userconfig)
+		export(@name.'.format.users.'.@player['id'], @userconfig)
 		die(@successmsg)
 	default:
-		msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Oops! That toggle action isn\'t supported!') 
+		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'Oops! That toggle action isn\'t supported!') 
 	}
 case '':
 case null:
-	msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'No action specified.')
+	msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'No action specified.')
 	_chat_help()
 	die()
 default:
-	msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Oops! That action isn\'t supported!') 
+	msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'Oops! That action isn\'t supported!') 
 	_chat_help() 
 	die()
 }

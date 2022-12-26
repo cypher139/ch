@@ -8,23 +8,6 @@ export('Chat.config.dir', file_resolve(sys_properties()['user.dir'].'/plugins/Co
 
 proc _chat_is_even_number(@number) { return(mod(@number, 2) == 0) }
 
-proc _chat_getplayerID(@option1) {
-	@pid = array()
-	if(@option1 == '~console'){
-		@pid = array(display: 'Console', name: '~console', id: 'console', nick: 'Server Console')
-	} else {
-	@pid['display'] = pinfo(@option1)[0];
-	@pid['name'] = pinfo(@option1)[0];
-	@pid['id'] = puuid(@option1, 'dashless');
-	@pid['nick'] = pinfo(@option1)[4];
-	}
-	#Bedrock to Java players come in with name ".NAME", remove dot
-	if(reg_count('^[\\.].*', @pid['name']) == 1) {
-		@pid['display'] = reg_replace('^[\\.]','', @pid['name'])
-	}
-	return(@pid)
-}
-
 proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg', @consolemsg = @msg)
 	if(@cmconcat == 'yes', @consolemsg = @msg.@consolemsg)
@@ -40,6 +23,7 @@ proc _is_Command(@line) {
 	return(string_starts_with(@line, '~'));
 }
 
+/*
 proc _getplayer(@name) {
 	@chars = length(@name)
 #returns the real player's name
@@ -75,7 +59,7 @@ proc _getnick(@player) {
 
 	if(@player == @nick, return(@player), return(@nick))
 }
-	
+*/	
 
 proc _rainbow(@msg, @type, @returntype) {
 	if(@msg == '') { return(color('c').'You didn\'t say anything!!') }

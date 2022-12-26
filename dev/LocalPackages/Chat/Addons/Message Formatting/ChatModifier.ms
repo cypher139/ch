@@ -5,25 +5,6 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	@group = pgroup(@player['name'])[0]
 	@dev = import('ch.player.'.@player['id'].'.developer')
 	@say = @chat['message']
-	set_uncaught_exception_handler(closure(@ex) {
-		@dev = import('ch.player.'.puuid(player(), 'dashless').'.developer')
-		msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
-		msg(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['message'])
-		@msg1 = color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message']
-		if(@dev == true) {msg(@msg1)}
-		console(@msg1, false)
-		array_iterate(@ex['stackTrace'], closure(@k, @v) {
-			@pathdisplay = reg_split('\\/CommandHelper\\/', @v['file'])[1]
-			if(reg_count('(includes.library)', @pathdisplay) > 0) {
-				@pathdisplay = 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1]
-			}		
-			@msg2 = color(9).'../'.@pathdisplay.color(7).' Line: '.color('a').@v['line'].'.'.@v['col']
-			console(color('c').'['.color(6).@name.color('c').'] '.@msg2, false)
-			if(@dev == true) {msg(@msg2)}
-		})
-		return(true)
-	});
-
 
 
 #Chat layout formatting: finalization
@@ -47,9 +28,7 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 
 	if(@chatoptions['colorize'] == '' || @chatoptions['colorize'] == null, @chatoptions['colorize'] = true)
     #Health
-	if(@groupinfo[@group]['showhealth'] == true,
-		@hb = color(0).'('._healthbar(@player['name']).color(0).')'
-	)
+	if(@groupinfo[@group]['showhealth'] == true) {	@hb = color(0).'('._healthbar(@player['name']).color(0).')' }
 	
 	#Group options
 	# Set nickname
@@ -64,75 +43,36 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	)
 	
 	#User options
-    #User's name color
-	@namecolor = import(@name.'.player.'.@player['id'].'.chat.format.colors.username')
-	if(@namecolor == '' || @namecolor == null,
-		#first chat, values not loaded
-		@namecolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.username')
-		export(@name.'.player.'.@player['id'].'.chat.format.colors.username', @namecolor)
-	)
-	#if no value set, this will set the group's color.
-	if(@namecolor == '' || @namecolor == null,
-		@namecolor = @groupinfo[@group]['usercolor']
-	)
-    #User's chat color
-	@chatcolor = import(@name.'.player.'.@player['id'].'.chat.format.colors.chat')
-	if(@chatcolor == '' || @chatcolor == null,
-		#first chat, values not loaded
-		@chatcolor = get_value(@name.'.player.'.@player['id'].'.chat.format.colors.chat')
-		export(@name.'.player.'.@player['id'].'.chat.format.colors.chat', @chatcolor)
-	)
-	#if no value set, this will set the group's color.
-	if(@chatcolor == '' || @chatcolor == null,
-		@chatcolor = @groupinfo[@group]['chatcolor']
-	)
-    #Colorize user chat?
-	@colorize = import(@name.'.player.'.@player['id'].'.chat.format.colorize')
-	if(@colorize == '' || @colorize == null,
-		#first chat, values not loaded
-		@colorize = get_value(@name.'.player.'.@player['id'].'.chat.format.colorize')
-		export(@name.'.player.'.@player['id'].'.chat.format.colorize', @colorize)
-	)
-	#if no value set, this will load the global default.
-	if(@colorize == '' || @colorize == null,
-		@colorize = @chatoptions['colorize']
-	)
-    #Capitalize user chat?
-	@capitalizechat = import(@name.'.player.'.@player['id'].'.chat.format.capitalize')
-	if(@capitalizechat == '' || @capitalizechat == null,
-		#first chat, values not loaded
-		@capitalizechat = get_value(@name.'.player.'.@player['id'].'.chat.format.capitalize')
-		export(@name.'.player.'.@player['id'].'.chat.format.capitalize', @capitalizechat)
-	)
-	#if no value set, this will load the global default.
-	if(@capitalizechat == '' || @capitalizechat == null,
-		@capitalizechat = @chatoptions['capitalizechat']
-	)
-	
-	
-    #Toggle Rainbow chat
-	@rtoggle = import(@name.'.player.'.@player['id'].'.chat.rainbow.toggle')
-	if(@rtoggle == '' || @rtoggle == null) {
-		#first chat, values not loaded
-		@rtoggle = get_value(@name.'.player.'.@player['id'].'.chat.rainbow.toggle')
-		export(@name.'.player.'.@player['id'].'.chat.rainbow.toggle', @rtoggle)
+	@userconfig = import(@name.'.format.users.'.@player['id'])
+	if(@userconfig == '' || @namecolor == null) {
+		# First chat, values not loaded in memory
+		@userconfig = get_value(@name.'.format.users.'.@player['id'])
+		export(@name.'.format.users.'.@player['id'], @userconfig)
 	}
+	if(!is_array(@userconfig)) { @userconfig = array('usernamecolor': '', 'chatcolor': '', 'colorize': '', 'capitalizechat': '', 'rainbow': false, 'rainbow_type': 'normal', 'randomcolor': false) }
+
+	@namecolor = @userconfig['usernamecolor']
+	@chatcolor = @userconfig['chatcolor']
+	@colorize = @userconfig['colorize']
+	@capitalizechat = @userconfig['capitalizechat']
+	#If no user value is set, this will redirect to the group or global setting.
+	if(@namecolor == '' || @namecolor == null) { @namecolor = @groupinfo[@group]['usercolor'] }
+	if(@chatcolor == '' || @chatcolor == null) { @chatcolor = @groupinfo[@group]['chatcolor'] }
+	if(@colorize == '' || @colorize == null) { @colorize = @chatoptions['colorize'] }
+	if(@capitalizechat == '' || @capitalizechat == null) { @capitalizechat = @chatoptions['capitalizechat'] }
+
+		
+    #Toggle Rainbow chat
+	@rtoggle = @userconfig['rainbow']
 	if(!has_permission(@player['name'], 'commandhelper.alias.chat.use.rainbow')) { @rtoggle = false }
-	@rtype = import(@name.'.player.'.@player['id'].'.chat.rainbow.type')
-	if(@rtype == '' || @rtype == null,
-		#first chat, values not loaded
-		@rtype = get_value(@name.'.player.'.@player['id'].'.chat.rainbow.type')
-		export(@name.'.player.'.@player['id'].'.chat.rainbow.type', @rtype)
-	)
-	@rcmd = import(@name.'.player.'.@player['id'].'.chat.rainbow.cmd', false)
-	if(@rtype == '' || @rtype == null, @rtype = 'normal')
 	if(@rtoggle == true) {
+		@rcmd = import(@name.'.player.'.@player['id'].'.chat.rainbow.cmd', false)
 		if(@rcmd == true) {	
 			@say = @chat['message']
 			export(@name.'.player.'.@player['id'].'.chat.rainbow.cmd', false)
 		} else {
 			@colorize = false
-			@say = _rainbow(@chat['message'], @rtype)
+			@say = _rainbow(@chat['message'], @userconfig['rainbow_type'])
 		}
 	}
 
