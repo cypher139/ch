@@ -11,9 +11,12 @@ if(is_array(get_value('primus.database.IP'))) {
 }
 
 
-proc _array_string_contains(@array, @string) {
+proc _array_string_contains(@array, @string, @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
 	if(@string == '') { return(false) }
+	if(@doKeys != '') {
+		@array = array_keys(@array)
+	}
 	@return = false
 	foreach(@var in @array) {
 		 if(string_contains_ic(@var, @string)) {

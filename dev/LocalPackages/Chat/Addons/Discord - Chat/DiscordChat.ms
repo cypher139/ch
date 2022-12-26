@@ -1,10 +1,4 @@
 #version 1.3-tmc
-#Configurable options
-
-#todo:
-#discord_set_activity(DEFAULT, 'Minecraft')
-#discord_member_get_roles(member) - make name colors somewhat match discord versions
-#color() Additionally, any RGB colour can be used in the hex format '#rrggbb'. 
 
 #Send Minecraft Player message to Discord
 bind('player_chat', array('id': 'Chat.Discord.msg.Send'), null, @chat) {

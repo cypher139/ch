@@ -12,3 +12,5 @@ To enable an addon, move the desired Addon folder into the main "Chat" folder.
 *----------
 To disable an addon, move the desired Addon folder into this "Addons Repository.disabled" folder.
 *----------
+
+** Some addons may need extra settings configured, check the Configs folder for relevant config setting files.
