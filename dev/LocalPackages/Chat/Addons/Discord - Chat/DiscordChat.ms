@@ -32,11 +32,16 @@ bind('player_chat', array('id': 'Chat.Discord.msg.Send'), null, @chat) {
 #Send Discord User message to Minecraft Players.
 bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, @discord) {
 	@config = import('Chat.config.Discord')
-	#Setup list of server members
+	#Setup list of server members for reference in mentions
 	@membersID = get_value('server.Discord.members.ID')
 	if(!array_contains(@membersID, @discord['userid'])) {
 		array_push(@membersID, @discord['userid'])
 		store_value('server.Discord.members.ID', @membersID)
+	}
+	@membersnames = get_value('server.Discord.members.names')
+	if(!array_contains(@membersnames, @discord['userid'])) {
+		array_set(@membersnames, @discord['username'], @discord['userid'])
+		store_value('server.Discord.members.names', @membersnames)
 	}
 
 	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true) {
@@ -57,12 +62,13 @@ bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, 
 			}
 		}
 	#Save Recent Messages for reference	
+	if(reg_count('^[!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) == 0) {
 		@lastmsgs = import('Chat.Discord.last.message')
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
 		if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
 		export('Chat.Discord.last.message', @lastmsgs)
-		
+	}	
 		@userroles = array_keys(discord_member_get_roles(@discord['username']))
 	#Set username color based on data previously set from Discord colors
 	#keys system gives roles alphabetically, not server's order
