@@ -1,7 +1,6 @@
 # Commands to change the formatting for chat
 
 #todo:
-# randcolor: select 1 random color to color message with.
 # global options: toggle display name, change begin and end characters for healthbar, group, user.
 # group nickname, prefix, suffix
 # captialize first letter in chat, user & global option
@@ -79,24 +78,20 @@ case 'format':
 		if(@oldcolor == '' || @oldcolor == null) { @oldcolor = 'f' }
 		if(@oldcolor == @color) { die(color('e').'['.color(7).@name.color('e').'] '.color(7).'Your username color is already '.color(@oldcolor).@oldcolor.color(7).' !') }	
 		@userconfig['usernamecolor'] = @color
-		store_value(@name.'.format.users.'.@player['id'], @userconfig)
-		export(@name.'.format.users.'.@player['id'], @userconfig)
-		msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'Your previous username color was: '.color(@oldcolor).@oldcolor.color(7).', and is now: '.color(@color).@color)
-		die()
+		@msg = color('a').'['.color(7).@name.color('a').'] '.color(7).'Your previous username color was: '.color(@oldcolor).@oldcolor.color(7).', and is now: '.color(@color).@color
 	case 'chat':
 	case 'c':
 		@oldcolor = @userconfig['chatcolor']
 		if(@oldcolor == '' || @oldcolor == null) { @oldcolor = 'f' }
 		if(@oldcolor == @color) { die(color('e').'['.color(7).@name.color('e').'] '.color(7).'Your chat color is already '.color(@oldcolor).@oldcolor.color(7).' !') }	
 		@userconfig['chatcolor'] = @color
-		store_value(@name.'.format.users.'.@player['id'], @userconfig)
-		export(@name.'.format.users.'.@player['id'], @userconfig)
-		msg(color('a').'['.color(7).@name.color('a').'] '.color(7).'Your previous chat color was: '.color(@oldcolor).@oldcolor.color(7).', and is now: '.color(@color).@color)
-		die()
+		@msg = color('a').'['.color(7).@name.color('a').'] '.color(7).'Your previous chat color was: '.color(@oldcolor).@oldcolor.color(7).', and is now: '.color(@color).@color
 	default:
-		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'Setting specified was not recognized!')
+		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'Setting specified was not recognized!')
 	}
-
+	store_value(@name.'.format.users.'.@player['id'], @userconfig)
+	export(@name.'.format.users.'.@player['id'], @userconfig)
+	die(@msg)
 
 case 'view':
 case 'v':
@@ -168,12 +163,21 @@ case 'switch':
 			@userconfig['colorize'] = true
 			@successmsg = color(6).'['.color(7).@name.color(6).'] '.colorize('Color codes will display &ain the specified &ecolor in &9chat!')
 		}
-		store_value(@name.'.format.users.'.@player['id'], @userconfig)
-		export(@name.'.format.users.'.@player['id'], @userconfig)
-		die(@successmsg)
+	case 'randomcolor':
+	case 'r':
+		if(@userconfig['randomcolor'] == true) {
+			@userconfig['randomcolor'] = false
+			@successmsg = color(6).'['.color(7).@name.color(6).'] '.color(6).'Message color will use yours or the group\'s default color setting.'
+		} else {
+			@userconfig['randomcolor'] = true
+			@successmsg = color(6).'['.color(7).@name.color(6).'] '.colorize('Message color will be randomized on each message sent!')
+		}
 	default:
-		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'Oops! That toggle action isn\'t supported!') 
+		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'Oops! That toggle action isn\'t supported!') 
 	}
+	store_value(@name.'.format.users.'.@player['id'], @userconfig)
+	export(@name.'.format.users.'.@player['id'], @userconfig)
+	die(@successmsg)
 case '':
 case null:
 	msg(color('c').'['.color(7).@name.color('c').'] '.color('c').'No action specified.')

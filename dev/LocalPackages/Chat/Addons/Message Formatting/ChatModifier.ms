@@ -55,6 +55,7 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	@chatcolor = @userconfig['chatcolor']
 	@colorize = @userconfig['colorize']
 	@capitalizechat = @userconfig['capitalizechat']
+	@randomcolor = @userconfig['randomcolor']
 	#If no user value is set, this will redirect to the group or global setting.
 	if(@namecolor == '' || @namecolor == null) { @namecolor = @groupinfo[@group]['usercolor'] }
 	if(@chatcolor == '' || @chatcolor == null) { @chatcolor = @groupinfo[@group]['chatcolor'] }
@@ -81,6 +82,9 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 
     #Capitalize the first letter in chat?
 	if(@capitalizechat == true) { @say = _capitalize(@say) }
+	
+	#Random start message color:
+	if(@randomcolor == true) { @chatcolor = rand(0, 15) }
 	
 	#Bug: ms.lang.FormatException! The "format" key in modify_event for the player_chat event only accepts %1$s and %2$s as format specifiers. Use a "%%" to display a single "%".
 	@say = reg_replace('\\%', '%%', @say)
