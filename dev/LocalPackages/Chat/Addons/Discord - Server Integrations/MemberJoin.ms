@@ -42,7 +42,6 @@ bind('discord_member_joined', array('id': 'Discord.Server.userjoin'), null, @eve
 			}
 		}
 #Add Delineator roles, or roles new users need to have to access server
-		if(has_value('server.Discord.Welcome.roles')) {
 			# console(@config['Welcome_Roles'])
 			if(is_array(@config['Welcome_Roles'])) {
 				array_push_all(@currentroles, @config['Welcome_Roles'])
@@ -50,7 +49,6 @@ bind('discord_member_joined', array('id': 'Discord.Server.userjoin'), null, @eve
 			} else {
 				console('Welcome roles not configured', false)
 			}
-		}
 #Welcome User Messages
 		@welcomeMsg = reg_replace('%UserID%', '<@'.@event['userid'].'>', @config['Welcome_Message'])
 		discord_broadcast(@config['Welcome_Text_Channel_Name'], array('content': @welcomeMsg), closure(@ex){

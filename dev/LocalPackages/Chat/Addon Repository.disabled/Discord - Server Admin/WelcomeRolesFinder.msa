@@ -1,0 +1,97 @@
+#version 1.0-tmc
+admin:/wrf [$id] [$] = >>>
+@name = 'Discord'
+
+switch($id) {
+case 'welcome':
+case 'w':
+	@roles = get_value('server.Discord.members.welcomerolesonly')
+	if(is_array(@roles)) {
+		msg(array_size(@roles).' members were detected as having only the Welcome Roles. IDs:')
+	#	msg(array_implode(@roles, ', '))
+	} else {
+		msg('Please run the command before trying to view results!')
+	}
+	@membernames = get_value('server.Discord.members.names')
+	if(!is_array(@membernames)) { die('plz fill members.names array') }
+	foreach(@username: @userid in @membernames) {
+		if(array_contains(@roles, @userid)) {
+			msg(@username.' <'.@userid.'>')
+		}
+	}
+
+case 'norole':
+case 'n':
+	@roles = get_value('server.Discord.members.noroles')
+	if(is_array(@roles)) {
+		msg(array_size(@roles).' members were detected as having 0 roles. IDs:')
+	#	msg(array_implode(@roles, ', '))
+	} else {
+		msg('Please run the command before trying to view results!')
+	}
+	@membernames = get_value('server.Discord.members.names')
+	if(!is_array(@membernames)) { die('plz fill members.names array') }
+	foreach(@username: @userid in @membernames) {
+		if(array_contains(@roles, @userid)) {
+			msg(@username.' <'.@userid.'>')
+		}
+	}
+		
+default:
+	@config = import('Chat.config.Discord.Member')
+	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
+
+	@membernames = get_value('server.Discord.members.names')
+	if(!is_array(@membernames)) { die('plz fill members.names array') }
+	@memberroles = get_value('server.Discord.members.roles')
+	if(!is_array(@memberroles)) { die('plz fill members.roles array') }
+	if(!is_array(@config['Welcome_Roles'])) { die('plz fill welcome roles config') }
+	@results = array()
+	@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC')
+	@usersnoroles = array()
+	@userswelcomeroles = array()
+	foreach(@username: @userid in @membernames) {
+	try {
+		@userroles = array_normalize(@memberroles[@userid])
+	} catch(IndexOverflowException @ex) {
+		try {
+#		msg('No saved roles for: '.@username)
+			@userroles = discord_member_get_roles(@userid)
+			if(!array_index_exists(@userroles, 0)) {
+				array_push(@usersnoroles, @userid)
+				continue()
+			} else {
+				msg('discord said '.@userroles)
+			}
+		} catch(NotFoundException @ex) {
+			console('User '.@username.' "'.@userid.'" was not found on server.', false)
+			continue()
+		}
+	}
+		# member.roles: id: ass_array(rolename: roleid)
+	#has JUST the welcome roles awarded (amount wise)	
+#	msg('ur:'.array_size(@userroles))
+		if(array_size(@userroles) == array_size(@sortWR)) {
+			#sort arrays so roles are in same key order
+			@sortUR = array_sort(@userroles, 'NUMERIC')
+
+			foreach(@key: @roleid in @sortWR) {
+				if(@roleid == @sortUR[@key]) {
+					array_push(@results, true)
+				} else {
+					array_push(@results, false)
+				}
+			}
+			if(array_every(@results, closure(@value) { return(@value) }) == true) {
+#				msg(@username.' <'.@userid.'> has just the Welcome Roles.')
+				array_push(@userswelcomeroles, @userid)
+			}
+			@results = array()
+		}
+	}
+	msg(array_size(@usersnoroles).' members were detected as having 0 roles. IDs saved to storage. \n Use "/wrf norole" to view the IDs.')
+	msg(array_size(@userswelcomeroles).' members were detected as having only the Welcome Roles. IDs saved to storage. \n Use "/wrf welcome" to view the IDs.')
+	store_value('server.Discord.members.welcomerolesonly', @userswelcomeroles)
+	store_value('server.Discord.members.noroles', @usersnoroles)
+}	
+<<<
