@@ -9,9 +9,9 @@ https://tenor.com/view/stepbrothers-hose-gif-20871115
 */
 
 # Load Discord Command Configs
-@config = ''
+@7bgrgf5 = ''
 try {
-	@config = yml_decode(read(import('Chat.config.dir').'/Discord_Commands_config.yml'))
+	@7bgrgf5 = yml_decode(read(import('Chat.config.dir').'/Discord_Commands_config.yml'))
 } catch(IOException @ex) {
 	_msgAdmins('[Chat - Discord] Commands Config file could not be read. '.@ex['message'])
 	die()
@@ -22,11 +22,11 @@ try {
 	_msgAdmins('[Chat - Discord] There was an error with the Commands Config file. '.@ex['message']) 
 	die()
 }
-if(array_contains(@config['Channels_Receive'], 'default')) {
+if(array_contains(@7bgrgf5['Channels_Receive'], 'default')) {
 	_msgAdmins('[Chat - Discord] Config file is still using default values. Please configure it in order to use various Discord features.') 
 	die()
 }
-export('Chat.config.Discord.Commands', @config)
+export('Chat.config.Discord.Commands', @7bgrgf5)
 
 
 #Handle commands from Discord Users
@@ -45,6 +45,17 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 		array_set(@membersnames, @discord['username'], @discord['userid'])
 		store_value('server.Discord.members.names', @membersnames)
 	}
+/*	
+	if(equals_ic('server-logs', @discord['channel']) == true) {
+		@lastmsgs = import('Chat.Discord.last.message.logs')
+		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
+		array_insert(@lastmsgs, @discord, 0)
+		if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
+		export('Chat.Discord.last.cmd.message.logs', @lastmsgs)
+		console(@discord, false)
+	}
+*/	
+	
 	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true && reg_count('^[!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
 		discord_delete_message(@discord['channel'], @discord['id'])
 		array_set(@discord, 'time', time())
@@ -99,7 +110,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 	if(!array_index_exists(@cmdargs, 0)) {
 		@fbanned = @discord['userid']
 	} else {
-		@fbanned = reg_replace('[<>#@\\\\]+', '', @cmdargs[0])
+		@fbanned = reg_replace('[<>@\\\\]+', '', @cmdargs[0])
 	}
 	@membernames = get_value('server.Discord.members.names')
 	if(!is_array(@membernames)) { 
@@ -127,12 +138,17 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 			discord_broadcast(@discord['channel'], array('embeds': array(array('footer': array('text': 'I identify as a different bot'),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
 			die()
 		}
+		@fbanmatches = _array_string_match(array_keys(@membernames), @fbanned)
+		if(reg_count('[#][0-9]{4}$', @fbanned) > 0 && !array_index_exists(@fbanmatches, 0)) {
+			@fbanned = reg_replace('[#][0-9]{4}$', '', @fbanned)
+			@fbanmatches = _array_string_match(array_keys(@membernames), @fbanned)
+		}
 		if(equals_ic(@fbanned, @discord['username']) || equals_ic(@fbanned, @discord['nickname'])) {
 			discord_broadcast(@discord['channel'], array('content': 'You really gonna ban yourself?', 'embeds': array(array('image': 'https://media.tenor.com/6dPcTAmTgPUAAAAi/elmo-shrug.gif'))))
 			die()
 		}	
-		@fbanmatches = _array_string_match(array_keys(@membernames), @fbanned)
 		console(@fbanmatches)
+		
 		if(!array_index_exists(@fbanmatches, 0)) {
 			discord_private_message(@discord['userid'], 'Fake Ban: Could not find User ID, using yourself instead :P')
 			console('[Chat - Discord] Fake Ban: Could not find user ID for '.@fbanned.'!', false)
@@ -157,7 +173,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 			discord_broadcast(@discord['channel'], array('embeds': array(array('image': 'https://media.tenor.com/F08xoCTJwPcAAAAC/stepbrothers-hose.gif'))))
 		case 3:
 			discord_broadcast(@discord['channel'], array('embeds': array(array('footer': array('text': 'Elmo says ...'), 'image': 'https://media.tenor.com/6dPcTAmTgPUAAAAi/elmo-shrug.gif'))))
-		case 5:
+		case 4:
 			discord_broadcast(@discord['channel'], array('embeds': array(array('image': 'https://media.tenor.com/wAJE5rch0-cAAAAC/no-no-no-spider-man.gif'))))
 		case 8:
 			discord_broadcast(@discord['channel'], array('embeds': array(array('image': 'https://media.tenor.com/t_CPo-CUWGAAAAAC/izzy-mlp.gif'))))

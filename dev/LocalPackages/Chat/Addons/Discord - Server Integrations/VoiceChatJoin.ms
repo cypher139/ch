@@ -10,9 +10,9 @@ Then this will send a message to the ping role to come join voice chat
 */
 
 # Load Voice Chat Configs
-@vcconfig = ''
+@e17qyi1 = ''
 try {
-	@vcconfig = yml_decode(read(import('Chat.config.dir').'/Discord_VC_config.yml'))
+	@e17qyi1 = yml_decode(read(import('Chat.config.dir').'/Discord_VC_config.yml'))
 } catch(IOException @ex) {
 	_msgAdmins('[Chat - Discord] VC Config file could not be read. '.@ex['message'])
 	die()
@@ -20,15 +20,16 @@ try {
 	_msgAdmins('[Chat - Discord] VC Config file is improperly formatted.') 
 	die()
 }
-if(@vcconfig['VC_Role_ID'] == 123) {
+if(@e17qyi1['VC_Role_ID'] == 123) {
 	_msgAdmins('[Chat - Discord] VC Config file is still using defaults. Please configure it in order to use the VC Role Ping feature.') 
 	die()
 }
-export('Chat.config.Discord.VC', @vcconfig)
+export('Chat.config.Discord.VC', @e17qyi1)
 
 
 bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VCjoin'), null, @discord) {
 # Data: userid, username, nickname, channel (name)
+# Note: import is auto globally saved (example #2), so use new variables to store edits needed
 	@VCconfig = import('Chat.config.Discord.VC')
 	if(@VCconfig['VC_Channel_ID'] == '' || @VCconfig['VC_Role_ID'] == '') { die() }
 
@@ -36,16 +37,17 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VCjoin'), null,
 	@userroles = discord_member_get_roles(@discord['userid'])
 	if(array_contains(@userroles, @VCconfig['VC_Role_ID']) && @discord['channel'] == @VCconfig['VC_Channel_Name']) {
 
+
 	# Get last time the bot pinged the role
 		@lastping = get_value('server.Discord.last.ping.'.@VCconfig['VC_Role_ID'])
 		if(@lastping == '' || @lastping == null) { @lastping = 1230768000000 }
 		if(import('server.Discord.VC.ping.in.progress') == true) { die() } else {
 			@timeout = 60000
-			@VCconfig['VC_Ping_Message'] = reg_replace('%RoleID%', '<@&'.@VCconfig['VC_Role_ID'].'>', @VCconfig['VC_Ping_Message'])
-			@VCconfig['VC_Ping_Message'] = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @VCconfig['VC_Ping_Message'])
-			@VCconfig['VC_Ping_Message'] = reg_replace('%Channel%', @discord['channel'], @VCconfig['VC_Ping_Message'])
-			@VCconfig['VC_Ping_Message_MC'] = reg_replace('%User%', @discord['username'], @VCconfig['VC_Ping_Message_MC'])
-			@VCconfig['VC_Ping_Message_MC'] = reg_replace('%Channel%', @discord['channel'], @VCconfig['VC_Ping_Message_MC'])
+			@discordMsg = reg_replace('%RoleID%', '<@&'.@VCconfig['VC_Role_ID'].'>', @VCconfig['VC_Ping_Message'])
+			@discordMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @VCconfig['VC_Ping_Message'])
+			@discordMsg = reg_replace('%Channel%', @discord['channel'], @VCconfig['VC_Ping_Message'])
+			@mcMsg = reg_replace('%User%', @discord['username'], @VCconfig['VC_Ping_Message_MC'])
+			@mcMsg = reg_replace('%Channel%', @discord['channel'], @VCconfig['VC_Ping_Message_MC'])
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping + @VCconfig['VC_Ping_Timeout'])) {
 				export('server.Discord.VC.ping.in.progress', true)
@@ -54,16 +56,17 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VCjoin'), null,
 					if(discord_member_get_voice_channel(@discord['userid']) == @VCconfig['VC_Channel_ID']) {
 	#						console('still here')
 						#Has the role just been mentioned?
-						if(is_array(@lastmsgs)) {
 						@lastmsgs = import('Chat.Discord.last.message')
+						if(is_array(@lastmsgs)) {
 							foreach(@index: @message in @lastmsgs) {
 								if(reg_count('@'.@VCconfig['VC_Role_Name'], @message['message']) > 0) {
-									@VCconfig['VC_Ping_Message'] = 'Hey I was going to do that ping!'
+									@discordMsg = 'Hey I was going to do that ping!'
 								}
 							}
 						}					
-						discord_broadcast(@VCconfig['VC_Text_Channel_Name'], array('content': @VCconfig['VC_Ping_Message']))
-						broadcast(@VCconfig['VC_Ping_Message_MC'], all_players())
+		#				discord_broadcast(@VCconfig['VC_Text_Channel_Name'], array('content': @discordMsg))
+		console(@discordMsg)
+						broadcast(@mcMsg, all_players())
 						store_value('server.Discord.last.ping.'.@VCconfig['VC_Role_ID'], time())
 					}
 				});

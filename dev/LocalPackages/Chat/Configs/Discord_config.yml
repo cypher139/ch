@@ -29,3 +29,4 @@ Channels_Send:
 - botspam
 Use_Second_Server: false
 Default_Channel: minecraft
+Log_Channel: bot-logs

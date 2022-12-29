@@ -2,7 +2,7 @@
 bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs'), null, @discord) {
 #Save recent DMs for future reference if needed
 	@DMs = get_value('server.Discord.DMs.received')
-	@adminChannel = 'bot-logs'
+	@adminChannel = import('Chat.config.Discord.test', array('Log_Channel': 'bot-logs'))['Log_Channel']
 	if(!is_array(@DMs)) { @DMs = array(array('message': 'initialized DM Array')) }
 	array_set(@discord, 'time', time())
 	array_insert(@DMs, @discord, 0)
