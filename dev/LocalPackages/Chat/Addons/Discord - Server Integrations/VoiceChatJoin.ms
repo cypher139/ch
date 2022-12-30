@@ -128,8 +128,8 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 			}
 		}
 		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(array_keys(@totalVCUsers), ', '))
-		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.current', @currentVCUsers)
-		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.total', @totalVCUsers)
+		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.current')
+		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.total')
 		
 		@stats = get_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')
 		if(!is_array(@stats)) { clear_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats') die() }
@@ -140,7 +140,12 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 		@lastmsgs = get_value('Chat.Discord.last.VC')
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @stats, 0)
-		if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
+		if(array_index_exists(@lastmsgs, 20)) {
+			_write_file(import('Chat.config.dir').'/Archived-VC-Stats.txt', '\n'.@lastmsgs[20], 'append')
+			array_remove(@lastmsgs, 20)
+		}
 		store_value('Chat.Discord.last.VC', @lastmsgs)		
-	}	
+	} else {
+		store_value('Chat.Discord.VC.'.@discord['channel'].'.users.current', @currentVCUsers)
+	}
 }
