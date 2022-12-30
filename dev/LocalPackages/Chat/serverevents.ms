@@ -41,11 +41,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 		#entry found	
 		@ipnumbers = reg_replace('\\.*:*', '', @ping['ip'])
 		if(array_index_exists(@ipdata, @ipnumbers)) {
-			if(array_size(@ipdata[@ipnumbers]) == 1) {
-				@players = array_implode(@ipdata[@ipnumbers], ', ')
-			} else {
-				@players = array_implode(@ipdata[@ipnumbers], ', ')
-			}
+			@players = array_implode(@ipdata[@ipnumbers], ', ')
 			@msgdisplay = ' ('.color(3).@players.color(7).')'
 		}
 	}

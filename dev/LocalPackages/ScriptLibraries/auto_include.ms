@@ -10,6 +10,52 @@ if(is_array(get_value('primus.database.IP'))) {
 	export('primus.database.IP', array(1000123: array()))
 }
 
+proc _write_file(@path, @content, @mode) {
+	if(@path == '' || @content == '') { return(false) }
+	if(@mode == '') { @mode = 'default' }
+	@mode = to_upper(@mode)
+	switch(@mode[0]) {
+		case 'O':
+		@mode = 'OVERWRITE'
+		case 'A':
+		@mode = 'APPEND'
+		default:
+		@mode = 'OVERWRITE'
+	}
+	if(extension_exists('CHFiles')) {
+		try {
+			write_file(@path, @content, @mode)
+			return(true)
+		} catch(Exception @ex) {
+			msg('File not written: '.@ex['message'])
+			console('File write: '.@ex)
+			return(false)
+		}
+	}
+	if(extension_exists('CHFile')) {
+		try {
+			chf_write(@path, @content, @mode)
+			return(true)
+		} catch(Exception @ex) {
+			msg('File not written: '.@ex['message'])
+			console('File write: '.@ex)
+			return(false)
+		}	
+	}
+	if(in_cmdline_mode()) {
+		try {
+			x_write(@path, @content, @mode)  
+			return(true)
+		} catch(Exception @ex) {
+			msg('File not written: '.@ex['message'])
+			console('File write: '.@ex)
+			return(false)
+		}
+	} else {
+		msg('File not written! CH\'s Core write file functions is commandline only, and compatible extensions were not found.')
+		return(false)
+	}
+}
 
 proc _array_string_contains(@array, @string, @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }

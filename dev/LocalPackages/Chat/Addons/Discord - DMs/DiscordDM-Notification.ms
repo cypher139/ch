@@ -2,11 +2,14 @@
 bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs'), null, @discord) {
 #Save recent DMs for future reference if needed
 	@DMs = get_value('server.Discord.DMs.received')
-	@adminChannel = import('Chat.config.Discord.test', array('Log_Channel': 'bot-logs'))['Log_Channel']
+	@adminChannel = import('Chat.config.Discord', array('Log_Channel': 'bot-logs'))['Log_Channel']
 	if(!is_array(@DMs)) { @DMs = array(array('message': 'initialized DM Array')) }
 	array_set(@discord, 'time', time())
 	array_insert(@DMs, @discord, 0)
-	if(array_index_exists(@DMs, 20)) { array_remove(@DMs, 20) }
+	if(array_index_exists(@DMs, 20)) { 
+		_write_file(import('Chat.config.dir').'/ArchivedDM-Received.txt', '\n'.@DMs[20], 'append')
+		array_remove(@DMs, 20)
+	}
 	store_value('server.Discord.DMs.received', @DMs)
 #Message Display
 	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && import('Chat.Discord.Broadcast.URLs') == false) {

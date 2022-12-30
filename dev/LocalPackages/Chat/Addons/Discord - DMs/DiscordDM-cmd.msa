@@ -7,6 +7,9 @@ switch($id) {
 	case '':
 	case null:
 		die(color('c').'You must specify a user ID to send a DM to!')
+	case 'count':
+		msg('Current DMs stored: '.array_size(@DMsrec))
+		die()
 	case 'read':
 	case 'view':
 	case 'open':
@@ -56,18 +59,22 @@ msg(color(4).'With Great Power comes Great Responsibility.'.color(3).' Please en
 if($ == '') { die(color('c').'You must specify a message to send!') }
 @sendmsg = strip_colors($)
 
-try(
+try {
 	#Send Message
 	discord_private_message(@id, '`['.player().']` '.@sendmsg)
 	msg(color(6).'Message Sent')
-	#Save recent DMs for future reference if needed
-	@DMs = get_value('server.Discord.DMs.sent')
-	if(!is_array(@DMs)) { @DMs = array(array('message': 'initialized DM Array')) }
-	array_insert(@DMs, array('sender': player(), 'message': @sendmsg, 'time': time()), 0)
-	if(array_index_exists(@DMs, 20)) { array_remove(@DMs, 20) }
-	store_value('server.Discord.DMs.sent', @DMs)
-,@fail,
+} catch(Exception @ex) {
 	msg(color('c').'Message Not Sent')
-	msg(color('7').@fail['message'])
-)
+	msg(color('7').@ex['message'])
+	die()
+}
+#Save recent DMs for future reference if needed
+@DMs = get_value('server.Discord.DMs.sent')
+if(!is_array(@DMs)) { @DMs = array(array('message': 'initialized DM Array')) }
+array_insert(@DMs, array('sender': player(), 'message': @sendmsg, 'time': time()), 0)
+if(array_index_exists(@DMs, 20)) {
+	_write_file(import('Chat.config.dir').'/ArchivedDM-Sent.txt', '\n'.@DMs[20], 'append')
+	array_remove(@DMs, 20)
+}
+store_value('server.Discord.DMs.sent', @DMs)
 <<<
