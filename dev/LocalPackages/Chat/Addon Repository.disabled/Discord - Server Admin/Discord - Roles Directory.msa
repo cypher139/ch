@@ -58,8 +58,8 @@ case 'update':
 		msg(@prefix.'List Update: (blank) Part 1 Successful!')
 	case 2:
 #part 2: get all member roles, save 2 arrays:
-		msg(@prefix.'Please be patient! This task contacts Discord for each player ID. To avoid botspam limits this waits 2 seconds per player.')
-		x_new_thread(@name.'Update.2', closure(@player = player(), @args = @args){
+		x_new_thread(@name.'Update.2', closure(){
+			
 			@starttime = time()
 			@memberids = get_value('server.Discord.members.ID')
 			if(!is_array(@memberids)) { die('part1plz') }
@@ -71,7 +71,7 @@ case 'update':
 			@noarraycount = 0
 			@norolescount = 0
 			foreach(@timeid: @id in @memberids) {
-				@timeout = @timeid * 2000
+				@timeout = @timeid * 200
 				set_timeout(@timeout, closure(){
 
 
@@ -81,9 +81,9 @@ case 'update':
 					#not found throws exception
 					#bots do this
 					@memberroles = discord_member_get_roles(@id)
-									tmsg(@player, 'id: '.@id)	
-			tmsg(@player, @memberroles)					
-					@f1 = @f1 + 1
+					tmsg(@player, 'id: '.@id)	
+					tmsg(@player, @memberroles)					
+					@f1++
 				,@fail,
 					if(@fail['message'] == 'A member with the id "'.@id.'" was not found on Discord server.') {
 					tmsg(@player, 'notfound: '.@id)		
@@ -94,11 +94,11 @@ case 'update':
 					continue()
 				)
 				if(!is_array(@memberroles)) {
-					@noarraycount = @noarraycount + 1
+					@noarraycount++
 					continue()
 				}
 				if(array_size(@memberroles) == 0) { 
-					@norolescount = @norolescount + 1
+					@norolescount++
 					continue()
 				}
 				# server member roles array
@@ -137,7 +137,7 @@ case 'update':
 		#part 3: membersinrole array: formulate what members belong to each role
 	# version2:
 # loop through members, push their status to roleid lists.
-		#x_new_thread(@name.'Update.3', closure(@player = @player, @args = @args){
+		x_new_thread(@name.'Update.3', closure(){
 			@starttime = time()
 			@servermemberroles = get_value('server.Discord.members.roles')
 			@totalroles = get_value('server.Discord.roles.total')
@@ -166,7 +166,7 @@ case 'update':
 			# {roleid: {memberid1, memberid2, }, roleid2: {memberid1, memberid2, }}
 			@endtime = (time() - @starttime) / 1000
 			tmsg(@player, @prefix.'List Update: Part 3 Success! Time Elapsed: '.@endtime.' seconds.')
-		#});
+		});
 	case 4:
 	#msg directory of who has what group and mod type in group
 		@usediscordmsg = false

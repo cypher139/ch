@@ -19,7 +19,7 @@ if(@5ft2vkb['Welcome_Text_Channel_Name'] == 'default') {
 export('Chat.config.Discord.Member', @5ft2vkb)
 
 #Welcome DM and Message for new Discord Server Members
-bind('discord_member_joined', array('id': 'Discord.Server.userjoin'), null, @event) {
+bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), null, @event) {
 	@config = import('Chat.config.Discord.Member')
 	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
 
@@ -42,7 +42,6 @@ bind('discord_member_joined', array('id': 'Discord.Server.userjoin'), null, @eve
 			}
 		}
 #Add Delineator roles, or roles new users need to have to access server
-			# console(@config['Welcome_Roles'])
 			if(is_array(@config['Welcome_Roles'])) {
 				array_push_all(@currentroles, @config['Welcome_Roles'])
 				discord_member_set_roles(@event['userid'], @currentroles)
@@ -60,15 +59,37 @@ bind('discord_member_joined', array('id': 'Discord.Server.userjoin'), null, @eve
 	});
 }
 
-bind('discord_member_left', array('id': 'Discord.Server.userleft'), null, @event) {
+bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), null, @event) {
+	console('[Discord] Member left: '.@event, false)
 	@config = import('Chat.config.Discord.Member')
-	console(@event)
-	# @config['Welcome_Message_Timeout']
+	if(!is_array(@config['Welcome_Roles'])) { die('plz fill welcome roles config') }
+
+	# Remove user entry from internal storages
+	@membernames = get_value('server.Discord.members.names')
+	if(is_array(@membernames)) { 
+		if(array_contains(array_keys(@membernames), @event['username'])) {
+			array_remove(@membernames, @event['username'])
+			store_value('server.Discord.members.names', @membernames)
+		}
+	}
+	@memberIDs = get_value('server.Discord.members.ID')
+	if(is_array(@memberIDs)) { 
+		if(array_contains(@memberIDs, @event['userid'])) {
+			array_remove(@memberIDs, @event['userid'])
+			store_value('server.Discord.members.ID', @memberIDs)
+		}
+	}
+	
+	# Remove Welcome message
 	@msgids = get_value('server.Discord.Welcome.msg.IDs')
 	if(!is_array(@msgids)) { @msgids = array() }
 	if(array_contains(array_keys(@msgids), @event['userid'])) {
 		if(time() < (@msgids[@event['userid']]['time'] + @config['Welcome_Message_Timeout'])) { 
-			discord_delete_message('general', @msgids[@event['userid']]['id'])
+			try { 
+				discord_delete_message(@config['Welcome_Text_Channel_Name'], @msgids[@event['userid']]['id'])
+			} catch(Exception @ex) {
+				console('[Discord] Unable to remove Welcome Message!'.@ex, false)
+			}
 			array_remove(@msgids, @event['userid'])
 			store_value('server.Discord.Welcome.msg.IDs', @msgids)
 		}
