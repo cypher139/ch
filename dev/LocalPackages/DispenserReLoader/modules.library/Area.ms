@@ -8,10 +8,14 @@
 proc _reloader_iterate_cuboid(@proc_name, @world, @item, @playergiven, @qty, @fuel, @verbose) {
 	@name = import('dispenserreloader.name')
 	@player = _reloader_getplayerID(@playergiven)
-	@pos1 = sk_pos1(@player['name'])
-	@pos2 = sk_pos2(@player['name'])
+	include('ext.library/ext-SKCompat.ms')
+	@pos1 = _reloader_get_pos1(@player['name'])
+	@pos2 = _reloader_get_pos2(@player['name'])
 	if(@pos1 == null || @pos2 == null) {
-			return(array('fail': true, 'failmsg': color('c').'['.color(6).@name.color('c').'] '.color(7).'What area? You need to make a selection with WorldEdit first!'))
+		return(array('fail': true, 'failmsg': color('c').'['.color(6).@name.color('c').'] '.color(7).'What area? You need to make a selection with WorldEdit first!'))
+	}
+	if(!is_array(@pos1) || !is_array(@pos2)) {
+		return(array('fail': true, 'failmsg': 'SKCompat extension not installed! '.color('r').@name.' is unable to determine WorldEdit selection data for Area Mode.'))
 	}
 	#Start counting how many blocks were filled
 	@n = 0

@@ -248,7 +248,7 @@ proc _reloader_get_fuel_items(@option) {
 }
  
 proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbose) {
-#throw('ms.lang.CastException', 'testing throwfill')
+throw('ms.lang.CastException', 'testing throwfill')
 	@name = import('dispenserreloader.name')
 	@chmaxstacksize = 64
 	@player = _reloader_getplayerID(@playergiven)
