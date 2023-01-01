@@ -1,5 +1,5 @@
 codegen:/codegen [$length] [$type1] [$type2] [$] = >>>
-export('codegen.version', '2.2')
+export('codegen.version', '2.3')
 proc _codegen_help() {
 	msg(color(6).'CodeGen!     Version: '.import('codegen.version'))
 	msg(color(7).'/codegen'.color(3).' - '.color('f').'Prints a randomly generated code. Defaults to a code 7 characters in length using uppercase, lowercase, and numbers.')

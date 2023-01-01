@@ -1,5 +1,5 @@
 #Random Code Generation
-#version 2.2
+#version 2.3
 proc _codegen(@codelength, @codetype, @codetype2) {
 #How to use:
 # call _codegen(NUMBER, character type 1, character type 2)
@@ -24,31 +24,39 @@ proc _codegen(@codelength, @codetype, @codetype2) {
 	assign(@symbol, array('!', '@', '#', '$', '%', '^', '&', '*', '+', '-', '/', '\\', '~', '?'))
 	assign(@all, array_merge(@full, @symbol))
 
+	if(!is_numeric(@codetype)) { @codetype = to_lower(@codetype) }
+	if(!is_numeric(@codetype2)) { @codetype2 = to_lower(@codetype2) }
 #--- Character Set 1
-	switch(to_lower(@codetype)){
+	switch(@codetype){
 	case 'lower':
 	case 'l':
 	case 'low':
+	case 0:
 		@chars = array_get(@lower)
 	case 'upper':
 	case 'u':
 	case 'up':
+	case 1:
 		@chars = array_get(@upper)
 	case 'number':
 	case 'n':
 	case '#':
 	case 'num':
+	case 2:
 		@chars = array_get(@number)
 	case 'full':
 	case 'f':
+	case 3:
 		@chars = array_get(@full)
 	case 'swear':
 	case 'symbol':
 	case 'sym':
 	case 's':
+	case 4:
 		@chars = array_get(@symbol)
 	case 'all':
 	case 'a':
+	case 5:
 		@chars = array_get(@all)
 	default:
 		die(color(3).' - '.color(4).'Fail:'.color(3).' Invalid code type given (1)')
@@ -56,30 +64,36 @@ proc _codegen(@codelength, @codetype, @codetype2) {
 
 #--- Character Set 2
 	if(@codetype2 !== '') {
-		switch(to_lower(@codetype2)){
+		switch(@codetype2){
 		case 'lower':
 		case 'l':
 		case 'low':
+		case 0:
 			@chars2 = array_get(@lower)
 		case 'upper':
 		case 'u':
 		case 'up':
+		case 1:
 			@chars2 = array_get(@upper)
 		case 'number':
 		case 'n':
 		case '#':
 		case 'num':
+		case 2:
 			@chars2 = array_get(@number)
 		case 'full':
 		case 'f':
+		case 3:
 			@chars2 = array_get(@full)
 		case 'swear':
 		case 'symbol':
 		case 'sym':
 		case 's':
+		case 4:
 			@chars2 = array_get(@symbol)
 		case 'all':
 		case 'a':
+		case 5:
 			@chars2 = array_get(@all)
 		default:
 			die(color(3).' - '.color(4).'Fail:'.color(3).' Invalid code type given (2)')

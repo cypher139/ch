@@ -1,5 +1,9 @@
 ### codegen
 
+###### 2.3 (1/1/23)
+Added:
+- Numbers for all character types (used for randomly generated options).
+
 ###### 2.2 (11/29/22)
 Fixes:
 - Fixed mis-named variables
