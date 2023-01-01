@@ -45,10 +45,10 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 		if(import('server.Discord.VC.ping.in.progress') == true) { die() } else {
 			@timeout = 60000
 			@discordMsg = reg_replace('%RoleID%', '<@&'.@VCconfig['VC_Role_ID'].'>', @VCconfig['VC_Ping_Message'])
-			@discordMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @VCconfig['VC_Ping_Message'])
-			@discordMsg = reg_replace('%Channel%', @discord['channel'], @VCconfig['VC_Ping_Message'])
+			@discordMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @discordMsg)
+			@discordMsg = reg_replace('%Channel%', @discord['channel'], @discordMsg)
 			@mcMsg = reg_replace('%User%', @discord['username'], @VCconfig['VC_Ping_Message_MC'])
-			@mcMsg = reg_replace('%Channel%', @discord['channel'], @VCconfig['VC_Ping_Message_MC'])
+			@mcMsg = reg_replace('%Channel%', @discord['channel'], @mcMsg)
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping + @VCconfig['VC_Ping_Timeout'])) {
 				export('server.Discord.VC.ping.in.progress', true)
@@ -127,7 +127,7 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 				}
 			}
 		}
-		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(array_keys(@totalVCUsers), ', '))
+		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(array_keys(@totalVCUsers), ', '), false)
 		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.current')
 		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.total')
 		
