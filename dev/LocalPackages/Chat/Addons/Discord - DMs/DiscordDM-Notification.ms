@@ -16,7 +16,7 @@ bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs
 		@discord['message'] = '<Sent a GIF>'
 	}
 	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
-		if(@discord['message'] == '') {			
+		if(@discord['message'] == '') {
 			@discord['message'] = '<Sent a file> '
 		} else {
 			@discord['message'] = @discord['message'].'\n <Also attached file:> '
@@ -29,7 +29,7 @@ bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs
 	broadcast(color(9).'A DM was sent to the Discord Bot from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@discord['message'], all_players())
 	console('A DM was sent to the Discord Bot from ['.@discord['username'].' ('.@discord['userid'].') ] Message: \n'.@discord['message'].'\n Attached: '.@discord['attachments'], false)
 	discord_broadcast(@adminChannel, array('content': 'I received a DM from: '.@discord['username'].'\n'.@discord['message']))
-	if(array_index_exists(@discord, 'attachments', 0, 'filename') && import('Chat.Discord.Broadcast.URLs') == true) {
+	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
 		foreach(@num: @attach in @discord['attachments']) {
 			broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], all_players())
 			discord_broadcast(@adminChannel, array('content': 'URL #'.(@num + 1).': '.@attach['url']))

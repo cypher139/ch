@@ -27,3 +27,5 @@ Channels_Send:
 Default_Channel: botspam
 Bot_ID: 1000000
 Bot_Name: bot
+Fake_Admin_Role: 123456
+Fake_Admin_Rolename: "Super Admin"

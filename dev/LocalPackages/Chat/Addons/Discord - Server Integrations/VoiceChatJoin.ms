@@ -66,7 +66,7 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 							}
 						}					
 						discord_broadcast(@VCconfig['VC_Text_Channel_Name'], array('content': @discordMsg))
-		console(@discordMsg)
+		# console(@discordMsg)
 						broadcast(@mcMsg, all_players())
 						store_value('server.Discord.last.ping.'.@VCconfig['VC_Role_ID'], time())
 						@stats = get_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')
@@ -116,7 +116,7 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 	
 	#End of call
 	if(!array_index_exists(@currentVCUsers, 0)) {
-		if(@VCconfig['VC_DM_Thanks'] == true) {
+		if(@VCconfig['VC_DM_Thanks'] == true && array_size(@totalVCUsers) > 1) {
 		#DM thanks
 			foreach(@username: @userid in @totalVCUsers) {
 				try {

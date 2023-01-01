@@ -81,10 +81,21 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 	}	
 	console('cmd: '.@cmd[0])
 	console('cmda: '.@cmdargs)
+	
 	switch(@cmd[0]) {
 	case 'help':
-		@commandlist = array('cypher', 'say', 'fban')
-		discord_private_message(@discord['userid'], 'Current Commands: \n'.array_implode(@commandlist, ', '))
+		@admincommandlist = array('wrf', 'mc_give', 'readdm', 'senddm')
+		@commandlist = array('cypher', 'say', 'fban', 'poop', 'afk', 'makemeadmin', 'code', 'passwordlist')
+		@userroles = array_keys(discord_member_get_roles(@discord['username']))
+		@userType = @discord['username']
+		foreach(@role in @userroles) {
+			if(array_contains_ic(import('Chat.config.Discord')['Role_Admins'], @role)) {
+				@userType = 'Admin'
+				array_push_all(@commandlist, @admincommandlist)
+				break()
+			}
+		}
+		discord_private_message(@discord['userid'], 'Hi '.@userType.'! \n My Current Commands are: \n'.array_implode(@commandlist, ', '))
 	case 'cypher':
 		if(@discord['username'] != 'Cypher') {
 			discord_broadcast(@discord['channel'], array('content': 'Cypher no Cyphing!'))
@@ -183,6 +194,138 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 		}
 	}
 
+	case 'wrf':
+	@userroles = array_keys(discord_member_get_roles(@discord['username']))
+	@isAdmin = false
+	foreach(@role in @userroles) {
+		if(array_contains_ic(import('Chat.config.Discord')['Role_Admins'], @role)) {
+			@isAdmin = true
+			break()
+		}
+	}
+	if(@isAdmin != true) { discord_private_message(@discord['userid'], 'You need to be a Server Admin to use that.') die() }
+	
+	if(is_proc(_chat_wrf)) {
+		@return = _chat_wrf(@cmdargs[0])
+		
+		if(reg_count('^[WwNn]', @cmdargs[0]) > 0) {
+			discord_broadcast(@discord['channel'], @return['amount'].' '.@return['msg'])
+			@IDs = array_implode(@return['list'], '\n')
+			if(reg_count('[\\s\\S]{1,1970}(?:>|$)', @IDs) > 1) {
+				@split = array()
+				@count = reg_count('[\\s\\S]{1,2000}(?:>|$)', @IDs)
+				discord_private_message(@discord['userid'], '```List of IDs:```')
+				for(@i = 1, @i <= @count, @i++) {
+					@match = reg_match('[\\s\\S]{1,2000}(?:>|$)', @IDs)[0]
+					array_push(@split, @match)
+					@IDs = @IDs[cslice(length(@match), (length(@IDs) - 1))]
+			#debug		discord_private_message(@discord['userid'], '```#'.@i.'```')
+					discord_private_message(@discord['userid'], @match)
+				}
+			} else {
+			discord_private_message(@discord['userid'], '```List of IDs:``` \n'.@IDs)
+			}
+		} else {		
+			if(array_index_exists(@return, 'zero')) {
+				discord_broadcast(@discord['channel'], @return['zero'].' members were detected as having 0 roles. \n Use "wrf norole" to view IDs.')
+			}
+			if(array_index_exists(@return, 'welcome')) {
+				discord_broadcast(@discord['channel'], @return['welcome'].' members were detected as having only the Welcome Roles. \n Use "wrf welcome" to view IDs.')
+			}
+		}
+	} else {
+		discord_broadcast(@discord['channel'], 'A required command module is not installed.')
+	}
+	case 'poop':
+	case 'poo':
+		# why is this?
+		@poo = array('https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif', 'https://media.tenor.com/hCl_7woCXdcAAAAC/good-job-pooping.gif', 'https://media.tenor.com/qe2PONg34GQAAAAC/rhino-poop.gif', 'https://media.tenor.com/GQQCv59WJzAAAAAC/white-chicks.gif', 'https://media.tenor.com/n7DjU3bi514AAAAC/poop.gif')
+		discord_broadcast(@discord['channel'], array('embeds': array(array('image': array_get_rand(@poo)))))
+	case 'sudo':
+	case 'makemeadmin':
+		@userroles = discord_member_get_roles(@discord['username'])
+		store_value('Chat.Discord.test.roles.'.@discord['username'], @userroles)
+		@isAdmin = false
+		foreach(@role in array_keys(@userroles)) {
+			if(array_contains_ic(import('Chat.config.Discord')['Role_Admins'], @role)) {
+				@isAdmin = true
+				break()
+			}
+		}
+		if(@isAdmin = true) { discord_private_message(@discord['userid'], 'really? You\'re already a server Admin!') }
+		
+		if(array_contains(@userroles, @config['Fake_Admin_Role'])) {
+			discord_private_message(@discord['userid'], 'really? you trippin. you already a '.@config['Fake_Admin_Rolename'].'. Fine, I\'ll remove your admin status.')
+			foreach(@rolename: @roleid in @userroles) {
+				if(@roleid == @config['Fake_Admin_Role']) {
+					array_remove(@userroles, @rolename)
+					break()
+				}
+			}
+		} else {
+			array_push(@userroles, @config['Fake_Admin_Role'])
+			discord_broadcast(@discord['channel'], '<@'.@discord['userid'].'> is now a '.@config['Fake_Admin_Rolename'].'!')
+		}
+		discord_member_set_roles(@discord['userid'], @userroles)
+	case 'code':
+	case 'gibberish':
+	case 'gibberishgenerator':
+	case 'codegen':
+	case 'password':
+		switch(rand(1,10)){
+		case 4:
+			discord_broadcast(@discord['channel'], array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/password_strength.png'))))
+		default:
+			if(is_proc(_codegen)) {	
+				@dmCode = false
+				if(array_index_exists(@cmdargs, 0)) {
+					if(reg_count('^[-]?[PpDd]', @cmdargs[0]) > 0) {
+						@dmCode = true
+						array_remove(@cmdargs, 0)
+					}
+				}
+				if(array_index_exists(@cmdargs, 0) && is_numeric(@cmdargs[0])) { 
+					if(@cmdargs[0] > 512) { @length = 512 } else { @length = @cmdargs[0] }
+				} else { @length = 8 }
+				if(array_index_exists(@cmdargs, 1)) { @type1 = @cmdargs[1] } else { @type1 = 'full' }
+				if(array_index_exists(@cmdargs, 2)) { @type2 = @cmdargs[2] } else { @type2 = '' }
+				x_new_thread('CodeGenerator', closure(){
+					@code = _codegen(@length, @type1, @type2)
+					if(@dmCode == true) {
+						discord_private_message(@discord['userid'], 'Randomly Generated code: \n'.@code)
+					} else {
+						discord_broadcast(@discord['channel'], @code)
+					}
+				});
+			} else {
+				discord_broadcast(@discord['channel'], 'A required command module is not installed.')
+			}
+		}
+	case 'listpassword':
+	case 'listpasswords':
+	case 'passwords':	
+	case 'lp':
+	case 'passwordlist':
+		switch(rand(1,4)) {
+			case 2:
+			if(is_proc(_codegen)) {	
+				@results = array()		
+				array_resize(@results, rand(5, 15)) 
+				x_new_thread('CodeGenerator', closure(){
+					foreach(@k: @v in @results) {
+						@results[@k] = _codegen(rand(5, 21), rand(0, 5), rand(0, 5))
+					}
+					console(@results)
+					discord_broadcast(@discord['channel'], 'Password for <redacted>: '.array_implode(@results, '\n Password for <redacted>: '))
+				});	
+			} else {
+				discord_broadcast(@discord['channel'], 'A required command module is not installed.')
+			}
+			case 3:
+				discord_broadcast(@discord['channel'], array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png')))) 
+			default:
+				discord_broadcast(@discord['channel'], array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))))
+		}
 	default:
 		discord_private_message(@discord['userid'], 'I have no idea what that command was about.')
 	}
