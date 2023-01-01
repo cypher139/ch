@@ -255,6 +255,10 @@ case 'player':
 case 'randnumber':
 	@rand = rand($option1, $option2)
 	msg(@rand)
+case 'even':
+	@return = _is_even_number($option1, $option2)
+	if(@return == true) { @cr = 'a' } else { @cr = 'c' }
+	msg(@prefix.color(9).'Even Number? '.color(@cr)._capitalize(@return))
 
 case 'number':
 #unexpected results do not rely on

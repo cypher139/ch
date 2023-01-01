@@ -17,7 +17,7 @@ proc _reloader_econ_fee(@player, @amount) {
 			acc_add(get_value(@name.'.econ.static.account'), @amount)
 		}
 		##### Record lifetime money earned.
-		assign(@lifefees, get_value(@name.'.stats.econ.fees'))
+		@lifefees = get_value(@name.'.stats.econ.fees')
 		if(@lifefees == null || @lifefees == '') { @lifefees = 0 }
 		@newlifefees = @lifefees + @amount
 		store_value(@name.'.stats.econ.fees', @newlifefees)

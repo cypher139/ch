@@ -8,6 +8,7 @@
 proc _reloader_iterate_cuboid(@proc_name, @world, @item, @playergiven, @qty, @fuel, @verbose) {
 	@name = import('dispenserreloader.name')
 	@player = _reloader_getplayerID(@playergiven)
+	# CH requires an extension to access WorldEdit selection data.
 	include('ext.library/ext-SKCompat.ms')
 	@pos1 = _reloader_get_pos1(@player['name'])
 	@pos2 = _reloader_get_pos2(@player['name'])

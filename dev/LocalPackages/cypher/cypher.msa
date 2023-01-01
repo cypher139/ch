@@ -47,7 +47,7 @@ case 'effect':
 	assign(@herea, ploc(@player))
 	msg(@herea)
 		make_effect(@herea, GHAST_SHRIEK)
-	for(assign(@i, 0), @i < 1100, inc(@i, 100),
+	for(assign(@i, 0), @i < 100, inc(@i, 100),
 		set_timeout(@i, closure(
 			msg(@i)
 		))

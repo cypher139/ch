@@ -51,7 +51,7 @@ export('dispenserreloader.fuel.items', _reloader_get_fuel_items())
 	if(@dev == true) {msg(@msgdev)} else { if(ponline(player())) { msg(@msgplayer) } }
 	console(@msgdev, false)
 	foreach(@k: @trace in @ex['stackTrace']) {
-		assign(@pathdisplay, reg_split('\\/CommandHelper\\/', @trace['file'])[1])
+		@pathdisplay = reg_split('\\/CommandHelper\\/', @trace['file'])[1]
 		if(reg_count('/(.[^/]+)\\.library', @pathdisplay) > 0) {
 			@pathdisplay = reg_match('/(.[^/]+)\\.library', @pathdisplay)[1].'.library/'.split('.library/', @pathdisplay)[-1]
 		}		

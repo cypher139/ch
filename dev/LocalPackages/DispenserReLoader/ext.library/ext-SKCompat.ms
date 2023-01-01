@@ -6,7 +6,8 @@
 #
 ######################################################
 proc _reloader_get_pos1(@player) {
-	@name = import('dispenserreloader.name')	
+	@name = import('dispenserreloader.name')
+	#SKCompat available in multiple versions, checking for functionality instead.	
 	if(function_exists('sk_pos1') {
 		return(sk_pos1(@player))
 	} else {
