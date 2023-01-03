@@ -16,6 +16,7 @@ Fixes:
 	- Many procedure rewrites and upgrades as required for new item arrays and arguments for CH 3.3.3 / Minecraft 1.13 and newer.
 - Add player persistance storage via player UUID, required for name prefixes using a dot (i.e. name prefix defaults for Bedrock to Java players)
 - Persistence values: Use tool name over numeric ID, optimize some value importing, switch tool to use one array value.
+- Exception Handler now only registers if one isn't already set.
 
 Notes:
 - Blocks not supported by design: Ender Chest, Hopper, Dropper. May revisit this in a future release.

@@ -1,21 +1,18 @@
-#Random Code Generation
-#version 2.3
-proc _codegen(@codelength, @codetype, @codetype2) {
-#How to use:
-# call _codegen(NUMBER, character type 1, character type 2)
-# The number determines how long the code is, and the 2 types determine which types of characters you want. 
-# Character types: lowercase ("lower"), uppercase ("upper"), number ("num"), symbol ('sym'), full (all alphanumeric characters) or all (Full + symbols).
-
+proc _codegen2(@codelength, @codetype, @codetype2, @looptype) {
 #--- User Input Checks
 	@string = array()
-	if(@codelength == '' || is_numeric(@codelength) == false) { @codelength = '7' }
+	if(is_numeric(@codelength) == true) {
+		@codelength = integer(@codelength)
+	} else if(@codelength == '') { 
+		@codelength = 7
+	}
 	if(@codetype == '') { @codetype = 'full' }
-	if(x_get_current_thread() != '(CommandHelper) CodeGenerator') {
+/*	if(x_get_current_thread() != '(CommandHelper) CodeGenerator') {
 		if(@codelength > 512) {
 			@codelength = '512'
 		}
 	}
-
+*/
 #--- List of Characters
 	assign(@lower, array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'))
 	assign(@upper, array('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'))
@@ -101,9 +98,51 @@ proc _codegen(@codelength, @codetype, @codetype2) {
 		@chars = array_merge(@chars, @chars2)
 	}
 #--- Generate code
-	for(@i = 0, @i < @codelength, @i++,
-		@string[@i] = @chars[rand(array_size(@chars))]
-	)
-	@string = array_implode(@string, '')
-	return(@string)
+int @starttime = time()
+
+switch(@looptype){
+	case 1:
+	case 'for':
+	default:
+		for(@i = 0, @i < @codelength, @i++,
+			@string[@i] = @chars[rand(array_size(@chars))]
+		)
+		@string = array_implode(@string, '')
+		return(@string)
+	case 2:	
+	case 'foreach':
+		array_resize(@string, @codelength)
+		foreach(@i: @char in @string) {
+			@string[@i] = @chars[rand(array_size(@chars))]
+		}
+		@string = array_implode(@string, '')
+		return(@string)
+	case 3:
+	case 'array_iterate':
+	case 'ai':
+		array_resize(@string, @codelength)
+		array_iterate(@string, closure(@i, @char) {
+			@string[@i] = @chars[rand(array_size(@chars))]
+		})
+		@string = array_implode(@string, '')
+		return(@string)
+	case 4:
+	case 'while':
+		array_resize(@string, @codelength)
+		@i = 1234567;
+		while(@i--) {
+		  @string[@i] = @chars[rand(array_size(@chars))]
+		}
+		@string = array_implode(@string, '')
+		return(@string)
+	case 5:
+	case 'typed_while':
+		array_resize(@string, @codelength)
+		int @i = 1234567;
+		while(@i--) {
+		  @string[@i] = @chars[rand(array_size(@chars))]
+		}
+		@string = array_implode(@string, '')
+		return(@string)
+	}
 }

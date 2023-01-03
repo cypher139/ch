@@ -75,7 +75,7 @@ bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), nu
 	@memberIDs = get_value('server.Discord.members.ID')
 	if(is_array(@memberIDs)) { 
 		if(array_contains(@memberIDs, @event['userid'])) {
-			array_remove(@memberIDs, @event['userid'])
+			array_remove_values(@memberIDs, @event['userid'])
 			store_value('server.Discord.members.ID', @memberIDs)
 		}
 	}
@@ -87,6 +87,7 @@ bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), nu
 		if(time() < (@msgids[@event['userid']]['time'] + @config['Welcome_Message_Timeout'])) { 
 			try { 
 				discord_delete_message(@config['Welcome_Text_Channel_Name'], @msgids[@event['userid']]['id'])
+				console('[Discord] New joiner! Welcome message removed.', false)
 			} catch(Exception @ex) {
 				console('[Discord] Unable to remove Welcome Message!'.@ex, false)
 			}

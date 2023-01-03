@@ -1,0 +1,39 @@
+codegen:/looptest [$loop] [$length] [$type1] [$type2] [$] = >>>
+
+proc _help() {
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color(3).'/looptest <loop type> [length] [Character type 1] [Character type 2]')
+	msg(color(3).' - '.color('f').' Character types: lowercase ("lower"), uppercase ("upper"), number ("num"), symbol ("sym"), full (all alphanumeric characters) or all (full + symbols).')
+}
+
+if($loop == '' || !is_numeric($loop) || $loop > 5) { die('Invalid loop.') }
+
+if(is_numeric($length)) {
+	assign(@options, array('length': $length, 'type1': $type1, 'type2': $type2))
+} else {
+	assign(@options, array('length': '7', 'type1': $length, 'type2': $type1))
+}
+
+switch($length){
+
+case 'help':
+case '-help':
+case '?':
+case '/?':
+	_help()
+	die()
+
+default:
+	x_new_thread('CodeGenerator', closure(){
+	@numIterations = 100;
+	@startTime = time();
+	for(@i = 0, @i < @numIterations, @i++) {
+       assign(@code, _codegen2(@options['length'], @options['type1'], @options['type2'], $loop))
+    }   
+	int @endTime = time();
+	int @timeElapsed = @endTime - @startTime;
+	@types = array(0: 'nope', 1: 'for()', 2: 'foreach()', 3: 'array_iterate()', 4: 'while()', 5: 'typed while()')
+	msg('<'.@types[$loop].'> Average time elapsed: '.(@timeElapsed / @numIterations).'ms.')
+	});
+}
+<<<
