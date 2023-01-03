@@ -59,6 +59,7 @@ proc _write_file(@path, @content, @mode) {
 
 proc _array_string_contains(@array, @string, @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
+	if(array_size(@array) == 0) { return(false) }
 	if(@string == '') { return(false) }
 	if(@doKeys != '') {
 		@array = array_keys(@array)
@@ -109,6 +110,7 @@ proc _read_essentials_usermap(@option1) {
 }
 # String Capitalization or underscore removal features
 proc _capitalize(@string, @lower, @u, @a) {
+	if(!is_string(@string)) { @string = string(@string) }
 	if(@lower == '' || @lower == null) { @string = to_lower(@string) }
 	if(@u == '' || @u == null) {
 		if(reg_count('[_]', @string) > 0) {
@@ -126,9 +128,24 @@ proc _capitalize(@string, @lower, @u, @a) {
 	return(@string)
 }
 
-#is this a even number?
-proc _is_even_number(@number) {return(mod(@number, 2) == 0)}
-
+# Is this a even number?
+proc _is_even_number(@number, @round) {
+	switch(@round) {
+		case 'up':
+		case 'ceil':
+			@number = ceil(@number)
+		case 'down':
+		case 'integer':
+		case 'int':
+			@number = integer(@number)
+		case 'round':
+		case 'r':
+		default:
+			@number = integer(round(@number))
+			
+	}
+	return(@number % 2 == 0)
+}
 
 
 #Find player UUID when given a player NAME.
@@ -136,6 +153,7 @@ proc _is_even_number(@number) {return(mod(@number, 2) == 0)}
 proc _getplayerID(@option1) {
 	@pid = array()
 	@uuiddata = import('primus.database.UUID')
+	if(!is_array(@uuiddata)) { @uuiddata = array() }
 	if(reg_count('^~?console$', @option1) > 0) {
 		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
