@@ -95,7 +95,7 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 		}
 			
 		if(!array_contains(@currentVCUsers, @discord['userid'])) { @currentVCUsers[] = @discord['userid'] }
-		if(!array_contains(@totalVCUsers, @discord['userid'])) { array_set(@totalVCUsers, @discord['username'], @discord['userid']) }
+		if(!array_contains(@totalVCUsers, @discord['userid'])) { array_set(@totalVCUsers, @discord['userid'], @discord['username']) }
 		store_value('Chat.Discord.VC.'.@discord['channel'].'.users.current', @currentVCUsers)
 		store_value('Chat.Discord.VC.'.@discord['channel'].'.users.total', @totalVCUsers)
 	});
@@ -118,7 +118,7 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 	if(!array_index_exists(@currentVCUsers, 0)) {
 		if(@VCconfig['VC_DM_Thanks'] == true && array_size(@totalVCUsers) > 1) {
 		#DM thanks
-			foreach(@username: @userid in @totalVCUsers) {
+			foreach(@userid: @username in @totalVCUsers) {
 				try {
 					discord_private_message(@userid, @username.', '.@VCconfig['VC_DM_Thanks_Message'])
 				} catch(NotFoundException @ex) {
@@ -127,12 +127,12 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 				}
 			}
 		}
-		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(array_keys(@totalVCUsers), ', '), false)
+		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(@totalVCUsers, ', '), false)
 		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.current')
 		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.total')
 		
 		@stats = get_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')
-		if(!is_array(@stats)) { clear_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats') die() }
+		if(!is_array(@stats)) { die() }
 		
 		@stats['end'] = time()
 		@stats['users'] = @totalVCUsers
@@ -141,10 +141,11 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @stats, 0)
 		if(array_index_exists(@lastmsgs, 20)) {
-			_write_file(import('Chat.config.dir').'/Archived-VC-Stats.txt', '\n'.@lastmsgs[20], 'append')
+			_write_file(import('Chat.logs.dir').'/Discord-VC-Stats.txt', '\n'.@lastmsgs[20], 'append')
 			array_remove(@lastmsgs, 20)
 		}
-		store_value('Chat.Discord.last.VC', @lastmsgs)		
+		store_value('Chat.Discord.last.VC', @lastmsgs)
+		clear_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')		
 	} else {
 		store_value('Chat.Discord.VC.'.@discord['channel'].'.users.current', @currentVCUsers)
 	}

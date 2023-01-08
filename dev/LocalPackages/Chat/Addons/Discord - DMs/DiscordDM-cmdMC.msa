@@ -70,10 +70,10 @@ try {
 }
 #Save recent DMs for future reference if needed
 @DMs = get_value('server.Discord.DMs.sent')
-if(!is_array(@DMs)) { @DMs = array(array('message': 'initialized DM Array')) }
-array_insert(@DMs, array('sender': player(), 'message': @sendmsg, 'time': time()), 0)
+if(!is_array(@DMs)) { @DMs = array(array('message': 'Start Of Message List')) }
+array_insert(@DMs, array('sender': player(), 'message': @sendmsg, 'time': time(), 'recipient': @id), 0)
 if(array_index_exists(@DMs, 20)) {
-	_write_file(import('Chat.config.dir').'/ArchivedDM-Sent.txt', '\n'.@DMs[20], 'append')
+	_write_file(import('Chat.logs.dir').'/Discord-DMs-Sent.txt', '\n'.@DMs[20], 'append')
 	array_remove(@DMs, 20)
 }
 store_value('server.Discord.DMs.sent', @DMs)
