@@ -116,9 +116,14 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 	
 	#End of call
 	if(!array_index_exists(@currentVCUsers, 0)) {
-		if(@VCconfig['VC_DM_Thanks'] == true && array_size(@totalVCUsers) > 1) {
 		#DM thanks
+		if(@VCconfig['VC_DM_Thanks'] == true && array_size(@totalVCUsers) > 1) {
 			foreach(@userid: @username in @totalVCUsers) {
+				if(@VCconfig['VC_DM_VC_Role'] == false) {
+					if(array_contains_ic(array_keys(discord_member_get_roles(@userid)), @VCconfig['VC_Role_ID'])) {
+						continue()
+					}
+				}
 				try {
 					discord_private_message(@userid, @username.', '.@VCconfig['VC_DM_Thanks_Message'])
 				} catch(NotFoundException @ex) {
@@ -128,9 +133,9 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 			}
 		}
 		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(@totalVCUsers, ', '), false)
+		#Save Stats
 		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.current')
 		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.total')
-		
 		@stats = get_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')
 		if(!is_array(@stats)) { die() }
 		

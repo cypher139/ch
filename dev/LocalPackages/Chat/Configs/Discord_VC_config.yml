@@ -25,4 +25,6 @@ VC_Ping_Message: "%RoleID% %UserID% is ready to voice chat in the %Channel% chan
 VC_Ping_Message_MC: "%User% is ready to voice chat in the %Channel% channel! Come join the Discord server for another fun time talking with your fellow members!"
 # What should we say to thank all the users who chatted in completed VC call??
 VC_DM_Thanks: false
+# DM the VC ping role users?
+VC_DM_VC_Role: false
 VC_DM_Thanks_Message: "Hey, I just want to say Thanks for joining the voice chat today! See you again soon next time we are online and chatting!"
