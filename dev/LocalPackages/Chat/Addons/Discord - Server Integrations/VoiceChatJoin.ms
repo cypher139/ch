@@ -110,7 +110,7 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 	@currentVCUsers = get_value('Chat.Discord.VC.'.@discord['channel'].'.users.current')
 	if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
 	@totalVCUsers = get_value('Chat.Discord.VC.'.@discord['channel'].'.users.total')
-	if(!is_array(@totalVCUsers)) { @totalVCUsers = array() }
+	if(!is_array(@totalVCUsers)) { @totalVCUsers = die() }
 	
 	if(array_contains(@currentVCUsers, @discord['userid'])) { array_remove_values(@currentVCUsers, @discord['userid']) }
 	

@@ -2,6 +2,7 @@
 export('chatmodifier.name', 'Chat')
 export('chatmodifier.version', '1.0-tmc')
 export('Chat.config.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Configs'))
+export('Chat.logs.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Logs'))
 
 
 
@@ -143,11 +144,11 @@ proc _healthbar(@player, @fchar, @echar) {
 	#red: 1-4 hearts
 	if(@phealth >= 1 && @phealth <= 8) { @color = 4 }
 	#yellow: 5-7 hearts
-	if(@phealth >= 9 && @phealth <= 15) { @color = 'e' }
+	if(@phealth >= 9 && @phealth <= 15) { @color = 14 }
 	#green: 8-10 hearts
 	if(@phealth >= 16 && @phealth <= 20) { @color = 2 }
 	#blue: Somehow, more than 10 hearts
-	if(@phealth >= 21) { @color = 'b' }
+	if(@phealth >= 21) { @color = 11 }
 	#for each heart (2 phealth points):
 	foreach(@k: @v in @healthbar) {
 		if(@k == 0) { continue() }
@@ -161,19 +162,22 @@ proc _healthbar(@player, @fchar, @echar) {
 		@healthbar[@k] = color(@color).@char
 	}
 	array_remove(@healthbar, 0)
-#msg(@healthbar)
 	return(array_implode(@healthbar, ''))
 }
 
-proc _send_discord_message(@message, @from, @channel, @option) {
+proc _send_discord_message(@message, @from, @channel, @type, @option) {
+	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
 	if(@message == '') { return(false) }
 	if(@from == '') { @from = player() }
 	if(@channel == '') { @channel = 'minecraft' }
-	
+	if(@type == '') { @type = 'broadcast' }
 	@message = strip_colors(@message)
-
+	@split = array()
+	@count = reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @message)
+	
 	switch(to_lower(@from)) {
 	case 'none':
+	case 'discord':
 		@sendmsg = @message
 	case 'server':
 		@sendmsg = '['.@from.'] '.@message
@@ -184,18 +188,55 @@ proc _send_discord_message(@message, @from, @channel, @option) {
 	default:
 		@sendmsg = '`['.@from.']` '.@message
 	}
-	if(function_exists('discord_broadcast')) {
-		try(
-			discord_broadcast(@channel, associative_array('content': @sendmsg))
+	
+	if(reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @sendmsg) > 1) {
+		for(@i = 1, @i <= @count, @i++) {
+			@match = reg_match('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @sendmsg)[0]
+			array_push(@split, @match)
+			@sendmsg = @sendmsg[cslice(length(@match), (length(@sendmsg) - 1))]
+		}
+	}
+	try {	
+		switch(@type){
+		case 'broadcast':
+		case 'b':
+			if(array_index_exists(@split, 0)) {
+				foreach(@msg in @split) { discord_broadcast(@channel, array('content': @msg)) }
+			} else {
+				discord_broadcast(@channel, array('content': @sendmsg))
+			}
 			return(true)
-		,@fail,
-#			msg(@fail)
-			_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@fail['message'])
-			return(false)
-		)
-	} else {
+		case 'pm':
+		case 'dm':
+		case 'message':
+		case 'private':
+			if(array_index_exists(@split, 0)) {
+				foreach(@msg in @split) { discord_private_message(@channel, @msg) }
+			} else {
+				discord_private_message(@channel, @sendmsg)
+			}
+			return(true)
+		case 'broadcast_embed':
+		case 'embed':
+			if(@option == '') { @option = 'the cool bot' }
+			@sayicons = array('https://cdn.discordapp.com/emojis/511919341093257266.webp?size=96&quality=lossless', 'https://cdn.discordapp.com/emojis/511919341118160912.webp?size=96&quality=lossless', 'https://cdn.discordapp.com/emojis/511919341281738773.webp?size=96&quality=lossless', 'https://cdn.discordapp.com/emojis/511919340740673536.webp?size=96&quality=lossless', 'https://cdn.discordapp.com/emojis/511919340837404672.webp?size=96&quality=lossless') 
+			if(array_index_exists(@split, 0)) {
+				foreach(@i: @msg in @split) { 
+					@option = @option.' (Message '.(@i + 1).' of '.array_size(@split).')'
+					discord_broadcast(@channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @msg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))))
+				}
+			} else {
+				discord_broadcast(@channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @sendmsg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))))
+			}
+			return(true)	
+		}
+	} catch(Exception @ex) {
+	#			msg(@ex)
+		_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@ex['message'])
 		return(false)
 	}
+	
+	
+	
+	
 }
-
-

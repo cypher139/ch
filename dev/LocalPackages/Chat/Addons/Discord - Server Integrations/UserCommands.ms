@@ -1,38 +1,10 @@
 #version 1.0-tmc
 
-# .members.names
-
-/*
-https://tenor.com/view/twenty-century-fox-meme-gfy-go-fuck-yourself-meme-get-lost-gif-26260205
-https://tenor.com/view/fuck-wtf-gif-21705501
-https://tenor.com/view/stepbrothers-hose-gif-20871115
-*/
-
-# Load Discord Command Configs
-@7bgrgf5 = ''
-try {
-	@7bgrgf5 = yml_decode(read(import('Chat.config.dir').'/Discord_Commands_config.yml'))
-} catch(IOException @ex) {
-	_msgAdmins('[Chat - Discord] Commands Config file could not be read. '.@ex['message'])
-	die()
-} catch(FormatException @ex) {
-	_msgAdmins('[Chat - Discord] Commands Config file is improperly formatted.') 
-	die()
-} catch(Exception @ex) {
-	_msgAdmins('[Chat - Discord] There was an error with the Commands Config file. '.@ex['message']) 
-	die()
-}
-if(array_contains(@7bgrgf5['Channels_Receive'], 'default')) {
-	_msgAdmins('[Chat - Discord] Config file is still using default values. Please configure it in order to use various Discord features.') 
-	die()
-}
-export('Chat.config.Discord.Commands', @7bgrgf5)
-
-
 #Handle commands from Discord Users
 # Data: userid, username, nickname, channel, message, id, attachments {{url, filename, description}}
-bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord) {
+bind('discord_message_received', array('id': 'Chat.Discord.cmd', 'priority': 'HIGH'), null, @discord) {
 	@config = import('Chat.config.Discord.Commands')
+	@adminChannel = import('Chat.config.Discord', array('Log_Channel': 'bot-logs'))['Log_Channel']
 	#Setup list of server members
 	@membersID = get_value('server.Discord.members.ID')
 	if(!array_contains(@membersID, @discord['userid'])) {
@@ -56,12 +28,30 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 	}
 */	
 	
-	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true && reg_count('^[!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
+/*	
+	# Find if this is a wish or normal chat.
+	@wish = _wish_finder('discord', @discord['message'], @discord['username'])
+	if(@wish['wish'] != true) { 
+		if(@dev == true) { msg(@wish['message']) }
+		die()
+	}
+# Are there available wishes?
+
+	
+# Is a wish! perform action 
+	@grantwish = _wish_granter(@wish['action'], @wish['target'], @player)
+	if(@grantwish['success'] == true) {
+		broadcast(@grantwish['message'])
+	} else {
+		if(@dev == true) { msg(@grantwish['message']) }
+	}
+*/	
+	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true && reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
+		consume()
 		discord_delete_message(@discord['channel'], @discord['id'])
 		array_set(@discord, 'time', time())
 	#Extract Command
-	@cmd = parse_args(reg_replace('^[!~]?[Cc][Hh][!@#%*/.$,=]', '', @discord['message']))
-	console(@cmd)
+	@cmd = parse_args(reg_replace('^[.!~]?[Cc][Hh][!@#%*/.$,=]', '', @discord['message']))
 	#Setup Arguments
 	if(array_index_exists(@cmd, 1)) {
 		@cmdargs = @cmd[cslice(1, array_size(@cmd) - 1)]
@@ -78,10 +68,13 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 	if(!array_index_exists(@cmd, 0)) {
 		discord_broadcast(@discord['channel'], array('embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))))
 		die()
-	}	
-	console('cmd: '.@cmd[0])
-	console('cmda: '.@cmdargs)
-	
+	}
+	if(array_index_exists(@cmdargs, 0)) { @cmddis1 = 'Args: '.color(9).@cmdargs } else { @cmddis1 = '' }
+	console('[Discord] '.@discord['username'].' used command: '.color(3).@cmd[0].'  '.color('r').@cmddis1, false)
+	discord_broadcast(@adminChannel, @discord['username'].' used command '.@cmd[0].'  '.strip_colors(@cmddis1))
+
+
+/*
 	switch(@cmd[0]) {
 	case 'help':
 		@admincommandlist = array('wrf', 'mc_give', 'readdm', 'senddm')
@@ -95,6 +88,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 				break()
 			}
 		}
+		array_sort(@commandlist, 'STRING')
 		discord_private_message(@discord['userid'], 'Hi '.@userType.'! \n My Current Commands are: \n'.array_implode(@commandlist, ', '))
 	case 'cypher':
 		if(@discord['username'] != 'Cypher') {
@@ -114,14 +108,21 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 			discord_broadcast(@discord['channel'], array('embeds': array(array('footer': array('text': 'no. XD'), 'image':'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif'))))
 		default:
 			@sayicons = array('https://media.tenor.com/qJUcFWzUWlIAAAAd/xtina-christina-aguilera.gif', 'https://media.tenor.com/nMkuF8c3DV0AAAAC/zootopia-fox.gif', 'https://media.tenor.com/EJieOpbWHS8AAAAi/i-have-nothing-to-say-real-housewives-of-beverly-hills.gif')
-			discord_broadcast(@discord['channel'], array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': array_implode(@cmdargs, ' '), 'footer': array('text': '@'.@discord['username'].' made me do this')))))
+			discord_broadcast(@discord['channel'], array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username'])))))
 		}
 	case 'fban':
 	case 'fakeban':
+	#todo: command cannot be run in DM
 	if(!array_index_exists(@cmdargs, 0)) {
 		@fbanned = @discord['userid']
 	} else {
 		@fbanned = reg_replace('[<>@\\\\]+', '', @cmdargs[0])
+	}
+	switch(@cmdargs[0]) {
+	case 'me':
+	case 'myself':
+	case 'i':
+		@fbanned = @discord['userid']
 	}
 	@membernames = get_value('server.Discord.members.names')
 	if(!is_array(@membernames)) { 
@@ -205,7 +206,8 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 	}
 	if(@isAdmin != true) { discord_private_message(@discord['userid'], 'You need to be a Server Admin to use that.') die() }
 	
-	if(is_proc(_chat_wrf)) {
+	if(is_proc('_chat_wrf')) {
+		if(!array_index_exists(@cmdargs, 0)) { @cmdargs = array('arg') }
 		@return = _chat_wrf(@cmdargs[0])
 		
 		if(reg_count('^[WwNn]', @cmdargs[0]) > 0) {
@@ -227,11 +229,12 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 			}
 		} else {		
 			if(array_index_exists(@return, 'zero')) {
-				discord_broadcast(@discord['channel'], @return['zero'].' members were detected as having 0 roles. \n Use "wrf norole" to view IDs.')
+				discord_broadcast(@discord['channel'], array('embeds': array(array('title': 'Welcome Roles Finder', 'description': @return['zero'].' members were detected as having 0 roles.', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': ' requested by @'.@discord['username'].'. Use "wrf noroles" to view IDs.')))))
+				# discord_broadcast(@discord['channel'], @return['zero'].' members were detected as having 0 roles. \n Use "wrf norole" to view IDs.')
 			}
 			if(array_index_exists(@return, 'welcome')) {
-				discord_broadcast(@discord['channel'], @return['welcome'].' members were detected as having only the Welcome Roles. \n Use "wrf welcome" to view IDs.')
-			}
+				discord_broadcast(@discord['channel'], array('embeds': array(array('title': 'Welcome Roles Finder', 'description': @return['welcome'].' members were detected as having only the Welcome Roles.', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': ' requested by @'.@discord['username'].'. Use "wrf welcomeroles" to view IDs.')))))
+		}
 		}
 	} else {
 		discord_broadcast(@discord['channel'], 'A required command module is not installed.')
@@ -276,7 +279,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 		case 4:
 			discord_broadcast(@discord['channel'], array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/password_strength.png'))))
 		default:
-			if(is_proc(_codegen)) {	
+			if(is_proc('_codegen')) {	
 				@dmCode = false
 				if(array_index_exists(@cmdargs, 0)) {
 					if(reg_count('^[-]?[PpDd]', @cmdargs[0]) > 0) {
@@ -308,7 +311,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 	case 'passwordlist':
 		switch(rand(1,4)) {
 			case 2:
-			if(is_proc(_codegen)) {	
+			if(is_proc('_codegen')) {	
 				@results = array()		
 				array_resize(@results, rand(5, 15)) 
 				x_new_thread('CodeGenerator', closure(){
@@ -316,7 +319,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd'), null, @discord
 						@results[@k] = _codegen(rand(5, 21), rand(0, 5), rand(0, 5))
 					}
 					console(@results)
-					discord_broadcast(@discord['channel'], 'Password for <redacted>: '.array_implode(@results, '\n Password for <redacted>: '))
+					discord_broadcast(@discord['channel'], 'Password for <redacted>: '.array_implode(@results, '\nPassword for <redacted>: '))
 				});	
 			} else {
 				discord_broadcast(@discord['channel'], 'A required command module is not installed.')
