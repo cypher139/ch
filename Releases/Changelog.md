@@ -34,6 +34,15 @@ Changelogs not found.
 
 ### cmdrepeat
 
+###### 1.2 (1/21/23)
+Added:  
+- Saves up to 10 recent commands used (up from 3)
+- Automatic command cast fixes:
+	- Remove extra slashes and spaces
+	- Cancel command if only a single slash is given
+Fixes:  
+- Updated player ID proc to latest version, and proc is only installed if not already present.
+
 ###### 1.1 (10/5/22)
 Added:  
 - Saves up to 3 recent commands used (up from 1)

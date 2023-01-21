@@ -1,20 +1,11 @@
 #version 1.2-tmc
 bind('player_command', array('id': 'cmdrepeat.cmd', 'priority': 'HIGH'), null, @cmdevent) {
-	@player = _cmd_getplayerID(player())
+	@player = _getplayerID(player())
 	@cmd = reg_split(' ', @cmdevent['command'])
 	@dev = import('ch.player.'.@player['id'].'.dev.scripts.cmdrepeat')
 	
 	#Automatically remove extra slashes not recognized by CH Aliases or Registered Commands.
-	# get_commands() is a huge array. sort into a single array:
 	@allcmds = import('cmdrepeat.all.commands')
-	if(!is_array(@allcmds)) {
-		@allcmds = array()
-		foreach(@v in get_commands()) {
-			array_push(@allcmds, @v['name'])
-			array_push_all(@allcmds, @v['aliases'])
-		}
-		export('cmdrepeat.all.commands', @allcmds)
-	}
 	#Remove extra slashes and beginning spaces
 	if(!is_alias(@cmd[0])) {
 		if(!array_contains(@allcmds, reg_replace('^\\/', '', @cmd[0]))) {
@@ -27,7 +18,7 @@ bind('player_command', array('id': 'cmdrepeat.cmd', 'priority': 'HIGH'), null, @
 			}
 		# Space after slash check
 			if(reg_count('^\\/*$', @cmd[0]) > 0 && array_index_exists(@cmd, 1)) {
-			# added @cmd[1] check to allow for not calling WorldEdit's "//" command with extra arguments
+			# Added @cmd[1] check to allow for not calling WorldEdit's "//" command with extra arguments
 			# Remove space after slash
 				array_remove(@cmd, 0)
 				@cmd[0] = '/'.@cmd[0]
@@ -45,7 +36,7 @@ bind('player_command', array('id': 'cmdrepeat.cmd', 'priority': 'HIGH'), null, @
 				modify_event('command', array_implode(@cmd, ' '))
 			}
 		} else {
-			# remove invalid arguments from WorldEdit's "//"
+			# Remove invalid arguments from WorldEdit's "//"
 			if(reg_count('^\\/\\/$', @cmd[0]) > 0 && array_index_exists(@cmd, 1)) {
 				array_remove(@cmd, 0)
 				@cmd[0] = '/'.@cmd[0]
@@ -66,61 +57,61 @@ bind('player_command', array('id': 'cmdrepeat.cmd', 'priority': 'HIGH'), null, @
 
 	#Show command back to the player who issued the command, if permitted to do so.
 	@sendcmd = import('cmdrepeat.player.'.@player['id'].'.command.show.all')
-	if(@sendcmd == null,
-			@sendcmd = get_value('cmdrepeat.player.'.@player['id'].'.command.show.all')
-			export('cmdrepeat.player.'.@player['id'].'.command.show.all', @sendcmd)
-	)
+	if(@sendcmd == null) {
+		@sendcmd = get_value('cmdrepeat.player.'.@player['id'].'.command.show.all')
+		export('cmdrepeat.player.'.@player['id'].'.command.show.all', @sendcmd)
+	}
 	
-	@lastcmd = array()
-	@lastcmd[0] = 'Player Recent Commands'
-	@lastcmd[1] = import('cmdrepeat.player.'.@player['id'].'.last.command.1')
-	@lastcmd[2] = import('cmdrepeat.player.'.@player['id'].'.last.command.2')
-	@lastcmd[3] = import('cmdrepeat.player.'.@player['id'].'.last.command.3')
-	
-	#is this a new command or repeat command?
+	@lastcmd = import('cmdrepeat.player.'.@player['id'].'.last.command')
+	if(!is_array(@lastcmd)) { @lastcmd = array() }
+
+	# Convert Number start at 1 to 0
+	if(array_index_exists(@cmd, 1)) {
+		if(is_numeric(@cmd[1]) && @cmd[1] < 10 && @cmd[1] > 0) { @cmd[1] = @cmd[1] - 1 }
+	}
+	# Is this a new command or repeat command?
 	switch(@cmd[0]){
 		case '/.':
 		case '/repeat':
 		case '/\'':
 			if(@consolecmdshow == true) {
 				if(array_index_exists(@cmd, 1)) {
-					if(is_numeric(@cmd[1]) && @cmd[1] < 4) {
-						#123 repeat
-						if(is_alias(@lastcmd[@cmd[1]])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
-						if(@lastcmd[@cmd[1]] == '' || @lastcmd[@cmd[1]] == null, null,
+					if(is_numeric(@cmd[1]) && @cmd[1] < 9) {
+						# Repeat Command
+						if(array_index_exists(@lastcmd, @cmd[1])) {
+							if(is_alias(@lastcmd[@cmd[1]])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
 							console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[@cmd[1]], false)
-						)
+						}
 					} else {
-					#repeat cmd options
+					# Repeat options
 						console(color(7).@player['display'].' used '.color(@cmdcolor).@cmddisplay, false)
 					}
 				} else {
-				#just repeat cmd used
-					if(is_alias(@lastcmd[1])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
-					if(@lastcmd[1]) {
-						console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[1], false)
+				# Repeat Last command
+					if(array_index_exists(@lastcmd, 0)) {
+						if(is_alias(@lastcmd[0])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
+						console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[0], false)
 					}
 				}
 			}			
 		case '//.':	
-		#special alias for /repeat 2
-			if(@consolecmdshow == true) {
-				if(is_alias(@lastcmd[2])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
-				if(@lastcmd[2] == '' || @lastcmd[2] == null, null,
-					console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[2], false)
-				)
+		# Special alias for /repeat 2
+			if(@consolecmdshow == true && array_index_exists(@lastcmd, 1)) {
+				if(is_alias(@lastcmd[1])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
+				console(color(7).@player['display'].' repeated '.color(@cmdcolor).@lastcmd[1], false)
 			}
 		default:
-		#Save the last command this player used.
+		# Save the last command this player used.
 			if(@consolecmdshow == true) {
 				console(color(7).@player['display'].' used '.color(@cmdcolor).@cmddisplay, false)
 			}
 			if(@sendcmd == true) {
-				if(!has_permission(@player['name'], 'commandhelper.alias.see.is.alias')) { @cmdcolor = '7' }
+				if(!has_permission(@player['name'], 'commandhelper.alias.see.is.alias')) { @cmdcolor = 7 }
 				msg('> '.color(@cmdcolor).@cmddisplay)
-			}
-			export('cmdrepeat.player.'.@player['id'].'.last.command.1', @cmddisplay)
-			export('cmdrepeat.player.'.@player['id'].'.last.command.2', @lastcmd[1])
-			export('cmdrepeat.player.'.@player['id'].'.last.command.3', @lastcmd[2])			
+			}			
+			array_insert(@lastcmd, @cmddisplay, 0)
+			if(array_index_exists(@lastcmd, 10)) { array_remove(@lastcmd, 10) }
+			export('cmdrepeat.player.'.@player['id'].'.last.command', @lastcmd)
+			export('cmdrepeat.player.'.@player['id'].'.last.command.1', @cmddisplay)		
 	}
 }
