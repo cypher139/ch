@@ -1,0 +1,35 @@
+URL_Broadcast: false
+Role_Admins:
+- Owner
+- Co-Owner
+- "Server Admin"
+Role_Colors:
+  Active Level 1: f1c40f
+  Active Level 2: f1c40f
+  Active Level 3: f1c40f
+  Co-Owner: 1bae93
+  Purple: 8a00ff
+  Member: 7289da
+  Most Active: f1c40f
+  Owner: fbff00
+  Server Admin: ba3e39
+Server_1_Name: "Server 1"
+Server_1_Channels:
+- general
+- default
+- cross-server-chat
+- minecraft
+- voice-chat
+- other
+Server_2_Name: "Server 2"
+Server_2_Channels:
+- general
+- default
+- news
+- minecraft
+- voice-chat
+- other
+Server_1_Channels_Send: cross-server-chat
+Server_2_Channels_Send: cross-server
+Default_Channel: minecraft
+Log_Channel: bot-logs

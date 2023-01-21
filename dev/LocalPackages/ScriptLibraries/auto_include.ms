@@ -57,6 +57,27 @@ proc _write_file(@path, @content, @mode) {
 	}
 }
 
+proc _hex_to_rgb(@num) {
+	@num = reg_replace('#', '', @num)
+	if(length(@num) == 3) {
+		@num = reg_split('(?<=\\G.)', @num)
+		@num[0] = @num[0].@num[0]
+		@num[1] = @num[1].@num[1]
+		@num[2] = @num[2].@num[2]
+	} else if(length(@num) == 6) {
+		@num = reg_split('(?<=\\G..)', @num)
+	} else {
+		throw('ms.lang.CastException', 'Unsupported Hex code given.')
+	}
+#	msg(@num)
+	@results = array('r': '', 'g': '', 'b': '')
+	@results['r'] = parse_int(@num[0], 16)
+	@results['g'] = parse_int(@num[1], 16)
+	@results['b'] = parse_int(@num[2], 16)
+	return(@results)
+}
+
+
 proc _array_string_contains(@array, @string, @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
 	if(array_size(@array) == 0) { return(false) }

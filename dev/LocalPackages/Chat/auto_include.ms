@@ -175,15 +175,18 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	if(is_array(@message)) {
 		if(array_index_exists(@message, 'content')) {
 			@message['content'] = strip_colors(@message['content'])
+			@count = reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @message['content'])
 		}
 	} else {
 		@message = strip_colors(@message)
+		@count = reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @message)
+	
 	}
 	@split = array()
-	@count = reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @message)
 	
 	switch(to_lower(@from)) {
 	case 'none':
+	case 'cross':
 	case 'discord':
 		@sendmsg = @message
 	case 'server':
@@ -193,6 +196,7 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	case 'command':
 		@sendmsg = ':desktop: '.@message
 	default:
+	# Minecraft Player chat
 		@sendmsg = '`['.@from.']` '.@message
 		# Check if player said banned Discord mention
 		if(is_array(@message)) {

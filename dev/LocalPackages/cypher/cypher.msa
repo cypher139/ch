@@ -15,6 +15,8 @@ case 'gt':
 		set_ploc(@spawnloc)
 	}
 
+case 'h2r':
+msg(_hex_to_rgb($option1))
 
 case 'wr':
 	assign(@choices, array(
