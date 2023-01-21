@@ -167,11 +167,18 @@ proc _healthbar(@player, @fchar, @echar) {
 
 proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
+	@config = import('Chat.config.Discord')
 	if(@message == '') { return(false) }
 	if(@from == '') { @from = player() }
-	if(@channel == '') { @channel = 'minecraft' }
+	if(@channel == '') { @channel = @config['Default_Channel'] }
 	if(@type == '') { @type = 'broadcast' }
-	@message = strip_colors(@message)
+	if(is_array(@message)) {
+		if(array_index_exists(@message, 'content')) {
+			@message['content'] = strip_colors(@message['content'])
+		}
+	} else {
+		@message = strip_colors(@message)
+	}
 	@split = array()
 	@count = reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @message)
 	
@@ -187,23 +194,57 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		@sendmsg = ':desktop: '.@message
 	default:
 		@sendmsg = '`['.@from.']` '.@message
+		# Check if player said banned Discord mention
+		if(is_array(@message)) {
+			if(array_index_exists(@message, 'content')) {
+				@msga = parse_args(@message['content'])
+			}
+		} else { 
+			@msga = parse_args(@message)
+		}
+		@msgban = ''
+		foreach(@entry in @config['Banned_Pings']) {
+			if(_array_string_contains(@msga, @entry)) {
+				@prevmentions = get_value('server.player.'.puuid(@from, 'dashless').'all.ping.mention')
+				store_value('server.player.'.puuid(@from, 'dashless').'.all.ping.mention', @prevmentions + 1)
+				if(@config['Banned_Pings_Kick'] == true) {
+					pkick(@from, '[Chat - Discord] Do not use "'.@entry.'" pings.')
+					@msgbantype = 'kicked'
+					if(@prevmentions > 4) {
+						set_pbanned(@from, true, '[Chat - Discord] You have used disallowed pings several times.')
+						@msgbantype = 'banned'
+					}
+					@msgban = ' Offending player `'.@from.'` was '.@msgbantype.'.'
+				}
+				_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: Message contained a mention of "'.@entry.'". '.@msgban)
+				@type = 'admin'
+				@sendmsg = 'A message queued to Discord was not sent: Message contained a mention of "`'.@entry.'`". '.@msgban
+				break()
+			}
+		}
 	}
-	
-	if(reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @sendmsg) > 1) {
+	if(reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @sendmsg) > 1 && !is_array(@message)) {
 		for(@i = 1, @i <= @count, @i++) {
 			@match = reg_match('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @sendmsg)[0]
 			array_push(@split, @match)
 			@sendmsg = @sendmsg[cslice(length(@match), (length(@sendmsg) - 1))]
 		}
 	}
+	
+	switch(@type){
+	case 'admin':
+		@channel = @config['Log_Channel']
+	}
+	
 	try {	
 		switch(@type){
+		case 'admin':
 		case 'broadcast':
 		case 'b':
 			if(array_index_exists(@split, 0)) {
-				foreach(@msg in @split) { discord_broadcast(@channel, array('content': @msg)) }
+				foreach(@msg in @split) { discord_broadcast(@channel, @msg) }
 			} else {
-				discord_broadcast(@channel, array('content': @sendmsg))
+				discord_broadcast(@channel, @sendmsg)
 			}
 			return(true)
 		case 'pm':
@@ -219,24 +260,26 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		case 'broadcast_embed':
 		case 'embed':
 			if(@option == '') { @option = 'the cool bot' }
-			@sayicons = array('https://cdn.discordapp.com/emojis/511919341093257266.webp?size=96&quality=lossless', 'https://cdn.discordapp.com/emojis/511919341118160912.webp?size=96&quality=lossless', 'https://cdn.discordapp.com/emojis/511919341281738773.webp?size=96&quality=lossless', 'https://cdn.discordapp.com/emojis/511919340740673536.webp?size=96&quality=lossless', 'https://cdn.discordapp.com/emojis/511919340837404672.webp?size=96&quality=lossless') 
+			@sayicons = array('https://cdn.discordapp.com/emojis/511919341093257266.webp?size=48&quality=lossless', 'https://cdn.discordapp.com/emojis/511919341118160912.webp?size=48&quality=lossless', 'https://cdn.discordapp.com/emojis/511919341281738773.webp?size=48&quality=lossless', 'https://cdn.discordapp.com/emojis/511919340740673536.webp?size=48&quality=lossless', 'https://cdn.discordapp.com/emojis/511919340837404672.webp?size=48&quality=lossless') 
 			if(array_index_exists(@split, 0)) {
 				foreach(@i: @msg in @split) { 
 					@option = @option.' (Message '.(@i + 1).' of '.array_size(@split).')'
 					discord_broadcast(@channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @msg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))))
 				}
 			} else {
-				discord_broadcast(@channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @sendmsg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))))
+				discord_broadcast(@channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @sendmsg))))
 			}
 			return(true)	
+		case 'join':
+			discord_broadcast(@channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:join:1066426544387543080> Joined:', 'description': @sendmsg))))
+		case 'leave':
+		case 'quit':
+			discord_broadcast(@channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': ' <:leave:1066426677481197618> Left: ', 'description': @sendmsg))))
 		}
 	} catch(Exception @ex) {
 	#			msg(@ex)
 		_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@ex['message'])
 		return(false)
 	}
-	
-	
-	
 	
 }

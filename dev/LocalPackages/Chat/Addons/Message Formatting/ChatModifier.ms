@@ -2,7 +2,16 @@
 bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	@name = import('chatmodifier.name', 'Chat')
 	@player = _getplayerID(player())
-	@group = pgroup(@player['name'])[0]
+	try {
+		@group = pgroup(@player['name'])[0]
+	} catch (IndexOverflowException @ex) {
+		if(!ponline(@player['name'])) {
+			consume()
+			cancel()
+			die()
+		}
+	}	
+		
 	@dev = import('ch.player.'.@player['id'].'.developer')
 	@say = @chat['message']
 
@@ -44,7 +53,7 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	
 	#User options
 	@userconfig = import(@name.'.format.users.'.@player['id'])
-	if(@userconfig == '' || @namecolor == null) {
+	if(@userconfig == '' || @userconfig == null) {
 		# First chat, values not loaded in memory
 		@userconfig = get_value(@name.'.format.users.'.@player['id'])
 		export(@name.'.format.users.'.@player['id'], @userconfig)

@@ -11,7 +11,7 @@ bind('entity_damage', array('id': 'Chat.Wish.PvP.listener', 'priority': 'MONITOR
 bind('player_chat', array('id': 'Chat.Wish.player', 'priority': 'LOW'), null, @chat) {
 	@name = 'Wish'
 	@player = player()
-	@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish')
+	@dev = import('ch.player.'._getplayerID(player())['id'].'.dev.scripts.wish')
 
 	#Save chat for later recall of players who have recently chatted.
 	@wlpc = import('wish.last.player.chat', array(@chat))

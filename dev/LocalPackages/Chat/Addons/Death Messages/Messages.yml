@@ -9,7 +9,8 @@ BLOCK_EXPLOSION:
 CONTACT: 
 - "%dm_color_player%%dm_player%%dm_color_msg% poked a %dm_color_alt%Cactus%dm_color_msg%, but the cactus poked back." 
 - "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 
-- "%dm_color_player%%dm_player%%dm_color_msg% mistook the %dm_color_alt%Cactus%dm_color_msg% for a creeper and went in for a hug. %dm_color_alt%Cactus %dm_color_msg%won." 
+- "%dm_color_player%%dm_player%%dm_color_msg% mistook the %dm_color_alt%Cactus%dm_color_msg% for a creeper and went in for a hug. %dm_color_alt%Cactus %dm_color_msg%won."
+- "%dm_color_msg%I see you also enjoy running amuck with the screwdriver, %dm_color_player%%dm_player%." 
 CUSTOM: 
 - "%dm_color_player%%dm_player%%dm_color_msg% died from unknown causes." 
 - "%dm_color_player%%dm_player%%dm_color_msg% can't disco." 

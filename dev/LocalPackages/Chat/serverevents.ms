@@ -18,7 +18,7 @@ bind('player_join', array('id': 'Chat.Format.Join'), null, @login) {
 	}
 	
 # Send Join message to Discord as well (if enabled)
-	_send_discord_message('+ join: '.@playerID['name'], 'none')	
+	_send_discord_message(@playerID['name'], 'none', '', 'join')	
 }
 
 bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
@@ -27,7 +27,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	@quitmsg = color('c').'- part'.color(7).': '.@playerID['display']
 	modify_event('message', @quitmsg)
 # Send Quit message to Discord as well (if enabled)
-	_send_discord_message('- part: '.@playerID['name'], 'none')
+	_send_discord_message(@playerID['name'], 'none', '', 'leave')
 }
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {

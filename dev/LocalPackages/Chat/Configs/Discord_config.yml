@@ -31,3 +31,7 @@ Channels_Send:
 Use_Second_Server: false
 Default_Channel: minecraft
 Log_Channel: bot-logs
+Banned_Pings:
+- "@everyone"
+- "@here"
+Banned_Pings_Kick: true
