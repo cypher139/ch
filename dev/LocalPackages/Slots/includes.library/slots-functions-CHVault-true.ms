@@ -1,18 +1,18 @@
-proc(_sl_econ_fee, @player, @amount,
-	assign(@name, Slots)
+proc _sl_econ_fee(@player, @amount) {
+	assign(@name, 'Slots')
 	assign(@currentfunds, acc_balance(@player))
 	if(@currentfunds < @amount || @currentfunds == @amount,
 		if(@currentfunds != 0,
-			return(array(die: yes, msg: 'You don\'t have enough funds! '.color(9).'You need '.color(e).'$'.@amount.color(9).' to continue.'))
+			return(array('die': 'yes', 'msg': 'You don\'t have enough funds! '.color(9).'You need '.color('e').'$'.@amount.color(9).' to continue.'))
 			,
-			return(array(die: yes, msg: 'There isn\'t any funds to collect!'))
+			return(array('die': 'yes', 'msg': 'There isn\'t any funds to collect!'))
 		)
 		die()
 	)
 	acc_subtract(@player, @amount)
 	assign(@static, get_value(@name.'.econ.static'))
 	assign(@acc, get_value(@name.'.econ.static.account'))
-	if(@static == yes,
+	if(@static == 'yes',
 		acc_add(@acc, @amount)
 	)
 
@@ -49,24 +49,24 @@ proc(_sl_econ_fee, @player, @amount,
 	if(@alltimejackpot < @newalltimejackpot,
 		store_value(@name.'.stats.alltime.jackpot', @newalltimejackpot)
 	)
-	return(array(die: no, msg: color(2).' Fee: $'.@amount))	
-)
+	return(array('die': 'no', 'msg': color(2).' Fee: $'.@amount))	
+}
 
 
-proc(_sl_econ_award, @player, @amount,
-	assign(@name, Slots)
+proc _sl_econ_award(@player, @amount) {
+	assign(@name, 'Slots')
 	acc_add(@player, @amount)
 	assign(@static, get_value(@name.'.econ.static'))
 	assign(@acc, get_value(@name.'.econ.static.account'))
-	if(@static == yes,
+	if(@static == 'yes',
 		assign(@currentfunds, acc_balance(@acc))
 		if(@currentfunds <= @amount,
-			_msgAdmins(color(c).'['.color(7).@name.color(c).'] '.color(c).'WARNING! '.color(7).@name.' detects the "'.@acc.'" account used for funding is out of money, yet a player was supposed to be awarded earnings!'.color(e).' Please refill the account with more money!')
+			_msgAdmins(color('c').'['.color(7).@name.color('c').'] '.color('c').'WARNING! '.color(7).@name.' detects the "'.@acc.'" account used for funding is out of money, yet a player was supposed to be awarded earnings!'.color('e').' Please refill the account with more money!')
 			if(@currentfunds != 0,
 				assign(@amount, @currentfunds)
-				tmsg(@player, color(c).'['.color(7).@name.color(c).'] '.color(c).'Sorry!! '.color(7).'All we can award you is $'.@amount.'!')
+				tmsg(@player, color('c').'['.color(7).@name.color('c').'] '.color('c').'Sorry!! '.color(7).'All we can award you is $'.@amount.'!')
 				,
-				tmsg(@player, color(c).'['.color(7).@name.color(c).'] '.color(c).'Sorry!! '.color(7).'We are currently bankrupt and cannot award you your earnings.')
+				tmsg(@player, color('c').'['.color(7).@name.color('c').'] '.color('c').'Sorry!! '.color(7).'We are currently bankrupt and cannot award you your earnings.')
 				return('FAIL: no funds to give.')
 			)
 		)
@@ -89,5 +89,4 @@ proc(_sl_econ_award, @player, @amount,
 	store_value(@name.'.stats.alltime.econ.award', @newlifeaward)	
 	
 	return('complete')
-)
-
+}
