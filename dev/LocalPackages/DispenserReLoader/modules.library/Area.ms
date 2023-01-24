@@ -1,3 +1,4 @@
+/*
 ######################################################
 #
 #   ReLoad: Fill blocks that have inventories in one click!
@@ -5,11 +6,12 @@
 #   version 1.2-tmc
 #
 ######################################################
+*/
 proc _reloader_iterate_cuboid(@proc_name, @world, @item, @playergiven, @qty, @fuel, @verbose) {
 	@name = import('dispenserreloader.name')
 	@player = _reloader_getplayerID(@playergiven)
 	# CH requires an extension to access WorldEdit selection data.
-	include('ext.library/ext-SKCompat.ms')
+	include('../ext.library/ext-SKCompat.ms')
 	@pos1 = _reloader_get_pos1(@player['name'])
 	@pos2 = _reloader_get_pos2(@player['name'])
 	if(@pos1 == null || @pos2 == null) {
@@ -35,16 +37,16 @@ proc _reloader_iterate_cuboid(@proc_name, @world, @item, @playergiven, @qty, @fu
 	if(@fuel == true) {@areamode = 'GROUP_FURNACE'}
 	
 #Loop through all blocks in area
-	for(@x = min(@pos1[0], @pos2[0])), @x <= max(@pos1[0], @pos2[0]), @x++ {
-		for(@y = min(@pos1[1], @pos2[1])), @y <= max(@pos1[1], @pos2[1]), @y++ {
-			for(@z = min(@pos1[2], @pos2[2])), @z <= max(@pos1[2], @pos2[2]), @z++ {
+	for(@x = min(@pos1[0], @pos2[0]), @x <= max(@pos1[0], @pos2[0]), @x++) {
+		for(@y = min(@pos1[1], @pos2[1]), @y <= max(@pos1[1], @pos2[1]), @y++) {
+			for(@z = min(@pos1[2], @pos2[2]), @z <= max(@pos1[2], @pos2[2]), @z++) {
 				@xyz = array(@x, @y, @z, @world)
 				#If this block isn't capable of having a inventory, continue to next block.
-				try(
-						@size = get_inventory_size(@xyz)
-				,@fail,
-						continue()
-				)
+				try {
+					@size = get_inventory_size(@xyz)
+				} catch(Exception @ex) {
+					continue()
+				}
 				#Area Modes: Setup which block types are accepted to fill.
 				@filltype = get_inventory_type(@xyz)
 				@getblock = get_block(@xyz)
