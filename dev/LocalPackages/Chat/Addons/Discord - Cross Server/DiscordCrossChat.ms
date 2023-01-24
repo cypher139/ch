@@ -96,8 +96,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.Cross-Server'), null,
 	#Send
 	# Remove mention of all user pings entirely
 	foreach(@entry in @config['Banned_Pings']) {
-		@discord['message'] = reg_replace('@everyone', '', @discord['message'])
-		@discord['message'] = reg_replace('@here', '', @discord['message'])
+		@discord['message'] = reg_replace(@entry, '', @discord['message'])
 	}
 		@sendarray = array('content': @discord['message'], 'embeds': array(array('color': _hex_to_rgb(@usernamecolor), 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'Chat from '.@discord['username']))))
  # array('content': @discord['message'], 'embeds': array(array('color': _hex_to_rgb(@usernamecolor), 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @discord['username']))))
