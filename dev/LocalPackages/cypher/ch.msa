@@ -134,7 +134,11 @@ case 'cv':
 case 'getvalue':
 case 'gv':
 	@v = get_value(@option1)
-	msg(@prefix.color(6).'Get value: '.color('d').@option1.color('f').' Value returned:')
+	@arraymsg = ''
+	if(is_array(@v)) {
+		@arraymsg = color(3).' Array size: '.array_size(@v)
+	}
+	msg(@prefix.color(6).'Get value: '.color('d').@option1.@arraymsg.color('f').' Value returned:')
 	msg(color(7).@v)
 
 case 'hasvalue':
@@ -216,7 +220,11 @@ case 'export':
 
 case 'import':
 	@v = import($option1)
-	msg(@prefix.color(6).'Import: '.color('d').@option1.color('f').' Value(s) returned:')
+	@arraymsg = ''
+	if(is_array(@v)) {
+		@arraymsg = color(3).' Array size: '.array_size(@v)
+	}
+	msg(@prefix.color(6).'Import: '.color('d').@option1.@arraymsg.color('f').' Value(s) returned:')
 	msg(color(7).@v)
 
 case 'extfunctions':

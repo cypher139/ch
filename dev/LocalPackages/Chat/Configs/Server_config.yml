@@ -1,0 +1,30 @@
+# !!!!!!!!!!!! Remove the following line to remove nag configure message! !!!!!!!!!!!!!!!!!!
+Not_Configured: true
+#
+#
+# Join and Leave Messages:
+# Type your own message in quotes!
+# Variables: %player% %nick%
+# To leave message unmodified, use: default
+# To hide message for ALL players, use: none
+# To use Chat's default message mod, use: test
+Join_Message: test
+Leave_Message: none
+# Minimap: Enable radar for everything, and cavemapping. (Codes set for Rei's Minimap)
+# color(0).color(0).color(1).color(2).color(3).color(4).color(5).color(6).color(7).color('e').color('f')
+Enable_Advanced_Map: true
+MOTD_Rainbow: true
+# Type of rainbow used:
+# normal  (new color every letter)
+# doubles (new color every other letter)
+# words (new color every word)
+# ps2 (new color every letter, using mostly colors in PS2 logo)
+MOTD_Rainbow_Type: "ps2"
+# Send Ping Notification (includes IP and all players IP has connected with) to:
+Ping_Message_Console: true
+Ping_Message_Discord: true
+# This MOTD is given if the last ping was up to 7 seconds ago.
+Repeated_Ping_Message: "Stop pinging me, and start playing on this server!"
+# If 3 or more accounts have connected using the same IP address, should we automatically kick joins from this IP?
+Auto_Kick_Multiple_Alts_IP: true
+Allowed_Account_Amount: 2
