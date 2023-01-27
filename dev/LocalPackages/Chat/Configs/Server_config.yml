@@ -9,7 +9,7 @@ Not_Configured: true
 # To hide message for ALL players, use: none
 # To use Chat's default message mod, use: test
 Join_Message: test
-Leave_Message: none
+Leave_Message: test
 # Minimap: Enable radar for everything, and cavemapping. (Codes set for Rei's Minimap)
 # color(0).color(0).color(1).color(2).color(3).color(4).color(5).color(6).color(7).color('e').color('f')
 Enable_Advanced_Map: true
@@ -25,6 +25,10 @@ Ping_Message_Console: true
 Ping_Message_Discord: true
 # This MOTD is given if the last ping was up to 7 seconds ago.
 Repeated_Ping_Message: "Stop pinging me, and start playing on this server!"
-# If 3 or more accounts have connected using the same IP address, should we automatically kick joins from this IP?
-Auto_Kick_Multiple_Alts_IP: true
+# If many accounts have connected using the same IP address, should we automatically kick joins from this IP?
+Kick_Multiple_Accs_IP: true
 Allowed_Account_Amount: 2
+# These IPs bypass the auto kick:
+Kick_Multiple_Accs_IP_Whitelist:
+- "192.168.1.1"
+- "127.0.0.1"

@@ -69,11 +69,12 @@ proc _hex_to_rgb(@num) {
 	} else {
 		throw('ms.lang.CastException', 'Unsupported Hex code given.')
 	}
-#	msg(@num)
-	@results = array('r': '', 'g': '', 'b': '')
+	@results = array('r': parse_int(@num[0], 16), 'g': parse_int(@num[1], 16), 'b': parse_int(@num[2], 16))
+/*
 	@results['r'] = parse_int(@num[0], 16)
 	@results['g'] = parse_int(@num[1], 16)
 	@results['b'] = parse_int(@num[2], 16)
+*/
 	return(@results)
 }
 
@@ -171,20 +172,20 @@ proc _is_even_number(@number, @round) {
 
 #Find player UUID when given a player NAME.
 #returns array of name, displayname, nickname, and UUID
-proc _getplayerID(@option1) {
+proc _getplayerID(@findID) {
 	@pid = array()
 	@uuiddata = import('primus.database.UUID')
 	if(!is_array(@uuiddata)) { @uuiddata = array() }
-	if(reg_count('^~?console$', @option1) > 0) {
+	if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
 		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
 		try(
-			@pid['id'] = puuid(@option1, 'dashless');
+			@pid['id'] = puuid(@findID, 'dashless');
 		,@fail,
 			#puuid throws exception if not found.
 			#if ID not found: search uuid for playername
 			foreach(@k: @v in @uuiddata) {
-				if(equals_ic(@option1, @v[0])) { 
+				if(equals_ic(@findID, @v[0])) { 
 					@pid['id'] = @k
 					break()
 				}
@@ -206,13 +207,13 @@ proc _getplayerID(@option1) {
 			}
 		} else {
 		#not found in database
-			if(ponline(@option1) == true) {
-				@pid['display'] = pinfo(@option1)[0];
-				@pid['name'] = pinfo(@option1)[0];
-				@pid['nick'] = pinfo(@option1)[4];
+			if(ponline(@findID) == true) {
+				@pid['display'] = pinfo(@findID)[0];
+				@pid['name'] = pinfo(@findID)[0];
+				@pid['nick'] = pinfo(@findID)[4];
 			} else {
-				@pid['display'] = @option1
-				@pid['name'] = @option1
+				@pid['display'] = @findID
+				@pid['name'] = @findID
 				@pid['nick'] = 'Player Offline'		
 			}
 		}
@@ -228,7 +229,7 @@ proc _getplayerID(@option1) {
 proc _getplayerName(@findID) {
  	@pid = array()
 	@uuiddata = import('primus.database.UUID')
-	if(reg_count('^~?console$', @findID) > 0) {
+	if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
 		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
 		try(

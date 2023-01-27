@@ -1,13 +1,13 @@
 #setup some values
 _read_essentials_usermap()
 #Setup Dev messages and update player database
-bind('player_join', array(id: 'cypher139.login'), null, @login) {
+bind('player_join', array('id': 'cypher139.login'), null, @login) {
 #Event playername may sometimes return null? more testing needed
 	@player = player()
 	@puuid = puuid(@player, 'dashless')
 
-#Are you a dev for Cypher's scripts on this server?
-#Enables dev message settings.
+# Are you a dev for Cypher's scripts on this server?
+# Enables dev message settings.
 	@ds = get_value('ch.player.'.@puuid.'.dev.scripts')
 	if(!is_array(@ds)) { @ds = array() }
 	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
@@ -19,11 +19,7 @@ bind('player_join', array(id: 'cypher139.login'), null, @login) {
 	}
 	export('ch.player.'.@puuid.'.dev.scripts', @ds)
 
-#Rei's minimap: Enable radar for everything, and cavemapping.
-# Uncomment to use
-#	modify_event('join_message', color(0).color(0).color(1).color(2).color(3).color(4).color(5).color(6).color(7).color('e').color('f').color('a').@login['join_message'])
-	
-	#Setup Player UUID Database
+# Setup Player UUID Database
 	@uuiddata = import('primus.database.UUID')
 	#entry found	
 	if(array_index_exists(@uuiddata, @puuid)) {
@@ -38,7 +34,7 @@ bind('player_join', array(id: 'cypher139.login'), null, @login) {
 	store_value('primus.database.UUID', @uuiddata)
 	export('primus.database.UUID', @uuiddata)
 		
-	#Setup Player IP Database
+# Setup Player IP Database
 	@ipdata = import('primus.database.IP')
 	#entry found	
 	@ipnumbers = reg_replace('\\.*:*', '', pinfo(@player)[3])

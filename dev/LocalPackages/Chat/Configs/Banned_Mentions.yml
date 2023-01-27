@@ -1,0 +1,6 @@
+Banned_Mentions:
+- "@everyone"
+- "@here"
+Kick_On_Mention: true
+Ban_On_Repeat_Mention: true
+Ban_On_Mention_Number: 4

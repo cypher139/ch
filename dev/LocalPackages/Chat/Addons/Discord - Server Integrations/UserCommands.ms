@@ -108,7 +108,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd', 'priority': 'HI
 			discord_broadcast(@discord['channel'], array('embeds': array(array('footer': array('text': 'no. XD'), 'image':'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif'))))
 		default:
 			@sayicons = array('https://media.tenor.com/qJUcFWzUWlIAAAAd/xtina-christina-aguilera.gif', 'https://media.tenor.com/nMkuF8c3DV0AAAAC/zootopia-fox.gif', 'https://media.tenor.com/EJieOpbWHS8AAAAi/i-have-nothing-to-say-real-housewives-of-beverly-hills.gif')
-			discord_broadcast(@discord['channel'], array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username'])))))
+			_send_discord_message(array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username'])))), 'discord', @discord['channel'])
 		}
 	case 'fban':
 	case 'fakeban':

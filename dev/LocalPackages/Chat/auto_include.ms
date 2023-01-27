@@ -165,9 +165,58 @@ proc _healthbar(@player, @fchar, @echar) {
 	return(array_implode(@healthbar, ''))
 }
 
+proc _message_check_ban_mentions(@message, @player, @option) {
+	@config = import('Chat.config.Ban.Mentions')
+	if(@config == '' || @config == null) {
+# Load Configs
+		@config = ''
+		try {
+			@config = yml_decode(read(import('Chat.config.dir').'/Banned_Mentions.yml'))
+		} catch(IOException @ex) {
+			_msgAdmins('[Chat] Mentions file could not be read. '.@ex['message'])
+			die()
+		} catch(FormatException @ex) {
+			_msgAdmins('[Chat] Mentions file is improperly formatted.') 
+			die()
+		} catch(Exception @ex) {
+			_msgAdmins('[Chat] There was an error with the Config file. '.@ex['message']) 
+			die()
+		}
+		export('Chat.config.Ban.Mentions', @config)
+	}
+# Check if player said banned Discord mention
+	@msga = parse_args(@message)
+	@msgban = ''
+	@from = _getplayerID(@player)
+	foreach(@entry in @config['Banned_Mentions']) {
+		if(_array_string_contains(@msga, @entry)) {
+			@prevmentions = get_value('server.player.'.@from['id'].'all.ping.mention')
+			store_value('server.player.'.@from['id'].'.all.ping.mention', @prevmentions + 1)
+			if(array_contains(get_offline_players(), @from['name'])) { 
+				if(@config['Kick_On_Mention'] == true) { 
+					pkick(@from['name'], '[Chat] Do not mention "'.@entry.'".')
+					@msgbantype = 'kicked'
+					if(@prevmentions > @config['Ban_On_Mention_Number'] && @config['Ban_On_Repeat_Mention'] == true) {
+						set_pbanned(@from['name'], true, '[Chat] You have used disallowed mentions several times.')
+						@msgbantype = 'banned'
+					}
+					@msgban = ' Offending player `'.@player.'` was '.@msgbantype.'.'
+				}
+			}
+			_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Message from '.@from['display'].' contained a mention of "'.@entry.'". '.@msgban)
+			console(1)
+			return(array('mention': @entry, 'kickmsg': @msgban))
+		}
+	}
+return(null)
+}
+
+# new error message: :dp: +
+
 proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
 	@config = import('Chat.config.Discord')
+	@normalmessage = 0
 	if(@message == '') { return(false) }
 	if(@from == '') { @from = player() }
 	if(@channel == '') { @channel = @config['Default_Channel'] }
@@ -184,49 +233,40 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	}
 	@split = array()
 	
+	# Check if player said banned mention
+	if(is_array(@message)) {
+		if(array_index_exists(@message, 'content')) {
+			@checkmention = _message_check_ban_mentions(@message['content'], @from)
+			@sendmsg = @message['content']
+		}
+	} else { 
+		@checkmention = _message_check_ban_mentions(@message, @from)
+		@sendmsg = @message
+	}
+	if(@checkmention != null) {
+		@type = 'admin'
+		@message = 'A message queued to Discord was not sent: Message contained a mention of "`'.@checkmention['mention'].'`". '.@checkmention['kickmsg']
+	}
+	
 	switch(to_lower(@from)) {
+	case 'admin':
+		@channel = @config['Log_Channel']
 	case 'none':
 	case 'cross':
 	case 'discord':
-		@sendmsg = @message
+		@normalmessage = 1
 	case 'server':
-		@sendmsg = '['.@from.'] '.@message
+	case 'console':
+		@sendmsg = '['.@from.'] '.@sendmsg
 	case 'death':
-		@sendmsg = ':skull_crossbones: '.@message
+		@sendmsg = ':skull_crossbones: '.@sendmsg
 	case 'command':
-		@sendmsg = ':desktop: '.@message
+		@sendmsg = ':desktop: '.@sendmsg
 	default:
 	# Minecraft Player chat
-		@sendmsg = '`['.@from.']` '.@message
-		# Check if player said banned Discord mention
-		if(is_array(@message)) {
-			if(array_index_exists(@message, 'content')) {
-				@msga = parse_args(@message['content'])
-			}
-		} else { 
-			@msga = parse_args(@message)
-		}
-		@msgban = ''
-		foreach(@entry in @config['Banned_Pings']) {
-			if(_array_string_contains(@msga, @entry)) {
-				@prevmentions = get_value('server.player.'.puuid(@from, 'dashless').'all.ping.mention')
-				store_value('server.player.'.puuid(@from, 'dashless').'.all.ping.mention', @prevmentions + 1)
-				if(@config['Banned_Pings_Kick'] == true) {
-					pkick(@from, '[Chat - Discord] Do not use "'.@entry.'" pings.')
-					@msgbantype = 'kicked'
-					if(@prevmentions > 4) {
-						set_pbanned(@from, true, '[Chat - Discord] You have used disallowed pings several times.')
-						@msgbantype = 'banned'
-					}
-					@msgban = ' Offending player `'.@from.'` was '.@msgbantype.'.'
-				}
-				_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: Message contained a mention of "'.@entry.'". '.@msgban)
-				@type = 'admin'
-				@sendmsg = 'A message queued to Discord was not sent: Message contained a mention of "`'.@entry.'`". '.@msgban
-				break()
-			}
-		}
+		@sendmsg = '`['.@from.']` '.@sendmsg
 	}
+# Split messages longer than 2000 chars
 	if(reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @sendmsg) > 1 && !is_array(@message)) {
 		for(@i = 1, @i <= @count, @i++) {
 			@match = reg_match('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @sendmsg)[0]
