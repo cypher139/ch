@@ -1,25 +1,8 @@
 #version 0.9-tmc
 
-@k7Gjli1 = ''
-try {
-	@k7Gjli1 = yml_decode(read(import('Chat.config.dir').'/Discord_CrossServer_config.yml'))
-} catch(IOException @ex) {
-	_msgAdmins('[Chat - Discord] CS Config file could not be read. '.@ex['message'])
-	die()
-} catch(FormatException @ex) {
-	_msgAdmins('[Chat - Discord] CS Config file is improperly formatted.') 
-	die()
-}
-	if(array_contains(@k7Gjli1['Server_1_Channels'], 'default')) {
-		_msgAdmins('[Chat - Discord] CS Config file is still using default values. Please configure it in order to use Cross-Server chat features.') 
-		die()
-	}
-export('Chat.config.Discord.CS', @k7Gjli1)
-
 #Send Discord User message to Minecraft Players.
 bind('discord_message_received', array('id': 'Chat.Discord.Cross-Server'), null, @discord) {
 	@config = import('Chat.config.Discord')
-	@configCS = import('Chat.config.Discord.CS')
 	#Setup list of server members for reference in mentions
 	@membersID = get_value('server.Discord.members.ID')
 	if(!array_contains(@membersID, @discord['userid'])) {
@@ -37,16 +20,16 @@ bind('discord_message_received', array('id': 'Chat.Discord.Cross-Server'), null,
 #Find if in server 1 channel or server 2 channel
 #broadcast content to opposite, embed (from: user)
 #userroles color: color embed
-	if(array_contains(@configCS['Server_1_Channels'], @discord['channel'])) { @server1 = true } else { @server1 = false } 
-	if(array_contains(@configCS['Server_2_Channels'], @discord['channel'])) { @server2 = true } else { @server2 = false } 
+	if(array_contains(@config['CS_Server_1_Channels'], @discord['channel'])) { @server1 = true } else { @server1 = false } 
+	if(array_contains(@config['CS_Server_2_Channels'], @discord['channel'])) { @server2 = true } else { @server2 = false } 
 	console(@server1.' <> '.@server2)
 
 	if(xor(@server1, @server2) == true) {
 		array_set(@discord, 'time', time())
 		if(@server1 == true) {
-			@channel = @configCS['Server_2_Channels_Send']
+			@channel = @config['CS_Server_2_Channels_Send']
 		} else {
-			@channel = @configCS['Server_1_Channels_Send']
+			@channel = @config['CS_Server_1_Channels_Send']
 		}
 	#Message Formatting
 		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
@@ -95,13 +78,13 @@ bind('discord_message_received', array('id': 'Chat.Discord.Cross-Server'), null,
 		}
 	#Send
 	# Remove mention of all user pings entirely
-	foreach(@entry in @config['Banned_Pings']) {
+	foreach(@entry in @config['Banned_Mentions']) {
 		@discord['message'] = reg_replace(@entry, '', @discord['message'])
 	}
 		@sendarray = array('content': @discord['message'], 'embeds': array(array('color': _hex_to_rgb(@usernamecolor), 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'Chat from '.@discord['username']))))
  # array('content': @discord['message'], 'embeds': array(array('color': _hex_to_rgb(@usernamecolor), 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @discord['username']))))
 #send file links
-		if(array_index_exists(@discord, 'attachments', 0, 'filename') && @configCS['URL_Broadcast'] == true) {
+		if(array_index_exists(@discord, 'attachments', 0, 'filename') && @config['CS_URL_Broadcast'] == true) {
 			@urls = array()
 			foreach(@num: @attach in @discord['attachments']) {
 				array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))

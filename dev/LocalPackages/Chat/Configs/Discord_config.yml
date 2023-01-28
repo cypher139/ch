@@ -1,4 +1,22 @@
+# General admin
 Profile_Name: discordCredentials
+Bot_ID: 1000000
+Bot_Name: bot
+Log_Channel: bot-logs
+Use_Second_Server: false
+#
+#
+# Mentions
+Banned_Mentions:
+- "@everyone"
+- "@here"
+Message_On_Mention: true
+Kick_On_Mention: true
+Ban_On_Repeat_Mention: true
+Ban_On_Mention_Number: 4
+#
+#
+#Chat
 URL_Broadcast: false
 Role_Admins:
 - Owner
@@ -28,10 +46,100 @@ Channels_Send:
 - voice-chat
 - other
 - botspam
-Use_Second_Server: false
 Default_Channel: minecraft
-Log_Channel: bot-logs
-Banned_Pings:
-- "@everyone"
-- "@here"
-Banned_Pings_Kick: true
+#
+#
+#Commands
+CMD_Channels_Receive:
+- general
+- default
+- off-topic
+- minecraft
+- voice-chat
+- other
+- botspam
+CMD_Channels_Send:
+- general
+- minecraft
+CMD_Default_Channel: botspam
+Fake_Admin_Role: 123456
+Fake_Admin_Rolename: "Super Admin"
+#
+#
+#Voice Chat
+# Voice Chat Accompanying text channel name. Case sensitive!
+# This channel will have the ping message placed here.
+# Note: CHDiscord does not support threads or other special channel types at this time.
+VC_Text_Channel_Name: voice-chat
+# Voice Chat text Channel ID. (Right click channel, Copy ID)
+VC_Text_Channel_ID: 123456789
+# Voice Chat Role's ID. (Mention role in a message with a \ before the mention to get the ID)
+# This is the role to ping to notify other fellow chatters to come chat.
+VC_Role_ID: 123
+# Voice Chat Role name. Case sensitive!
+# This is the role to ping to notify other fellow chatters to come chat.
+VC_Role_Name: VC
+# Voice Chat Channel's ID. (Right click channel, Copy ID)
+VC_Channel_ID: 987654321
+# Voice Chat Channel's name. Case sensitive!
+VC_Channel_Name: General
+# Ping Timeout
+# How long (in milliseconds) should we wait before performing another ping?
+# Default: 12 hours = 43200000
+VC_Ping_Timeout: 43200000
+# Ping Message
+# What should we say to the Discord members?
+VC_Ping_Message: "%RoleID% %UserID% is ready to voice chat in the %Channel% channel! Come join for another fun time talking with your fellow members!"
+# What should we say to the Minecraft server players?
+VC_Ping_Message_MC: "%User% is ready to voice chat in the %Channel% channel! Come join the Discord server for another fun time talking with your fellow members!"
+# What should we say to thank all the users who chatted in completed VC call??
+VC_DM_Thanks: false
+# DM the VC ping role users?
+VC_DM_VC_Role: false
+VC_DM_Thanks_Message: "Hey, I just want to say Thanks for joining the voice chat today! See you again soon next time we are online and chatting!"
+#
+#
+# Discord New Member welcome
+# Welcome Message channel. Case sensitive!
+# This channel will have the Welcome message placed here.
+# Note: CHDiscord does not support threads or other special channel types at this time.
+Welcome_Text_Channel_Name: general
+# Voice Chat text Channel ID. (Right click channel, Copy ID)
+Welcome_Text_Channel_ID: 123456789
+# What roles, if any, do new joins need to be equipped with?
+Welcome_Roles:
+- 123
+- 456
+# Ping Timeout
+# How long (in milliseconds) should we wait before we don't delete the welcome message on new joiner's leave?
+# Default: 4 days hours = 345600000
+Welcome_Message_Timeout: 345600000
+# What should we say to the new Discord members?
+Welcome_Message: "Welcome %UserID% to *our server*! \n Come introduce yourself by chatting below."
+# What should we DM the new Discord member?
+Welcome_Send_DM: false
+Welcome_DM_Message: "Welcome to *our server*! \n\n We would like to get to know you! Come introduce yourself in the %WelcomeChannel% channel."
+#
+#
+# Cross-Server Chat
+URL_Broadcast: true
+CS_Server_1_Name: "Server 1"
+CS_Server_1_ID: 123456
+CS_Server_1_Channels:
+- general
+- default
+- cross-server-chat
+- minecraft
+- voice-chat
+- other
+CS_Server_2_Name: "Server 2"
+CS_Server_2_ID: 789456123
+CS_Server_2_Channels:
+- general
+- default
+- news
+- minecraft
+- voice-chat
+- other
+CS_Server_1_Channels_Send: cross-server-chat
+CS_Server_2_Channels_Send: cross-server

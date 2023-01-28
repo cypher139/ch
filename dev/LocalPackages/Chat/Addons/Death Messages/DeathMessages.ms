@@ -1,6 +1,5 @@
 #version 1.1-tmc
 
-# todo: port death messages to yml file
 bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, @death) {
 	@uuid = puuid(@death['player'], 'dashless')
 	@dev = import('ch.player.'.@uuid.'.dev.scripts.test')
@@ -32,12 +31,12 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
   
 
 # Load master custom messages list
-	try(
-		@newmsg = yml_decode(read('Messages.yml'))
-	,@fail,
-		_msgAdmins('Death Messages List file could not be read. '.@fail['message'])
+	try {
+		@newmsg = yml_decode(read(import('Chat.config.dir').'/Death_Messages.yml'))
+	} catch(Exception @ex) {
+		_msgAdmins('Death Messages List file could not be read. '.@ex['message'])
 		die()
-	)
+	}
 	if(!is_array(@newmsg)) { 
 		_msgAdmins('Death Messages List file is not properly formatted.') 
 		die()

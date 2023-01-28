@@ -5,8 +5,8 @@ array_set(@discord, 'time', time())
 #todo: pass to command handler
 if(reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) { die() }
 
+@config = import('Chat.config.Discord')
 
-@adminChannel = import('Chat.config.Discord', array('Log_Channel': 'bot-logs'))['Log_Channel']
 if(reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
 	#Extract Command
 	@cmd = parse_args(reg_replace('^[.!~]?[Cc][Hh][!@#%*/.$,=]', '', @discord['message']))
@@ -24,7 +24,7 @@ if(reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
 		} else { @cmddis2 = 'Args: '.@cmddisargs }
 	} else { @cmddis1 = '' @cmddis2 = '' }
 	console('[Discord] '.@discord['username'].' used command in DM: '.color(3).@cmd[0].'  '.color('r').@cmddis1, false)
-	discord_broadcast(@adminChannel, @discord['username'].' used command in DM: '.@cmd[0].'  '.strip_colors(@cmddis2))
+	discord_broadcast(@config['Log_Channel'], @discord['username'].' used command in DM: '.@cmd[0].'  '.strip_colors(@cmddis2))
 } else { 
 #Save recent DMs for future reference if needed
 	@DMs = get_value('server.Discord.DMs.received')
@@ -44,7 +44,7 @@ if(reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
 	store_value('server.Discord.DMs.received', @DMs)
 	store_value('server.Discord.DMs.user.'.@discord['userid'], @userDMs)
 #Message Display
-	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && import('Chat.Discord.Broadcast.URLs') == false) {
+	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 		@discord['message'] = '<Sent a GIF>'
 	}
 	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
@@ -65,17 +65,17 @@ if(reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
 		@discord['message'] = @discord['message'][cslice(0, 1910)].' ...'
 	}
 	 # 'footer': array('icon_url': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Twemoji_1f4e9.svg/240px-Twemoji_1f4e9.svg.png', 'text': 'received from '.@discord['username']))
-	discord_broadcast(@adminChannel, array('content': ':envelope_with_arrow:  I received a DM!', 'embeds': array(array('color': array('r': 109, 'g': 109, 'b': 109), 'title': @discord['username'], 'description': @discord['message']))))
+	discord_broadcast(@config['Log_Channel'], array('content': ':envelope_with_arrow:  I received a DM!', 'embeds': array(array('color': array('r': 109, 'g': 109, 'b': 109), 'title': @discord['username'], 'description': @discord['message']))))
 	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
 		@urls = array()
 		foreach(@num: @attach in @discord['attachments']) {
-			if(import('Chat.Discord.Broadcast.URLs') == true) {
+			if(@config['URL_Broadcast'] == true) {
 				broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], all_players())
 			}
 			array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))
-			# discord_broadcast(@adminChannel, array('content': 'URL #'.(@num + 1).': '.@attach['url']))
+			# discord_broadcast(@config['Log_Channel'], array('content': 'URL #'.(@num + 1).': '.@attach['url']))
 		}
-		discord_broadcast(@adminChannel, array('embeds': array(array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/562310124006277148.webp', 'text': 'I am not responsible for the quality of these files.')))))
+		discord_broadcast(@config['Log_Channel'], array('embeds': array(array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/562310124006277148.webp', 'text': 'I am not responsible for the quality of these files.')))))
 	}
 }
 }

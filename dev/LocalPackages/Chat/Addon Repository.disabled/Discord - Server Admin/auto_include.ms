@@ -42,7 +42,7 @@ proc _chat_wrf(@option) {
 	}
 		
 	#Save Who Has Roles
-	@config = import('Chat.config.Discord.Member')
+	@config = import('Chat.config.Discord')
 	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
 
 	@membernames = get_value('server.Discord.members.names')

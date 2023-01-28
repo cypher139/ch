@@ -166,24 +166,7 @@ proc _healthbar(@player, @fchar, @echar) {
 }
 
 proc _message_check_ban_mentions(@message, @player, @option) {
-	@config = import('Chat.config.Ban.Mentions')
-	if(@config == '' || @config == null) {
-# Load Configs
-		@config = ''
-		try {
-			@config = yml_decode(read(import('Chat.config.dir').'/Banned_Mentions.yml'))
-		} catch(IOException @ex) {
-			_msgAdmins('[Chat] Mentions file could not be read. '.@ex['message'])
-			die()
-		} catch(FormatException @ex) {
-			_msgAdmins('[Chat] Mentions file is improperly formatted.') 
-			die()
-		} catch(Exception @ex) {
-			_msgAdmins('[Chat] There was an error with the Config file. '.@ex['message']) 
-			die()
-		}
-		export('Chat.config.Ban.Mentions', @config)
-	}
+	@config = import('Chat.config.Server')
 # Check if player said banned Discord mention
 	@msga = parse_args(@message)
 	@msgban = ''
@@ -193,6 +176,7 @@ proc _message_check_ban_mentions(@message, @player, @option) {
 			@prevmentions = get_value('server.player.'.@from['id'].'all.ping.mention')
 			store_value('server.player.'.@from['id'].'.all.ping.mention', @prevmentions + 1)
 			if(array_contains(get_offline_players(), @from['name'])) { 
+				if(@config['Message_On_Mention'] == true) { tmsg(@from['name'], color('c').'[Chat] Do not mention "'.@entry.'".') }
 				if(@config['Kick_On_Mention'] == true) { 
 					pkick(@from['name'], '[Chat] Do not mention "'.@entry.'".')
 					@msgbantype = 'kicked'
@@ -245,7 +229,7 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	}
 	if(@checkmention != null) {
 		@type = 'admin'
-		@message = 'A message queued to Discord was not sent: Message contained a mention of "`'.@checkmention['mention'].'`". '.@checkmention['kickmsg']
+		@sendmsg = 'A message queued to Discord was not sent: Message contained a mention of "`'.@checkmention['mention'].'`". '.@checkmention['kickmsg']
 	}
 	
 	switch(to_lower(@from)) {

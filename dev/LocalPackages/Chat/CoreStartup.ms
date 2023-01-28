@@ -9,6 +9,29 @@ export('Chat.format.options', get_value('Chat.format.options'))
 
 # chf_write('Format_Options_config.yml', yml_encode(get_value('Chat.format.options'), true), OVERWRITE)
 # chf_write('Format_Group_Options_config.yml', yml_encode(get_value('Chat.format.groups'), true), OVERWRITE)
+
+
+# Load Server Configs
+@b7xbc2t = ''
+try {
+	@b7xbc2t = yml_decode(read(import('Chat.config.dir').'/Server_config.yml'))
+} catch(IOException @ex) {
+	_msgAdmins('[Chat - Server] Config file could not be read. '.@ex['message'])
+	die()
+} catch(FormatException @ex) {
+	_msgAdmins('[Chat - Server] Config file is improperly formatted.') 
+	die()
+} catch(Exception @ex) {
+	_msgAdmins('[Chat - Server] There was an error with the Config file. '.@ex['message']) 
+	die()
+}
+if(array_index_exists(@b7xbc2t, 'Not_Configured')) {
+	_msgAdmins('[Chat - Server] Server Config file is still using the default values. Please configure it to your needs!')
+	die()
+}
+export('Chat.config.Server', @b7xbc2t)
+
+
 		
 #Prerequisites for Discord functions: Connect to Server!
 if(function_exists('discord_connect')) {
@@ -30,6 +53,16 @@ if(function_exists('discord_connect')) {
 		_msgAdmins('[Chat - Discord] Config file is still using default values. Please configure it in order to use various Discord features.') 
 		die()
 	}
+	if(@zrp1mg6['VC_Role_ID'] == 123) {
+		_msgAdmins('[Chat - Discord] Voice Chat Config is still using defaults. Please configure it in order to use the VC Role Ping feature.') 
+	}
+	if(@zrp1mg6['Welcome_Text_Channel_Name'] == 'default') {
+		_msgAdmins('[Chat - Discord] Member Config is still using defaults. Please configure it in order to use the Welcome Message feature.') 
+	}
+	if(array_contains(@zrp1mg6['CS_Server_1_Channels'], 'default')) {
+		_msgAdmins('[Chat - Discord] Cross server Config is still using default values. Please configure it in order to use Cross-Server chat features.') 
+	}
+	
 	export('Chat.config.Discord', @zrp1mg6)
 	try {
 		discord_connect('discordCredentials', closure(){

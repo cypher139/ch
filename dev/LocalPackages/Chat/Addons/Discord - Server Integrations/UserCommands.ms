@@ -1,9 +1,18 @@
 #version 1.0-tmc
 
+
+/*
+
+if channel in receive but not in send then dm output instead
+*/
+
+
+
+
 #Handle commands from Discord Users
 # Data: userid, username, nickname, channel, message, id, attachments {{url, filename, description}}
 bind('discord_message_received', array('id': 'Chat.Discord.cmd', 'priority': 'HIGH'), null, @discord) {
-	@config = import('Chat.config.Discord.Commands')
+	@config = import('Chat.config.Discord')
 	@adminChannel = import('Chat.config.Discord', array('Log_Channel': 'bot-logs'))['Log_Channel']
 	#Setup list of server members
 	@membersID = get_value('server.Discord.members.ID')
@@ -46,7 +55,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd', 'priority': 'HI
 		if(@dev == true) { msg(@grantwish['message']) }
 	}
 */	
-	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true && reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
+	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) == true && reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
 		consume()
 		discord_delete_message(@discord['channel'], @discord['id'])
 		array_set(@discord, 'time', time())

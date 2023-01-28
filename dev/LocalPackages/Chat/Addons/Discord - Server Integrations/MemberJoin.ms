@@ -1,26 +1,9 @@
 #version 1.0-tmc
 #requires CHDiscord build #70 or higher
 
-# Load Configs
-@5ft2vkb = ''
-try {
-	@5ft2vkb = yml_decode(read(import('Chat.config.dir').'/Discord_Member_config.yml'))
-} catch(IOException @ex) {
-	_msgAdmins('[Chat - Discord] Member Config file could not be read. '.@ex['message'])
-	die()
-} catch(FormatException @ex) {
-	_msgAdmins('[Chat - Discord] Member Config file is improperly formatted.') 
-	die()
-}
-if(@5ft2vkb['Welcome_Text_Channel_Name'] == 'default') {
-	_msgAdmins('[Chat - Discord] Member Config file is still using defaults. Please configure it in order to use the welcome message feature.') 
-	die()
-}
-export('Chat.config.Discord.Member', @5ft2vkb)
-
 #Welcome DM and Message for new Discord Server Members
 bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), null, @event) {
-	@config = import('Chat.config.Discord.Member')
+	@config = import('Chat.config.Discord')
 	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
 
 #Wait a few seconds to avoid mention spam right at first.	
@@ -33,7 +16,7 @@ bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), n
 			die()
 		}
 #Welcome User DM
-		if(@config['Send_Welcome_DM'] == true) {
+		if(@config['Welcome_Send_DM'] == true) {
 			@welcomeDMMsg = reg_replace('%WelcomeChannel%', '<#'.@config['Welcome_Text_Channel_ID'].'>', @config['Welcome_DM_Message'])
 			try {
 				discord_private_message(@event['userid'], @welcomeDMMsg)
@@ -61,7 +44,7 @@ bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), n
 
 bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), null, @event) {
 	console('[Discord] Member left: '.@event, false)
-	@config = import('Chat.config.Discord.Member')
+	@config = import('Chat.config.Discord')
 	if(!is_array(@config['Welcome_Roles'])) { die('plz fill welcome roles config') }
 
 	# Remove user entry from internal storages
