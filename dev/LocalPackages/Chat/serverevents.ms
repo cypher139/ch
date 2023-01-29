@@ -79,7 +79,6 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 }
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
-	if(@ping['ip'] == '127.0.0.1') {die()}
 	@serverConfig = import('Chat.config.Server')
 	# Repeated pings get special message
 	@ipnumbers = reg_replace('\\.*:*', '', @ping['ip'])
@@ -108,7 +107,11 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			}
 			@players = array_implode(@ipdata[@ipnumbers], ', ')
 			@msgdisplay = ' ('.color(3).@players.color(7).')'
+		} else {
+			if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { die() }
 		}
+	} else {
+		if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { die() }
 	}
 	# Admin Ping Messages:
 	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from '.@ping['ip'].@msgdisplay

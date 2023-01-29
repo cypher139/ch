@@ -188,7 +188,6 @@ proc _message_check_ban_mentions(@message, @player, @option) {
 				}
 			}
 			_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Message from '.@from['display'].' contained a mention of "'.@entry.'". '.@msgban)
-			console(1)
 			return(array('mention': @entry, 'kickmsg': @msgban))
 		}
 	}
@@ -222,6 +221,11 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		if(array_index_exists(@message, 'content')) {
 			@checkmention = _message_check_ban_mentions(@message['content'], @from)
 			@sendmsg = @message['content']
+		} else if(array_index_exists(@message, 'embeds')) {
+				@sendmsg == ''
+		} else {
+			@type = 'admin'
+			@sendmsg = 'A message queued to Discord was not sent: Array Content or Embeds was not given.'
 		}
 	} else { 
 		@checkmention = _message_check_ban_mentions(@message, @from)
@@ -262,6 +266,7 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	switch(@type){
 	case 'admin':
 		@channel = @config['Log_Channel']
+		# console('[Chat - Discord] '.@sendmsg, false)
 	}
 	
 	try {	
@@ -270,8 +275,22 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		case 'broadcast':
 		case 'b':
 			if(array_index_exists(@split, 0)) {
-				foreach(@msg in @split) { discord_broadcast(@channel, @msg) }
+				foreach(@i: @msg in @split) { 
+					if(@i == (array_size(@split) - 1)) {
+						if(is_array(@message)) {
+							if(array_index_exists(@message, 'embeds')) {
+								@msg = array('content': @msg, 'embeds': @message['embeds'])
+							}
+						}
+					}						
+					discord_broadcast(@channel, @msg)
+				}
 			} else {
+				if(is_array(@message)) {
+					if(array_index_exists(@message, 'embeds')) {
+						@sendmsg = array('content': @sendmsg, 'embeds': @message['embeds'])
+					}
+				}
 				discord_broadcast(@channel, @sendmsg)
 			}
 			return(true)
@@ -300,9 +319,11 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 			return(true)	
 		case 'join':
 			discord_broadcast(@channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:join:1066426544387543080> Joined:', 'description': @sendmsg))))
+			return(true)
 		case 'leave':
 		case 'quit':
 			discord_broadcast(@channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': ' <:leave:1066426677481197618> Left: ', 'description': @sendmsg))))
+			return(true)
 		}
 	} catch(Exception @ex) {
 	#			msg(@ex)

@@ -75,7 +75,7 @@ if(reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
 			array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))
 			# discord_broadcast(@config['Log_Channel'], array('content': 'URL #'.(@num + 1).': '.@attach['url']))
 		}
-		discord_broadcast(@config['Log_Channel'], array('embeds': array(array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/562310124006277148.webp', 'text': 'I am not responsible for the quality of these files.')))))
+		discord_broadcast(@config['Log_Channel'], array('embeds': array(array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/610596549327847434.gif', 'text': 'Use common sense, download at your own risk.')))))
 	}
 }
 }

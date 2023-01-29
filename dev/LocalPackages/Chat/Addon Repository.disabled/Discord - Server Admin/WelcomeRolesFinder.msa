@@ -1,7 +1,7 @@
 #version 1.0-tmc
 admin:/wrf [$id] [$] = >>>
 @name = 'Discord'
-@return = _chat_wrf($id)
+@return = _chat_WelcomeRolesFinder($id)
 if(array_index_exists(@return, 'zero')) {
 	msg('['.@name.'] '.@return['zero'].' members were detected as having 0 roles.')
 } else if(array_index_exists(@return, 'welcome')) {

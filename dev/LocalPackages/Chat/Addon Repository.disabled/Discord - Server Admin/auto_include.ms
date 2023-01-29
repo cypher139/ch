@@ -1,5 +1,5 @@
 #version 1.0-tmc
-proc _chat_wrf(@option) {
+proc _chat_WelcomeRolesFinder(@option) {
 @name = 'Discord'
 	@return = array('msg': '', 'amount': '', 'list': array())
 	#Welcome roles
