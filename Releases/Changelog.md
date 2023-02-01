@@ -1,5 +1,10 @@
 ### codegen
 
+###### 2.4 (2/1/23)
+Added:
+- Generate 8-bit or 16-bit numbers.
+- Switched main generation loop to foreach. (Testing has determined CH is faster at foreach than for).
+
 ###### 2.3 (1/1/23)
 Added:
 - Numbers for all character types (used for randomly generated options).
