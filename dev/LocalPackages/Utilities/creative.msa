@@ -1,15 +1,5 @@
 #version 1.2-tmc
 creative:/i [$id=3] [$] = >>>
-set_uncaught_exception_handler(closure(@ex){
-	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.creative') == true || import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.all') == true) { @dev = true }
-	if(@dev == true) {
-		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
-	} else {
-		msg(color('c').@ex['message']);
-	}
-     return(true);
-   });
-  
 @args = parse_args($)
 @player = player()
 #initial populate giveplayer as the same so later functions can use a single variable for actions directed to you or others
@@ -37,7 +27,7 @@ case 'look':
 case 'looks':
 case 'want':
 	if(@player == '~console' || string_contains_ic(get_block(pcursor(@giveplayer, @transparent)), 'air')) {
-	msg(@giveplayer)
+	if(@dev == true) { msg(@giveplayer) }
 		die(color('c').'No block in sight!')
 	} else {
 		@id = get_block(pcursor(@giveplayer, @transparent))
@@ -96,14 +86,18 @@ if(reg_count('[0-9]+:[0-9]+', @id) == 1) {
 		@idn = $id
 	} else {
 		@id = to_upper(@id)
-		@idn = data_values(@id)
+		if(is_proc('_get_data_values')) {
+			@idn = _get_data_values(@id)
+		} else { 
+			@idn = null
+			console('Cannot get data_values info, proc is missing!')
+		}
 		if(@idn == null) {
 			@idn = 'No ID'
 		}
 	}
 }
 # error workaround for no name but found ID
-#if(@ id null, assign id nameidn
 
 ### Quantity
 foreach(@v in @args) {

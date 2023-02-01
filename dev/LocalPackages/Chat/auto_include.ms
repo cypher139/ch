@@ -134,8 +134,7 @@ proc _healthbar(@player, @fchar, @echar) {
 	if(@echar == '' || @echar == null) { @emptychar = '.' } else { @emptychar = @echar }
 	@mchar = ':'
 	if(is_numeric(@player)) { 
-#		if(@player > 20) { @player = 20 }
-		@phealth = @player
+		@phealth = ceil(@player)
 	} else { @phealth = ceil(pinfo(@player)[5]) }
 	@phealthodd = ceil(@phealth / 2)
 	@healthbar = array(0,0,0,0,0,0,0,0,0,0,0)

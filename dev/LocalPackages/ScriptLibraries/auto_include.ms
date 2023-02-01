@@ -70,11 +70,6 @@ proc _hex_to_rgb(@num) {
 		throw('ms.lang.CastException', 'Unsupported Hex code given.')
 	}
 	@results = array('r': parse_int(@num[0], 16), 'g': parse_int(@num[1], 16), 'b': parse_int(@num[2], 16))
-/*
-	@results['r'] = parse_int(@num[0], 16)
-	@results['g'] = parse_int(@num[1], 16)
-	@results['b'] = parse_int(@num[2], 16)
-*/
 	return(@results)
 }
 
@@ -130,16 +125,17 @@ proc _read_essentials_usermap(@option1) {
 	export('primus.database.Essentials.usermap', @euuid)
 	return(@euuid)
 }
+
 # String Capitalization or underscore removal features
 proc _capitalize(@string, @lower, @u, @a) {
 	if(!is_string(@string)) { @string = string(@string) }
-	if(@lower == '' || @lower == null) { @string = to_lower(@string) }
-	if(@u == '' || @u == null) {
+	if(@lower == '' || @lower == null || @lower == true) { @string = to_lower(@string) }
+	if(@u == '' || @u == null || @u == true) {
 		if(reg_count('[_]', @string) > 0) {
 			@string = reg_replace('_', ' ', @string)
 		}
 	}
-	if(@a == '' || @a == null) {
+	if(@a == '' || @a == null || @a == false) {
 		@string = to_upper(@string[0]).@string[cslice(1, length(@string) - 1)]
 	} else {
 		@astring = reg_split('\\s', @string)
@@ -163,8 +159,7 @@ proc _is_even_number(@number, @round) {
 		case 'round':
 		case 'r':
 		default:
-			@number = integer(round(@number))
-			
+			@number = integer(round(@number))	
 	}
 	return(@number % 2 == 0)
 }
@@ -179,9 +174,9 @@ proc _getplayerID(@findID) {
 	if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
 		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
-		try(
+		try {
 			@pid['id'] = puuid(@findID, 'dashless');
-		,@fail,
+		} catch(Exception @ex) {
 			#puuid throws exception if not found.
 			#if ID not found: search uuid for playername
 			foreach(@k: @v in @uuiddata) {
@@ -190,11 +185,9 @@ proc _getplayerID(@findID) {
 					break()
 				}
 			}
-		)
-		#not sure what to return yet
-		if(!array_index_exists(@pid, 'id')) {
-			@pid['id'] = null
 		}
+		#not sure what to return yet
+		if(!array_index_exists(@pid, 'id')) { @pid['id'] = null }
 			
 		#if found in database
 		if(array_index_exists(@uuiddata, @pid['id'])) {
@@ -232,13 +225,13 @@ proc _getplayerName(@findID) {
 	if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
 		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
-		try(
+		try {
 		#throws exception if player offline
 			@pid['name'] = player(@findID)
 			@pid['display'] = player(@findID) 
 			@pid['nick'] = pinfo(@pid['name'])[4]
 			@pid['id'] = @findID
-		,@fail,
+		} catch(Exception @ex) {
 			#puuid/player throws exception if not found.
 			#if ID not found: search uuid for playername
 			foreach(@k: @v in @uuiddata) {
@@ -250,7 +243,7 @@ proc _getplayerName(@findID) {
 					break()
 				}
 			}
-		)
+		}
 		if(!array_index_exists(@pid, 'name')) {
 			@pid = array('display': 'null', 'name': null, 'id': null, 'nick': 'ID not Valid')
 		}

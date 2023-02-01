@@ -31,7 +31,7 @@ if(@player['name'] == '~console') {
 switch(@action){
 	case '':
 	case null:
-	msg(color('red').'['.color('gold').@name.color('red').'] '.color('red').'No action specified.')
+	msg(color(12).'['.color(7).@name.color(12).'] '.color('red').'No action specified.')
 	_sign_help()
 	die()
 
@@ -138,9 +138,9 @@ switch(@action){
 			msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Look at a sign!')
 		}
 	case 'give':
-		pgive_item(@player['name'], array(item: 'sign'))
+		pgive_item(@player['name'], array('item': 'sign'))
 	default:
-		msg(color('red').'['.color('gold').@name.color('red').'] '.color('red').'Oops! That action isn\'t supported!')
+		msg(color(12).'['.color(7).@name.color(12).'] '.color('red').'Oops! That action isn\'t supported!')
 		_sign_help() 
 		die()
 }

@@ -149,7 +149,12 @@ proc _reloader_item_name(@item) {
 		#newer named ID given
 			@name = to_upper(@item)
 			@display = to_lower(@item)
-			@id = data_values(@item)
+			if(is_proc('_get_data_values')) {
+				@id = _get_data_values(@item)
+			} else { 
+				@id = null
+				console('Cannot get data_values info, proc is missing!')
+			}
 			if(!array_contains(all_materials(), @name)) {
 				@name = 0
 				@display = 'Invalid item name given'

@@ -33,9 +33,6 @@ proc _iterate_cuboid(@b1, @b2, @proc_name) {
     )
 }
 
-#include('LocalPackages/Utilities/DiscordChat.ms')
-
-
 #---------
 proc _bc(@label, @str) {
     broadcast(concat(color('yellow'), '[', color('gold'), @label, color('yellow'), '] ', color('white'), @str))
@@ -85,6 +82,3 @@ proc _getplayer(@name) {
 		)
 	)
 }
-
-#Death messages
-#include('LocalPackages/deathmsg.ms')
