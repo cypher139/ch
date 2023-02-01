@@ -118,7 +118,7 @@ case 'max':
 case 'refill':
 case 'trade':
 case 'fill':
-	@stack = max_stack_size(array(name: to_upper(@id), 'meta': null)) 
+	@stack = max_stack_size(array('name': to_upper(@id), 'meta': null)) 
 	# Give 1 more of tool
 	if(@stack == 1) { @stack = 2 }
 	@amount = @stack - @slot['qty']
