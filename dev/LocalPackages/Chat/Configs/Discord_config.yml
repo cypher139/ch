@@ -50,6 +50,8 @@ Default_Channel: minecraft
 #
 #
 #Commands
+#php CMD_Command_Prefix: "^([?!@#%*/.$,=]+)?[Cc][Hh](?(1)(?:(?1)|[\\s]?)|(?1)+)"
+CMD_Command_Prefix: "^(?:[?!@#%*/.$,=]+)?[Cc][Hh](?:(?<![?!@#%*/.$,=])[?!@#%*/.$,=]+)?[\\s]*"
 CMD_Channels_Receive:
 - general
 - default
@@ -69,7 +71,6 @@ Fake_Admin_Rolename: "Super Admin"
 #Voice Chat
 # Voice Chat Accompanying text channel name. Case sensitive!
 # This channel will have the ping message placed here.
-# Note: CHDiscord does not support threads or other special channel types at this time.
 VC_Text_Channel_Name: voice-chat
 # Voice Chat text Channel ID. (Right click channel, Copy ID)
 VC_Text_Channel_ID: 123456789

@@ -5,14 +5,16 @@
 bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), null, @event) {
 	@config = import('Chat.config.Discord')
 	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
-
 #Wait a few seconds to avoid mention spam right at first.	
 	set_timeout(5000, closure(){ 
 		try {
 			@currentroles = discord_member_get_roles(@event['userid'])
 		} catch (NotFoundException @ex) {
 	#Assume user was insta-kick (such as account age does not meet server req.)
-			console('New Join '.@event['username'].' "'.@event['userid'].'" was not found on server. Were they insta-kicked??', false)
+			console('[Chat - Discord] New Join '.@event['username'].' <@'.@event['userid'].'> was not found on server. Were they insta-kicked??', false)
+			die()
+		} catch (Exception @ex) {
+			console(@ex)
 			die()
 		}
 #Welcome User DM
@@ -21,16 +23,16 @@ bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), n
 			try {
 				discord_private_message(@event['userid'], @welcomeDMMsg)
 			} catch(Exception @ex) {
-				console('Cannot message '.@event['username'].' "'.@event['userid'].'", are they a bot?', false)
+				console('[Chat - Discord] Cannot message '.@event['username'].' <@'.@event['userid'].'>, are they a bot?', false)
 			}
 		}
 #Add Delineator roles, or roles new users need to have to access server
-			if(is_array(@config['Welcome_Roles'])) {
-				array_push_all(@currentroles, @config['Welcome_Roles'])
-				discord_member_set_roles(@event['userid'], @currentroles)
-			} else {
-				console('Welcome roles not configured', false)
-			}
+		if(is_array(@config['Welcome_Roles'])) {
+			array_push_all(@currentroles, @config['Welcome_Roles'])
+			discord_member_set_roles(@event['userid'], @currentroles)
+		} else {
+			console('[Chat - Discord] Welcome roles not configured', false)
+		}
 #Welcome User Messages
 		@welcomeMsg = reg_replace('%UserID%', '<@'.@event['userid'].'>', @config['Welcome_Message'])
 		discord_broadcast(@config['Welcome_Text_Channel_Name'], array('content': @welcomeMsg), closure(@ex){
@@ -39,11 +41,23 @@ bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), n
 			array_set(@msgids, @event['userid'], array('time': time(), 'id': @ex))
 			store_value('server.Discord.Welcome.msg.IDs', @msgids)
 		});	
+#Console Log
+		if(@event['username'] == @event['nickname']) {
+			@userDisplay = @event['username'].' <@'.@event['userid'].'>'
+		} else {
+			@userDisplay = @event['nickname'].' ('.@event['username'].') <@'.@event['userid'].'>'
+		}
+		console('[Discord] Member '.color(10).'joined: '.color(9).@userDisplay, false)
 	});
 }
 
 bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), null, @event) {
-	console('[Discord] Member left: '.@event, false)
+	if(@event['username'] == @event['nickname']) {
+		@userDisplay = @event['username'].' <@'.@event['userid'].'>'
+	} else {
+		@userDisplay = @event['nickname'].' ('.@event['username'].') <@'.@event['userid'].'>'
+	}
+	console('[Discord] Member '.color(12).'left: '.color(9).@userDisplay, false)
 	@config = import('Chat.config.Discord')
 	if(!is_array(@config['Welcome_Roles'])) { die('plz fill welcome roles config') }
 

@@ -55,11 +55,12 @@ case 'more':
 case '50':
 case 'wall_torch':
 	@id = 'TORCH'
-
 case 'sign':
 case 'wooden_sign':
 case 'wood_sign':
 	@id = 'OAK_SIGN'
+case 'door':
+	@id = 'OAK_DOOR'
 
 default:
 # check complete, switch variable type
@@ -137,7 +138,11 @@ if(@dev == true) {
 @give = array('meta': null, 'name': to_upper(@id), 'qty': @amount)
 
 if(@player != '~console') {	
-	pgive_item(@giveplayer, @give)
+	try {
+		pgive_item(@giveplayer, @give)
+	} catch(FormatException @ex) {
+		die(color('c').@ex['message'])
+	}
 } else {
 	die(color(7).'Item IDs returned: '.color(3).@id.color(8).' ('.color('a').@idn.color(8).') '.color(8).'[max:'.max_stack_size(array('name': to_upper(@id), 'meta': null)).']')
 }
