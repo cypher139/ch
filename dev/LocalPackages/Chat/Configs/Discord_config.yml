@@ -51,7 +51,7 @@ Default_Channel: minecraft
 #
 #Commands
 #php CMD_Command_Prefix: "^([?!@#%*/.$,=]+)?[Cc][Hh](?(1)(?:(?1)|[\\s]?)|(?1)+)"
-CMD_Command_Prefix: "^(?:[?!@#%*/.$,=]+)?[Cc][Hh](?:(?<![?!@#%*/.$,=])[?!@#%*/.$,=]+)?[\\s]*"
+CMD_Command_Prefix: ^(?:[?!@#%*/.$,=]+[Cc][Hh](?!$)[?!@#%*/.$,=]*|[Cc][Hh][?!@#%*/.$,=]+)
 CMD_Channels_Receive:
 - general
 - default
