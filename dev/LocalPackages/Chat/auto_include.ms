@@ -11,7 +11,7 @@ proc _chat_is_even_number(@number) { return(mod(@number, 2) == 0) }
 
 proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg', @consolemsg = @msg)
-	if(@cmconcat == 'yes', @consolemsg = @msg.@consolemsg)
+	if(@cmconcat != '', @consolemsg = @msg.@consolemsg)
 	console(@consolemsg, false)
 	foreach(all_players(), @p,
 		if(has_permission(@p, 'commandhelper.alias.admin.message') && @p != @hideplayer, 

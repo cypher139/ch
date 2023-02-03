@@ -19,7 +19,7 @@ try {
 	_msgAdmins('[Chat - Server] Config file could not be read. '.@ex['message'])
 	die()
 } catch(FormatException @ex) {
-	_msgAdmins('[Chat - Server] Config file is improperly formatted.') 
+	_msgAdmins('[Chat - Server] Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true) 
 	die()
 } catch(Exception @ex) {
 	_msgAdmins('[Chat - Server] There was an error with the Config file. '.@ex['message']) 
@@ -43,7 +43,7 @@ if(function_exists('discord_connect')) {
 		_msgAdmins('[Chat - Discord] Config file could not be read. '.@ex['message'])
 		die()
 	} catch(FormatException @ex) {
-		_msgAdmins('[Chat - Discord] Config file is improperly formatted.') 
+		_msgAdmins('[Chat - Discord] Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true)
 		die()
 	} catch(Exception @ex) {
 		_msgAdmins('[Chat - Discord] There was an error with the Config file. '.@ex['message']) 

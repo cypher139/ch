@@ -1,9 +1,9 @@
 #version 1.0-tmc
-admin:/discordgr [$type] [$id] [$] = >>>
+admin:/discordgetroles [$type] [$id] [$] = >>>
 @name = 'Discord'
 @roles = ''
 if($id == '' || $id == null) {
-	die('Specify the Discord user ID!')
+	die(color('c').'Specify the Discord user ID!')
 }
 switch($type) {
 case 0:
@@ -12,7 +12,7 @@ case 'chd':
 	try {
 		@roles = discord_member_get_roles($id)
 	} catch(Exception @ex) {
-		die('ID not found '.@ex['message'])
+		die(color('c').'Discord User ID not found '.@ex['message'])
 	}
 case 1:
 case 'saved':
@@ -22,11 +22,11 @@ case 'gv':
 		if(array_index_exists(@roles, $id)) {
 			@roles = @roles[$id]
 		} else {
-			die('ID not found')
+			die(color('c').'Discord User ID not found in internal storage!')
 		}
 	}
 default:
-	die('Specify Search type: CHDiscord cache or internal storage')
+	die(color('e').'Specify Search type: CHDiscord cache or internal storage')
 }
-msg('Roles found: '.@roles)
+msg(color('a').'Discord Roles found for user '.color(3).$id.color('a').': '.color('r').@roles)
 <<<
