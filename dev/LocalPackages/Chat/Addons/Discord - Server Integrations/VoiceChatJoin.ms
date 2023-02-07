@@ -1,4 +1,5 @@
 #version 1.0-tmc
+#requires CHDiscord build #76 or newer
 #Voice Chat monitor:
 /*
 If:
@@ -15,7 +16,7 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 	@config = import('Chat.config.Discord')
 	if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
 	@userroles = discord_member_get_roles(@discord['userid'])
-	@stats = get_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')
+	@stats = get_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')
 	if(!is_array(@stats)) { @stats = array('start': time(), 'end': '', 'users': '', 'channel': @discord['channel']) }
 	
 	
@@ -37,7 +38,6 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 			#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
 				set_timeout(@timeout, closure(){
 					if(discord_member_get_voice_channel(@discord['userid']) == @config['VC_Channel_ID']) {
-	#						console('still here')
 						#Has the role just been mentioned?
 						@lastmsgs = import('Chat.Discord.last.message')
 						if(is_array(@lastmsgs)) {
@@ -48,13 +48,12 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 							}
 						}					
 						discord_broadcast(@config['VC_Text_Channel_Name'], array('content': @discordMsg))
-		# console(@discordMsg)
 						broadcast(@mcMsg, all_players())
 						store_value('server.Discord.last.ping.'.@config['VC_Role_ID'], time())
-						@stats = get_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')
+						@stats = get_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')
 						if(!is_array(@stats)) { @stats = array('start': time(), 'end': '', 'users': '', 'channel': @discord['channel']) }
 						array_set(@stats, 'pinguser', @discord['username'])
-						store_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats', @stats)
+						store_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats', @stats)
 					}
 				});
 				set_timeout((@timeout + 10000), closure(){
@@ -66,20 +65,26 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 	
 	#Save current users in channel, only after 90 seconds so user is stayin
 	set_timeout(90000, closure(){
-		@currentVCUsers = get_value('Chat.Discord.VC.'.@discord['channel'].'.users.current')
-		if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
-		@totalVCUsers = get_value('Chat.Discord.VC.'.@discord['channel'].'.users.total')
-		if(!is_array(@totalVCUsers)) { @totalVCUsers = array() }
-		@stats = get_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')
-		if(!is_array(@stats)) { 
-			@stats = array('start': time(), 'end': '', 'users': '', 'channel': @discord['channel'])
-			store_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats', @stats)
+		if(discord_member_get_voice_channel(@discord['userid']) == @discord['channelid']) {
+			@currentVCUsers = get_value('Chat.Discord.VC.'.@discord['channelid'].'.users.current')
+			if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
+			@totalVCUsers = get_value('Chat.Discord.VC.'.@discord['channelid'].'.users.total')
+			if(!is_array(@totalVCUsers)) { @totalVCUsers = array() }
+			@stats = get_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')
+			if(!is_array(@stats)) { 
+				@stats = array('start': time(), 'end': '', 'users': '', 'channel': @discord['channel'])
+				store_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats', @stats)
+			}
+				
+			if(!array_contains(@currentVCUsers, @discord['userid'])) { 
+				@currentVCUsers[] = @discord['userid']
+				store_value('Chat.Discord.VC.'.@discord['channelid'].'.users.current', @currentVCUsers)
+			}
+			if(!array_contains(@totalVCUsers, @discord['userid'])) { 
+				array_set(@totalVCUsers, @discord['userid'], @discord['username'])
+				store_value('Chat.Discord.VC.'.@discord['channelid'].'.users.total', @totalVCUsers)
+			}
 		}
-			
-		if(!array_contains(@currentVCUsers, @discord['userid'])) { @currentVCUsers[] = @discord['userid'] }
-		if(!array_contains(@totalVCUsers, @discord['userid'])) { array_set(@totalVCUsers, @discord['userid'], @discord['username']) }
-		store_value('Chat.Discord.VC.'.@discord['channel'].'.users.current', @currentVCUsers)
-		store_value('Chat.Discord.VC.'.@discord['channel'].'.users.total', @totalVCUsers)
 	});
 	
 }
@@ -89,9 +94,9 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 # Data: userid, username, nickname, channel (name)
 	@config = import('Chat.config.Discord')
 	if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
-	@currentVCUsers = get_value('Chat.Discord.VC.'.@discord['channel'].'.users.current')
+	@currentVCUsers = get_value('Chat.Discord.VC.'.@discord['channelid'].'.users.current')
 	if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
-	@totalVCUsers = get_value('Chat.Discord.VC.'.@discord['channel'].'.users.total')
+	@totalVCUsers = get_value('Chat.Discord.VC.'.@discord['channelid'].'.users.total')
 	if(!is_array(@totalVCUsers)) { @totalVCUsers = die() }
 	
 	if(array_contains(@currentVCUsers, @discord['userid'])) { array_remove_values(@currentVCUsers, @discord['userid']) }
@@ -116,9 +121,9 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 		}
 		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(@totalVCUsers, ', '), false)
 		#Save Stats
-		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.current')
-		clear_value('Chat.Discord.VC.'.@discord['channel'].'.users.total')
-		@stats = get_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')
+		clear_value('Chat.Discord.VC.'.@discord['channelid'].'.users.current')
+		clear_value('Chat.Discord.VC.'.@discord['channelid'].'.users.total')
+		@stats = get_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')
 		if(!is_array(@stats)) { die() }
 		
 		@stats['end'] = time()
@@ -132,8 +137,8 @@ bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null,
 			array_remove(@lastmsgs, 20)
 		}
 		store_value('Chat.Discord.last.VC', @lastmsgs)
-		clear_value('Chat.Discord.VC.'.@discord['channel'].'.current.stats')		
+		clear_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')		
 	} else {
-		store_value('Chat.Discord.VC.'.@discord['channel'].'.users.current', @currentVCUsers)
+		store_value('Chat.Discord.VC.'.@discord['channelid'].'.users.current', @currentVCUsers)
 	}
 }

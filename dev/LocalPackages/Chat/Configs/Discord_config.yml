@@ -123,7 +123,7 @@ Welcome_DM_Message: "Welcome to *our server*! \n\n We would like to get to know 
 #
 #
 # Cross-Server Chat
-URL_Broadcast: true
+CS_URL_Broadcast: true
 CS_Server_1_Name: "Server 1"
 CS_Server_1_ID: 123456
 CS_Server_1_Channels:
