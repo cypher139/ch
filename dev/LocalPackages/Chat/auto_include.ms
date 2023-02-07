@@ -200,7 +200,7 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	@config = import('Chat.config.Discord')
 	@normalmessage = 0
 	if(@message == '') { return(false) }
-	if(@from == '') { @from = player() }
+	if(@from == '' || is_array(@from)) { @from = player() }
 	if(@channel == '') { @channel = @config['Default_Channel'] }
 	if(@type == '') { @type = 'broadcast' }
 	if(is_array(@message)) {
@@ -214,7 +214,8 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	
 	}
 	@split = array()
-	
+	@checkmention = null
+	@sendmsg = ''
 	# Check if player said banned mention
 	if(is_array(@message)) {
 		if(array_index_exists(@message, 'content')) {
@@ -230,13 +231,14 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		@checkmention = _message_check_ban_mentions(@message, @from)
 		@sendmsg = @message
 	}
-	if(@checkmention != null) {
+	if(@checkmention != null && @type != 'admin') {
 		@type = 'admin'
 		@sendmsg = 'A message queued to Discord was not sent: Message contained a mention of "`'.@checkmention['mention'].'`". '.@checkmention['kickmsg']
 	}
 	
 	switch(to_lower(@from)) {
 	case 'admin':
+	case 'log':
 		@channel = @config['Log_Channel']
 	case 'none':
 	case 'cross':
@@ -264,6 +266,7 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	
 	switch(@type){
 	case 'admin':
+	case 'log':
 		@channel = @config['Log_Channel']
 		# console('[Chat - Discord] '.@sendmsg, false)
 	}
@@ -273,6 +276,7 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		case 'admin':
 		case 'broadcast':
 		case 'b':
+		case 'log':
 			if(array_index_exists(@split, 0)) {
 				foreach(@i: @msg in @split) { 
 					if(@i == (array_size(@split) - 1)) {

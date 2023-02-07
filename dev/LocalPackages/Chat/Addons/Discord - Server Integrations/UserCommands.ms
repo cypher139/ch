@@ -1,14 +1,5 @@
 #version 1.0-tmc
 
-
-/*
-
-if channel in receive but not in send then dm output instead
-*/
-
-
-
-
 #Handle commands from Discord Users
 # Data: userid, username, nickname, channel, message, id, attachments {{url, filename, description}}
 bind('discord_message_received', array('id': 'Chat.Discord.cmd', 'priority': 'HIGH'), null, @discord) {
@@ -36,6 +27,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd', 'priority': 'HI
 		console(@discord, false)
 	}
 */	
+if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) == true) {
 	
 /*	
 	# Find if this is a wish or normal chat.
@@ -55,7 +47,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd', 'priority': 'HI
 		if(@dev == true) { msg(@grantwish['message']) }
 	}
 */	
-	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) == true && reg_count('^[.!~]?[Cc][Hh][!@#%*/.$,=]', @discord['message']) > 0) {
+	if(reg_count(@config['CMD_Command_Prefix'], @discord['message']) > 0) {
 		consume()
 		discord_delete_message(@discord['channel'], @discord['id'])
 		array_set(@discord, 'time', time())

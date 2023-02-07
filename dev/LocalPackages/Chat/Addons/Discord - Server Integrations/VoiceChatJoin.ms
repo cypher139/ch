@@ -51,7 +51,7 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 						broadcast(@mcMsg, all_players())
 						store_value('server.Discord.last.ping.'.@config['VC_Role_ID'], time())
 						@stats = get_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')
-						if(!is_array(@stats)) { @stats = array('start': time(), 'end': '', 'users': '', 'channel': @discord['channel']) }
+						if(!is_array(@stats)) { @stats = array('start': (time() - @timeout), 'end': '', 'users': '', 'channel': @discord['channel']) }
 						array_set(@stats, 'pinguser', @discord['username'])
 						store_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats', @stats)
 					}
@@ -72,7 +72,7 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 			if(!is_array(@totalVCUsers)) { @totalVCUsers = array() }
 			@stats = get_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')
 			if(!is_array(@stats)) { 
-				@stats = array('start': time(), 'end': '', 'users': '', 'channel': @discord['channel'])
+				@stats = array('start': (time() - 90000), 'end': '', 'users': '', 'channel': @discord['channel'])
 				store_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats', @stats)
 			}
 				

@@ -21,7 +21,7 @@ try {
 		} else {
 			die(color('c').'From ID was Not Found on Server or internal storage!')
 		}
-	}
+	} else { die(color('c').'From ID was Not Found on Server or internal storage!') }
 }
 # To User check
 try {

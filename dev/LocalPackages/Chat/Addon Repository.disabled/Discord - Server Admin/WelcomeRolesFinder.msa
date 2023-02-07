@@ -1,5 +1,5 @@
 #version 1.0-tmc
-admin:/wrf [$id] [$] = >>>
+admin:/discordwrf [$id] [$] = >>>
 @name = 'Discord'
 @return = _chat_WelcomeRolesFinder($id)
 if(array_index_exists(@return, 'zero')) {
