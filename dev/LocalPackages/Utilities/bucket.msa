@@ -5,15 +5,8 @@
 ######################################################
 
 admin:/bucket [$action] [$] = >>>
-assign(@name, 'Bucket')
-assign(@player, _getplayerID(player()))
-
-set_uncaught_exception_handler(closure(@ex){
-	if(@ex['message'] == 'The element at index "location" does not exist') {
-		msg(color(7).'['.color('gold').'Bucket'.color(7).'] '.color(7).'Block ID: '.color('b').@id.color(3).' ('.@idn.')')
-	}
-     return(true);
-   });
+@name = 'Bucket'
+@player = _getplayerID(player())
 
 proc _bucket_help() {
 	msg(color(6).'bucket: get block IDs by hitting blocks with a bucket!')
@@ -22,50 +15,49 @@ proc _bucket_help() {
 }
 
 switch(to_lower($action)){
-
 case 'help':
 case '-help':
 case '?':
 case '/?':
 	_bucket_help()
-	die()
-
 default:
-	if(player() == '~console') { die(color(7).'['.color('gold').@name.color(7).'] '.color(7).@name.' is not available for the console.')}
-	assign(@bucketenabled, import('bucket.info.enabled.'.@player['id']))
-	if(@bucketenabled == false || @bucketenabled == '' || @bucketenabled == null) {
-		export('bucket.info.enabled.'.@player['id'], true)
+	if(player() == '~console') { die(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' is not available for the console.') }
+	@bucketenabled = import('bucket.info.enabled.'.@player['id'])
+	if(@bucketenabled == true) {
+		export('bucket.info.enabled.'.@player['id'], false)
+		die(color(7).'['.color('gold').@name.color(7).'] '.color(7).'Bucket for '.@player['display'].color('a').' disabled.')
+	} else {
+		export('bucket.info.enabled.'.@player['id'], !@bucketenabled)
 	#check inventory for a bucket
-		pgive_item(@player['name'], array(qty: '1', name: 'BUCKET'))
+		if(phas_item(@player['name'], array('name': 'BUCKET')) == 0) {
+			pgive_item(@player['name'], array('qty': '1', 'name': 'BUCKET'))
+			msg(color(6).'You\'ve been given a free bucket!')
+		}
 	#then check if bind is added
-		if(has_bind('bucket.info'), null,
-			bind('player_interact', array(id: 'bucket.info'), array(itemname: 'BUCKET'), @bucket) {
-				set_uncaught_exception_handler(closure(@ex){
-				if(@ex['message'] == 'The element at index "location" does not exist') {
-					msg(color(7).'['.color('gold').'Bucket'.color(7).'] '.color(7).'Block ID: '.color('b').@id.color(3).' ('.@idn.') (possibly an entity?)')
-				}
-				return(true);
-				});
-				assign(@player, _getplayerID(@bucket['player']))
-					if(import('bucket.info.enabled.'.@player['id']) == true) {
-		     			if(equals(@bucket['action'], 'left_click_block' || 'right_click_block')) {
+		if(!has_bind('bucket.info')) {
+			bind('player_interact', array('id': 'bucket.info'), array('itemname': 'BUCKET'), @bucket) {
+				@player = _getplayerID(@bucket['player'])
+				if(import('bucket.info.enabled.'.@player['id']) == true) {
+					if(@bucket['action'] == 'left_click_block' || @bucket['action'] == 'right_click_block') {
 						cancel()
-							if(is_numeric(@bucket['block'])) {
-								assign(@id, data_name(@bucket['block']))
-								assign(@idn, @bucket['block'])
-							} else {
-								assign(@id, to_upper(@bucket['block']))
-								assign(@idn, data_values(@bucket['block']))
+						if(is_numeric(@bucket['block'])) {
+							@id = _capitalize(data_name(@bucket['block']), '', '', true)
+							@idn = color(3).' ('.@bucket['block'].')'
+						} else {
+							@id = _capitalize(@bucket['block'], '', '', true)
+							if(is_proc('_get_data_values')) {
+								@idn = color(3).' ('._get_data_values(@bucket['block']).')'
+							} else { 
+								@idn = ''
+								console('Cannot get data_values info, proc is missing!')
 							}
-						msg(color(7).'['.color('gold').'Bucket'.color(7).'] '.color(7).'Block ID: '.color('b').@id.color(3).' ('.@idn.')'.color(7).' (@'.color(8).@bucket['location']['x'].','.@bucket['location']['y'].','.@bucket['location']['z'].', facing: '.@bucket['facing'].color(7).')')
+						}
+					msg(color(7).'['.color(6).'Bucket'.color(7).'] '.color(7).'Block ID: '.color('b').@id.@idn.color(7).' (@'.color(8).@bucket['location']['x'].','.@bucket['location']['y'].','.@bucket['location']['z'].', face: '.@bucket['facing'].color(7).')')
 					}
 				}
 			}
-		)
-		die(color(7).'['.color('gold').@name.color(7).'] '.color(6).'Enabled!'.color(7).' Left-click a block using a bucket to get information about the block. Use "/bucket" again to disable bucket info.')
-	} else {
-		export('bucket.info.enabled.'.@player['id'], false)
-		die(color(7).'['.color('gold').@name.color(7).'] '.color(7).'Bucket for '.@player['display'].color('a').' disabled.')
+		}
+		die(color(7).'['.color(6).@name.color(7).'] '.color(6).'Enabled!'.color(7).' Left-click a block using a bucket to get information about the block. Use "/bucket" again to disable bucket info.')
 	}
 }
 <<<

@@ -10,7 +10,7 @@
 
 /none [$action] [$] = >>>
 #Include required backend functions
-include('includes.library/reload-functions-Core.ms')
+include('modules.library/Core.ms')
 @name = string(import('dispenserreloader.name'))
 @player = _reloader_getplayerID(player())
 if(player() == '~console') {

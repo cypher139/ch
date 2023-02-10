@@ -5,47 +5,18 @@ assign(@you, player())
 
 
 switch(to_lower($action)) {
-case 'gc':
-msg(get_commands())
-case 'test':
-msg(@you)
-msg(@player)
-msg(extension_exists('SKCompat'))
-
-
-
-
-@test1 = array(one: 1, two: 2, two_two: 22)
-msg(@test1['two_two'])
-
-array_set(@test1, 'three', '3')
-msg(@test1)
-
-array_set(@test1, 'three', '4')
-msg(@test1)
-
-msg(_is_even_number($option1))
-
 case 'goto':
+case 'gt':
 	switch(to_lower($option1)) {
 	case 'spawn':
+	case 'sp':
 		@spawnloc = get_spawn(pworld(player()))
 		msg(@spawnloc)
 		set_ploc(@spawnloc)
 	}
 
-
-case 'superjump':
-	assign(@player, player())
-	assign(@rand, rand(1, 10))
-	assign(@sjenabled, import('superjump.enabled.'.@player['id']))
-	if(@sjenabled != true) {
-		export('superjump.enabled.'.@player['id'], true)
-		msg(color(a).'You can now jump '.color(e).@rand.color(a).' times your normal jump height!')
-	} else {
-		export('superjump.enabled.'.@player['id'], false)
-		msg(color(e).'Your jumps are now normal again.')
-	}
+case 'h2r':
+msg(_hex_to_rgb($option1))
 
 case 'wr':
 	assign(@choices, array(
@@ -73,73 +44,37 @@ case 'moo':
 	msg(moo('moo'))
 	die()
 	
-case 'pl':
-	assign(@serverplugins, get_server_info(9)[..8])
-	msg(@serverplugins)
-	die()
-
 case 'effect':
 	assign(@player, player())
 	assign(@herea, ploc(@player))
 	msg(@herea)
 		make_effect(@herea, GHAST_SHRIEK)
-	for(assign(@i, 0), @i < 1100, inc(@i, 100),
+	for(assign(@i, 0), @i < 100, inc(@i, 100),
 		set_timeout(@i, closure(
 			msg(@i)
 		))
 	)
 	die()
-
-
-case 'firework':
-	assign(@player, player())
-	assign(@herea, ploc(@player))
-	msg(@herea)
-		make_effect(@herea, GHAST_SHRIEK)
-	for(assign(@i, 0), @i < 1100, inc(@i, 100),
-		set_timeout(@i, closure(
-			msg(@i)
-		))
-	)
-	die()
-
 
 case 'plsearch':
 case 'pls':
-	assign(@serverplugins, get_server_info(9))
-	assign(@search, to_lower($option1))
-	if(array_contains_ic(@serverplugins, @search),
-		foreach(@serverplugins, @currentvar,
-			assign(@var, to_lower(@currentvar))
-			if(@var == @search,
-				assign(@return, @currentvar)
-			)
-		)
-	,
-		assign(@return, 'no match!!')
-	)
-	msg(@return)
-	die()
-
-
-case 'itemname':
-case 'in':
-	assign(@item, $option1)
-	assign(@realid, data_values(@item))
-	assign(@itemname, data_name(@realid))
-	if(reg_count('[0-9]:[0-9]', @item) == 1, msg(yay), msg(no))
-	msg('realid: '.@realid)
-	msg('itemname: '.@itemname)
-	msg('data_values: '.data_values(@item))
-	msg('data_name: '.data_name(@item))
-	die()
-
-
-case 'nc':
-	assign(@number, _number_commaize($option1))
-	msg(@number)
-	die()
-
+	@serverplugins = get_server_info(9)
+	msg(@serverplugins)
+	@search = $option1
+#	@asc = _array_string_contains(@serverplugins, @search)
+#	if(@asc) {
+		@asp = _array_string_match(@serverplugins, @search)
+		if(array_index_exists(@asp, 1)) {
+			@return = 'I\'m not sure which option you meant to select: \n'.array_implode(@asp, ', ')
+		} else if(array_index_exists(@asp, 0)) {
+			@return = array_implode(@asp, ', ')
+		} else {
+			@return = 'no match!'
+		}
+		msg(@return)
+#	} else {
+#	msg('none found!')
+#	}
 case 'slotstest':
 case 'st':
 assign(@name, Slots)
@@ -166,7 +101,6 @@ assign(@name, Slots)
 case '':
 case null:
 	msg('uh specify something?')
-
 default:
 	msg('uh specify something valid?')
 }

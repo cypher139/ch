@@ -33,7 +33,7 @@
 /g = /god
 /h [$player] = >>>
 if($player == '' || $player == null) { @player = player() } else { @player = $player }
-if(!array_contains_ic(all_players(), $player)) { die(color('c').'No player by that name found.') }
+if(!array_contains_ic(all_players(), @player)) { die(color('c').'No player by that name found.') }
 set_phealth(@player, 20)
 set_phunger(@player, 20)
 <<<

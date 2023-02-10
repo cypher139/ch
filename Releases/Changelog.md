@@ -1,5 +1,14 @@
 ### codegen
 
+###### 2.4 (2/1/23)
+Added:
+- Generate 8-bit or 16-bit numbers.
+- Switched main generation loop to foreach. (Testing has determined CH is faster at foreach than for).
+
+###### 2.3 (1/1/23)
+Added:
+- Numbers for all character types (used for randomly generated options).
+
 ###### 2.2 (11/29/22)
 Fixes:
 - Fixed mis-named variables
@@ -29,6 +38,15 @@ Changelogs not found.
 
 
 ### cmdrepeat
+
+###### 1.2 (1/21/23)
+Added:  
+- Saves up to 10 recent commands used (up from 3)
+- Automatic command cast fixes:
+	- Remove extra slashes and spaces
+	- Cancel command if only a single slash is given
+Fixes:  
+- Updated player ID proc to latest version, and proc is only installed if not already present.
 
 ###### 1.1 (10/5/22)
 Added:  

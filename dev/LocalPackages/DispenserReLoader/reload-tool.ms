@@ -6,7 +6,7 @@
 #
 ######################################################
 #Include required backend functions
-include('includes.library/reload-functions-Core.ms')
+include('modules.library/Core.ms')
 
 #Listen for interactions with the ReLoad tool
 bind('player_interact', array(id: 'ReLoad.tool'), array(button: 'left'), @reload) {

@@ -9,11 +9,11 @@ Each script is contained in its own MSLP file with basic Readme and Changelogs, 
   
  
 ## Misc releases  
-[cmdrepeat](cmdrepeat-v1.1.mslp) | Updated: 10/5/22  
-[codegen](codegen-v2.2.mslp) | Updated: 11/29/22  
+[cmdrepeat](cmdrepeat-v1.1.mslp) | Updated: 1/21/23  
+[codegen](codegen-v2.4.mslp) | Updated: 2/1/23  
   
   
 ## Archived  
 
   
-#### Last updated: 9/22/22
+#### Last updated: 2/1/23

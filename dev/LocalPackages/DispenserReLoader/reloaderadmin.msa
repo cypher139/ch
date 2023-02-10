@@ -7,7 +7,7 @@
 ######################################################
 admin:/reloaderadmin [$action] [$option1] [$option2] [$option3] [$] = >>>
 #Include required backend functions
-include('includes.library/reload-functions-Core.ms')
+include('modules.library/Core.ms')
 @name = string(import('dispenserreloader.name'))
 @serverdefaults = _reloader_get_server_defaults()
  
@@ -18,47 +18,32 @@ include('includes.library/reload-functions-Core.ms')
 @player = _reloader_getplayerID(player())
 @dev = import('ch.player.'.@player['id'].'.dev.scripts.reload')
  
-set_uncaught_exception_handler(closure(@ex){
-	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'])
-	msg(color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['message'])
-	@msg1 = color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['classType'].'! '.color(7).@ex['message']
-	if(@dev == true) {msg(@msg1)}
-	console(@msg1, false)
-	array_iterate(@ex['stackTrace'], closure(@k, @v) {
-		@pathdisplay = reg_split('\\/CommandHelper\\/', @v['file'])[1]
-		if(reg_count('(includes.library)', @pathdisplay) > 0) {
-			@pathdisplay = 'includes.library/'.reg_split('\\/includes.library\\/', @pathdisplay)[1]
-		}		
-		@msg2 = color(9).'../'.@pathdisplay.color(7).' Line: '.color('a').@v['line'].'.'.@v['col']
-		console(color('c').'['.color(6).@name.color('c').'] '.@msg2, false)
-		if(@dev == true) {msg(@msg2)}
-	})
-	return(true)
-});
- 
-proc _reloader_help() {
-	@name = string(import('dispenserreloader.name'))
-	msg(color(6).'ReLoad admin help:')
-	msg(color('a').'Command usage: <required> [optional]')
-	msg(color('a').'/reloaderadmin <action> [option1] [option2] [option3]')
-	msg(color(6).'Actions:')
-	msg(color(7).'/reloaderadmin stats'.color(4).' - '.color('f').'Shows all time stats of '.@name.', such as total blocks filled, total items used, and total fees charged.')
-	msg(color(7).'/reloaderadmin stats player <player name>'.color(4).' - '.color('f').'Shows the specified player\'s '.@name.' stats.')
-	msg(color(7).'/reloaderadmin version'.color(4).' - '.color('f').'Info of script and installed extensions version numbers.')
-	msg(color(7).'/reloaderadmin default view'.color(4).' - '.color('f').'Allows you to view the current default settings.')
-	msg(color(7).'/reloaderadmin default item <type/qty/fuel> <value>'.color(4).' - '.color('f').'Allows you to set the server\'s default item type and quantity, or default item to use as fuel in Fuel mode. Use \'clear\' as the value to reset to script defaults.')
+@help = closure(@ex) {
+	@return = array(
+	color(6).'ReLoad admin help:',
+	color('a').'Command usage: <required> [optional]',
+	color('a').'/reloaderadmin <action> [option1] [option2] [option3]',
+	color(6).'Actions:',
+	color(7).'/reloaderadmin stats'.color(4).' - '.color('f').'Shows all time stats of '.@name.', such as total blocks filled, total items used, and total fees charged.',
+	color(7).'/reloaderadmin stats player <player name>'.color(4).' - '.color('f').'Shows the specified player\'s '.@name.' stats.',
+	color(7).'/reloaderadmin version'.color(4).' - '.color('f').'Info of script and installed extensions version numbers.',
+	color(7).'/reloaderadmin default view'.color(4).' - '.color('f').'Allows you to view the current default settings.',
+	color(7).'/reloaderadmin default item <type/qty/fuel> <value>'.color(4).' - '.color('f').'Allows you to set the server\'s default item type and quantity, or default item to use as fuel in Fuel mode. Use \'clear\' as the value to reset to script defaults.'
+	)
+	return(array_implode(@return, '\n'))
 }
  
 switch(@action){
 
 case 'throw':
-	throw('ms.lang.CastException', 'testing throw')
-
+	# throw('ms.lang.CastException', 'testing throw')
+include('modules.library/Throw.ms')
+	_reloader_throw()
 case 'help':
 case '-help':
 case '?':
 case '/?':
-	_reloader_help()
+	die(@help())
 
 case 'version':
 case 'build':
@@ -285,6 +270,6 @@ case 'current':
 	die()
 default:
 	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You didn\'t specify what to do! Let\'s view the help file.')
-	_reloader_help()
+	die(@help())
 }	
 <<<

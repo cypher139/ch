@@ -1,0 +1,32 @@
+#version 1.0-tmc
+admin:/discordgetroles [$type] [$id] [$] = >>>
+@name = 'Discord'
+@roles = ''
+if($id == '' || $id == null) {
+	die(color('c').'Specify the Discord user ID!')
+}
+switch($type) {
+case 0:
+case 'discord':
+case 'chd':
+	try {
+		@roles = discord_member_get_roles($id)
+	} catch(Exception @ex) {
+		die(color('c').'Discord User ID not found '.@ex['message'])
+	}
+case 1:
+case 'saved':
+case 'gv':
+	@roles = get_value('server.Discord.members.roles')
+	if(is_array(@roles)) {
+		if(array_index_exists(@roles, $id)) {
+			@roles = @roles[$id]
+		} else {
+			die(color('c').'Discord User ID not found in internal storage!')
+		}
+	}
+default:
+	die(color('e').'Specify Search type: CHDiscord cache or internal storage')
+}
+msg(color('a').'Discord Roles found for user '.color(3).$id.color('a').': '.color('r').@roles)
+<<<

@@ -1,0 +1,16 @@
+admin:/wishtest [$] = >>>
+@args = parse_args($)
+if(array_size(@args) == 0) { die('Specify a test number') }
+@return = 'Not Found'
+switch(@args[0]) {
+case 1:
+@return = _wish_finder('Minecraft', 'CypherNova139 I wish you had friends', player()) 
+case 2:
+@return = _wish_finder('Minecraft', 'CypherNova139  for word word I wish you would die', player()) 
+case 3:
+@return = _wish_finder('Minecraft', 'and on that note go die you b...! that is my last wish', player(), 'no') 
+case 4:
+@return = _wish_finder('Minecraft', 'I wish i was dead', player()) 
+}
+msg(@return)
+<<<

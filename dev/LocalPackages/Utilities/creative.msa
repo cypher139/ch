@@ -1,15 +1,5 @@
 #version 1.2-tmc
 creative:/i [$id=3] [$] = >>>
-set_uncaught_exception_handler(closure(@ex){
-	if(import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.creative') == true || import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.all') == true) { @dev = true }
-	if(@dev == true) {
-		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
-	} else {
-		msg(color('c').@ex['message']);
-	}
-     return(true);
-   });
-  
 @args = parse_args($)
 @player = player()
 #initial populate giveplayer as the same so later functions can use a single variable for actions directed to you or others
@@ -21,6 +11,7 @@ foreach(@v in @args) {
 		@giveplayer = @v
 	}
 }
+@dev = false
 if(@player == '~console') {
 	@dev = false
 } else {
@@ -36,7 +27,7 @@ case 'look':
 case 'looks':
 case 'want':
 	if(@player == '~console' || string_contains_ic(get_block(pcursor(@giveplayer, @transparent)), 'air')) {
-	msg(@giveplayer)
+	if(@dev == true) { msg(@giveplayer) }
 		die(color('c').'No block in sight!')
 	} else {
 		@id = get_block(pcursor(@giveplayer, @transparent))
@@ -64,11 +55,12 @@ case 'more':
 case '50':
 case 'wall_torch':
 	@id = 'TORCH'
-
 case 'sign':
 case 'wooden_sign':
 case 'wood_sign':
 	@id = 'OAK_SIGN'
+case 'door':
+	@id = 'OAK_DOOR'
 
 default:
 # check complete, switch variable type
@@ -95,14 +87,18 @@ if(reg_count('[0-9]+:[0-9]+', @id) == 1) {
 		@idn = $id
 	} else {
 		@id = to_upper(@id)
-		@idn = data_values(@id)
+		if(is_proc('_get_data_values')) {
+			@idn = _get_data_values(@id)
+		} else { 
+			@idn = null
+			console('Cannot get data_values info, proc is missing!')
+		}
 		if(@idn == null) {
 			@idn = 'No ID'
 		}
 	}
 }
 # error workaround for no name but found ID
-#if(@ id null, assign id nameidn
 
 ### Quantity
 foreach(@v in @args) {
@@ -123,7 +119,7 @@ case 'max':
 case 'refill':
 case 'trade':
 case 'fill':
-	@stack = max_stack_size(array(name: to_upper(@id), 'meta': null)) 
+	@stack = max_stack_size(array('name': to_upper(@id), 'meta': null)) 
 	# Give 1 more of tool
 	if(@stack == 1) { @stack = 2 }
 	@amount = @stack - @slot['qty']
@@ -142,7 +138,11 @@ if(@dev == true) {
 @give = array('meta': null, 'name': to_upper(@id), 'qty': @amount)
 
 if(@player != '~console') {	
-	pgive_item(@giveplayer, @give)
+	try {
+		pgive_item(@giveplayer, @give)
+	} catch(FormatException @ex) {
+		die(color('c').@ex['message'])
+	}
 } else {
 	die(color(7).'Item IDs returned: '.color(3).@id.color(8).' ('.color('a').@idn.color(8).') '.color(8).'[max:'.max_stack_size(array('name': to_upper(@id), 'meta': null)).']')
 }

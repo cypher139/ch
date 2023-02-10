@@ -4,7 +4,18 @@ Usage:
 
  Call _codegen(NUMBER, character type 1, character type 2) in your script.
  The number determines how long the code is, and the 2 types determine which types of characters you want. 
- Character types: lowercase ("lower"), uppercase ("upper"), number ("num"), symbol ('sym'), full (all alphanumeric characters) or all (Full + symbols).
+
+Character Types: 
+ - lowercase ("lower")
+ - uppercase ("upper")
+ - number ("num")
+ - symbol ('sym')
+ - full (all alphanumeric characters)
+ - all (Full + symbols)
+Extra Types:
+ - 8bit (number up to 255)
+ - 16bit (number up to 65535)
+
 
 /codegen = Prints a randomly generated code to you.
 

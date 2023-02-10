@@ -13,7 +13,7 @@ export('dispenserreloader.name', 'ReLoad')
 export('dispenserreloader.version', '1.2-tmc')
 
 #Include required backend functions
-include('includes.library/reload-functions-Core.ms')
+include('modules.library/Core.ms')
 
 #Load server defaults into RAM
 _reloader_get_server_defaults('startup')
@@ -35,3 +35,36 @@ if(!function_exists('acc_add')) {
 
 #export usable fuel items array
 export('dispenserreloader.fuel.items', _reloader_get_fuel_items())
+
+#Set Exception Handler if not present
+#Note: This is set across all CommandHelper scripts!
+@reloader_ex = iclosure(@ex){
+	@name = import('dispenserreloader.name', 'ReLoad')
+	@prefix = color('c').'['.color(7).@name.color('c').'] '
+	try {
+		@dev = import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.reload')
+	} catch(PlayerOfflineException @ex2) {
+		@dev = false
+	}
+	@msgplayer = @prefix.color(7).'An error has occured! Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].'\n'.color('c').'['.color(6).@name.color('c').'] '.color('c').@ex['message']
+	@msgdev = @prefix.color(7).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' - '.color('c').split('.', @ex['classType'])[-1].' - '.color(7).@ex['message']
+	if(@dev == true) {msg(@msgdev)} else { if(ponline(player())) { msg(@msgplayer) } }
+	console(@msgdev, false)
+	foreach(@k: @trace in @ex['stackTrace']) {
+		@pathdisplay = reg_split('\\/CommandHelper\\/', @trace['file'])[1]
+		if(reg_count('/(.[^/]+)\\.library', @pathdisplay) > 0) {
+			@pathdisplay = reg_match('/(.[^/]+)\\.library', @pathdisplay)[1].'.library/'.split('.library/', @pathdisplay)[-1]
+		}		
+		@msg2 = color(9).'../'.@pathdisplay.color(7).':'.color('a').@trace['line'].'.'.@trace['col'].color('r').'  '.@trace['id']
+		console(@prefix.@msg2, false)
+		if(@dev == true) {msg(@msg2)}
+	}
+	return(true)
+}
+
+@q2u5 = set_uncaught_exception_handler(closure());
+if(!is_null(@q2u5)) {
+  set_uncaught_exception_handler(@q2u5);
+} else {
+  set_uncaught_exception_handler(@reloader_ex);
+}

@@ -35,16 +35,17 @@ default:
 			bind('player_interact', array('id': 'sheep.spawner'), null, @sheepevent) {
 				@player = _getplayerID(@sheepevent['player'])
 				if(import('sheep.spawner.enabled.'.@player['id']) == true) {
-					if(equals(@sheepevent['action'], 'left_click_air'),
+					if(@sheepevent['action'] == 'left_click_air') {
 						cancel()
-						@sheeptype = array('black','red','green','brown','blue','purple','cyan','light_gray','gray','pink','lime','yellow','light_blue','magenta','orange','white')[rand(16)]
+						#colors from MC default textures
+						@color = array('black': '#090a0f','red': '#b8342c','green': '#658619','brown': '#7e502f','blue': '#373a9f','purple': '#6f24a4','cyan': '#169b9c','light_gray': '#92928b','gray': '#43494c','pink': '#ea7c9f','lime': '#86cc26','yellow': '#fdd233','light_blue': '#41bbdf','magenta': '#d25bcb','orange': '#f67b18','white': '#fefefe')
+						@type = array_get_rand(array_keys(@color))
 						@here = pcursor(@sheepevent['player']) 
 						@here[1] = 3 + @here[1]
-						spawn_entity('sheep', 1, @here, closure(@id){ set_entity_spec(@id, array('color': @sheeptype)); })
+						spawn_entity('sheep', 1, @here, closure(@id){ set_entity_spec(@id, array('color': @type)); })
 						
-					#	@sheepcolor = reg_split(':', @sheep)[1]
-						msg(color(7).'['.color('gold').'Sheep'.color(7).'] '.color(7).'Spawned a sheep! Color: '.color(@sheeptype).to_lower(@sheeptype).color(8).' (Location: '.color(8).@here[0].','.@here[1].','.@here[2].color(8).')')
-					)
+						msg(color(7).'['.color(6).'Sheep'.color(7).'] '.color(@color[@type]).'Spawned a '.to_lower(@type).' sheep!'.color(8).' @ '.color(8).@here[0].','.@here[1].','.@here[2].color(8).')')
+					}
 				}
 			}
 		}

@@ -27,8 +27,6 @@ if(!array_index_exists(@args, 0)) {
 			if(is_numeric(@args[1]) && @args[1] > 0) {
 				@id = @args[1]
 			}
-		} else {
-			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 		}
 		if(@id - 1 > 9) { @id = 9 } else { @id = @id - 1 }
 

@@ -10,15 +10,132 @@ if(is_array(get_value('primus.database.IP'))) {
 	export('primus.database.IP', array(1000123: array()))
 }
 
+proc _write_file(@path, @content, @mode) {
+	if(@path == '' || @content == '') { return(false) }
+	if(@mode == '') { @mode = 'default' }
+	@mode = to_upper(@mode)
+	switch(@mode[0]) {
+		case 'O':
+		@mode = 'OVERWRITE'
+		case 'A':
+		@mode = 'APPEND'
+		default:
+		@mode = 'OVERWRITE'
+	}
+	if(extension_exists('CHFiles')) {
+		try {
+			write_file(@path, @content, @mode)
+			return(true)
+		} catch(Exception @ex) {
+			msg('File not written: '.@ex['message'])
+			console('File write: '.@ex)
+			return(false)
+		}
+	}
+	if(extension_exists('CHFile')) {
+		try {
+			chf_write(@path, @content, @mode)
+			return(true)
+		} catch(Exception @ex) {
+			msg('File not written: '.@ex['message'])
+			console('File write: '.@ex)
+			return(false)
+		}	
+	}
+	if(in_cmdline_mode()) {
+		try {
+			x_write(@path, @content, @mode)  
+			return(true)
+		} catch(Exception @ex) {
+			msg('File not written: '.@ex['message'])
+			console('File write: '.@ex)
+			return(false)
+		}
+	} else {
+		msg('File not written! CH\'s Core write file functions is commandline only, and compatible extensions were not found.')
+		return(false)
+	}
+}
+
+proc _hex_to_rgb(@num) {
+	@num = reg_replace('#', '', @num)
+	if(length(@num) == 3) {
+		@num = reg_split('(?<=\\G.)', @num)
+		@num[0] = @num[0].@num[0]
+		@num[1] = @num[1].@num[1]
+		@num[2] = @num[2].@num[2]
+	} else if(length(@num) == 6) {
+		@num = reg_split('(?<=\\G..)', @num)
+	} else {
+		throw('ms.lang.CastException', 'Unsupported Hex code given.')
+	}
+	@results = array('r': parse_int(@num[0], 16), 'g': parse_int(@num[1], 16), 'b': parse_int(@num[2], 16))
+	return(@results)
+}
+
+
+proc _array_string_contains(@array, @string, @doKeys) {
+	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
+	if(array_size(@array) == 0) { return(false) }
+	if(@string == '') { return(false) }
+	if(@doKeys != '') {
+		@array = array_keys(@array)
+	}
+	@return = false
+	foreach(@var in @array) {
+		 if(string_contains_ic(@var, @string)) {
+			@return = true
+#			msg('i think '.@var.' is an option at: '.string_position(to_lower(@var), to_lower(@string)))
+		}
+	}
+	return(@return)
+}
+
+proc _array_string_match(@array, @string) {
+	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
+	@return = array()
+	foreach(@var in @array) {
+		 if(string_contains_ic(@var, @string)) {
+			@return[] = @var
+#			msg('i think '.@var.' is an option at: '.string_position(to_lower(@var), to_lower(@string)))
+		}
+	}
+	return(@return)
+}
+
+proc _read_essentials_usermap(@option1) {
+#Check for Essentials player UUID database, and import it.
+	try(
+		@file = parse_args(reg_replace('\\n', ' ', read(file_resolve(sys_properties()['user.dir'].'/plugins/Essentials/usermap.csv'))))
+	,@fail,
+		return(false)
+	)
+	try (
+		@floodgateprefix = string(yml_decode(read(file_resolve(sys_properties()['user.dir'].'/plugins/floodgate/config.yml')))['username-prefix'])
+	,@fail,
+		@floodgateprefix = '_'
+	)
+	@euuid = associative_array()
+	# playername (lowercase), uuid (dashes)
+	foreach(@line in @file) {
+		@data = reg_split(',', @line)
+		array_set(@euuid, reg_replace('-', '', @data[1]), reg_replace('^_', @floodgateprefix, @data[0]))
+	}
+#	msg('3 '.@euuid)
+	export('primus.database.Essentials.usermap', @euuid)
+	return(@euuid)
+}
+
 # String Capitalization or underscore removal features
 proc _capitalize(@string, @lower, @u, @a) {
-	if(@lower == '' || @lower == null) { @string = to_lower(@string) }
-	if(@u == '' || @u == null) {
+	if(!is_string(@string)) { @string = string(@string) }
+	if(@lower == '' || @lower == null || @lower == true) { @string = to_lower(@string) }
+	if(@u == '' || @u == null || @u == true) {
 		if(reg_count('[_]', @string) > 0) {
 			@string = reg_replace('_', ' ', @string)
 		}
 	}
-	if(@a == '' || @a == null) {
+	if(@a == '' || @a == null || @a == false) {
 		@string = to_upper(@string[0]).@string[cslice(1, length(@string) - 1)]
 	} else {
 		@astring = reg_split('\\s', @string)
@@ -29,34 +146,48 @@ proc _capitalize(@string, @lower, @u, @a) {
 	return(@string)
 }
 
-#is this a even number?
-proc _is_even_number(@number) {return(mod(@number, 2) == 0)}
+# Is this a even number?
+proc _is_even_number(@number, @round) {
+	switch(@round) {
+		case 'up':
+		case 'ceil':
+			@number = ceil(@number)
+		case 'down':
+		case 'integer':
+		case 'int':
+			@number = integer(@number)
+		case 'round':
+		case 'r':
+		default:
+			@number = integer(round(@number))	
+	}
+	return(@number % 2 == 0)
+}
 
 
 #Find player UUID when given a player NAME.
 #returns array of name, displayname, nickname, and UUID
-proc _getplayerID(@option1) {
+proc _getplayerID(@findID) {
 	@pid = array()
 	@uuiddata = import('primus.database.UUID')
-	if(reg_count('^~?console$', @option1) > 0) {
+	if(!is_array(@uuiddata)) { @uuiddata = array() }
+	if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
 		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
-		try(
-			@pid['id'] = puuid(@option1, 'dashless');
-		,@fail,
+		try {
+			@pid['id'] = puuid(@findID, 'dashless');
+		} catch(Exception @ex) {
 			#puuid throws exception if not found.
 			#if ID not found: search uuid for playername
 			foreach(@k: @v in @uuiddata) {
-				if(equals_ic(@option1, @v[0])) { 
+				if(equals_ic(@findID, @v[0])) { 
 					@pid['id'] = @k
 					break()
 				}
 			}
-		)
-		#not sure what to return yet
-		if(!array_index_exists(@pid, 'id')) {
-			@pid['id'] = null
 		}
+		#not sure what to return yet
+		if(!array_index_exists(@pid, 'id')) { @pid['id'] = null }
 			
 		#if found in database
 		if(array_index_exists(@uuiddata, @pid['id'])) {
@@ -69,13 +200,13 @@ proc _getplayerID(@option1) {
 			}
 		} else {
 		#not found in database
-			if(ponline(@option1) == true) {
-				@pid['display'] = pinfo(@option1)[0];
-				@pid['name'] = pinfo(@option1)[0];
-				@pid['nick'] = pinfo(@option1)[4];
+			if(ponline(@findID) == true) {
+				@pid['display'] = pinfo(@findID)[0];
+				@pid['name'] = pinfo(@findID)[0];
+				@pid['nick'] = pinfo(@findID)[4];
 			} else {
-				@pid['display'] = @option1
-				@pid['name'] = @option1
+				@pid['display'] = @findID
+				@pid['name'] = @findID
 				@pid['nick'] = 'Player Offline'		
 			}
 		}
@@ -91,16 +222,16 @@ proc _getplayerID(@option1) {
 proc _getplayerName(@findID) {
  	@pid = array()
 	@uuiddata = import('primus.database.UUID')
-	if(reg_count('^~?console$', @findID) > 0) {
+	if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
 		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
 	} else {
-		try(
+		try {
 		#throws exception if player offline
 			@pid['name'] = player(@findID)
 			@pid['display'] = player(@findID) 
 			@pid['nick'] = pinfo(@pid['name'])[4]
 			@pid['id'] = @findID
-		,@fail,
+		} catch(Exception @ex) {
 			#puuid/player throws exception if not found.
 			#if ID not found: search uuid for playername
 			foreach(@k: @v in @uuiddata) {
@@ -112,9 +243,9 @@ proc _getplayerName(@findID) {
 					break()
 				}
 			}
-		)
+		}
 		if(!array_index_exists(@pid, 'name')) {
-			@pid = array(display: 'null', name: null, id: null, nick: 'ID not Valid')
+			@pid = array('display': 'null', 'name': null, 'id': null, 'nick': 'ID not Valid')
 		}
 	}
 	return(@pid)

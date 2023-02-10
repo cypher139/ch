@@ -134,7 +134,11 @@ case 'cv':
 case 'getvalue':
 case 'gv':
 	@v = get_value(@option1)
-	msg(@prefix.color(6).'Get value: '.color('d').@option1.color('f').' Value returned:')
+	@arraymsg = ''
+	if(is_array(@v)) {
+		@arraymsg = color(3).' Array size: '.array_size(@v)
+	}
+	msg(@prefix.color(6).'Get value: '.color('d').@option1.@arraymsg.color('f').' Value returned:')
 	msg(color(7).@v)
 
 case 'hasvalue':
@@ -216,7 +220,11 @@ case 'export':
 
 case 'import':
 	@v = import($option1)
-	msg(@prefix.color(6).'Import: '.color('d').@option1.color('f').' Value(s) returned:')
+	@arraymsg = ''
+	if(is_array(@v)) {
+		@arraymsg = color(3).' Array size: '.array_size(@v)
+	}
+	msg(@prefix.color(6).'Import: '.color('d').@option1.@arraymsg.color('f').' Value(s) returned:')
 	msg(color(7).@v)
 
 case 'extfunctions':
@@ -255,6 +263,10 @@ case 'player':
 case 'randnumber':
 	@rand = rand($option1, $option2)
 	msg(@rand)
+case 'even':
+	@return = _is_even_number($option1, $option2)
+	if(@return == true) { @cr = 'a' } else { @cr = 'c' }
+	msg(@prefix.color(9).'Even Number? '.color(@cr)._capitalize(@return))
 
 case 'number':
 #unexpected results do not rely on
@@ -274,6 +286,10 @@ case 'isproc':
 case 'cap':
 	msg(_capitalize($, $option1, $option2))
 
+case 'gc':
+msg(get_commands())
+case 'rd':
+msg(reflect_docs($option1, 'description'))
 default:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')
 	if(!is_array(@ds)) { @ds = array() }

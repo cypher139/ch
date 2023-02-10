@@ -23,7 +23,7 @@ for(@times, gte(@times, 1), dec(@times) inc(@ms, 1000),
 	if(@times == '1',
 		inc(@ms, 1000)
 		set_timeout(@ms,closure(_bc($name, $saying)))
-		set_timeout(@ms,closure(console($name round started)))
+		set_timeout(@ms,closure(console($name.' round started')))
 	)
 )
 <<<
@@ -43,11 +43,11 @@ everyone:/sareset [$blockid=80] = >>>
 
     if(gt(add(@lastreset, @cooldown), divide(time(),1000)),
         # then
-        msg(concat(color('red'),'[', color(6), Spleef, color('red'), ']', color('gold') 'Not enough time has passed since your last arena reset.'))
+        msg(concat(color('red'),'[', color(6), 'Spleef', color('red'), ']', color('gold') 'Not enough time has passed since your last arena reset.'))
 	assign(@timeleftsec, subtract(add(@lastreset, @cooldown), divide(time(),1000)))
 	assign(@timeleftmin, divide(@timeleftsec, 60))
 	assign(@timeleft, round(@timeleftsec))
-        die(concat(color('red'),'[', color(6), Spleef, color('red'), '] ', color(7), @timeleft, color('red'),' seconds to go'))
+        die(concat(color('red'),'[', color(6), 'Spleef', color('red'), '] ', color(7), @timeleft, color('red'),' seconds to go'))
     )
 
     export(@player.'.spleef.last.resettime', divide(time(),1000))
@@ -60,7 +60,7 @@ everyone:/sareset [$blockid=80] = >>>
 
 *:/addsc = >>>
 	export('Spleef.gameplay.gameinprogress', 'yes')
-assign(@scname, Spleef)
+assign(@scname, 'Spleef')
 msg(get_scoreboards())
 assign(@isfound, false)
 foreach(get_scoreboards(), @var,
@@ -72,20 +72,20 @@ if(@isfound == false,
 )
 assign(@isfound, false)
 foreach(get_objectives(@scname), @var,
-	if(@var[name] == 'Win', assign(@isfound, true) msg(1))
+	if(@var['name'] == 'Win', assign(@isfound, true) msg(1))
 )
 if(@isfound == false,
-	create_objective('Win', DUMMY, @scname)
+	create_objective('Win', 'DUMMY', @scname)
 )
 assign(@isfound, false)
 foreach(get_objectives(@scname), @var,
-	if(@var[name] == 'Lost', assign(@isfound, true) msg(1))
+	if(@var['name'] == 'Lost', assign(@isfound, true) msg(1))
 )
 if(@isfound == false,
-	create_objective('Lost', DUMMY, @scname)
+	create_objective('Lost', 'DUMMY', @scname)
 )
-set_objective_display('Win', array(displayname: 'In the game:', slot: SIDEBAR), @scname)
-set_objective_display('Lost', array(displayname: 'Lost', slot: PLAYER_LIST), @scname)
+set_objective_display('Win', array('displayname': 'In the game:', 'slot': 'SIDEBAR'), @scname)
+set_objective_display('Lost', array('displayname': 'Lost', 'slot': 'PLAYER_LIST'), @scname)
 
 msg(get_objectives(@scname))
 set_pscoreboard(player(), @scname)
@@ -97,8 +97,8 @@ msg(get_pscore('Lost', player(), @scname))
 
 *:/rmsc = >>>
 	export('Spleef.gameplay.gameinprogress', 'no')
-remove_scoreboard(Spleef)
-msg(done)
+remove_scoreboard('Spleef')
+msg('done')
 <<<
 
 
@@ -176,7 +176,7 @@ if(@action == 'out',
 	if(@gameinprogress == 'yes',
 		broadcast(color('e').@player.' is out of the game!')
 		#scoreboard
-		assign(@scname, Spleef)
+		assign(@scname, 'Spleef')
 		reset_all_pscores(@player, @scname)
 		set_pscore('Lost', player(), 1, @scname)
 	)

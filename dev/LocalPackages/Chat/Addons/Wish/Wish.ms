@@ -1,6 +1,6 @@
 #version 1.9-tmc
 
-bind('entity_damage', array('id': 'Wish.PvP.listener', 'priority': 'MONITOR'), array('type': 'PLAYER'), @event) {
+bind('entity_damage', array('id': 'Chat.Wish.PvP.listener', 'priority': 'MONITOR'), array('type': 'PLAYER'), @event) {
 	if(array_index_exists(@event, 'damager')) {
 		if(array_contains_ic(all_players(), @event['damager'])) {
 			export('Wish.player.'.puuid(@event['player'], 'dashless').'recent.PvP.damage', array('damager': @event['damager'], 'time': time()))
@@ -8,10 +8,10 @@ bind('entity_damage', array('id': 'Wish.PvP.listener', 'priority': 'MONITOR'), a
 	}
 }
 
-bind('player_chat', array('id': 'Wish.granter.lolz', 'priority': 'LOW'), null, @chat) {
+bind('player_chat', array('id': 'Chat.Wish.player', 'priority': 'LOW'), null, @chat) {
 	@name = 'Wish'
 	@player = player()
-	@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish')
+	@dev = import('ch.player.'._getplayerID(player())['id'].'.dev.scripts.wish')
 
 	#Save chat for later recall of players who have recently chatted.
 	@wlpc = import('wish.last.player.chat', array(@chat))
@@ -27,6 +27,9 @@ bind('player_chat', array('id': 'Wish.granter.lolz', 'priority': 'LOW'), null, @
 		if(@dev == true) { msg(@wish['message']) }
 		die()
 	}
+# Are there available wishes?
+
+	
 # Is a wish! perform action 
 	@grantwish = _wish_granter(@wish['action'], @wish['target'], @player)
 	if(@grantwish['success'] == true) {

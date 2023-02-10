@@ -18,7 +18,7 @@ foreach(@v in @args) {
 		array_remove_values(@args, @v)
 	}
 }
-@uuid = puuid(@player, 'dashless')
+if(@player == '~console') {	@uuid = 'console' } else { @uuid = puuid(@player, 'dashless') }
 @ds = get_value('ch.player.'.@uuid.'.dev.scripts')
 if(!is_array(@ds)) { @ds = array() }
 
@@ -26,17 +26,20 @@ if(@player != player() && !has_permission('commandhelper.alias.dev.msg.others'))
 	die(color('c').'['.color(8).@name.color('c').'] '.color('f').'You don\'t have permission to change other\'s dev message settings.')
 }
 
-proc _help() {
-	msg(color(6).'Debug messages help:')
-	msg(color('a').'Command usage: <required> [optional]')
-	msg(color('a').'/devmsg [scriptname] [scriptname] [scriptname]')
-	msg(color(6).'Actions:')
-	msg(color(7).'/devmsg'.color(4).' - '.color('f').'Reloads dev message settings in case of /reloadaliases')
-	msg(color(7).'/devmsg all'.color(4).' - '.color('f').'Enable/Disable dev message output from all scripts - if script name is not specifically mentioned.')
-	msg(color(7).'/devmsg scriptname'.color(4).' - '.color('f').'Enable/Disable dev message output from the script name mentioned.')
-	msg(color(7).'/devmsg extfunctions'.color(4).' - '.color('f').'Shows available Extension Events and Functions.')
-	msg(color(7).'/devmsg ext'.color(4).' - '.color('f').'Shows installed extensions.')
-	msg(color(7).'/devmsg ev'.color(4).' - '.color('f').'Shows current binded events.')
+@help = closure (@ex) {
+	@helparray = array(
+	color(6).'Debug messages help:',
+	color('a').'Command usage: <required> [optional]',
+	color('a').'/devmsg [scriptname] [scriptname] [scriptname]',
+	color(6).'Actions:',
+	color(7).'/devmsg'.color(4).' - '.color('f').'Reloads dev message settings in case of /reloadaliases',
+	color(7).'/devmsg all'.color(4).' - '.color('f').'Enable/Disable dev message output from all scripts - if script name is not specifically mentioned.',
+	color(7).'/devmsg scriptname'.color(4).' - '.color('f').'Enable/Disable dev message output from the script name mentioned.',
+	color(7).'/devmsg extfunctions'.color(4).' - '.color('f').'Shows available Extension Events and Functions.',
+	color(7).'/devmsg ext'.color(4).' - '.color('f').'Shows installed extensions.',
+	color(7).'/devmsg ev'.color(4).' - '.color('f').'Shows current binded events.'
+	)
+	return(array_implode(@helparray, '\n'))
 }
 
 if(array_size(@args) > 0) {
@@ -47,8 +50,7 @@ if(array_size(@args) > 0) {
 		case '-help':
 		case '?':
 		case '/?':
-			_help()
-			die()
+			die(@help())
 		case 'extfunctions':
 			msg(@prefix.color(6).'Available Extension Events / Functions:')
 			foreach(@key: @word in extension_info()) {

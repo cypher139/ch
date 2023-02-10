@@ -1,32 +1,36 @@
 #version 1.1-tmc
 ~admin:/randblock [$id='GRASS_BLOCK'] [$tries='20'] [$edity=0] = >>>
 	if(is_numeric($id)) {
-		assign(@id, data_name($id))
-		assign(@idn, $id)
+		@id = data_name($id)
+		@idn = $id
 	} else {
-		assign(@id, to_upper($id))
-		assign(@idn, data_values(@id))
+		@id = to_upper($id)
+		if(is_proc('_get_data_values')) {
+			@idn = _get_data_values(@id)
+		} else { 
+			@idn = null
+			console('Cannot get data_values info, proc is missing!')
+		}
 	}
-	assign(@xyz, associative_array())
+	@xyz = associative_array()
 #world
 	if(player() == '~console') {
-		assign(@xyz['world'], 'world')
+		@xyz['world'] = ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties')))['level-name']
 	} else {
-		assign(@xyz['world'], 'world')
+		@xyz['world'] = pworld()
 	}
 	
-	assign(@tries, $tries)
+	@tries = $tries
 	msg(color(7).'Searching for a '.color(3).@id.color(7).' [ID: '.color(3).@idn.color(7).'] block on the top level of geography for '.@tries.' tries.')
 	
-	for(assign(@i, 1), @i <= @tries, @i++,
+	for(@i = 1, @i <= @tries, @i++){
 #x (0)
-		assign(@xyz['x'], rand(-2500, 2500))
+		@xyz['x'] = rand(-2500, 2500)
 #z (2)
-		assign(@xyz['z'], rand(-2500, 2500))
+		@xyz['z'] = rand(-2500, 2500)
 #y (1)
-		assign(@xyz['y'], get_highest_block_at(@xyz['x'], @xyz['z'], @xyz['world'])[1] --)
-
-		assign(@blockID, get_block(@xyz))
+		@xyz['y'] = get_highest_block_at(@xyz['x'], @xyz['z'], @xyz['world'])[1] - 1
+		@blockID = get_block(@xyz)
 		msg(color(9).'Try #: '.@i.color(7).' Location (xyz): '.@xyz['x'].','.@xyz['y'].','.@xyz['z'].','.@xyz['world'].color(3).' id: '.@blockID)
 		if(@blockID == @id) {
 			msg(color(7).'Yay! A random "'.color(3).@blockID.color(7).'" block is located here: '.@xyz['x'].','.@xyz['y'].','.@xyz['z'].','.@xyz['world'])
@@ -40,5 +44,5 @@
 			break()
 # wrong spot, needs for return			msg(color(7).'Aw, after '.@tries.' tries a "'.color(3).@blockID.color(7).'" block was not found.')
 		}
-	)
+	}
 <<<
