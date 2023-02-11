@@ -291,7 +291,11 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 			} else {
 				if(is_array(@message)) {
 					if(array_index_exists(@message, 'embeds')) {
-						@sendmsg = array('content': @sendmsg, 'embeds': @message['embeds'])
+						if(@sendmsg == '') {
+							@sendmsg = array('embeds': @message['embeds'])
+						} else {
+							@sendmsg = array('content': @sendmsg, 'embeds': @message['embeds'])
+						}
 					}
 				}
 				discord_broadcast(@channel, @sendmsg)
@@ -302,8 +306,26 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		case 'message':
 		case 'private':
 			if(array_index_exists(@split, 0)) {
-				foreach(@msg in @split) { discord_private_message(@channel, @msg) }
+				foreach(@i: @msg in @split) { 
+					if(@i == (array_size(@split) - 1)) {
+						if(is_array(@message)) {
+							if(array_index_exists(@message, 'embeds')) {
+								@msg = array('content': @msg, 'embeds': @message['embeds'])
+							}
+						}
+					}						
+					discord_private_message(@channel, @msg)
+				}
 			} else {
+				if(is_array(@message)) {
+					if(array_index_exists(@message, 'embeds')) {
+						if(@sendmsg == '') {
+							@sendmsg = array('embeds': @message['embeds'])
+						} else {
+							@sendmsg = array('content': @sendmsg, 'embeds': @message['embeds'])
+						}
+					}
+				}
 				discord_private_message(@channel, @sendmsg)
 			}
 			return(true)
