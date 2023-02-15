@@ -33,16 +33,7 @@ bind('player_chat', array('id': 'Chat.Discord.msg.Send'), null, @chat) {
 bind('discord_message_received', array('id': 'Chat.Discord.msg.Receive'), null, @discord) {
 	@config = import('Chat.config.Discord')
 	#Setup list of server members for reference in mentions
-	@membersID = get_value('server.Discord.members.ID')
-	if(!array_contains(@membersID, @discord['userid'])) {
-		array_push(@membersID, @discord['userid'])
-		store_value('server.Discord.members.ID', @membersID)
-	}
-	@membersnames = get_value('server.Discord.members.names')
-	if(!array_contains(@membersnames, @discord['userid'])) {
-		array_set(@membersnames, @discord['username'], @discord['userid'])
-		store_value('server.Discord.members.names', @membersnames)
-	}
+	_chat_dc_add_member(@discord);
 
 	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true) {
 		array_set(@discord, 'time', time())

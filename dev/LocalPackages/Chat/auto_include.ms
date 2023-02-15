@@ -357,3 +357,18 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	}
 	
 }
+
+proc _chat_dc_add_member(@discord) {
+	@membersID = import('server.Discord.members.ID')
+	if(!array_contains(@membersID, @discord['userid'])) {
+		array_push(@membersID, @discord['userid'])
+		store_value('server.Discord.members.ID', @membersID)
+		export('server.Discord.members.ID', @memberIDs)
+	}
+	@membersnames = import('server.Discord.members.names')
+	if(!array_contains(@membersnames, @discord['userid'])) {
+		array_set(@membersnames, @discord['username'], @discord['userid'])
+		store_value('server.Discord.members.names', @membersnames)
+		export('server.Discord.members.names', @membernames)
+	}
+}

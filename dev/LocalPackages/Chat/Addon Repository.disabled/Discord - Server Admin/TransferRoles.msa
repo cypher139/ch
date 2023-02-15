@@ -38,11 +38,8 @@ if(array_contains(@args, 'undo')) {
 	store_value('Chat.debug.Discord.User.'.$to.'.old.roles', @toroles)
 	@toroles = array_merge(@toroles, @fromroles)
 }
-	# console(@toroles, false)
-# for normal array only:
-# array_push_all(@toroles, array_normalize(@fromroles))
-# @toroles = array_unique(@toroles)
-	# console(@fromroles)
+# console(@toroles, false)
+# console(@fromroles)
 	
 discord_member_set_roles($to, @toroles)
 msg(color('a').'Discord User '.color(3).$to.color('a').' had their Roles set to:\n'.color('r').array_keys(@toroles))

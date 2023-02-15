@@ -35,6 +35,9 @@ export('Chat.config.Server', @b7xbc2t)
 		
 #Prerequisites for Discord functions: Connect to Server!
 if(function_exists('discord_connect')) {
+# Database Startup
+	export('server.Discord.members.ID', get_value('server.Discord.members.ID'))
+	export('server.Discord.members.names', get_value('server.Discord.members.names'))
 # Load Discord Configs
 	@zrp1mg6 = ''
 	try {
@@ -65,7 +68,7 @@ if(function_exists('discord_connect')) {
 	
 	export('Chat.config.Discord', @zrp1mg6)
 	try {
-		discord_connect('discordCredentials', closure(){
+		discord_connect(@zrp1mg6['Profile_Name'], closure(){
 			broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color('a').'Connected'.color(8).' to Discord');
 			if(get_value('Chat.Discord.Console.receive') == true) {
 				export('Chat.Discord.Console.receive', true)
@@ -73,7 +76,7 @@ if(function_exists('discord_connect')) {
 			} else {
 				export('Chat.Discord.Console.receive', false)
 			}
-			discord_set_activity('LISTENING', string('Minecraft'));
+			discord_set_activity('PLAYING', string('Minecraft'));
 		})
 /*
 		if(import('Chat.Discord.Has.Started') == false) {

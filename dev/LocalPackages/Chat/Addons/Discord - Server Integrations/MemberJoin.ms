@@ -62,18 +62,20 @@ bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), nu
 	if(!is_array(@config['Welcome_Roles'])) { die('plz fill welcome roles config') }
 
 	# Remove user entry from internal storages
-	@membernames = get_value('server.Discord.members.names')
+	@membernames = import('server.Discord.members.names')
 	if(is_array(@membernames)) { 
 		if(array_contains(array_keys(@membernames), @event['username'])) {
 			array_remove(@membernames, @event['username'])
 			store_value('server.Discord.members.names', @membernames)
+			export('server.Discord.members.names', @membernames)
 		}
 	}
-	@memberIDs = get_value('server.Discord.members.ID')
+	@memberIDs = import('server.Discord.members.ID')
 	if(is_array(@memberIDs)) { 
 		if(array_contains(@memberIDs, @event['userid'])) {
 			array_remove_values(@memberIDs, @event['userid'])
 			store_value('server.Discord.members.ID', @memberIDs)
+			export('server.Discord.members.ID', @memberIDs)
 		}
 	}
 	

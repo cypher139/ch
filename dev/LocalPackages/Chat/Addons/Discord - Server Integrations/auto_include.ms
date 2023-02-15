@@ -129,11 +129,11 @@ proc _chat_handlecommand(@discord, @dm, @cmdfrom) {
 		@cmdfrom = ''
 	}
 	
-	@membersID = get_value('server.Discord.members.ID')
+	@membersID = import('server.Discord.members.ID')
 	if(!array_contains(@membersID, @discord['userid'])) {
 		array_push(@membersID, @discord['userid'])
 	}
-	@membersnames = get_value('server.Discord.members.names')
+	@membersnames = import('server.Discord.members.names')
 	if(!array_contains(@membersnames, @discord['userid'])) {
 		array_set(@membersnames, @discord['username'], @discord['userid'])
 	}
