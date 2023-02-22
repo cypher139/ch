@@ -38,6 +38,7 @@ if(function_exists('discord_connect')) {
 # Database Startup
 	export('server.Discord.members.ID', get_value('server.Discord.members.ID'))
 	export('server.Discord.members.names', get_value('server.Discord.members.names'))
+	export('server.Discord.members.leaderboard', get_value('server.Discord.members.leaderboard'))
 # Load Discord Configs
 	@zrp1mg6 = ''
 	try {

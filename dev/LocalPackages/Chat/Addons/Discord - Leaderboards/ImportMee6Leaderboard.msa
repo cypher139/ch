@@ -1,0 +1,82 @@
+#version 1.0-tmc
+admin:/importmee6lb [$serverid] [$] = >>>
+@name = 'Discord'
+@id = $serverid
+@args = parse_args($)
+@config = import('Chat.config.Discord')
+if(array_contains(@args, 'help')) {
+	msg('This imports the Mee6 Leaderboard data to CH storage, for use with a CH based leaderboard ranking system.')
+	msg('specify the Mee6 server ID to use after the command. ex. if your leaderboard link is "https://mee6.xyz/en/leaderboard/123456" the server ID is "123456".')
+	die()
+}
+if($serverid == 'local') { 
+	try { 
+		@mee6LeaderboardData = json_decode(import('Chat.logs.dir').'/Import-Leaderboard.json')
+	} catch(Exception @ex) {
+		die(@ex['message'])
+	}
+	@newLeaderboard = array('lastedit': time(), 'members': array(), 'role_rewards': @mee6LeaderboardData['role_rewards'], 'guild': @mee6LeaderboardData['guild'], 'xp_per_message': @mee6LeaderboardData['xp_per_message'], 'xp_gain_rate': @mee6LeaderboardData['xp_rate'])
+	foreach(@i: @user in @mee6LeaderboardData['players']) {
+		array_set(@newLeaderboard['members'], @mee6LeaderboardData['players'][@i]['id'], @user)
+		array_remove(@newLeaderboard['members'][@mee6LeaderboardData['players'][@i]['id']], 'guild_id')
+		array_remove(@newLeaderboard['members'][@mee6LeaderboardData['players'][@i]['id']], 'id')
+		array_set(@newLeaderboard['members'][@mee6LeaderboardData['players'][@i]['id']], 'time', time())
+	}
+	msg('Leaderboard size: '.array_size(@newLeaderboard['members'])) 
+	store_value('server.Discord.members.leaderboard', @newLeaderboard);
+	_write_file(import('Chat.logs.dir').'/Mee6-Leaderboard-'.@mee6LeaderboardData['guild']['name'].'.json', @data['body'], 'OVERWRITE')
+	_write_file(import('Chat.logs.dir').'/Converted-Mee6-Leaderboard-'.@mee6LeaderboardData['guild']['name'].'.json', @newLeaderboard, 'OVERWRITE')
+	msg('The import of '.@mee6LeaderboardData['guild']['name'].'\'s Leaderboard was successful.')
+	die()
+}
+	
+if(!is_numeric($serverid)) {
+	die('Invalid Server ID given.')
+}
+
+if(array_contains(@args, 'view')) {
+msg(get_value('server.Discord.members.leaderboard'))
+die()
+}
+
+
+
+# variables scoped, does not provide edits back.
+http_request('https://mee6.xyz/api/plugins/levels/leaderboard/'.$serverid.'?limit=999&page=0', array('blocking': true, 'success': closure(@data) {
+	if(@data['error'] == true) {
+		if(@data['responseCode'] == 404) {
+			die('Guild "'.$serverid.'" was not found.')
+		}
+		msg('No relevant data received from server, did you typo the server ID?')
+		export('server.Discord.Leaderboard.error', @data)
+		return(false)
+	} else {
+		@mee6LeaderboardData = json_decode(@data['body'])
+		@newLeaderboard = array('LB_Guild_Name': @config['LB_Guild_Name'], 'lastedit': time(), 'members': array(), 'role_rewards': '', 'guild': @mee6LeaderboardData['guild'], 'LB_XP_Per_Message': @mee6LeaderboardData['xp_per_message'], 'LB_XP_Gain_Rate': @mee6LeaderboardData['xp_rate'])
+		foreach(@i: @user in @mee6LeaderboardData['players']) {
+			@userid = @mee6LeaderboardData['players'][@i]['id']
+			array_set(@newLeaderboard['members'], @userid, @user)
+			array_remove(@newLeaderboard['members'][@userid], 'guild_id')
+			array_remove(@newLeaderboard['members'][@userid], 'id')
+			array_set(@newLeaderboard['members'][@userid], 'time', time())
+		}
+		@rr = array('LB_XP_Per_Message': @mee6LeaderboardData['xp_per_message'], 'LB_XP_Gain_Rate': @mee6LeaderboardData['xp_rate'], 'LB_Role_Rewards': array())
+		foreach(@j: @role in @mee6LeaderboardData['role_rewards']) {
+			array_set(@rr['LB_Role_Rewards'], @role['rank'], array('RoleID': @role['role']['id'], 'RoleName': @role['role']['name']))
+		}
+		@newLeaderboard['role_rewards'] = @rr
+		/*
+		avatar:
+		https://cdn.discordapp.com/avatars/<USERID>/<AVATARID under {avatar: ccbd010665c3c18c02d40b26837317f8}>.webp?size=512
+		*/
+		msg('Leaderboard size: '.array_size(@newLeaderboard['members'])) 
+		store_value('server.Discord.members.leaderboard', @newLeaderboard);
+		_write_file(import('Chat.logs.dir').'/Mee6-Leaderboard-'.@mee6LeaderboardData['guild']['name'].'.json', @data['body'], 'OVERWRITE')
+		_write_file(import('Chat.logs.dir').'/Converted-Mee6-Leaderboard-'.@mee6LeaderboardData['guild']['name'].'.json', json_encode(@newLeaderboard), 'OVERWRITE')
+		_write_file(import('Chat.logs.dir').'/Converted-Mee6-RoleRewards-Config-'.@mee6LeaderboardData['guild']['name'].'.yml', yml_encode(@rr, true), 'OVERWRITE')
+		msg('The import of '.@mee6LeaderboardData['guild']['name'].'\'s Leaderboard was successful.')
+		msg('You will need to add the Role Rewards configuration manually to the Chat Discord Config file. A config file was provided to copypaste from.')
+		return(true)
+	}
+}));
+<<<
