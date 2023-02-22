@@ -11,14 +11,12 @@ Then this will send a message to the ping role to come join voice chat
 */
 
 bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null, @discord) {
-# Data: userid, username, nickname, channel (name)
 # Note: import is auto globally saved (example #2), so use new variables to store edits needed
 	@config = import('Chat.config.Discord')
 	if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
 	@userroles = discord_member_get_roles(@discord['userid'])
 	@stats = get_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')
 	if(!is_array(@stats)) { @stats = array('start': time(), 'end': '', 'users': '', 'channel': @discord['channel']) }
-	
 	
 	#Ping @VC role to come join the main VC channel.
 	if(array_contains(@userroles, @config['VC_Role_ID']) && @discord['channel'] == @config['VC_Channel_Name']) {
@@ -91,7 +89,6 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 
 
 bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null, @discord) {
-# Data: userid, username, nickname, channel (name)
 	@config = import('Chat.config.Discord')
 	if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
 	@currentVCUsers = get_value('Chat.Discord.VC.'.@discord['channelid'].'.users.current')

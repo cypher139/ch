@@ -57,29 +57,23 @@ proc _chat_cmd_help(@discord) {
 	@userTypeDisplay = ''
 	@admincommandlist = array_deep_clone(import('Chat.Discord.Command.List.Admin', array()))
 	@aliaseslist = array_deep_clone(import('Chat.Discord.Command.List.Alias', array()))
-	@commandlist = array_keys(import('Chat.Discord.Command.List', array()))
 	@categorieslist = array_deep_clone(import('Chat.Discord.Command.List.Categories', array()))
-	foreach(@cmd in @commandlist) {
-		if(@isAdmin == false) {
-			array_remove(@categorieslist, 'Admin')
-			if(array_contains_ic(@admincommandlist, @cmd)) {
-				array_remove_values(@commandlist, @cmd)
-				array_remove_values(@aliaseslist, @cmd)
-			}
+	if(@isAdmin == false) {
+		array_remove(@categorieslist, 'Admin')
+		foreach(@cmd in @admincommandlist) {
+			array_remove_values(@aliaseslist, @cmd)
 		}
-		if(length(@cmd) < 3) { array_push(@aliaseslist, @cmd) }
-		if(array_contains(@aliaseslist, @cmd)) {
-			array_remove_values(@commandlist, @cmd)
-		}
-	}
-	array_sort(@commandlist, 'STRING')
+	} else { @userTypeDisplay = ' (Admin)' }
 	array_sort(@aliaseslist, 'STRING')
-	if(@isAdmin == true) { @userTypeDisplay = ' (Admin)' }
 	@fields = array()
 	foreach(@cat: @list in @categorieslist) {
+		if(@isAdmin == false && @cat == 'Admin') { continue() }
 		array_push(@fields, array('name': @cat, 'value': '`'.array_implode(array_sort(@list, 'STRING'), '` `').'`', 'inline': false))
 	}
-	_send_discord_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': array(array('fields': @fields, 'color': array('r': 255, 'g': 204, 'b': 0), 'description': 'Command List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/925074738437570600.webp?size=32', 'text': 'the cool bot.')), array('fields': array(array('name': 'Aliases', 'value': '`'.array_implode(array_unique(@aliaseslist), '` `').'`', 'inline': false)), 'color': array('r': 170, 'g': 221, 'b': 0)))), 'discord', @discord['userid'], 'dm')
+	@embeds = array(array('fields': @fields, 'color': array('r': 255, 'g': 204, 'b': 0), 'description': 'Command List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/925074738437570600.webp?size=32', 'text': 'the cool bot.')))
+	@aliasembed = array('fields': array(array('name': 'Aliases', 'value': '`'.array_implode(array_unique(@aliaseslist), '` `').'`', 'inline': false)), 'color': array('r': 170, 'g': 221, 'b': 0))
+	if(@isAdmin == true) { array_push(@embeds, @aliasembed) }
+	_send_discord_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds), 'discord', @discord['userid'], 'dm')
 	return(true)
 }
 
@@ -264,6 +258,7 @@ proc _chat_cmd_fakeadmin(@discord) {
 	'say': closure(@discord, @args) { return(_chat_cmd_say(@discord, @args)); },
 	'poo': closure(@discord, @args) { return(_chat_cmd_poo(@discord, @args)); },
 	'fakeadmin': closure(@discord) { return(_chat_cmd_fakeadmin(@discord)); },
+	'fakeop': closure(@discord) { return(_chat_cmd_fakeadmin(@discord)); },
 	'sudo': closure(@discord) { return(_chat_cmd_fakeadmin(@discord)); },
 	'makemeadmin': closure(@discord) { return(_chat_cmd_fakeadmin(@discord)); },
 	'fban': closure(@discord, @args) { return(_chat_cmd_fakeban(@discord, @args)); },
@@ -280,11 +275,11 @@ if(!array_index_exists(@ow7q, 'Utility')) { array_set(@ow7q, 'Utility', array())
 if(!array_index_exists(@ow7q, 'Fun')) { array_set(@ow7q, 'Fun', array()) }
 @ow7q['Utility'] = array_unique(array_merge(@ow7q['Utility'], @ow7qU))
 @ow7q['Fun'] = array_unique(array_merge(@ow7q['Fun'], @ow7qF))
-console(test111)
 @c3lx = array_merge(@c3lx, @yky5)
-array_push(@aqzy, 'sudo', 'makemeadmin', 'fban')
+#Aliases:
+array_push(@aqzy, 'sudo', 'makemeadmin', 'fban', 'fakeop')
+#Admin:
 # array_push(@pnqx, 'wrf', 'welcomerolesfinder')
-# array_push(@aqzy, 'wrf')
 export('Chat.Discord.Command.List', @c3lx)
 # export('Chat.Discord.Command.List.Admin', array_unique(@pnqx))
 export('Chat.Discord.Command.List.Alias', array_unique(@aqzy))

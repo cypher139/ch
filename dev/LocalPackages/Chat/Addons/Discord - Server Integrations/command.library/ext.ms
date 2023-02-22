@@ -136,6 +136,9 @@ if(is_proc('_codegen')) {
 	@c3lx = array_merge(@c3lx, @qn92)
 	@ow7qU = array('codegen')
 	@ow7qF = array('listpasswords')
+} else {
+	@ow7qU = array()
+	@ow7qF = array()
 }
 if(is_proc('_chat_WelcomeRolesFinder')) {
 	@mIu7 = array(	
@@ -152,6 +155,8 @@ if(is_proc('_chat_WelcomeRolesFinder')) {
 	array_push(@pnqx, 'wrf', 'welcomerolesfinder')
 	array_push(@aqzy, 'wrf')
 	@ow7qA = array('welcomerolesfinder')
+} else {
+	@ow7qA = array()
 }
 
 # Categories. 

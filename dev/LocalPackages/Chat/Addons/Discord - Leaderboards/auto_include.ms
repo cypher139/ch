@@ -1,6 +1,4 @@
-username	"TatsumaYakoshi"
-xp	638910
-*/
+#version 1.0-tmc
 proc _chat_lb_update_database(@args) {
 #check for import leaderboard, and import (database lastedittime)
 	@config = import('Chat.config.Discord')

@@ -290,7 +290,8 @@ case 'gc':
 msg(get_commands())
 case 'rd':
 msg(reflect_docs($option1, 'description'))
-default:
+case '':
+case null:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')
 	if(!is_array(@ds)) { @ds = array() }
 	if(array_contains(@ds, 'all') || @player == '~console') {
@@ -305,5 +306,7 @@ default:
 	}
 	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'No action specified.')
 	_ch_help()
+default:
+	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'Action not recognized.')
 }
 <<<
