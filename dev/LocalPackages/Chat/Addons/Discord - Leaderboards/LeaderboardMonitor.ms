@@ -55,9 +55,8 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 		@leaderboard['members'][@userID]['time'] = (time() - 60000)
 	}
 
-
-# If current XP is greater than the max for this level:
-	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level']] && @noXP == false) {
+# If current XP is greater than the max for the next level:
+	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level'] + 1] && @noXP == false) {
 		@currentrank = ''
 		@newlevel = @leaderboard['members'][@userID]['level'] + 1
 		@leaderboard['members'][@userID]['level'] = @newlevel
@@ -98,13 +97,12 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 		} catch(Exception @ex) {
 			die()
 		}
-	}
-	
-	@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Level_Up_Message'])
-	@discordMsg = reg_replace('%Level%', @newlevel.@rankmsg, @discordMsg)
-	console('[Discord] '.@discord['username'].' '.@discordMsg, false)
-	# _send_discord_message('<@'.@userID.'> just leveled up to level '.@newlevel.@rankmsg, 'discord', @discord['channel'])
 
+		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Level_Up_Message'])
+		@discordMsg = reg_replace('%Level%', @leaderboard['members'][@userID]['level'].@rankmsg, @discordMsg)
+		console('[Discord] '.@discord['username'].' '.@discordMsg, false)
+		# _send_discord_message('<@'.@userID.'> just leveled up to level '.@newlevel.@rankmsg, 'discord', @discord['channel'])
+	}
 #Save edits
 	@leaderboard['lastedit'] = time()
 	export('server.Discord.members.leaderboard', @leaderboard)

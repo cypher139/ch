@@ -5,7 +5,7 @@ proc _chat_lb_update_database(@args) {
 	@leaderboard = import('server.Discord.members.leaderboard', array('lastedit': 0));
 	@lastsave = import('server.Discord.members.leaderboard.last.save', time());
 	if(@leaderboard['lastedit'] > @lastsave) {
-	console('[Discord] Saved Leaderboard Database.', false)
+		# console('[Discord] Saved Leaderboard Database.', false)
 		store_value('server.Discord.members.leaderboard', @leaderboard)
 		export('server.Discord.members.leaderboard.last.save', time())
 		_write_file(import('Chat.logs.dir').'/Leaderboard_'.reg_replace('\\s', '_', @leaderboard['guild']['name']).'.json', json_encode(@leaderboard), 'OVERWRITE')
@@ -18,8 +18,8 @@ proc _chat_lb_levelXP(@args) {
 array_resize(@levelxp, 200)
 @mp = 1
 foreach(@i: @lvl in @levelxp) {
-	if(@i == 0) { @levelxp[0] = 0 }
 	if(@i < 2) { continue() }
+	# Define XP needed to reach each level, as a multiplier of level 1 100xp + previous level
 	switch(@i) {
 	case 2:
 		@mp = 2.5
