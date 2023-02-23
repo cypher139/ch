@@ -2,13 +2,15 @@
 proc _chat_lb_update_database(@args) {
 #check for import leaderboard, and import (database lastedittime)
 	@config = import('Chat.config.Discord')
-	@leaderboard = import('server.Discord.members.leaderboard', get_value('server.Discord.members.leaderboard'));
-	@lastsave = import('server.Discord.members.leaderboard.last.save', (time() + 100000));
+	@leaderboard = import('server.Discord.members.leaderboard', array('lastedit': 0));
+	@lastsave = import('server.Discord.members.leaderboard.last.save', time());
 	if(@leaderboard['lastedit'] > @lastsave) {
+	console('[Discord] Saved Leaderboard Database.', false)
 		store_value('server.Discord.members.leaderboard', @leaderboard)
 		export('server.Discord.members.leaderboard.last.save', time())
 		_write_file(import('Chat.logs.dir').'/Leaderboard_'.reg_replace('\\s', '_', @leaderboard['guild']['name']).'.json', json_encode(@leaderboard), 'OVERWRITE')
 	}
+	# } else { console('nosave') }
 }
 
 proc _chat_lb_levelXP(@args) {
