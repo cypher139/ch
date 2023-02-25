@@ -127,19 +127,30 @@ case 'clearvalue':
 case 'cv':
 	msg(@prefix.color(6).'Clear value: '.color('d').@option1)
 	clear_value(@option1)
-	if(has_value(@option1) == false,
-		msg(@prefix.color(6).'Successfully cleared value.')
-	)
+	if(has_value(@option1) == false) { msg(@prefix.color(6).'Successfully cleared value.') }
 
 case 'getvalue':
 case 'gv':
 	@v = get_value(@option1)
 	@arraymsg = ''
+	@as = 0
+	@color = 7
 	if(is_array(@v)) {
-		@arraymsg = color(3).' Array size: '.array_size(@v)
+		@as = array_size(@v)
+		@arraymsg = color(3).' Array size: '.@as
+	} else {
+		switch(@v) {
+		case true:
+			@color = 10
+		case false:
+			@color = 12
+		case null:
+			@color = 8
+		}
 	}
-	msg(@prefix.color(6).'Get value: '.color('d').@option1.@arraymsg.color('f').' Value returned:')
-	msg(color(7).@v)
+	msg(@prefix.color(6).'Get value: '.color('d').@option1.@arraymsg.color('f').' returned:')
+	msg(color(@color).@v)
+	if(@as > 9) { msg(@prefix.@arraymsg) }
 
 case 'hasvalue':
 case 'hv':
@@ -163,8 +174,45 @@ case 'getvalues':
 case 'gvs':
 	if(@option1 == '', @option1 = player())
 	@v = get_values(@option1)
-	msg(@prefix.color(6).'Get values: '.color('d').@option1.color('f').' Value(s) returned:')
-	msg(color(7).@v)
+	msg(@prefix.color(6).'Get values: '.color('d').@option1)
+	foreach(@key: @data in @v) {
+		msg(color(2).@key.': '.color(7).@data)
+	}
+	msg(@prefix.color(3).'Total values found: '.array_size(@v))
+
+case 'hasvalues':
+case 'hvs':
+	if(@option1 == '', @option1 = player())
+	@v = get_values(@option1)
+	msg(@prefix.color(6).'Has values: '.color('d').@option1)
+	foreach(@key: @data in @v) {
+		msg(color(2).@key)
+	}
+	msg(@prefix.color(3).'Total values found: '.array_size(@v))
+	
+case 'clearvalues':
+case 'cvs':
+	if(@option1 == '') { die() }
+	if(@option1 == 'undo') {
+		@undo = import('ch.cvs.undo', array())
+		if(array_size(@undo) == 0) {
+			msg(@prefix.color(6).'There is no data to restore.')
+		} else {
+			foreach(@key: @data in @undo) {
+				store_value(@key, @data)
+			}
+			msg(@prefix.color(6).'Restored '.array_size(@undo).' values.')
+		}
+		die()
+	}
+	@v = get_values(@option1)
+	export('ch.cvs.undo', @v)
+	msg(@prefix.color(6).'Clear all values: '.color('d').@option1)
+	foreach(@key: @data in @v) {
+		clear_value(@key)
+		if(has_value(@key) == false) { msg(@prefix.color(6).'Cleared value: '.@key) }
+	}
+	msg(@prefix.color(1).'Total values cleared: '.array_size(@v))
 
 case 'tolower':
 case 'lower':
@@ -196,17 +244,15 @@ case 'deathmsg':
 
 case 'verbose':
 	@verbosesetting = get_value(@name.'.player.'.@playerID['id'].'.verbose')
-	if(@verbosesetting == true,
-		#disable
-	        store_value(@name.'.player.'.@playerID['id'].'.verbose', false)
-	        export(@name.'.player.'.@playerID['id'].'.verbose', false)
-		die(@prefix.color('c').'Disabled! '.color(7).' Extra messages from scripts won\'t be displayed.')
-	,
-		#enable
-	        store_value(@name.'.player.'.@playerID['id'].'.verbose', true)
-	        export(@name.'.player.'.@playerID['id'].'.verbose', true)
+	if(!is_boolean(@verbosesetting)) { @verbosesetting = false }
+	@verbosesetting = !@verbosesetting
+	store_value(@name.'.player.'.@playerID['id'].'.verbose', @verbosesetting)
+	export(@name.'.player.'.@playerID['id'].'.verbose', @verbosesetting)
+	if(@verbosesetting == true) {
 		die(@prefix.color('a').'Enabled! '.color(7).'Verbose messages are enabled! If the script you use supports displaying extra messages using a global value, they will be displayed.')
-	)
+	} else {
+		die(@prefix.color('c').'Disabled! '.color(7).' Extra messages from scripts won\'t be displayed.')
+	}
 
 case 'dev':
 case 'devmsg':
@@ -221,30 +267,43 @@ case 'export':
 case 'import':
 	@v = import($option1)
 	@arraymsg = ''
+	@as = 0
+	@color = 7
 	if(is_array(@v)) {
-		@arraymsg = color(3).' Array size: '.array_size(@v)
+		@as = array_size(@v)
+		@arraymsg = color(3).' Array size: '.@as
+	} else {
+		switch(@v) {
+		case true:
+			@color = 10
+		case false:
+			@color = 12
+		case null:
+			@color = 8
+		}
 	}
-	msg(@prefix.color(6).'Import: '.color('d').@option1.@arraymsg.color('f').' Value(s) returned:')
-	msg(color(7).@v)
+	msg(@prefix.color(6).'Import: '.color('d').@option1.@arraymsg.color('f').' returned:')
+	msg(color(@color).@v)
+	if(@as > 9) { msg(@prefix.@arraymsg) }
 
 case 'extfunctions':
 case 'extinfo':
 	msg(@prefix.color(6).'Available Extension Events/Functions:')
-	foreach(@key: @word in extension_info()) {
-		if(@key == 'Core') { continue() }
-		if(array_size(@word['events']) != 0) { 
-			msg(@prefix.color(3).@key.' '.color(2).'Events: '.color(7).@word['events'])
+	foreach(@ext: @data in extension_info()) {
+		if(@ext == 'Core') { continue() }
+		if(array_size(@data['events']) != 0) { 
+			msg(@prefix.color(3).@ext.' '.color(2).'Events: '.color(7).@data['events'])
 		}
-		if(array_size(@word['functions']) != 0) { 
-			msg(@prefix.color(3).@key.' '.color(9).'Functions: '.color(7).@word['functions'])
+		if(array_size(@data['functions']) != 0) { 
+			msg(@prefix.color(3).@ext.' '.color(9).'Functions: '.color(7).@data['functions'])
 		}
 	} 
 case 'extensions':
 case 'ext':
 	msg(@prefix.color(6).'Installed Extensions:')
-	foreach(@key: @word in extension_info()) {
-		if(@key == 'Core') { continue() }
-		msg(@prefix.color(3).@key.' '.color(7).'( Version: '.@word['version'].' )')
+	foreach(@ext: @data in extension_info()) {
+		if(@ext == 'Core') { continue() }
+		msg(@prefix.color(3).@ext.' '.color(7).'( Version: '.@data['version'].' )')
 	}   
 case 'player':
 #	msg(vault_pgroup(@player, prefix))
@@ -287,9 +346,17 @@ case 'cap':
 	msg(_capitalize($, $option1, $option2))
 
 case 'gc':
-msg(get_commands())
+	msg(get_commands())
 case 'rd':
-msg(reflect_docs($option1, 'description'))
+	msg(reflect_docs($option1, 'description'))
+case 'sd':
+case 'date':
+	if(is_numeric($option1)) {
+		msg(simple_date('MM/dd/yyyy HH:mm:ss', $option1))
+	} else {
+		msg('Not a timestamp?')
+	}
+
 case '':
 case null:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')
