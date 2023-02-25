@@ -1,0 +1,82 @@
+#version 1.0-tmc
+admin:/lbdbg [$action] [$id] [$] = >>>
+@name = 'Discord'
+@id = $id
+@leaderboard = import('server.Discord.members.leaderboard', get_value('server.Discord.members.leaderboard'));
+@levelxp = import('server.Discord.leaderboard.levelXP')
+@args = parse_args($)
+@config = import('Chat.config.Discord')
+	
+if(!is_numeric(@id)) {
+	die('Invalid User ID given.')
+}
+
+try {
+	@toroles = discord_member_get_roles(@id)
+} catch(Exception @ex) {
+	die(color('c').'ID Not Found on Server: '.@ex['message'])
+}
+	
+
+msg('['.@name.'] ID: '.@id)
+switch($action) {
+case 'level':
+case 'l':
+	if(!array_index_exists(@args, 0)) { die() }
+	if(!is_numeric(@args[0])) { die('Non-numeric Level given.') }
+	if(array_index_exists(@leaderboard, 'members', @id)) {
+		@oldlvl = @leaderboard['members'][@id]['level']
+		@leaderboard['members'][@id]['level'] = @args[0]
+		export('server.Discord.members.leaderboard', @leaderboard)
+		msg('ID level: Was: '.@oldlvl.' Now: '.@args[0])
+	} else {
+		msg('did not find ID')
+	}
+
+case 'read':
+case 'r':
+	msg(@leaderboard['members'][@id])
+
+case 'clear':
+case 'c':
+	if(array_index_exists(@leaderboard, 'members', @id)) {
+		array_remove(@leaderboard['members'], @id)
+		export('server.Discord.members.leaderboard', @leaderboard)
+		msg('ID removed from leaderboard')
+	} else {
+		msg('did not find ID')
+	}
+
+case 'store':
+case 'st':
+	if(array_index_exists(@leaderboard, 'members', @id)) {
+		store_value('Chat.debug.Discord.User.'.@id.'.saved.lb', @leaderboard['members'][@id])
+		msg('Saved this ID to debug storage')
+	} else {
+		msg('did not find ID')
+	}	
+
+case 'restore':
+case 're':
+	@restore = get_value('Chat.debug.Discord.User.'.@id.'.saved.lb')
+	if(!is_array(@restore)) {
+		die('Did not find restore data for this ID')
+	}
+	@leaderboard['members'][@id] = @restore
+	export('server.Discord.members.leaderboard', @leaderboard)
+	msg('restored this ID')
+	
+case 'default':
+case 'd':
+	array_set(@leaderboard['members'], @id, array('time': (time() - 70000), 'level': 3, 'xp': 412, 'username': 'TESTNAME', 'message_count': 0))
+	export('server.Discord.members.leaderboard', @leaderboard)
+	msg('Saved default for this ID')
+case 'xp':
+	foreach(@i: @lvl in @levelxp) {
+		msg('Level '.@i.': '.@lvl)
+		if(@i > 100) { break() }
+	}
+	msg('call 66: '.@levelxp[66])
+	
+}
+<<<

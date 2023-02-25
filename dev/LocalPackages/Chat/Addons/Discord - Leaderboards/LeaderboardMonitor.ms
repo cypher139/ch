@@ -6,7 +6,7 @@ if(!is_array(import('server.Discord.members.leaderboard'))) {
 }
 # Every 10 minutes store changes to leaderboard in RAM to the database
 # Also publishes json to logs. A webserver can pull from this for a online leaderboard display. (sold separately sry)
-set_interval(600000, 60000, closure(){ _chat_lb_update_database() });
+set_interval(600000, 100000, closure(){ _chat_lb_update_database() });
 _chat_lb_levelXP();
 
 # Data: userid, username, nickname, channel, channelid, channeltype, message, id, attachments {{url, filename, description}}
@@ -19,15 +19,19 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 	if(array_contains(@config['LB_NoXP_Channels'], @discord['channel'])) { @noXP = true }
 	if(@discord['channel'] == @config['CMD_Default_Channel']) { @noXP = true }
 	@leaderboard = import('server.Discord.members.leaderboard', get_value('server.Discord.members.leaderboard'));
+	@xptimer = import('server.Discord.members.leaderboard.xptimer', array('test': 123))
+	if(!array_index_exists(@xptimer, @userID)) {
+		array_set(@xptimer, @userID, (time() - 70000))
+	}
 	#Setup list of server members for reference in mentions
-	_chat_dc_add_member(@discord) 
+	_chat_dc_add_member(@discord);
 	
 	if(!array_index_exists(@leaderboard, 'members', @userID)) {
-		array_set(@leaderboard['members'], @userID, array('time': (time() - 70000), 'level': 0, 'xp': 0, 'username': @discord['username'], 'message_count': 0))
+		array_set(@leaderboard['members'], @userID, array('last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'message_count': 0))
 	}
 
 # If user has last chatted in last rolling minute, do not award XP. (continues to count message)
-	if((@leaderboard['members'][@userID]['time'] + 60000) > time()) {
+	if((@xptimer[@userID] + 60000) > time()) {
 		@noXP = true 
 	} else {
 # Check if user has a no XP earning role.
@@ -43,40 +47,46 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 			}
 		}
 	}
-# Incrememnt Message count and XP
+# Increment Message count and XP
 	@leaderboard['members'][@userID]['message_count'] = @leaderboard['members'][@userID]['message_count'] + 1
-
+	@leaderboard['members'][@userID]['last_msg'] = time()
 	if(@noXP == false) {
 		@newxp = rand(@config['LB_XP_Per_Message'][0], @config['LB_XP_Per_Message'][1])
-		@leaderboard['members'][@userID]['time'] = time()
+		@xptimer[@userID] = time()
 		@leaderboard['members'][@userID]['xp'] = @leaderboard['members'][@userID]['xp'] + @newxp
-	} else {
-	# backdated time so immediate new message in XP earning channel can be counted
-		@leaderboard['members'][@userID]['time'] = (time() - 60000)
 	}
+	# noxp true time not counted, so next immediate message (if eligible) would count and update timer
 
 # If current XP is greater than the max for the next level:
 	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level'] + 1] && @noXP == false) {
+		@rankmsg = '!'
 		@currentrank = ''
 		@newlevel = @leaderboard['members'][@userID]['level'] + 1
 		@leaderboard['members'][@userID]['level'] = @newlevel
-		@rankmsg = '!'
 		@ranknums = array_sort(array_keys(@config['LB_Role_Rewards']), 'NUMERIC')
+		# console(@ranknums)
 		@oldroles = array_sort(array_normalize(@userRoles), 'NUMERIC')
 	#Find rank
-		foreach(@i: @range in @ranknums) {
+		foreach(@i: @rank in @ranknums) {
+		console(@i)
 			if(@i == 0) {
 				@lastrank = 0
 			} else {
 				@lastrank = @ranknums[(@i - 1)]
 			}
-			if(@newlevel == @range) {
-				@currentrank = @config['LB_Role_Rewards'][@range]
-				@rankmsg = ', and is now a '.@config['LB_Role_Rewards'][@range]['RoleName'].'!'
+			if(@newlevel == @rank) {
+				@currentrank = @config['LB_Role_Rewards'][@rank]
+				@rankmsg = ', and is now a '.@config['LB_Role_Rewards'][@rank]['RoleName'].'!'
 				break()
 			}
-			if(@newlevel < @range && @newlevel > @lastrank) {
-				@currentrank = @config['LB_Role_Rewards'][@ranknums[(@i - 1)]]
+			#In Between two ranks
+			if(@newlevel < @rank && @newlevel > @lastrank) {
+				@currentrank = @config['LB_Role_Rewards'][@lastrank]
+				break()
+			}
+			#Has highest rank
+			if(array_size(@ranknums) - 1 == @i && @newlevel > @rank) {
+				@currentrank = @config['LB_Role_Rewards'][@rank]
 				break()
 			}
 		}
@@ -90,6 +100,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 			}
 		}
 	# Place new role
+	# console(@currentrank)
 		array_push(@userRoles, @currentrank['RoleID'])
 	#Set New roles
 		try { 
@@ -106,4 +117,5 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 #Save edits
 	@leaderboard['lastedit'] = time()
 	export('server.Discord.members.leaderboard', @leaderboard)
+	export('server.Discord.members.leaderboard.xptimer', @xptimer)
 }
