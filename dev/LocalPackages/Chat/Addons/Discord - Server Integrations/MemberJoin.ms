@@ -26,12 +26,19 @@ bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), n
 				console('[Chat - Discord] Cannot message '.@event['username'].' <@'.@event['userid'].'>, are they a bot?', false)
 			}
 		}
-#Add Delineator roles, or roles new users need to have to access server
-		if(is_array(@config['Welcome_Roles'])) {
-			array_push_all(@currentroles, @config['Welcome_Roles'])
+# If new member: Add Delineator roles, or roles new users need to have to access server
+# If previous member: Restore old roles.
+		@membersroles = get_value('server.Discord.members.roles')   
+		if(!is_array(@membersroles)) { @membersroles = array() }
+		if(array_index_exists(@membersroles, @event['userid']) && @config['Welcome_Roles_Restore'] == true) {
+			array_push_all(@currentroles, @membersroles[@event['userid']])
 			discord_member_set_roles(@event['userid'], @currentroles)
+			console('[Chat - Discord] '.color(2).'Previous roles restored.', false)
 		} else {
-			console('[Chat - Discord] Welcome roles not configured', false)
+			if(is_array(@config['Welcome_Roles'])) {
+				array_push_all(@currentroles, @config['Welcome_Roles'])
+				discord_member_set_roles(@event['userid'], @currentroles)
+			}
 		}
 #Welcome User Messages
 		@welcomeMsg = reg_replace('%UserID%', '<@'.@event['userid'].'>', @config['Welcome_Message'])

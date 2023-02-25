@@ -129,14 +129,6 @@ proc _chat_handlecommand(@discord, @dm, @cmdfrom) {
 		@cmdfrom = ''
 	}
 	
-	@membersID = import('server.Discord.members.ID')
-	if(!array_contains(@membersID, @discord['userid'])) {
-		array_push(@membersID, @discord['userid'])
-	}
-	@membersnames = import('server.Discord.members.names')
-	if(!array_contains(@membersnames, @discord['userid'])) {
-		array_set(@membersnames, @discord['username'], @discord['userid'])
-	}
 /*	
 	# Find if this is a wish or normal chat.
 */	

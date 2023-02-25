@@ -108,9 +108,13 @@ Welcome_Text_Channel_Name: general
 # Voice Chat text Channel ID. (Right click channel, Copy ID)
 Welcome_Text_Channel_ID: 123456789
 # What roles, if any, do new joins need to be equipped with?
+# To not award any roles, remove the roles array below, and uncomment this line below:
+# Welcome_Roles: false
 Welcome_Roles:
 - 123
 - 456
+# If a previous member rejoins, restore their roles they had?
+Welcome_Roles_Restore: true
 # Ping Timeout
 # How long (in milliseconds) should we wait before we don't delete the welcome message on new joiner's leave?
 # Default: 4 days hours = 345600000
