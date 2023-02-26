@@ -68,7 +68,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 		@oldroles = array_sort(array_normalize(@userRoles), 'NUMERIC')
 	#Find rank
 		foreach(@i: @rank in @ranknums) {
-		console(@i)
+		# console(@i)
 			if(@i == 0) {
 				@lastrank = 0
 			} else {
@@ -81,8 +81,13 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 			}
 			#In Between two ranks
 			if(@newlevel < @rank && @newlevel > @lastrank) {
-				@currentrank = @config['LB_Role_Rewards'][@lastrank]
-				break()
+				#No level ups yet
+				if(@lastrank == 0) { 
+					break()
+				} else {
+					@currentrank = @config['LB_Role_Rewards'][@lastrank]
+					break()
+				}
 			}
 			#Has highest rank
 			if(array_size(@ranknums) - 1 == @i && @newlevel > @rank) {
@@ -99,16 +104,19 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 				array_remove_values(@userRoles, @role['RoleID'])
 			}
 		}
-	# Place new role
+	# Place and Set new role
 	# console(@currentrank)
+	if(@currentrank != '') {
 		array_push(@userRoles, @currentrank['RoleID'])
-	#Set New roles
+		#Set New roles
 		try { 
 			discord_member_set_roles(@userID, @userRoles)
 		} catch(Exception @ex) {
 			die()
 		}
+	}
 
+# Message out
 		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Level_Up_Message'])
 		@discordMsg = reg_replace('%Level%', @leaderboard['members'][@userID]['level'].@rankmsg, @discordMsg)
 		console('[Discord] '.@discord['username'].' '.@discordMsg, false)

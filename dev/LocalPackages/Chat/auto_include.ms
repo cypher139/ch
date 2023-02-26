@@ -359,13 +359,15 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 }
 
 proc _chat_dc_add_member(@discord) {
-	@membersID = import('server.Discord.members.ID')
+	@membersID = import('server.Discord.members.ID', get_value('server.Discord.members.ID'))
+	if(!is_array(@membersID)) { @membersID = array() }
 	if(!array_contains(@membersID, @discord['userid'])) {
 		array_push(@membersID, @discord['userid'])
 		store_value('server.Discord.members.ID', @membersID)
-		export('server.Discord.members.ID', @memberIDs)
+		export('server.Discord.members.ID', @membersID)
 	}
-	@membersnames = import('server.Discord.members.names')
+	@membersnames = import('server.Discord.members.names', get_value('server.Discord.members.names'))
+	if(!is_array(@membersnames)) { @membersnames = array() }
 	if(!array_contains(@membersnames, @discord['userid'])) {
 		array_set(@membersnames, @discord['username'], @discord['userid'])
 		store_value('server.Discord.members.names', @membersnames)

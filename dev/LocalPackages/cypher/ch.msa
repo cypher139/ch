@@ -125,6 +125,7 @@ case 'pinfo':
 
 case 'clearvalue':
 case 'cv':
+	if(@option1 == '', @option1 = player())
 	msg(@prefix.color(6).'Clear value: '.color('d').@option1)
 	clear_value(@option1)
 	if(has_value(@option1) == false) { msg(@prefix.color(6).'Successfully cleared value.') }
@@ -213,6 +214,44 @@ case 'cvs':
 		if(has_value(@key) == false) { msg(@prefix.color(6).'Cleared value: '.@key) }
 	}
 	msg(@prefix.color(1).'Total values cleared: '.array_size(@v))
+
+case 'hasexport':
+case 'he':
+# if(@option1 == '', @option1 = player())
+	@truecount = 0
+	@changedcount = 0
+	@truemsg = ''
+	@changedmsg = ''
+	@falsemsg = ''
+	@falsecount = 0
+	@v = get_values(@option1)
+	msg(@prefix.color(6).'Has export copy: '.color('d').@option1)
+	foreach(@key: @data in @v) {
+		@sendmsg = ''
+		@import = import(@key, '~~~~~~')
+		
+		if(@import == @data) {
+			@sendmsg = @key.color(2).' true'
+			@truecount++
+		} else if(@import == '~~~~~~') {
+			@falsecount++
+			@sendmsg = @key.color(12).' false'
+		} else { 
+			@changedcount++
+			@sendmsg = @key.color(14).' changed'
+		}
+		msg(@sendmsg)
+	}
+	if(@truecount > 0) {
+		@truemsg = color(2).'True: '.@truecount
+	}
+	if(@changedcount > 0) {
+		@changedmsg = color(14).' Changed: '.@changedcount
+	}
+	if(@falsecount > 0) {
+		@falsemsg = color(12).' False: '.@falsecount
+	}
+	msg(@prefix.color(3).'Totals: '.@truemsg.@changedmsg.@falsemsg)
 
 case 'tolower':
 case 'lower':
