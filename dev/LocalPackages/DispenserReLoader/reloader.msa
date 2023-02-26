@@ -34,18 +34,29 @@ include('modules.library/Core.ms')
 @option2 = $option2
 @option3 = $option3
 @player = _reloader_getplayerID(player())
-@verbose = import(@name.'.player.'.@player['id'].'.verbose')
-if(@verbose == null) {
-	@verbose = get_value(@name.'.player.'.@player['id'].'.verbose')
-	export(@name.'.player.'.@player['id'].'.verbose', @verbose)
+
+@playerconfig = import(@name.'.player.'.@player['id'].'.config', 'new')
+if(@playerconfig == 'new') {
+	@playerconfig = get_value(@name.'.player.'.@player['id'].'.config')
+	export(@name.'.player.'.@player['id'].'.config', @playerconfig)
 }
+if(!is_array(@playerconfig)) { @playerconfig = array('area': 'All', 'fuel_type': '', 'item_type': '', 'item_qty': '', 'verbose': false) }
+export(@name.'.player.'.@player['id'].'.verbose', @playerconfig['verbose'])
+@verbose = @playerconfig['verbose']
+
+
 @dev = import('ch.player.'.@player['id'].'.dev.scripts.reload')
+
+@updateconfig = closure(@ex) {
+	export(@name.'.player.'.@player['id'].'.config', @ex)
+	store_value(@name.'.player.'.@player['id'].'.config', @ex)
+}
 
 @help = closure(@ex) {
 	@return = array(
 	color(3).'DispenserReLoader: Fill chests or dispensers in one click!',
 	color(6).'- Help:',
-	color('a').'Command usage: action <required> [optional]',
+	color(10).'Command usage: action <required> [optional]',
 	color(6).'- Information:',
 	color(7).'/reloader help'.color(4).' - '.color('f').'Shows this help screen.',
 	color(7).'/reloader info'.color(4).' - '.color('f').'Shows your settings, such as the currently set item, or extra messages.',
@@ -93,26 +104,29 @@ case 'fuel':
 }
  
 # Setup previously set item type and quantity
-@setitem = get_value(@name.'.player.'.@player['id'].'.set.item.type')
-@setitemqty = get_value(@name.'.player.'.@player['id'].'.set.item.qty')
+@setitem = @playerconfig['item_type']
+@setitemqty = @playerconfig['item_qty']
 # Check: verify item name and qty is legit
 if(@fuel == true) {
-	@setitem = get_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+	@setitem = @playerconfig['fuel_type']
 	if(_reloader_item_name(@setitem)['name'] == null) {
 		@setitem = @serveritemdefaults['fuel']
-		clear_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+		@playerconfig['fuel_type'] = @serveritemdefaults['fuel']
+		@updateconfig(@playerconfig);
 		if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set fuel type was not valid, reset to server default.')}
 	}
 } else {
 	if(_reloader_item_name(@setitem)['name'] == null) {
 		@setitem = @serveritemdefaults['item']
-		clear_value(@name.'.player.'.@player['id'].'.set.item.type')
+		@playerconfig['item_type'] = @serveritemdefaults['item']
+		@updateconfig(@playerconfig);
 		if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set item type was not valid, reset to server default.')}
 	}
 }
 if(!is_integral(@setitemqty) || @setitemqty == 0) {
 	@setitemqty = @serveritemdefaults['qty']
-	clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
+	@playerconfig['item_qty'] = @serveritemdefaults['qty']
+	@updateconfig(@playerconfig);
 	if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set item qty was not valid, reset to server default.')}
 }
  
@@ -135,18 +149,17 @@ case '-build':
 # Extra messages
 case '-verbose':
 case 'verbose':
+	@verbose = !@verbose
 	#verbose already checked at start
 	if(@verbose == true) {
-		#disable
-		store_value(@name.'.player.'.@player['id'].'.verbose', false)
-		export(@name.'.player.'.@player['id'].'.verbose', false)
-		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Extra messages are '.color('c').'disabled! '.color(7).@name.' will display only normal messages')
+		@msg = color('a').'enabled! '.color(7).@name.' will display more useful messages.'
 	} else {
-		#enable
-		store_value(@name.'.player.'.@player['id'].'.verbose', true)
-		export(@name.'.player.'.@player['id'].'.verbose', true)
-		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Extra messages are '.color('a').'enabled! '.color(7).@name.' will display more useful messages.')
+		@msg = color('c').'disabled! '.color(7).@name.' will display only normal messages'
 	}
+	@playerconfig['verbose'] = @verbose
+	@updateconfig(@playerconfig);
+	export(@name.'.player.'.@player['id'].'.verbose', @verbose)
+	die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Extra messages are '.@msg)
 # Set which item type to fill on /reloader area
 case '-mode':
 case 'mode':
@@ -155,8 +168,8 @@ case 'areamode':
 case 'm':
 	@setareamode = 'unset'
 	@msgaccepttypes = color(6).'Barrel'.color('f').', '.color(9).'Blast Furnace'.color('f').', '.color(6).'Brewing'.color('f').', '.color(9).'Chest'.color('f').', '.color(6).'Dispenser'.color('f').', '.color(9).'Furnace'.color('f').', '.color(6).'Shulker Box'.color('f').', '.color(9).'Smoker'.color('f').', '.color(6).'Trapped Chest.'
-	@msggrouptypes = color(2).'Group Options: \n'.color('a')."All".color('7').' - Use all block types listed. \n'.color('a')."Chests".color(7).' - Use Barrel/Chest/Shulker Box/Trapped Chest. \n'.color('a')."Furnaces"color(7).' - Use Blast Furnace/Brewing/Furnace/Smoker.'
-	@areamode = get_value(@name.'.player.'.@player['id'].'.area.mode')
+	@msggrouptypes = color(2).'Group Options: \n'.color('a').'All'.color('7').' - Use all block types listed. \n'.color('a').'Chests'.color(7).' - Use Barrel/Chest/Shulker Box/Trapped Chest. \n'.color('a').'Furnaces'.color(7).' - Use Blast Furnace/Brewing/Furnace/Smoker.'
+	@areamode = @playerconfig['area']
 	if(@areamode == '' || @areamode == null) { @areamode = 'All' }
 	#Switch doesn't support wildcard matching, so regex route it is.
 	@option1 = to_lower(@option1)
@@ -202,7 +215,8 @@ case 'm':
 		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Current Area mode: '.@areamode)
 		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'To change your area mode, please specify a *valid* type of item. Accepted item types are: '.@msgaccepttypes.'\n'.@msggrouptypes)
 	}
-	store_value(@name.'.player.'.@player['id'].'.area.mode', @setareamode)
+	@playerconfig['area'] = @setareamode
+	@updateconfig(@playerconfig);
 	die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode set to: '._reloader_capitalize(@setareamode, 1))
 # Information, such as the last item used, set modes, etc.
 case 'info':
@@ -210,27 +224,26 @@ case '-i':
 case 'i':
 case '-info':
 case 'view':
-	@lastitemused = _reloader_item_name(get_value(@name.'.player.'.@player['id'].'.last.item'))
-	@lastitemqty = get_value(@name.'.player.'.@player['id'].'.last.qty')
-	@areamode = get_value(@name.'.player.'.@player['id'].'.area.mode')
-	if(@areamode == '' || @areamode == null) { @areamode = 'All' }
-	@di = get_value(@name.'.player.'.@player['id'].'.set.item.type')
-	if(@di == '' || @di == null) { @di = @serveritemdefaults['item'] }
-	@diq = get_value(@name.'.player.'.@player['id'].'.set.item.qty')
-	if(@diq == '' || @diq == null) { @diq = @serveritemdefaults['qty'] }
-	@dif = get_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
-	if(@dif == '' || @dif == null) { @dif = @serveritemdefaults['fuel'] }
+	@playerstats = get_value(@name.'.player.'.@player['id'].'.stats')
+	if(!is_array(@playerstats)) { @playerstats = array('last_run': 0) }
+	if(@playerconfig['area'] == '' || @playerconfig['area'] == null) { @playerconfig['area'] = 'All' }
+	if(@playerconfig['item_type'] == '' || @playerconfig['item_type'] == null) { @playerconfig['item_type'] = @serveritemdefaults['item'] }
+	if(@playerconfig['item_qty'] == '' || @playerconfig['item_qty'] == null) { @playerconfig['item_qty'] = @serveritemdefaults['qty'] }
+	if(@playerconfig['fuel_type'] == '' || @playerconfig['fuel_type'] == null) { @playerconfig['fuel_type'] = @serveritemdefaults['fuel'] }
 	if(@verbose == true) {
 		@vmsg = color('a').'Enabled'
 	} else {
 		@vmsg = color('c').'Disabled'
 	}
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).@name.' settings information for: '.color('a').@player['display'])
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color('a').@di.color(9).' (Qty: '.@diq.')')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set fuel item: '.color('a').@dif)
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemused['display'].' ['.@lastitemused['id'].'] '.color(9).'(Qty: '.@lastitemqty.')')
-	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7)._reloader_capitalize(@areamode, 1))
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).@name.' configuration for: '.color('a').@player['display'])
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color('a').@playerconfig['item_type'].color(9).' (Qty: '.@playerconfig['item_qty'].')')
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set fuel item: '.color('a').@playerconfig['fuel_type'])	
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7)._reloader_capitalize(@playerconfig['area'], 1))
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Verbose (extra) messages: '.@vmsg)
+	if(is_array(@playerstats['last_run'])) {
+		@lastitemused = _reloader_item_name(@playerstats['last_run']['item'])
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemused['display'].' ['.@lastitemused['id'].'] '.color(9).'(Qty: '.@playerstats['last_run']['qty'].')')
+	}
 	die()
 # Statistics: How many items have you used? how many blocks filled? How many times have you run reload?
 case '-stats':
@@ -240,11 +253,11 @@ case 'stat':
 case 'st':
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player['name']) 
 	msg(color(9).' -------')
- 
-	@atr = get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.area')
-	if(@atr == '' || @atr == null) { @atr = 0 }
-	@ttr = get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.tool')
-	if(@ttr == '' || @ttr == null) { @ttr = 0 }
+	@playerstats = get_value(@name.'.player.'.@player['id'].'.stats')
+	if(!is_array(@playerstats)) { @playerstats = array('filled_blocks': 0, 'items': array(), 'runs_area': 0, 'runs_tool': 0, 'last_run': array()) }
+	
+	@atr = @playerstats['runs_area']
+	@ttr = @playerstats['runs_tool']
 	# Stop with 0/null stuff if the player or server has not used the script.
 	if(@atr == 0 && @ttr == 0) { 	
 		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You have not used '.@name.'!') 
@@ -256,13 +269,11 @@ case 'st':
 	
 	msg(color(9).' -------')
  
-	@fb = get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks')
-	if(@fb == '' || @fb == null) { @fb = 0 }
-	msg(color(7).'Total blocks filled: '.color('b')._reloader_number_commaize(@fb))
+	msg(color(7).'Total blocks filled: '.color('b')._reloader_number_commaize(@playerstats['filled_blocks']))
 	
 	msg(color(9).' -------')
  
-	@lr = get_value(@name.'.player.'.@player['id'].'.stats.last.run')
+	@lr = @playerstats['last_run']
 	if(is_array(@lr)) {
 		if(array_index_exists(@lr, 'action')) {	
 			msg(color(7).'Last run: '.color(6).@lr['action'].'.')
@@ -272,14 +283,13 @@ case 'st':
 	}
 	msg(color(9).' -------')
  
-	@items = get_value(@name.'.player.'.@player['id'].'.stats.alltime.items')
-	if(is_array(@items)) { 
+	if(is_array(@playerstats['items'])) { 
 		msg(color(9).'Total items used to fill blocks:')	
 	} else {
-		@items = array()
+		@playerstats['items'] = array()
 	}
 	@tiu = 0
-	foreach(@itemname: @itemqty in @items) {
+	foreach(@itemname: @itemqty in @playerstats['items']) {
 			@tiu = @tiu + @itemqty
 			msg(color(3)._reloader_item_name(@itemname)['display'].': '.color(7)._reloader_number_commaize(@itemqty))
 	} else {
@@ -503,16 +513,22 @@ case '-set':
 		clear_value(@name.'.player.'.@player['id'].'.set.item.type')
 		clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
 		clear_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+		@playerconfig['item_type'] == ''
+		@playerconfig['fuel_type'] == ''
+		@playerconfig['item_qty'] == ''
+		@updateconfig(@playerconfig);
 		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set item, quantity, and fuel item has been cleared!')
 	default:
 		if(@fuel == true) {
-			@setitem = get_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+			@setitem = @playerconfig['fuel_type']
 			if(@setitem == '' || @setitem == null) { @setitem = @serveritemdefaults['fuel'] }
-			store_value(@name.'.player.'.@player['id'].'.set.item.type.fuel', @item)
+			@playerconfig['fuel_type'] = @item
 			@msg1 = 'Fuel '
+			@updateconfig(@playerconfig);
 		} else {
-			store_value(@name.'.player.'.@player['id'].'.set.item.type', @item)
-			store_value(@name.'.player.'.@player['id'].'.set.item.qty', @itemqty)
+			@playerconfig['item_type'] = @item
+			@playerconfig['item_qty'] = @itemqty
+			@updateconfig(@playerconfig);
 		}
 		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set '.@msg1.'item was: '.color(7).@setitem.' (Quantity: '.@setitemqty.')'.color(3).', and is now: '.color('a').@itemids['display'].' (Quantity: '.@itemqty.')')
 	}
@@ -520,9 +536,6 @@ case '-set':
  
 ### Continuing on to filling the block inventories! 
  
-# Store the item last used:
-store_value(@name.'.player.'.@player['id'].'.last.item', @item)
-store_value(@name.'.player.'.@player['id'].'.last.qty', @itemqty)
 # Randomizer - area 
 @random = false
 

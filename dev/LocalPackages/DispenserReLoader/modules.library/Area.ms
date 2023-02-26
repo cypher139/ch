@@ -10,6 +10,8 @@
 proc _reloader_iterate_cuboid(@proc_name, @world, @item, @playergiven, @qty, @fuel, @verbose) {
 	@name = import('dispenserreloader.name')
 	@player = _reloader_getplayerID(@playergiven)
+	@playerconfig = import(@name.'.player.'.@player['id'].'.config', 'new')
+	if(!is_array(@playerconfig)) { @playerconfig = array('area': 'All', 'fuel_type': '', 'item_type': '', 'item_qty': '', 'verbose': false) }
 	# CH requires an extension to access WorldEdit selection data.
 	include('../ext.library/ext-SKCompat.ms')
 	@pos1 = _reloader_get_pos1(@player['name'])
@@ -28,10 +30,8 @@ proc _reloader_iterate_cuboid(@proc_name, @world, @item, @playergiven, @qty, @fu
 	@acceptfilltypes = array('BARREL', 'BLAST_FURNACE', 'BREWING', 'CHEST', 'DISPENSER', 'FURNACE', 'SHULKER_BOX', 'SMOKER', 'TRAPPED_CHEST')
 	@blocktypes = array()
 	# Get the player's area mode
-	@areamode = get_value(@name.'.player.'.@player['id'].'.area.mode')
-	if(@areamode == '' || @areamode == null) {
-			@areamode = 'ALL'
-	}
+	@areamode = @playerconfig['area']
+	if(@areamode == '' || @areamode == null) { @areamode = 'ALL' }
 	@areamode = to_upper(@areamode)
 	# Force furnace mode if "/reloader area fuel" is used.
 	if(@fuel == true) {@areamode = 'GROUP_FURNACE'}

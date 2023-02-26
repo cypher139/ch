@@ -291,15 +291,15 @@ proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbo
 				tmsg(@player['name'], color(3).'['.color(6).@name.color(3).'] '.color(9).'A fillable furnace was found at '.integer(@xyz[0]).', '.integer(@xyz[1]).', '.integer(@xyz[2]))
 			}
 			if(@filltype == 'BREWING' && @item != 'BLAZE_POWDER') {
-				return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'A Brewing Stand does not support any fuel other than Blaze Powder!', size: 0, fail: true))
+				return(array('msg': color('c').'['.color(6).@name.color('c').'] '.color(7).'A Brewing Stand does not support any fuel other than Blaze Powder!', 'size': 0, 'fail': true))
 			}
 		default:
-			return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'Fuel mode does not support Chest or Dispenser block types!', size: 0, fail: true))
+			return(array('msg': color('c').'['.color(6).@name.color('c').'] '.color(7).'Fuel mode does not support Chest or Dispenser block types!', 'size': 0, 'fail': true))
 		}
 	}
 # Check: limit what you can fill
 	if(!array_contains(@acceptfilltypes, @filltype)) {
-		return(array(msg: color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot fill this item type!', size: 0, fail: true))
+		return(array('msg': color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot fill this item type!', 'size': 0, 'fail': true))
 	}
 # Get specified item quantity
 	if(@qty == '' || @qty == null) { @qty = @maxstacksize }     
@@ -413,50 +413,44 @@ proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbo
 proc _reloader_record_stats(@playergiven, @action, @filledblocks, @totalitems, @item, @qty) {
 	@name = import('dispenserreloader.name')
 	@player = _reloader_getplayerID(@playergiven)
-#Start the Stats recording.
-	#total blocks filled
-	@fb = get_value(@name.'.stats.alltime.filled.blocks')
-	if(@fb == '' || @fb == null, @fb = 0)
-	@nfb = @fb + @filledblocks
-	store_value(@name.'.stats.alltime.filled.blocks', @nfb)
-	#total blocks filled - player
-	@pfb = get_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks')
-	if(@pfb == '' || @pfb == null, @pfb = 0)
-	@npfb = @pfb + @filledblocks
-	store_value(@name.'.player.'.@player['id'].'.stats.alltime.filled.blocks', @npfb)
-	#total action runs
-	@atr = get_value(@name.'.stats.alltime.runs.'.@action)
-	if(@atr == '' || @atr == null, @atr = 0)
-	@antr = @atr + 1
-	store_value(@name.'.stats.alltime.runs.'.@action, @antr)
+
+	@globalstats = get_value(@name.'.stats')
+	if(!is_array(@globalstats)) { @globalstats = array('filled_blocks': 0, 'items': array(), 'runs_area': 0, 'runs_tool': 0) }
+	@playerstats = get_value(@name.'.player.'.@player['id'].'.stats')
+	if(!is_array(@playerstats)) { @playerstats = array('filled_blocks': 0, 'items': array(), 'runs_area': 0, 'runs_tool': 0, 'last_run': array()) }
+	
+# Total blocks filled
+	@globalstats['filled_blocks'] = @globalstats['filled_blocks'] + @filledblocks
+	@playerstats['filled_blocks'] = @playerstats['filled_blocks'] + @filledblocks
+	
+# Total action runs
+	@globalstats['runs_'.@action] = @globalstats['runs_'.@action] + 1
 	#total action runs - player
-	@ptr = get_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.'.@action)
-	if(@ptr == '' || @ptr == null, @ptr = 0)
-	@pntr = @ptr + 1
-	store_value(@name.'.player.'.@player['id'].'.stats.alltime.runs.'.@action, @pntr)
-	#total items filled
-	@items = get_value(@name.'.stats.alltime.items')
-	if(@items == '' || @items == null, @items = array())
-	if(!array_index_exists(@items, @item)) {
-		@items[@item] = 0
+	@playerstats['runs_'.@action] = @playerstats['runs_'.@action] + 1
+	
+# Total items filled
+	@items = @globalstats['items']
+	if(!is_array(@globalstats['items'])) { @globalstats['items'] = array() }
+	if(!array_index_exists(@globalstats['items'], @item)) {
+		array_set(@globalstats['items'], @item, 0)
 	}
-	@items[@item] = @totalitems + @items[@item]
-	store_value(@name.'.stats.alltime.items', @items)
-	#total items filled - player
-	@playeritems = get_value(@name.'.player.'.@player['id'].'.stats.alltime.items')
-	if(@playeritems == '' || @playeritems == null, @playeritems = array())
-	if(!array_index_exists(@playeritems, @item)) {
-		@playeritems[@item] = 0
+	@globalstats['items'][@item] = @globalstats['items'][@item] + @totalitems
+	# total items filled - player
+	if(!is_array(@playerstats['items'])) { @playerstats['items'] = array() }
+	if(!array_index_exists(@playerstats['items'], @item)) {
+		array_set(@playerstats['items'], @item, 0)
 	}
-	@playeritems[@item] = @totalitems + @playeritems[@item]
-	store_value(@name.'.player.'.@player['id'].'.stats.alltime.items', @playeritems)
-	#Last run - server
+	@playerstats['items'][@item] = @playerstats['items'][@item] + @totalitems
+	
+# Save Last run
 	@stats = array('action': @action, 'player': @player['display'], 'qty': @qty, 'filledqty': @totalitems, 'blocks': @filledblocks, 'item': @item)
 	@lastruns = get_value(@name.'.stats.last.runs')
 	if(!is_array(@lastruns)) { @lastruns = array(@stats) }
 	array_insert(@lastruns, @stats, 0)
 	if(array_index_exists(@lastruns, 10)) { array_remove(@lastruns, 10) }
 	store_value(@name.'.stats.last.runs', @lastruns)
-	#Last run - player
-	store_value(@name.'.player.'.@player['id'].'.stats.last.run', @stats)
+	
+	store_value(@name.'.stats', @globalstats)
+	@playerstats['last_run'] = @stats
+	store_value(@name.'.player.'.@player['id'].'.stats', @playerstats)
 }

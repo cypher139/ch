@@ -9,10 +9,10 @@
 include('modules.library/Core.ms')
 
 #Listen for interactions with the ReLoad tool
-bind('player_interact', array(id: 'ReLoad.tool'), array(button: 'left'), @reload) {
+bind('player_interact', array('id': 'ReLoad.tool'), array('button': 'left'), @reload) {
 	@name = import('dispenserreloader.name')
 	@player = _reloader_getplayerID(@reload['player'])
-	@verbose = import(@name.'.player.'.@player['id'].'.verbose')
+	@verbose = import(@name.'.player.'.@player['id'].'.config')['verbose']
 
 	#Find the tool in the players hand. Don't use just a hand, sorry.
 	@tool = pinv(@player['name'], null)
