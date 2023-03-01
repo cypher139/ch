@@ -58,10 +58,22 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 	# noxp true time not counted, so next immediate message (if eligible) would count and update timer
 
 # If current XP is greater than the max for the next level:
+#Levelxp: (key: xp to be at this level). to get level up need to check next level
 	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level'] + 1] && @noXP == false) {
 		@rankmsg = '!'
 		@currentrank = ''
+		@oldlevel = @leaderboard['members'][@userID]['level']
 		@newlevel = @leaderboard['members'][@userID]['level'] + 1
+		if(@leaderboard['members'][@userID]['xp'] > @levelxp[@newlevel + 1]) {
+			#multiple level up, skip to last	
+			foreach(@i: @lvl in @levelxp) {
+				if(@leaderboard['members'][@userID]['xp'] < @lvl) {
+					@newlevel = @i - 1
+					@oldlevel = '    '.@oldlevel
+					break()
+				}
+			}
+		}				
 		@leaderboard['members'][@userID]['level'] = @newlevel
 		@ranknums = array_sort(array_keys(@config['LB_Role_Rewards']), 'NUMERIC')
 		# console(@ranknums)
@@ -105,22 +117,22 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 			}
 		}
 	# Place and Set new role
-	# console(@currentrank)
-	if(@currentrank != '') {
-		array_push(@userRoles, @currentrank['RoleID'])
-		#Set New roles
-		try { 
-			discord_member_set_roles(@userID, @userRoles)
-		} catch(Exception @ex) {
-			die()
+		# console(@currentrank)
+		if(@currentrank != '') {
+			array_push(@userRoles, @currentrank['RoleID'])
+			#Set New roles
+			try { 
+				discord_member_set_roles(@userID, @userRoles)
+			} catch(Exception @ex) {
+				die()
+			}
 		}
-	}
 
 # Message out
 		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Level_Up_Message'])
 		@discordMsg = reg_replace('%Level%', @leaderboard['members'][@userID]['level'].@rankmsg, @discordMsg)
-		console('[Discord] '.@discord['username'].' '.@discordMsg, false)
-		# _send_discord_message('<@'.@userID.'> just leveled up to level '.@newlevel.@rankmsg, 'discord', @discord['channel'])
+		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> '.color(3).@oldlevel.color('r').' -> '.color(10).@leaderboard['members'][@userID]['level'].color('r').@rankmsg, false)
+		# _send_discord_message(@discordMsg, 'discord', @discord['channel'])
 	}
 #Save edits
 	@leaderboard['lastedit'] = time()

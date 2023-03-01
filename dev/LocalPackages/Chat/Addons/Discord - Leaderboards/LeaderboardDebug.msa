@@ -77,6 +77,7 @@ case 'xp':
 		if(@i > 100) { break() }
 	}
 	msg('call 66: '.@levelxp[66])
+	msg('call 67: '.@levelxp[67])
 	
 }
 <<<
