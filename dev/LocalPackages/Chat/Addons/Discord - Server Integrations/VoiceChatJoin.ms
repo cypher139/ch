@@ -46,7 +46,7 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 							}
 						}					
 						discord_broadcast(@config['VC_Text_Channel_Name'], array('content': @discordMsg))
-						broadcast(@mcMsg, all_players())
+						_chat_mc_broadcast(@mcMsg)
 						store_value('server.Discord.last.ping.'.@config['VC_Role_ID'], time())
 						@stats = get_value('Chat.Discord.VC.'.@discord['channelid'].'.current.stats')
 						if(!is_array(@stats)) { @stats = array('start': (time() - @timeout), 'end': '', 'users': '', 'channel': @discord['channel']) }

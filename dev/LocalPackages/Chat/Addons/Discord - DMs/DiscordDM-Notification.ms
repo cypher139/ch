@@ -40,7 +40,7 @@ bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs
 			}
 		}
 		#Send Dm notification to Minecraft
-		broadcast(color(9).'A DM was sent to the Discord Bot from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@discord['message'], all_players())
+		_chat_mc_broadcast(color(9).'A DM was sent to the Discord Bot from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@discord['message'])
 		console('[Discord] A DM was sent to the Discord Bot from ['.@discord['username'].' ('.@discord['userid'].') ] Message: \n'.@discord['message'].'\n Attached: '.@discord['attachments'], false)
 		if(reg_count('[\\s\\S]{1,1920}', @discord['message']) > 1) {
 			@discord['message'] = @discord['message'][cslice(0, 1910)].' ...'
@@ -60,7 +60,7 @@ bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs
 			@urls = array()
 			foreach(@num: @attach in @discord['attachments']) {
 				if(@config['URL_Broadcast'] == true) {
-					broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], all_players())
+					_chat_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'])
 				}
 				array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))
 			}

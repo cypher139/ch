@@ -3,6 +3,7 @@ admin:/lbdbg [$action] [$id] [$] = >>>
 @name = 'Discord'
 @id = $id
 @leaderboard = import('server.Discord.members.leaderboard', get_value('server.Discord.members.leaderboard'));
+@lgv = get_value('server.Discord.members.leaderboard')
 @levelxp = import('server.Discord.leaderboard.levelXP')
 @args = parse_args($)
 @config = import('Chat.config.Discord')
@@ -35,7 +36,8 @@ case 'l':
 
 case 'read':
 case 'r':
-	msg(@leaderboard['members'][@id])
+	if(@lgv['members'][@id] == @leaderboard['members'][@id]) { @up = 10 } else { @up = 14 }
+	msg(color(@up).'^'.color('r').@leaderboard['members'][@id])
 
 case 'clear':
 case 'c':

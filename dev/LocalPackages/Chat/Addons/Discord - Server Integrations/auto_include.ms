@@ -187,7 +187,7 @@ proc _chat_handlecommand(@discord, @dm, @cmdfrom) {
 		}
 		if(array_index_exists(@rmargs, 0)) {
 			@rmargs = array_implode(array_unique(@rmargs), ', ')
-			_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Removed "'.@rmargs.'" from '.@discord['username'].'\'s command arguments.')
+			_chat_msg_Admins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Removed "'.@rmargs.'" from '.@discord['username'].'\'s command arguments.')
 			discord_broadcast(@config['Log_Channel'], 'Removed `'.@rmargs.'` from '.@discord['username'].'\'s command arguments.')	
 			if(@config['Message_On_Mention'] == true) { discord_private_message(@discord['userid'], '[Chat] Mention(s) `'.@rmargs.'` are not allowed on the server.') }
 		}

@@ -1,23 +1,29 @@
-#Core Startup
+# Core Startup
 export('chatmodifier.name', 'Chat')
-export('chatmodifier.version', '1.0-tmc')
-export('Chat.config.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Configs'))
-export('Chat.logs.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Logs'))
+if(in_cmdline_mode() == true) {
+	export('chatmodifier.version', '1.0-tmc-cmd')
+	export('Chat.config.dir', file_resolve(pwd().'/Configs'))
+	export('Chat.logs.dir', file_resolve(pwd().'/Logs'))
+} else {
+	export('chatmodifier.version', '1.0-tmc')
+	export('Chat.config.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Configs'))
+	export('Chat.logs.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Logs'))
+}
 
-
-
+# Functions
 
 proc _chat_is_even_number(@number) { return(mod(@number, 2) == 0) }
 
-proc _msgAdmins(@msg, @consolemsg, @cmconcat, @hideplayer) {
+proc _chat_msg_Admins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg', @consolemsg = @msg)
 	if(@cmconcat != '', @consolemsg = @msg.@consolemsg)
 	console(@consolemsg, false)
-	foreach(all_players(), @p,
-		if(has_permission(@p, 'commandhelper.alias.admin.message') && @p != @hideplayer, 
-			tmsg(@p, @msg)
-		)
-	)
+	#Broadcast to MC server, if available
+	if(function_exists('all_players')) {
+		foreach(@p in all_players()) {
+			if(has_permission(@p, 'commandhelper.alias.admin.message') && @p != @hideplayer) { tmsg(@p, @msg) }
+		}
+	}
 }
 
 proc _is_Command(@line) {
@@ -33,7 +39,7 @@ proc _getplayer(@name) {
 		#if(@chars < length(@player),
 			if(equals_ic(@name, substr(@player, 0, @chars)),
 				@isfound = true
-				broadcast(1)
+				# broadcast(1)
 			)
 		#)
 		if(pinfo(@player)[4] != @player,
@@ -41,7 +47,7 @@ proc _getplayer(@name) {
 			if(equals_ic(@nick, substr(@name, 0, @chars)),
 				@isfound = true
 				@return = @player 
-				broadcast(2)	
+				# broadcast(2)	
 			)
 		)
 		if(@isfound == true,
@@ -135,7 +141,13 @@ proc _healthbar(@player, @fchar, @echar) {
 	@mchar = ':'
 	if(is_numeric(@player)) { 
 		@phealth = ceil(@player)
-	} else { @phealth = ceil(pinfo(@player)[5]) }
+	} else { 
+		if(function_exists('pinfo')) {
+			@phealth = ceil(pinfo(@player)[5])
+		} else {
+			return('No data given')
+		}
+	}
 	@phealthodd = ceil(@phealth / 2)
 	@healthbar = array(0,0,0,0,0,0,0,0,0,0,0)
 	#dead.
@@ -164,29 +176,41 @@ proc _healthbar(@player, @fchar, @echar) {
 	return(array_implode(@healthbar, ''))
 }
 
-proc _message_check_ban_mentions(@message, @player, @option) {
+proc _message_check_ban_mentions(@message, @from, @option) {
 	@config = import('Chat.config.Server')
 # Check if player said banned Discord mention
 	@msga = parse_args(@message)
 	@msgban = ''
-	@from = _getplayerID(@player)
+	if(in_cmdline_mode() == false) { @from = _getplayerID(@from) }
+	@prefix = color(6).'['.color(9).'Server'.color(6).'] '
 	foreach(@entry in @config['Banned_Mentions']) {
 		if(_array_string_contains(@msga, @entry)) {
-			@prevmentions = get_value('server.player.'.@from['id'].'all.ping.mention')
-			store_value('server.player.'.@from['id'].'.all.ping.mention', @prevmentions + 1)
-			if(array_contains(get_offline_players(), @from['name'])) { 
-				if(@config['Message_On_Mention'] == true) { tmsg(@from['name'], color('c').'[Chat] Do not mention "'.@entry.'".') }
-				if(@config['Kick_On_Mention'] == true) { 
-					pkick(@from['name'], '[Chat] Do not mention "'.@entry.'".')
-					@msgbantype = 'kicked'
-					if(@prevmentions > @config['Ban_On_Mention_Number'] && @config['Ban_On_Repeat_Mention'] == true) {
-						set_pbanned(@from['name'], true, '[Chat] You have used disallowed mentions several times.')
-						@msgbantype = 'banned'
+			if(function_exists('player')) {
+				@prevmentions = get_value('server.player.'.@from['id'].'all.ping.mention')
+				store_value('server.player.'.@from['id'].'.all.ping.mention', @prevmentions + 1)
+				if(array_contains(get_offline_players(), @from['name'])) { 
+					if(@config['Message_On_Mention'] == true) { tmsg(@from['name'], color('c').'[Chat] Do not mention "'.@entry.'".') }
+					if(@config['Kick_On_Mention'] == true) { 
+						pkick(@from['name'], '[Chat] Do not mention "'.@entry.'".')
+						@msgbantype = 'kicked'
+						if(@prevmentions > @config['Ban_On_Mention_Number'] && @config['Ban_On_Repeat_Mention'] == true) {
+							set_pbanned(@from['name'], true, '[Chat] You have used disallowed mentions several times.')
+							@msgbantype = 'banned'
+						}
+						@msgban = '  Offending player `'.@player.'` was '.@msgbantype.'.'
 					}
-					@msgban = ' Offending player `'.@player.'` was '.@msgbantype.'.'
 				}
-			}
-			_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Message from '.@from['display'].' contained a mention of "'.@entry.'". '.@msgban)
+				_chat_msg_Admins(@prefix.color(7).'Message from '.@from['display'].' contained a mention of "'.@entry.'".'.@msgban)
+			} else {
+				if(@config['Message_On_Mention'] == true) { 
+					try {
+						discord_private_message(@from, '[Chat] Do not mention "'.@entry.'".')
+					} catch(Exception @ex) {
+						console(@prefix.'Could not DM user: '. @ex, false)
+					}
+				}
+				_chat_msg_Admins(@prefix.color(7).'Message from '.@from.' contained a mention of "'.@entry.'".')
+			}		
 			return(array('mention': @entry, 'kickmsg': @msgban))
 		}
 	}
@@ -200,7 +224,13 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	@config = import('Chat.config.Discord')
 	@normalmessage = 0
 	if(@message == '') { return(false) }
-	if(@from == '' || is_array(@from)) { @from = player() }
+	if(@from == '' || is_array(@from)) { 
+		if(function_exists('player')) { 
+			@from = player()
+		} else {
+			@from = 'none'
+		}
+	}	
 	if(@channel == '') { @channel = @config['Default_Channel'] }
 	if(@type == '') { @type = 'broadcast' }
 	if(is_array(@message)) {
@@ -352,7 +382,7 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		}
 	} catch(Exception @ex) {
 	#			msg(@ex)
-		_msgAdmins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@ex['message'])
+		_chat_msg_Admins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@ex['message'])
 		return(false)
 	}
 	
@@ -371,6 +401,16 @@ proc _chat_dc_add_member(@discord) {
 	if(!array_contains(@membersnames, @discord['userid'])) {
 		array_set(@membersnames, @discord['username'], @discord['userid'])
 		store_value('server.Discord.members.names', @membersnames)
-		export('server.Discord.members.names', @membernames)
+		export('server.Discord.members.names', @membersnames)
+	}
+}
+
+proc _chat_mc_broadcast(@msg, @args) {
+	if(function_exists('broadcast')) {
+		if(@args == '' || @args == null) { @args = all_players() }
+		broadcast(@msg, @args)
+	} else {
+		# console('Bot Service is not running on a Minecraft server! Broadcast messages will be redirected to the console.', false)
+		console(@msg, false)
 	}
 }

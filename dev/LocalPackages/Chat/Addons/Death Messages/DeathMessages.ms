@@ -34,11 +34,11 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 	try {
 		@newmsg = yml_decode(read(import('Chat.config.dir').'/Death_Messages.yml'))
 	} catch(Exception @ex) {
-		_msgAdmins('Death Messages List file could not be read. '.@ex['message'])
+		_chat_msg_Admins('Death Messages List file could not be read. '.@ex['message'])
 		die()
 	}
 	if(!is_array(@newmsg)) { 
-		_msgAdmins('Death Messages List file is not properly formatted.') 
+		_chat_msg_Admins('Death Messages List file is not properly formatted.') 
 		die()
 	}
 # Unload non-matching array IDs
