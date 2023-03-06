@@ -136,11 +136,13 @@ proc _chat_handlecommand(@discord, @dm, @cmdfrom) {
 #Check User Permissions
 	#to  check: does get roles work in a dm
 	@userType = 'User'
+	@isAdmin = false
 	try (
 		@userroles = array_keys(discord_member_get_roles(@discord['username']))
 		foreach(@role in @userroles) {
 			if(array_contains_ic(@config['Role_Admins'], @role)) {
 				@userType = 'Admin'
+				@isAdmin = true
 				break()
 			}
 		}
@@ -202,7 +204,7 @@ proc _chat_handlecommand(@discord, @dm, @cmdfrom) {
 		_send_discord_message(@discord['username'].' tried to use admin command'.@cmdfrom.': `'.@command[0].'`  '.strip_colors(@commanddisdc), 'admin', '')
 		return('NotAdmin')
 	}
-
+	array_set(@discord, 'admin', @isAdmin)
 # make 1 letter aliases
 
 # Execute command action 
@@ -248,6 +250,12 @@ console('retis: '.is_string(@return))
 		if(@return == 'NoCmd') {
 			_send_discord_message('A required command module is not installed.', 'command', @discord['SendChannel'], @discord['UseDM']) 
 			@return = false
+		} else if(@return == 'NotAdmin') {
+			_send_discord_message(':no_entry: This command is restricted to use by Admin only.', 'discord', @discord['SendChannel'], @discord['UseDM']) 
+			@return = false
+		} else if(@return == 'NoUserFound') {
+			_send_discord_message(':question: User ID given not found on server.', 'discord', @discord['SendChannel'], @discord['UseDM']) 
+			@return = false
 		} else if(@return == 'pong') {
 			@timeElapsed = (time() - @discord['time'])
 			_send_discord_message('Pong! ('.(@timeElapsed / 1000).')', 'command', @discord['SendChannel'], @discord['UseDM']) 
@@ -270,4 +278,50 @@ console('retis: '.is_string(@return))
 	console('[Discord] '.@discord['username'].' used command'.@cmdfrom.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, false)
 	_send_discord_message(@discord['username'].' used command'.@cmdfrom.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, 'admin', '')
 	return(@return)
+}
+
+
+proc _chat_cmd_proc_finduserID(@target, @discord) {
+	@config = import('Chat.config.Discord')
+	@membernames = get_value('server.Discord.members.names')
+	if(!is_array(@membernames)) { @membernames = array() }
+	if(is_numeric(@target)) {
+		if(@target == @config['Bot_ID']) {
+			return('bot')
+		}
+		if(@target == @discord['userid'] && @discord['UseDM'] != 'dm') {
+			return('self')
+		}	
+		try {
+			@memberroles = discord_member_get_roles(@target)
+		} catch (NotFoundException @ex) {
+			console('[Chat - Discord] User ID given not found on server: '.@target.'!', false)
+			return('notfound')
+		}
+		return(@target)
+	} else {
+		if(reg_count('^'.@config['Bot_Name'].'[#]?[0-9]{0,4}?$', @target) > 0) {
+			return('bot')
+		}
+		@targetmatches = _array_string_match(array_keys(@membernames), @target)
+		if(reg_count('[#][0-9]{4}$', @target) > 0 && !array_index_exists(@targetmatches, 0)) {
+			@target = reg_replace('[#][0-9]{4}$', '', @target)
+			@targetmatches = _array_string_match(array_keys(@membernames), @target)
+		}
+		if(equals_ic(@target, @discord['username']) || equals_ic(@target, @discord['nickname'])) {
+			return('self')
+		}	
+		console('[Chat - Discord] finduserID debug: match: '.@targetmatches)
+		
+		if(!array_index_exists(@targetmatches, 0)) {
+			console('[Chat - Discord] Could not find user ID for '.@target.'!', false)
+			return('notfound')
+		} else if(array_index_exists(@targetmatches, 1)) {
+			discord_private_message(@discord['userid'], 'I found multiple users; I\'m not sure which one you meant to apply this command to. Users Matched: \n'.array_implode(@targetmatches, ', '))
+			console('[Chat - Discord] finduserID: Found multiple users, Users Matched: \n'.array_implode(@targetmatches, ', '), false)
+			return('multiple')
+		} else {
+			return(@membernames[array_implode(@targetmatches, '')])
+		}		
+	}
 }

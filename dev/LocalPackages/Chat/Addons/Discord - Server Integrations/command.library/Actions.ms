@@ -44,21 +44,11 @@ proc _chat_cmd_ping(@discord, @args) {
 
 proc _chat_cmd_help(@discord) {
 	@config = import('Chat.config.Discord')
-	@isAdmin = false
-	try (
-		@userroles = array_keys(discord_member_get_roles(@discord['username']))
-		foreach(@role in @userroles) {
-			if(array_contains_ic(@config['Role_Admins'], @role)) {
-				@isAdmin = true
-				break()
-			}
-		}
-	)
 	@userTypeDisplay = ''
 	@admincommandlist = array_deep_clone(import('Chat.Discord.Command.List.Admin', array()))
 	@aliaseslist = array_deep_clone(import('Chat.Discord.Command.List.Alias', array()))
 	@categorieslist = array_deep_clone(import('Chat.Discord.Command.List.Categories', array()))
-	if(@isAdmin == false) {
+	if(@discord['admin'] == false) {
 		array_remove(@categorieslist, 'Admin')
 		foreach(@cmd in @admincommandlist) {
 			array_remove_values(@aliaseslist, @cmd)
@@ -67,12 +57,12 @@ proc _chat_cmd_help(@discord) {
 	array_sort(@aliaseslist, 'STRING')
 	@fields = array()
 	foreach(@cat: @list in @categorieslist) {
-		if(@isAdmin == false && @cat == 'Admin') { continue() }
+		if(@discord['admin'] == false && @cat == 'Admin') { continue() }
 		array_push(@fields, array('name': @cat, 'value': '`'.array_implode(array_sort(@list, 'STRING'), '` `').'`', 'inline': false))
 	}
 	@embeds = array(array('fields': @fields, 'color': array('r': 255, 'g': 204, 'b': 0), 'description': 'Command List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/925074738437570600.webp?size=32', 'text': 'the cool bot.')))
 	@aliasembed = array('fields': array(array('name': 'Aliases', 'value': '`'.array_implode(array_unique(@aliaseslist), '` `').'`', 'inline': false)), 'color': array('r': 170, 'g': 221, 'b': 0))
-	if(@isAdmin == true) { array_push(@embeds, @aliasembed) }
+	if(@discord['admin'] == true) { array_push(@embeds, @aliasembed) }
 	_send_discord_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds), 'discord', @discord['userid'], 'dm')
 	return(true)
 }
@@ -86,6 +76,117 @@ proc _chat_cmd_cypher(@discord) {
 	return(true)
 }
 
+proc _chat_cmd_dm(@discord, @cmdargs) {
+	@config = import('Chat.config.Discord')
+	@membernames = import('server.Discord.members.names')
+	if(!is_array(@membernames)) { 
+		@membernames = array()
+		array_set(@membernames, @discord['username'], @discord['userid']) 
+	}
+	@userConfig = import('server.Discord.DMs.user.settings', get_value('server.Discord.DMs.user.settings'));
+	if(is_array(@userConfig)) {
+		if(!array_index_exists(@userConfig, @discord['userid'])) {
+			array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+		}	
+	} else {
+		@userConfig = array()
+		array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+	}
+	
+	if(!array_index_exists(@cmdargs, 0)) { @cmdargs = array('view') }
+	switch(string(@cmdargs[0])) {
+	case 'view':
+		if(array_index_exists(@cmdargs, 1)) {
+			@userID = _chat_cmd_proc_finduserID(@cmdargs[1], @discord)
+			if(!is_numeric(@userID)) {
+				return('Cannot find settings for this user.')
+			} else {
+				@userSettings = @userConfig[@userID]
+			}
+		} else {
+			@userID = @discord['userid']
+			@userSettings = @userConfig[@discord['userid']]
+		}
+		@ret = 'DM settings for <@'.@userID.'>: '
+		foreach(@set: @v in @userSettings) {
+			@ret = @ret.'`'.@set.': '.@v.'` '
+		}
+		return(@ret)
+		
+	case 'notifycontent':
+	case 'nc':
+		@suffix = ' to the Minecraft server and Discord Admin log channel.'
+		if(!array_index_exists(@cmdargs, 1)) {
+			@userType = 'your'
+			@userID = @discord['userid']
+			@userConfig[@userID]['NotifyContent'] = !@userConfig[@userID]['NotifyContent']
+		} else if(@discord['admin'] == false) {
+			return('NotAdmin')
+		} else {
+			@userID = _chat_cmd_proc_finduserID(@cmdargs[1], @discord)
+			if(!is_numeric(@userID)) {
+				switch(@userID) {
+				case 'bot':
+					return(array('embeds': array(array('footer': array('text': 'I don\'t know how to DM myself'),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
+				case 'self':
+					@userID = @discord['userid']
+				case 'notfound':
+					return('NoUserFound')
+				case 'multiple':
+					return(false)
+				}
+			}
+			if(!array_index_exists(@userConfig, @userID)) {	array_set(@userConfig, @userID, array('NotifyContent': true, 'URLReadback': false))	}
+			@userType = 'that user\'s'
+			@userConfig[@userID]['NotifyContent'] = !@userConfig[@userID]['NotifyContent']
+		}
+		if(@userConfig[@userID]['NotifyContent'] == true) {
+			@ret = 'Content of '.@userType.' DMs with me shall be displayed'.@suffix
+		} else {
+			@ret = 'Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix	
+		}
+		export('server.Discord.DMs.user.settings', @userConfig);
+		store_value('server.Discord.DMs.user.settings', @userConfig);
+		return(@ret)
+	case 'urlreadback':
+	case 'url':
+		if(!array_index_exists(@cmdargs, 1)) {
+			@userType = 'your'
+			@userID = @discord['userid']
+			@userConfig[@userID]['URLReadback'] = !@userConfig[@userID]['URLReadback']
+		} else if(@discord['admin'] == false) {
+			return('NotAdmin')
+		} else {
+			@userID = _chat_cmd_proc_finduserID(@cmdargs[1], @discord)
+			if(!is_numeric(@userID)) {
+				switch(@userID) {
+				case 'bot':
+					return(array('embeds': array(array('footer': array('text': 'I don\'t know how to DM myself'),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
+				case 'self':
+					@userID = @discord['userid']
+				case 'notfound':
+					return('NoUserFound')
+				case 'multiple':
+					return(false)
+				}
+			}
+			if(!array_index_exists(@userConfig, @userID)) {	array_set(@userConfig, @userID, array('NotifyContent': true, 'URLReadback': false))	}
+			@userType = 'that user\'s'
+			@userConfig[@userID]['URLReadback'] = !@userConfig[@userID]['URLReadback']
+		}
+		if(@userConfig[@userID]['URLReadback'] == true) {
+			@ret = 'I\'ll message the URL of attachments in '.@userType.' DMs with me.'
+		} else {
+			@ret = 'Ok, no more useless URL messages in '.@userType.' DMs with me.'	
+		}
+		export('server.Discord.DMs.user.settings', @userConfig);
+		store_value('server.Discord.DMs.user.settings', @userConfig);
+		return(@ret)
+	default:
+		return(false)
+	}
+	return('Last return')
+}
 
 proc _chat_cmd_say(@discord, @cmdargs) {
 	if(!array_index_exists(@cmdargs, 0)) {
@@ -216,14 +317,7 @@ proc _chat_cmd_fakeadmin(@discord) {
 	if(@discord['UseDM'] != 'broadcast') { return('really? This isn\'t a server!') }
 	@userroles = discord_member_get_roles(@discord['username'])
 # debug		store_value('Chat.Discord.test.roles.'.@discord['username'], @userroles)
-	@isAdmin = false
-	foreach(@role in array_keys(@userroles)) {
-		if(array_contains_ic(@config['Role_Admins'], @role)) {
-			@isAdmin = true
-			break()
-		}
-	}
-	if(@isAdmin == true) { discord_private_message(@discord['userid'], 'really? You\'re already a server Admin!') }
+	if(@discord['admin'] == true) { discord_private_message(@discord['userid'], 'really? You\'re already a server Admin!') }
 	
 	if(array_contains(@userroles, @config['Fake_Admin_Role'])) {
 		discord_private_message(@discord['userid'], 'really? you trippin. you already a '.@config['Fake_Admin_Rolename'].'. Fine, I\'ll remove your admin status.')
@@ -254,6 +348,7 @@ proc _chat_cmd_fakeadmin(@discord) {
 @yky5 = array(	
 	'help': closure(@discord) { return(_chat_cmd_help(@discord)); },
 	'ping': closure(@discord, @args) { return(_chat_cmd_ping(@discord, @args)); },
+	'dm': closure(@discord, @args) { return(_chat_cmd_dm(@discord, @args)); },
 	'cypher': closure(@discord) { return(_chat_cmd_cypher(@discord)); },
 	'say': closure(@discord, @args) { return(_chat_cmd_say(@discord, @args)); },
 	'poo': closure(@discord, @args) { return(_chat_cmd_poo(@discord, @args)); },
@@ -267,7 +362,7 @@ proc _chat_cmd_fakeadmin(@discord) {
 
 # Categories. 
 # Only name of main command.
-@ow7qU = array('help', 'ping')
+@ow7qU = array('help', 'ping', 'dm')
 @ow7qF = array('cypher', 'say', 'fakeadmin', 'fakeban')
 
 

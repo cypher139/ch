@@ -1,4 +1,7 @@
-#version 1.0-tmc
+#version 1.1-tmc
+
+export('server.Discord.DMs.user.settings', get_value('server.Discord.DMs.user.settings'));
+
 bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs'), null, @discord) {
 	array_set(@discord, 'time', time())
 #Don't save or notify if this is a command message
@@ -7,8 +10,18 @@ bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs
 		array_set(@discord, 'channel', @discord['userid'])
 		@return = _chat_handlecommand(@discord, 'dm', 'dm')
 	} else { 
-	#Save recent DMs for future reference if needed
+	# Save recent DMs for future reference if needed
 		@DMs = get_value('server.Discord.DMs.received')
+		@userConfig = import('server.Discord.DMs.user.settings')
+		if(is_array(@userConfig)) {
+			if(!array_index_exists(@userConfig, @discord['userid'])) {
+				array_set(@userconfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+			}	
+		} else {
+			@userConfig = array()
+			array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+		}
+		# Save recent DMs for future reference if needed
 		if(!is_array(@DMs)) { @DMs = array(array('message': 'Start Of Message List')) }
 		array_insert(@DMs, @discord, 0)
 		if(array_index_exists(@DMs, 20)) { 
@@ -40,7 +53,9 @@ bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs
 			}
 		}
 		#Send Dm notification to Minecraft
-		_chat_mc_broadcast(color(9).'A DM was sent to the Discord Bot from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@discord['message'])
+		if(@userConfig[@discord['userid']]['NotifyContent'] == true) {
+			_chat_mc_broadcast(color(9).'A DM was sent to the Discord Bot from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@discord['message'])
+		}
 		console('[Discord] A DM was sent to the Discord Bot from ['.@discord['username'].' ('.@discord['userid'].') ] Message: \n'.@discord['message'].'\n Attached: '.@discord['attachments'], false)
 		if(reg_count('[\\s\\S]{1,1920}', @discord['message']) > 1) {
 			@discord['message'] = @discord['message'][cslice(0, 1910)].' ...'
@@ -59,15 +74,32 @@ bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs
 		if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
 			@urls = array()
 			foreach(@num: @attach in @discord['attachments']) {
-				if(@config['URL_Broadcast'] == true) {
+				if(@config['URL_Broadcast'] == true && @userConfig[@discord['userid']]['NotifyContent'] == true) {
 					_chat_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'])
 				}
 				array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))
 			}
 #			discord_broadcast(@config['Log_Channel'], array('embeds': array(array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/610596549327847434.gif', 'text': 'Use common sense, download at your own risk.')))))
-			array_push(@msgembed, array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/610596549327847434.gif', 'text': 'Use common sense, download at your own risk.')))
+			@urlembed = array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/610596549327847434.gif', 'text': 'Use common sense, download at your own risk.'))
+			if(@userConfig[@discord['userid']]['NotifyContent'] == true) { array_push(@msgembed, @urlembed) }
+			if(@userConfig[@discord['userid']]['URLReadback'] == true) {
+				try {
+					discord_private_message(@discord['userid'], array('embeds': @urlembed))
+				} catch(Exception @ex) {
+					console(@ex)
+				}
+			}
 		}
+		
 	# Send Dm Notification to Discord logs
-		discord_broadcast(@config['Log_Channel'], array('content': ':envelope_with_arrow:  I received a DM!', 'embeds': @msgembed))
+		if(@userConfig[@discord['userid']]['NotifyContent'] == false) {
+			@msgembed[0]['description'] = '<This user\'s message content is not shown in DM notifications>'
+		}
+		if(@userDMs[1]['message'] == 'Start Of Message List') {
+			@dm1 = 'I received my first DM from '.@discord['username'].'!  `'.@discord['userid'].'`'
+		} else {
+			@dm1 = 'I received a DM!'
+		}
+		discord_broadcast(@config['Log_Channel'], array('content': ':envelope_with_arrow:  '.@dm1, 'embeds': @msgembed))
 	}
 }
