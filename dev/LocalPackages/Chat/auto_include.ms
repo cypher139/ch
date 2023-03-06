@@ -248,12 +248,16 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 	@sendmsg = ''
 	# Check if player said banned mention
 	if(is_array(@message)) {
+	console('msg: array')
 		if(array_index_exists(@message, 'content')) {
+			console('msg: content')
 			@checkmention = _message_check_ban_mentions(@message['content'], @from)
 			@sendmsg = @message['content']
 		} else if(array_index_exists(@message, 'embeds')) {
+			console('msg: embed only')
 				@sendmsg == ''
 		} else {
+			console('msg: unsupported array')
 			@type = 'admin'
 			@sendmsg = 'A message queued to Discord was not sent: Array Content or Embeds was not given.'
 		}
@@ -281,6 +285,8 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		@sendmsg = ':skull_crossbones: '.@sendmsg
 	case 'command':
 		@sendmsg = ':desktop: '.@sendmsg
+	case 'confirm':
+		@sendmsg = ':white_check_mark: '.@sendmsg
 	default:
 	# Minecraft Player chat
 		@sendmsg = '`['.@from.']` '.@sendmsg

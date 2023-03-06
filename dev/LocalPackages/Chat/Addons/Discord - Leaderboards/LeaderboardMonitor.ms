@@ -27,7 +27,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 	_chat_dc_add_member(@discord);
 	
 	if(!array_index_exists(@leaderboard, 'members', @userID)) {
-		array_set(@leaderboard['members'], @userID, array('last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'message_count': 0))
+		array_set(@leaderboard['members'], @userID, array('last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'msg_count': 0))
 	}
 
 # If user has last chatted in last rolling minute, do not award XP. (continues to count message)
@@ -48,7 +48,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 		}
 	}
 # Increment Message count and XP
-	@leaderboard['members'][@userID]['message_count'] = @leaderboard['members'][@userID]['message_count'] + 1
+	@leaderboard['members'][@userID]['msg_count'] = @leaderboard['members'][@userID]['msg_count'] + 1
 	@leaderboard['members'][@userID]['last_msg'] = time()
 	if(@noXP == false) {
 		@newxp = rand(@config['LB_XP_Per_Message'][0], @config['LB_XP_Per_Message'][1])
@@ -59,6 +59,13 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 
 # If current XP is greater than the max for the next level:
 #Levelxp: (key: xp to be at this level). to get level up need to check next level
+#maxlevel
+	if(!array_index_exists(@levelxp, (@leaderboard['members'][@userID]['level'] + 1))) {
+		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> is at the maximum level '.@leaderboard['members'][@userID]['level'].'!', false)
+		export('server.Discord.members.leaderboard', @leaderboard)
+		die()
+	}
+#Level UP
 	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level'] + 1] && @noXP == false) {
 		@rankmsg = '!'
 		@currentrank = ''
@@ -132,7 +139,20 @@ bind('discord_message_received', array('id': 'Chat.Discord.monitor.Leaderboard',
 		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Level_Up_Message'])
 		@discordMsg = reg_replace('%Level%', @leaderboard['members'][@userID]['level'].@rankmsg, @discordMsg)
 		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> '.color(3).@oldlevel.color('r').' -> '.color(10).@leaderboard['members'][@userID]['level'].color('r').@rankmsg, false)
-		# _send_discord_message(@discordMsg, 'discord', @discord['channel'])
+		if(@config['LB_Level_Up_Announce'] != false) {
+			@type = 'broadcast'
+			switch(string(@config['LB_Level_Up_Announce'])) {
+			case 'log':
+				@sendchannel = @config['Log_Channel'] 
+			case 'dm':
+				@type = 'dm'
+				@sendchannel = @discord['userid']
+			case 'true':
+			default:
+				@sendchannel = @discord['channel']
+			}
+			_send_discord_message(@discordMsg, 'confirm', @sendchannel, @type)
+		}
 	}
 #Save edits
 	@leaderboard['lastedit'] = time()

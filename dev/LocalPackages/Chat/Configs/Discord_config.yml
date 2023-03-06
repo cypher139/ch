@@ -153,6 +153,8 @@ LB_Role_Rewards:
     RoleName: Member
 LB_Stack_Role_Rewards: false
 LB_Level_Up_Message: "%UserID% just leveled up to level %Level%"
+# Set to true for current channel, false to disable, log to send to log channel, dm to dm user instead
+LB_Level_Up_Announce: true
 LB_NoXP_Channels:
 - 'botspam'
 - 'join-log'
