@@ -19,6 +19,8 @@ proc _convert_json_data(@raw) {
 		array_set(@newLeaderboard['members'], @userid, @user)
 		array_remove(@newLeaderboard['members'][@userid], 'guild_id')
 		array_remove(@newLeaderboard['members'][@userid], 'id')
+		array_remove(@newLeaderboard['members'][@userid], 'is_monetize_subscriber')
+		array_remove(@newLeaderboard['members'][@userid], 'monetize_xp_boost')
 		array_set(@newLeaderboard['members'][@userid], 'tag', @json['players'][@i]['discriminator'])
 		array_set(@newLeaderboard['members'][@userid], 'msg_count', @json['players'][@i]['message_count'])
 		array_remove(@newLeaderboard['members'][@userid], 'discriminator')

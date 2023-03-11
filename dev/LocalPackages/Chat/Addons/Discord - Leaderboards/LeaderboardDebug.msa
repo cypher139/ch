@@ -86,8 +86,33 @@ case 'xp':
 	}
 	msg('call 66: '.@levelxp[66])
 	msg('call 67: '.@levelxp[67])
-	
+
 case 'prune':
+	@oldlb = get_value('server.Discord.members.leaderboard.removed')
+	@count = 0
+	msg('Removing Leaderboard entries from those no longer on server:')
+	if(!is_array(@oldlb)) { @oldlb = array() }
+	foreach(@userid: @user in @leaderboard['members']) {
+		try {
+			@toroles = discord_member_get_roles(@userid)
+		} catch(NotFoundException @ex) {
+			array_set(@oldlb, @userid, array('removed': time(), 'data': @user))
+			array_remove(@leaderboard['members'], @userid)
+			msg('Removed: '.@user['username'].' <@'.@userid.'>')
+			@count++
+		} catch(Exception @ex) {
+			die(color('c').@ex['classType'].': '.@ex['message'])
+		}
+	}
+	if(@count > 0) {	
+		@leaderboard['lastedit'] = time()
+		export('server.Discord.members.leaderboard', @leaderboard)
+		store_value('server.Discord.members.leaderboard.removed', @oldlb)
+	}
+	msg('Count: '.@count)
+
+	
+case 'lessthan':
 	@count = 0
 	foreach(@user in @leaderboard['members']) {
 		if(@user['msg_count'] < 20 || @user['level'] < 2) {
