@@ -14,10 +14,15 @@ if(!is_numeric(@id)) {
 
 try {
 	@toroles = discord_member_get_roles(@id)
+} catch(NotFoundException @ex) {
+	if(array_index_exists(@leaderboard, 'members', @id)) {
+		msg(color('e').'ID Not Found on the server, but ID is present in Leaderboard!')
+	} else {
+		die(color('c').'ID "'.@id.'" Not Found on Server.')
+	}
 } catch(Exception @ex) {
-	die(color('c').'ID Not Found on Server: '.@ex['message'])
+	die(color('c').@ex['classType'].': '.@ex['message'])
 }
-	
 
 msg('['.@name.'] ID: '.@id)
 switch($action) {
@@ -73,6 +78,7 @@ case 'd':
 	array_set(@leaderboard['members'], @id, array('time': (time() - 70000), 'level': 3, 'xp': 412, 'username': 'TESTNAME', 'message_count': 0))
 	export('server.Discord.members.leaderboard', @leaderboard)
 	msg('Saved default for this ID')
+	
 case 'xp':
 	foreach(@i: @lvl in @levelxp) {
 		msg('Level '.@i.': '.@lvl)
@@ -81,5 +87,14 @@ case 'xp':
 	msg('call 66: '.@levelxp[66])
 	msg('call 67: '.@levelxp[67])
 	
+case 'prune':
+	@count = 0
+	foreach(@user in @leaderboard['members']) {
+		if(@user['msg_count'] < 20 || @user['level'] < 2) {
+			msg('Prune: '.@user['username'].' ('.@user['level'].' ,  '.@user['msg_count'].'msg)')
+			@count++
+		}
+	}
+	msg('Count: '.@count)
 }
 <<<

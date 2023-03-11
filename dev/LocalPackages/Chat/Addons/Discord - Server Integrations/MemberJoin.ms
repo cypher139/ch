@@ -5,6 +5,16 @@
 bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), null, @event) {
 	@config = import('Chat.config.Discord')
 	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
+# Restore leaderboard entry	
+	@leaderboard = import('server.Discord.members.leaderboard')
+	@oldlb = get_value('server.Discord.members.leaderboard.removed')
+	if(is_array(@leaderboard) && is_array(@oldlb)) {
+		if(array_index_exists(@oldlb, @event['userid'])) {
+			array_set(@leaderboard['members'], @event['userid'], @oldlb[@event['userid']]['data'])
+			@leaderboard['lastedit'] = time()
+			export('server.Discord.members.leaderboard', @leaderboard)
+		}
+	}
 #Wait a few seconds to avoid mention spam right at first.	
 	set_timeout(5000, closure(){ 
 		try {
@@ -59,6 +69,7 @@ bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), n
 }
 
 bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), null, @event) {
+	@lbremove = 0
 	if(@event['username'] == @event['nickname']) {
 		@userDisplay = @event['username'].' <@'.@event['userid'].'>'
 	} else {
@@ -85,20 +96,45 @@ bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), nu
 			export('server.Discord.members.ID', @memberIDs)
 		}
 	}
+	@leaderboard = import('server.Discord.members.leaderboard')
+	if(is_array(@leaderboard)) {
+		if(array_index_exists(@leaderboard, 'members', @event['userid'])) { 
+			if(@config['LB_Remove_On_Leave'] == true) { @lbremove = 1 } else { @lbremove = 0 }
+			if(@leaderboard['members'][@event['userid']]['level'] < 6) { @lbremove = 1 }			
+		}
+	}
 	
 	# Remove Welcome message
 	@msgids = get_value('server.Discord.Welcome.msg.IDs')
 	if(!is_array(@msgids)) { @msgids = array() }
 	if(array_contains(array_keys(@msgids), @event['userid'])) {
 		if(time() < (@msgids[@event['userid']]['time'] + @config['Welcome_Message_Timeout'])) { 
+			# Remove leaderboard entry too
+			if(is_array(@leaderboard)) {
+				if(array_index_exists(@leaderboard, 'members', @event['userid'])) { @lbremove = 2 }
+			}
+			# Remove Welcome message
 			try { 
 				discord_delete_message(@config['Welcome_Text_Channel_Name'], @msgids[@event['userid']]['id'])
 				console('[Discord] New joiner! Welcome message removed.', false)
 			} catch(Exception @ex) {
-				console('[Discord] Unable to remove Welcome Message!'.@ex, false)
+				console('[Discord] Unable to remove Welcome Message! '.color('c').@ex['classType'].': '.@ex['message'], false)
 			}
 			array_remove(@msgids, @event['userid'])
 			store_value('server.Discord.Welcome.msg.IDs', @msgids)
 		}
 	}
+	
+	if(@lbremove != 0) { 
+		if(@lbremove != 2) {
+			@oldlb = get_value('server.Discord.members.leaderboard.removed')
+			if(!is_array(@oldlb)) { @oldlb = array() }
+			array_set(@oldlb, @event['userid'], array('removed': time(), 'data': @leaderboard['members'][@event['userid']]))
+			store_value('server.Discord.members.leaderboard.removed', @oldlb)
+		}
+		array_remove(@leaderboard['members'], @event['userid'])
+		@leaderboard['lastedit'] = time()
+		export('server.Discord.members.leaderboard', @leaderboard)
+	}
+	
 }

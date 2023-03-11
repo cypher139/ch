@@ -84,7 +84,7 @@ bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs
 			if(@userConfig[@discord['userid']]['NotifyContent'] == true) { array_push(@msgembed, @urlembed) }
 			if(@userConfig[@discord['userid']]['URLReadback'] == true) {
 				try {
-					discord_private_message(@discord['userid'], array('embeds': @urlembed))
+					discord_private_message(@discord['userid'], array('embeds': array(@urlembed)))
 				} catch(Exception @ex) {
 					console(@ex)
 				}
