@@ -1,87 +1,40 @@
 #version 1.3-tmc
 
-#Command Line Prerequisites
-if(in_cmdline_mode() == true) {
-	#Libraries
+# Command Line Prerequisites
+if(in_cmdline_mode()) {
+	# Libraries
 	@pathparent = reg_replace('Chat', '', pwd())
     if(array_contains(ls(@pathparent), 'ScriptLibraries')) {
 		include(@pathparent.'/ScriptLibraries/UncaughtException.ms')
         include(@pathparent.'/ScriptLibraries/auto_include.ms')
     }
-	#Chat Core Functions
+	# Chat Core Functions
 	include('auto_include.ms')
+} else {
+# Load Server Configs for Minecraft usage
+	@return8239 = _chat_load_config('Server')
+	if(!is_array(@return8239)) { die() }
+
+	#Format Addon Startup
+	export('Chat.format.groups', get_value('Chat.format.groups'))
+	export('Chat.format.options', get_value('Chat.format.options'))
+	# chf_write('Format_Options_config.yml', yml_encode(get_value('Chat.format.options'), true), OVERWRITE)
+	# chf_write('Format_Group_Options_config.yml', yml_encode(get_value('Chat.format.groups'), true), OVERWRITE)
 }
-
-#Format Addon Startup
-export('Chat.format.groups', get_value('Chat.format.groups'))
-export('Chat.format.options', get_value('Chat.format.options'))
-
-#console(reflect_docs('discord_set_activity', 'description'))
-# PLAYING, STREAMING, LISTENING, WATCHING, CUSTOM_STATUS, or COMPETING.
-
-# chf_write('Format_Options_config.yml', yml_encode(get_value('Chat.format.options'), true), OVERWRITE)
-# chf_write('Format_Group_Options_config.yml', yml_encode(get_value('Chat.format.groups'), true), OVERWRITE)
-
-
-# Load Server Configs
-@b7xbc2t = ''
-try {
-	@b7xbc2t = yml_decode(read(import('Chat.config.dir').'/Server_config.yml'))
-} catch(IOException @ex) {
-	_chat_msg_Admins('[Chat - Server] Config file could not be read. '.@ex['message'])
-	die()
-} catch(FormatException @ex) {
-	_chat_msg_Admins('[Chat - Server] Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true) 
-	die()
-} catch(Exception @ex) {
-	_chat_msg_Admins('[Chat - Server] There was an error with the Config file. '.@ex['message']) 
-	die()
-}
-if(array_index_exists(@b7xbc2t, 'Not_Configured')) {
-	_chat_msg_Admins('[Chat - Server] Server Config file is still using the default values. Please configure it to your needs!')
-	die()
-}
-export('Chat.config.Server', @b7xbc2t)
-
 
 		
-#Prerequisites for Discord functions: Connect to Server!
+# Startup Discord Functions
 if(function_exists('discord_connect')) {
-# Database Startup
+# Databases Startup
 	export('server.Discord.members.ID', get_value('server.Discord.members.ID'))
 	export('server.Discord.members.names', get_value('server.Discord.members.names'))
 	export('server.Discord.members.leaderboard', get_value('server.Discord.members.leaderboard'))
 # Load Discord Configs
-	@zrp1mg6 = ''
+	@return8762 =_chat_load_config('Discord')
+	if(!is_array(@return8762)) { die() }		
+# Connect
 	try {
-		@zrp1mg6 = yml_decode(read(import('Chat.config.dir').'/Discord_config.yml'))
-	} catch(IOException @ex) {
-		_chat_msg_Admins('[Chat - Discord] Config file could not be read. '.@ex['message'])
-		die()
-	} catch(FormatException @ex) {
-		_chat_msg_Admins('[Chat - Discord] Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true)
-		die()
-	} catch(Exception @ex) {
-		_chat_msg_Admins('[Chat - Discord] There was an error with the Config file. '.@ex['message']) 
-		die()
-	}
-	if(array_contains(@zrp1mg6['Channels_Receive'], 'default')) {
-		_chat_msg_Admins('[Chat - Discord] Config file is still using default values. Please configure it in order to use various Discord features.') 
-		die()
-	}
-	if(@zrp1mg6['VC_Role_ID'] == 123) {
-		_chat_msg_Admins('[Chat - Discord] Voice Chat Config is still using defaults. Please configure it in order to use the VC Role Ping feature.') 
-	}
-	if(@zrp1mg6['Welcome_Text_Channel_Name'] == 'default') {
-		_chat_msg_Admins('[Chat - Discord] Member Config is still using defaults. Please configure it in order to use the Welcome Message feature.') 
-	}
-	if(array_contains(@zrp1mg6['CS_Server_1_Channels'], 'default')) {
-		_chat_msg_Admins('[Chat - Discord] Cross server Config is still using default values. Please configure it in order to use Cross-Server chat features.') 
-	}
-	
-	export('Chat.config.Discord', @zrp1mg6)
-	try {
-		discord_connect(@zrp1mg6['Profile_Name'], closure(){
+		discord_connect(@return8762['Profile_Name'], closure(){
 			_chat_mc_broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color('a').'Connected'.color(8).' to Discord');
 			if(get_value('Chat.Discord.Console.receive') == true) {
 				export('Chat.Discord.Console.receive', true)
@@ -89,20 +42,28 @@ if(function_exists('discord_connect')) {
 			} else {
 				export('Chat.Discord.Console.receive', false)
 			}
-			discord_set_activity('PLAYING', string('Minecraft'));
-		})
-/*
-		if(import('Chat.Discord.Has.Started') == false) {
-			_send_discord_message('I\'m Alive once more, come join the Minecraft server!', 'Server')
-			export('Chat.Discord.Has.Started', true)
-		}
-*/
+# Set Bot Activity
+			@acttypes8901 = reg_split('of\\s|[,.]\\s(?:or\\s)*', reflect_docs('discord_set_activity', 'description'))[2..]
+			foreach(@k: @v in @acttypes8901) {
+				if(to_upper(@v) != @v) { array_remove(@acttypes8901, @k) }
+			}
+			if(array_contains(@acttypes8901, to_upper(@return8762['Activity_Type']))) {
+				try {
+					discord_set_activity(to_upper(@return8762['Activity_Type']), string(@return8762['Activity_Message']));
+				} catch(Exception @ex) {
+					_chat_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color('r').@ex['message'])
+					console(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color(12).@ex['classType'].': '.@ex['message'], false)
+				}
+			} else {
+				_chat_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Selected Bot Activity Type is not supported!')
+			}	
+		});
 	} catch(Exception @ex) {
 		console(color(4).'['.color(9).'Server'.color(4).'] '.color(4).'NOT Connected to Discord: '.color('r').@ex['message'])
 #		console(@ex)
 	}
-	
-	if(@zrp1mg6['Use_Second_Server'] == true) {
+# Second server Connect
+	if(@return8762['Use_Second_Server'] == true) {
 		try {
 			discord_connect('discordCredentials2', closure(){
 				_chat_mc_broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Now Connected to Discord #2');
@@ -112,7 +73,7 @@ if(function_exists('discord_connect')) {
 		}
 	}
 	
-	#Command Line: Start rest of script
+# Command Line: Start rest of script
 	if(in_cmdline_mode() == true) {
 		# External Scripts
 		if(array_contains(ls(@pathparent), 'codegen')) {
@@ -122,4 +83,4 @@ if(function_exists('discord_connect')) {
 		#Note: DOES include .disabled
 		include_dir('Addons', true)
 	}
-}
+

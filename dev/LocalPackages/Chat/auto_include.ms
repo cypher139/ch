@@ -1,4 +1,4 @@
-# Core Startup
+### Core Startup
 export('chatmodifier.name', 'Chat')
 if(in_cmdline_mode() == true) {
 	export('chatmodifier.version', '1.0-tmc-cmd')
@@ -10,13 +10,13 @@ if(in_cmdline_mode() == true) {
 	export('Chat.logs.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Logs'))
 }
 
-# Functions
+### Functions
 
 proc _chat_is_even_number(@number) { return(mod(@number, 2) == 0) }
 
 proc _chat_msg_Admins(@msg, @consolemsg, @cmconcat, @hideplayer) {
-	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg', @consolemsg = @msg)
-	if(@cmconcat != '', @consolemsg = @msg.@consolemsg)
+	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg') { @consolemsg = @msg }
+	if(@cmconcat != '') { @consolemsg = @msg.@consolemsg }
 	console(@consolemsg, false)
 	#Broadcast to MC server, if available
 	if(function_exists('all_players')) {
@@ -28,6 +28,55 @@ proc _chat_msg_Admins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 
 proc _is_Command(@line) {
 	return(string_starts_with(@line, '~'));
+}
+
+proc _chat_load_config(@cfgtype) { 
+	if(@cfgtype == '' || @cfgtype == null) { @cfgtype = 'Server' }
+	@loadcfg = ''
+	try {
+		@loadcfg = yml_decode(read(import('Chat.config.dir').'/'.@cfgtype.'_config.yml'))
+	} catch(IOException @ex) {
+		_chat_msg_Admins(color(12).'[Chat] '.@cfgtype.' Config file could not be read. ', @ex['message'], true)
+		return(false)
+	} catch(FormatException @ex) {
+		_chat_msg_Admins(color(12).'[Chat] '.@cfgtype.' Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true) 
+		return(false)
+	} catch(Exception @ex) {
+		_chat_msg_Admins(color(12).'[Chat] There was an error with the '.@cfgtype.' Config file. ', @ex['message'], true) 
+		return(false)
+	}
+#Checks:
+	switch(string(@cfgtype)) {
+	case 'Server':
+		if(array_index_exists(@loadcfg, 'Not_Configured')) {
+			_chat_msg_Admins(color(12).'[Chat - Server] Server Config file is still using the default values. Please configure it to your needs!')
+			return(false)
+		}
+	case 'Discord':
+		if(!function_exists('discord_connect')) { 
+			console('CHDiscord extension not installed!')
+			return(false)
+		}
+		if(array_contains(@loadcfg['Channels_Receive'], 'default')) {
+			_chat_msg_Admins(color(12).'[Chat - Discord] Config file is still using default values. Please configure it in order to use various Discord features.') 
+			return(false)
+		}
+		if(@loadcfg['VC_Role_ID'] == 123) {
+			_chat_msg_Admins(color(14).'[Chat - Discord] Voice Chat Config is still using defaults. Please configure it in order to use the VC Role Ping feature.') 
+		}
+		if(@loadcfg['Welcome_Text_Channel_Name'] == 'default') {
+			_chat_msg_Admins(color(14).'[Chat - Discord] Member Config is still using defaults. Please configure it in order to use the Welcome Message feature.') 
+		}
+	case 'Experimental':
+	case 'ex':
+		@servercfg = import('Chat.config.Server')
+		@loadcfg = array_merge(@loadcfg, @servercfg)
+		if(array_contains(@loadcfg['CS_Server_1_Channels'], 'default')) {
+			_chat_msg_Admins(color(14).'[Chat - Discord] Cross server Config is still using default values. Please configure it in order to use Cross-Server chat features.') 
+		}
+	}
+	export('Chat.config.'.@cfgtype, @loadcfg)
+	return(@loadcfg)
 }
 
 /*

@@ -4,6 +4,9 @@ Bot_ID: 1000000
 Bot_Name: bot
 Log_Channel: bot-logs
 Use_Second_Server: false
+# Accepted types: PLAYING, STREAMING, LISTENING, WATCHING, CUSTOM_STATUS, or COMPETING
+Activity_Type: PLAYING
+Activity_Message: Minecraft
 #
 #
 # Mentions
@@ -162,27 +165,3 @@ LB_NoXP_Channels:
 LB_NoXP_RoleID:
 - 123
 - 456
-#
-#
-# Cross-Server Chat
-CS_URL_Broadcast: true
-CS_Server_1_Name: "Server 1"
-CS_Server_1_ID: 123456
-CS_Server_1_Channels:
-- general
-- default
-- cross-server-chat
-- minecraft
-- voice-chat
-- other
-CS_Server_2_Name: "Server 2"
-CS_Server_2_ID: 789456123
-CS_Server_2_Channels:
-- general
-- default
-- news
-- minecraft
-- voice-chat
-- other
-CS_Server_1_Channels_Send: cross-server-chat
-CS_Server_2_Channels_Send: cross-server
