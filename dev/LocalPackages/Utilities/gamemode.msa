@@ -20,6 +20,20 @@ set_uncaught_exception_handler(closure(@ex){
 # Get other player's name if provided 
 if(has_permission('commandhelper.alias.shiftmode.others')) { @otherperm = true } else { @otherperm = false }
 foreach(@k: @v in @args) {
+	if(is_numeric(@v)) {
+		if(length(@v) == 1) {
+			switch(@v) {
+			case 0:
+				@newmode = 'Survival'
+			case 1:
+				@newmode = 'Creative'
+			case 2:
+				@newmode = 'Spectator'
+			case 3:
+				@newmode = 'Adventure'
+			}
+		} else { continue() }
+	}
 	if(array_contains_ic(all_players(), @v)) {
 		if(@otherperm == false) {
 			die(color('c').'['.color(8).@name.color('c').'] '.color('c').'You do not have permission to change other player\'s gamemodes!')
@@ -29,6 +43,7 @@ foreach(@k: @v in @args) {
 		#No break, so finds all players and picks last mentioned.
 	}
 }
+
 /*
 if(@user == '~console') {
 	@dev = false
@@ -37,14 +52,13 @@ if(@user == '~console') {
 }
 */
 @user = _getplayerID(@user)
-
+@newmode = 'Unset'
 #Arguments nag message
 if($ != '' && !has_permission('commandhelper.alias.shiftmode.notip')) {
 	msg(color(7).'['.color(3).@name.color(7).'] '.color(7).'Tip: Switch between '.color('c').'Survival'.color(7).' and '.color('b').'Creative'.color(7).' mode by just using '.color('a').'/mode')
 } 
 if(array_size(@args) > 0) {
 # Non-Player Arguments provided
-	@newmode = 'Unset'
 	@fc = 0
 	foreach(@k: @v in @args) {
 		if(reg_count('^[GgIiPp]', @v) > 0) { 
@@ -84,15 +98,17 @@ if(array_size(@args) > 0) {
 	}
 } else {
 # /mode - No Arguments
-	switch(pmode(@user['name'])) {
-	case 'CREATIVE':
-		@newmode = 'Survival'
-	case 'SURVIVAL':
-		@newmode = 'Creative'
-	case 'SPECTATOR':
-		@newmode = 'Survival'
-	case 'ADVENTURE':
-		@newmode = 'Survival'
+	if(@newmode == 'Unset') {
+		switch(pmode(@user['name'])) {
+		case 'CREATIVE':
+			@newmode = 'Survival'
+		case 'SURVIVAL':
+			@newmode = 'Creative'
+		case 'SPECTATOR':
+			@newmode = 'Survival'
+		case 'ADVENTURE':
+			@newmode = 'Survival'
+		}
 	}
 }
 

@@ -98,6 +98,15 @@ assign(@name, Slots)
 				assign(@playerblocks[@reward], @rewardqty + @playerblocks[@reward])
 				store_value(@name.'.player.'.@player['id'].'.alltime.blocks', @playerblocks)
 				msg('new: '.@playerblocks)
+case 'rd':
+console(reflect_docs('discord_set_activity', 'description'))
+	@acttypes8901 = reg_split('of\\s|[,.]\\s(?:or\\s)*', reflect_docs('discord_set_activity', 'description'))[2..]
+	foreach(@k: @v in @acttypes8901) {
+		if(to_upper(@v) != @v) { array_remove(@acttypes8901, @k) }
+	}
+	msg(@acttypes8901)
+
+
 case '':
 case null:
 	msg('uh specify something?')
