@@ -69,6 +69,7 @@ case 'getroles':
 	case 'chd':
 		try {
 			@roles = discord_member_get_roles(@args[0])
+			if(player() != '~console') { @roles = array_keys(@roles) }
 		} catch(NotFoundException @ex) {
 			die(@prefix.color('e').'User ID Not Found on Server.')
 		} catch(Exception @ex) {
@@ -135,5 +136,7 @@ case 'welcomerolesfinder':
 			msg('['.@name.'] '.@return['welcome'].' members were detected as having only the Welcome Roles.')
 		}
 	}
+default:
+msg('Action Not Recognized!')	
 }
 <<<

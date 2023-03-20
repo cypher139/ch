@@ -1,5 +1,5 @@
 ### Core Startup
-if(in_cmdline_mode() == true) {
+if(in_cmdline_mode()) {
 	export('DiscordBot.version', '1.0-tmc-cmd')
 	export('DiscordBot.config.dir', file_resolve(pwd().'/Configs'))
 	export('DiscordBot.logs.dir', file_resolve(pwd().'/Logs'))
@@ -313,12 +313,21 @@ proc _discordBot_dc_add_member(@discord) {
 
 proc _db_mc_broadcast(@msg, @args) {
 	if(function_exists('broadcast')) {
-		if(@args == '' || @args == null) { @args = all_players() }
+		if(!is_array(@args) && @args != '' && @args != null) { 
+			if(!array_contains(all_players(), @args)) {
+				console('[DiscordBot] A Message Broadcast to Minecraft players failed: Players given were not found.', false)
+				return(false)
+			}
+		}
 		broadcast(@msg, @args)
 	} else {
-		# console('Bot Service is not running on a Minecraft server! Broadcast messages will be redirected to the console.', false)
+		if(import('DiscordBot.debug.broadcast.Console.msg') != true) {
+			console('[DiscordBot] Bot Service is not running on a Minecraft server! Messages to broadcast to Minecraft players will be redirected to the console.', false)
+			export('DiscordBot.debug.broadcast.Console.msg', true)
+		}
 		console(@msg, false)
 	}
+	return(true)
 }
 
 #### Command Functions
@@ -482,7 +491,7 @@ foreach(@i: @lvl in @levelxp) {
 	}
 	@levelxp[@i] = integer(@levelxp[(@i - 1)] * @mp)
 }
-export('DiscordBot.leaderboard.levelXP', @levelxp)
+export('DiscordBot.Leaderboard.levelXP', @levelxp)
 }
 
 #Handle commands from Discord Users

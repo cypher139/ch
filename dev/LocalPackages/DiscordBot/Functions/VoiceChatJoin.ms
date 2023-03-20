@@ -10,7 +10,7 @@ If:
 Then this will send a message to the ping role to come join voice chat
 */
 
-bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null, @discord) {
+bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
 # Note: import is auto globally saved (example #2), so use new variables to store edits needed
 	@config = import('DiscordBot.config.Discord')
 	if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
@@ -88,7 +88,7 @@ bind('discord_voice_joined', array('id': 'Discord.Server.monitor.VC.join'), null
 }
 
 
-bind('discord_voice_left', array('id': 'Discord.Server.monitor.VC.leave'), null, @discord) {
+bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	@config = import('DiscordBot.config.Discord')
 	if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
 	@currentVCUsers = get_value('DiscordBot.VC.'.@discord['channelid'].'.users.current')

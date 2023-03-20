@@ -2,7 +2,7 @@
 #requires CHDiscord build #70 or higher
 
 #Welcome DM and Message for new Discord Server Members
-bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), null, @event) {
+bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event) {
 	@config = import('DiscordBot.config.Discord')
 	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
 # Restore leaderboard entry	
@@ -68,7 +68,7 @@ bind('discord_member_joined', array('id': 'Discord.Server.monitor.User.join'), n
 	});
 }
 
-bind('discord_member_left', array('id': 'Discord.Server.monitor.User.leave'), null, @event) {
+bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) {
 	@lbremove = 0
 	if(@event['username'] == @event['nickname']) {
 		@userDisplay = @event['username'].' <@'.@event['userid'].'>'

@@ -2,7 +2,7 @@
 
 export('DiscordBot.DMs.user.settings', get_value('DiscordBot.DMs.user.settings'));
 
-bind('discord_private_message_received', array('id': 'Discord.Server.monitor.DMs'), null, @discord) {
+bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notification'), null, @discord) {
 	array_set(@discord, 'time', time())
 #Don't save or notify if this is a command message
 	@config = import('DiscordBot.config.Discord')

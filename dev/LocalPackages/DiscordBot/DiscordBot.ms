@@ -5,14 +5,14 @@
 	author: cypher139;
 	created: 2023-03-14;
 	description: Provides functionality to a connected Discord Bot.;
-	requiredExtensions: Core, CHDiscord, CHFiles;
+	requiredExtensions: Core, CHDiscord;
 >
 #version 1.3-tmc
 
 # Command Line Prerequisites
 if(in_cmdline_mode()) {
-	# Libraries
 	@pathparent = reg_replace('[^/]+$', '', pwd())
+	# Libraries
     if(array_contains(ls(@pathparent), 'ScriptLibraries')) {
 		include(@pathparent.'/ScriptLibraries/UncaughtException.ms')
         include(@pathparent.'/ScriptLibraries/auto_include.ms')
@@ -23,6 +23,11 @@ if(in_cmdline_mode()) {
 	}
 	# Core Functions
 	include('auto_include.ms')
+} else {
+#Minecraft Prerequisites
+	if(!function_exists('write_file') && !function_exists('chf_write')) {
+		console(color('c').'[DiscordBot] File writing extensions are not installed! Features such as logs and leaderboard export will not function!', false)
+	}
 }
 
 		
@@ -34,11 +39,12 @@ if(function_exists('discord_connect')) {
 	export('DiscordBot.Leaderboard', get_value('DiscordBot.Leaderboard'))
 # Load Discord Configs
 	@return8762 = _db_load_config('Discord')
-	if(!is_array(@return8762)) { die() }		
+	if(!is_array(@return8762)) { die() }
+	@connectmsg = color(6).'['.color(9).'Server'.color(6).'] '.color('a').'Connected'.color(8).' to Discord'
 # Connect
 	try {
 		discord_connect(@return8762['Profile_Name'], closure(){
-			_db_mc_broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color('a').'Connected'.color(8).' to Discord');
+			_db_mc_broadcast(@connectmsg);
 			if(get_value('DiscordBot.Console.receive') == true) {
 				export('DiscordBot.Console.receive', true)
 				console('[Chat - Discord] Console receives Chat from Discord Users.', false)
@@ -70,7 +76,7 @@ if(function_exists('discord_connect')) {
 	if(@return8762['Use_Second_Server'] == true) {
 		try {
 			discord_connect('discordCredentials2', closure(){
-				_db_mc_broadcast(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Now Connected to Discord #2');
+				_db_mc_broadcast(@connectmsg.' #2');
 			})
 		} catch(Exception @ex) {
 			console(color(4).'['.color(9).'Server'.color(4).'] '.color(4).'NOT Connected to Discord #2: '.color('r').@ex['message'])

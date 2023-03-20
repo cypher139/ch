@@ -116,6 +116,7 @@ if(@tpupdate == true) {
 } else {
 	if(@tpname == null) {
 		@tpndisplay = 'this'
+		@tpname = 'Teleporter'.time()[cslice(9,12)]
 	} else {
 		@tpndisplay = 'the "'.@tpname.'"'
 	}
