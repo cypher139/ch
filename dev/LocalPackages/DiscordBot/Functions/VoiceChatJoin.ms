@@ -130,7 +130,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @stats, 0)
 		if(array_index_exists(@lastmsgs, 20)) {
-			_write_file(import('Chat.logs.dir').'/Discord-VC-Stats.txt', '\n'.@lastmsgs[20], 'append')
+			_write_file(import('DiscordBot.logs.dir').'/Discord-VC-Stats.txt', '\n'.@lastmsgs[20], 'append')
 			array_remove(@lastmsgs, 20)
 		}
 		store_value('DiscordBot.last.VC', @lastmsgs)

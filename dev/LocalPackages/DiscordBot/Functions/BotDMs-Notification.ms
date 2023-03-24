@@ -4,6 +4,7 @@ export('DiscordBot.DMs.user.settings', get_value('DiscordBot.DMs.user.settings')
 
 bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notification'), null, @discord) {
 	array_set(@discord, 'time', time())
+	@saveDM = array_deep_clone(@discord)
 #Don't save or notify if this is a command message
 	@config = import('DiscordBot.config.Discord')
 	if(reg_count(@config['CMD_Command_Prefix'], @discord['message']) > 0) {
@@ -11,31 +12,33 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		@return = _discordBot_handlecommand(@discord, 'dm', 'dm')
 	} else { 
 	# User settings
-		@DMs = get_value('DiscordBot.DMs.received')
+		@recentDMs = get_value('DiscordBot.DMs.recent')
 		@userConfig = import('DiscordBot.DMs.user.settings')
 		if(is_array(@userConfig)) {
 			if(!array_index_exists(@userConfig, @discord['userid'])) {
-				array_set(@userconfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+				array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
 			}	
 		} else {
 			@userConfig = array()
 			array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
 		}
-		# Save recent DMs for future reference if needed
-		if(!is_array(@DMs)) { @DMs = array(array('message': 'Start Of Message List')) }
-		array_insert(@DMs, @discord, 0)
-		if(array_index_exists(@DMs, 20)) { 
-			_write_file(import('DiscordBot.logs.dir').'/Discord-DMs-Received.txt', '\n'.@DMs[20], 'append')
-			array_remove(@DMs, 20)
-		}
+	# Save recent DMs for future reference if needed
+		@newDM = array()
+		array_set(@newDM, @discord['time'], @discord['userid'])
+		if(!is_array(@recentDMs)) { @recentDMs = array() }
+		array_insert(@recentDMs, @newDM, 0)
+		
 		@userDMs = get_value('DiscordBot.DMs.log.'.@discord['userid'])
-		if(!is_array(@userDMs)) { @userDMs = array(array('message': 'Start Of Message List')) }
-		array_insert(@userDMs, @discord, 0)
-		if(array_index_exists(@userDMs, 20)) { 
-			_write_file(import('DiscordBot.logs.dir').'/Discord-DMs-User-'.@discord['userid'].'.txt', '\n'.@userDMs[20], 'append')
-			array_remove(@userDMs, 20)
-		}
-		store_value('DiscordBot.DMs.received', @DMs)
+		if(!is_array(@userDMs)) { @userDMs = array() }
+		if(array_index_exists(@saveDM, 'attachments', 0, 'filename')) {
+			foreach(@num: @attach in @saveDM['attachments']) {
+				if(@attach['description'] == '') { array_remove(@saveDM['attachments'][@num], 'description') }
+			}
+		} else { array_remove(@saveDM, 'attachments') }
+		array_remove(@saveDM, 'userid')
+		array_insert(@userDMs, @saveDM, 0)
+		_write_file(import('DiscordBot.logs.dir').'/Discord-DMs-User-'.@discord['userid'].'.json', json_encode(@userDMs), 'overwrite')
+		store_value('DiscordBot.DMs.recent', @recentDMs)
 		store_value('DiscordBot.DMs.log.'.@discord['userid'], @userDMs)
 	#Message Display
 		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
