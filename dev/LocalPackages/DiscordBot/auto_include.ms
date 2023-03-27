@@ -314,7 +314,9 @@ proc _discordBot_dc_add_member(@discord) {
 proc _db_mc_broadcast(@msg, @args) {
 	if(function_exists('broadcast')) {
 		if(!is_array(@args) && @args != '' && @args != null) { 
-			if(!array_contains(all_players(), @args)) {
+			if(@args == 'players' || @args == 'player') { 
+				@args = all_players() 
+			} else if(!array_contains(all_players(), @args)) {
 				console('[DiscordBot] A Message Broadcast to Minecraft players failed: Players given were not found.', false)
 				return(false)
 			}

@@ -337,7 +337,7 @@ case 'import':
 			if(array_index_exists(@v, @args[1])) {
 				@v = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
 			} else {
-				@v = color(12).'Index '.@args[1].' was not found! \n'.color(@color).@v
+				@v = color(12).'Index '.@args[1].' was not found!'
 			}
 		}
 	} else {
@@ -371,6 +371,7 @@ case 'getvalue':
 case 'gv':
 	if(array_size(@args) == 0) { array_push(@args, player()) }
 	@v = get_value(@args[0])
+	@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
 	@arraymsg = ''
 	@as = 0
 	@color = 7
@@ -381,7 +382,7 @@ case 'gv':
 			if(array_index_exists(@v, @args[1])) {
 				@v = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
 			} else {
-				@v = color(12).'Index '.@args[1].' was not found! \n'.color(@color).@v
+				@v = color(12).'Index '.@args[1].' was not found!'
 			}
 		}
 	} else {
@@ -392,9 +393,11 @@ case 'gv':
 			@color = 12
 		case null:
 			@color = 8
+		default:
+			if(is_numeric(@v)) { @color = 9 }
 		}
 	}
-	msg(@prefix.color(6).'Get value: '.color('d').@args[0].@arraymsg.color('f').' returned:')
+	msg(@prefix.color(6).'Value: '.color('d').@args[0].color(7).' is_'.@type.@arraymsg)
 	msg(color(@color).@v)
 	if(@as > 9) { msg(@prefix.@arraymsg) }
 	
@@ -438,24 +441,54 @@ case 'hv':
 
 case 'storevalue':
 case 'sv':
-	if(array_size(@args) < 2) { die(@prefix.color('c').'Not enough arguments provided.') }
-	msg(@prefix.color(6).'Store value: '.color('d').@args[0])
+# BUGS
+
+# stores t/f as string
 	@old = get_value(@args[0])
 	if(@args[0] == 'undo') {
 		@undo = import('ch.sv.undo', array())
 		if(array_size(@undo) == 0) {
 			msg(@prefix.color(6).'There is no data to restore.')
 		} else {
-			store_value(@key, @data)
-			msg(@prefix.color(6).'Restored '.@undo[0].' to :'.@undo[1])
+			store_value(@undo[0], @undo[1])
+			msg(@prefix.color(6).'Restored '.color('d').@undo[0].color(6).' to: '.color(7).@undo[1])
 		}
 		die()
 	}
-	msg(@prefix.color(6).'Previously: '.color(7).@old)
-	export('ch.sv.undo', array(@args[0], @args[1..]))
-	store_value(@args[0], @args[1..])
+	if(array_size(@args) < 2) { die(@prefix.color('c').'Not enough arguments provided.') }
+	@new = @args[1..]
+	msg(@prefix.color(6).'Store value: '.color('d').@args[0])
+	msg(@prefix.color(6).'Previous: '.color(7).@old)
+	export('ch.sv.undo', array(@args[0], @old))
+	switch(@args[1]) {
+	case 'array':
+		if(array_index_exists(@args, 2)) {
+			@new = @args[2..]
+		} else {
+			@new = array()
+		}
+	case 'string':
+		if(array_index_exists(@args, 2)) {
+			@new = string(array_implode(@args[2..], ' '))	
+		} else {
+			@new = string('')
+		}
+	case 'int':
+	case 'integer':
+		if(!array_index_exists(@args, 2)) { die(@prefix.color('c').'Not enough arguments provided.') }
+		if(!is_numeric(@args[2])) { die(@prefix.color('c').'Value is not a number.') }
+		@new = integer(@args[2])
+	case 'not':
+		@new = !@old
+	case 'null':
+		@new = null
+	default:
+		@new = string(array_implode(@args[1..], ' '))
+	}
+	store_value(@args[0], @new)
 	@v = get_value(@args[0])
-	msg(@prefix.color(6).'Saved: '.color(7).@v)
+	@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
+	msg(@prefix.color(6).'Saved '.color(3).@type.color(6).': '.color(7).@v)
 
 case 'getvalues':
 case 'gvs':

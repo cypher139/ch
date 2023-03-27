@@ -59,9 +59,9 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		}
 	# Send Dm notification to Minecraft and Console
 		if(@userConfig[@discord['userid']]['NotifyContent'] == true) {
-			_db_mc_broadcast(color(9).'[Discord Bot] New DM from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@discord['message'])
+			_db_mc_broadcast(color(9).'[Discord Bot] New DM from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@discord['message'], 'players')
 		}
-		console('[Discord Bot] '.color(9).'New DM from '.color('r').'['.@discord['username'].' ('.@discord['userid'].') ] '.color(9).'Message: \n'.color('r').@discord['message'], false)
+		console('[Discord] '.color(9).'New DM from '.color('r').'['.@discord['username'].' ('.@discord['userid'].') ] '.color(9).'Message: \n'.color('r').@discord['message'], false)
 		
 		@msgembed = array(array('title': @discord['username'], 'color': array('r': 109, 'g': 109, 'b': 109), 'description': @discord['message']))
 		#Get Avatar
@@ -80,12 +80,12 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			@urls = array()
 			foreach(@num: @attach in @discord['attachments']) {
 				@adesc = ''
-				if(@num == 0) { @filenum = 'File: ' } else { @filenum = '  File #'.(@num + 1).': ' }
+				if(@num == 0) { @filenum = 'File: ' } else { @filenum = 'File #'.(@num + 1).': ' }
 				if(@attach['description'] != '') { @adesc = color(3).'('.@attach['description'].')'.color('r') }
-				console(@filenum.@attach['filename'].@adesc.' \n'.color(1).@attach['url'], false)
+				console(@filenum.@attach['filename'].@adesc.'\n'.color(1).@attach['url'], false)
 				#
 				if(@config['URL_Broadcast'] == true && @userConfig[@discord['userid']]['NotifyContent'] == true) {
-					_db_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'])
+					_db_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], 'players')
 				}
 				array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))
 			}
@@ -103,9 +103,12 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		
 	# Send Dm Notification to Discord logs
 		if(@userConfig[@discord['userid']]['NotifyContent'] == false) {
-			@msgembed[0]['description'] = '<This user\'s message content is not shown in DM notifications>'
+			@msgtype = 'message content'
+			if(array_index_exists(@discord, 'attachments', 0, 'filename') && @saveDM['message'] == '') { @msgtype = 'attachment' }
+			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype = @msgtype.'s' }
+			@msgembed[0]['description'] = '<This user\'s '.@msgtype.' is not shown in DM notifications>'
 		}
-		if(@userDMs[1]['message'] == 'Start Of Message List') {
+		if(array_size(@userDMs) < 2) {
 			@dm1 = 'I received my first DM from '.@discord['username'].'!  `'.@discord['userid'].'`'
 		} else {
 			@dm1 = 'I received a DM!'

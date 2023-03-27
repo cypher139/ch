@@ -105,16 +105,19 @@ proc _array_string_match(@array, @string) {
 
 proc _read_essentials_usermap(@option1) {
 #Check for Essentials player UUID database, and import it.
-	try(
+	@file = ''
+	@floodgateprefix = '_'
+	try {
 		@file = parse_args(reg_replace('\\n', ' ', read(file_resolve(sys_properties()['user.dir'].'/plugins/Essentials/usermap.csv'))))
-	,@fail,
+	} catch(Exception @ex) {
+		console('[read essentials usermap] '.@ex['message'])
 		return(false)
-	)
-	try (
+	}
+	try {
 		@floodgateprefix = string(yml_decode(read(file_resolve(sys_properties()['user.dir'].'/plugins/floodgate/config.yml')))['username-prefix'])
-	,@fail,
+	} catch(Exception @ex) {
 		@floodgateprefix = '_'
-	)
+	}
 	@euuid = associative_array()
 	# playername (lowercase), uuid (dashes)
 	foreach(@line in @file) {

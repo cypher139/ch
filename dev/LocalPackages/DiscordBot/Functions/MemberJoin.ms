@@ -6,13 +6,13 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 	@config = import('DiscordBot.config.Discord')
 	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
 # Restore leaderboard entry	
-	@leaderboard = import('DiscordBot.members.leaderboard')
+	@leaderboard = import('DiscordBot.Leaderboard')
 	@oldlb = get_value('DiscordBot.members.leaderboard.removed')
 	if(is_array(@leaderboard) && is_array(@oldlb)) {
 		if(array_index_exists(@oldlb, @event['userid'])) {
 			array_set(@leaderboard['members'], @event['userid'], @oldlb[@event['userid']]['data'])
 			@leaderboard['lastedit'] = time()
-			export('DiscordBot.members.leaderboard', @leaderboard)
+			export('DiscordBot.Leaderboard', @leaderboard)
 		}
 	}
 #Wait a few seconds to avoid mention spam right at first.	
@@ -21,7 +21,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 			@currentroles = discord_member_get_roles(@event['userid'])
 		} catch (NotFoundException @ex) {
 	#Assume user was insta-kick (such as account age does not meet server req.)
-			console('[Chat - Discord] New Join '.@event['username'].' <@'.@event['userid'].'> was not found on server. Were they insta-kicked??', false)
+			console('[Discord] New Join '.@event['username'].' <@'.@event['userid'].'> was not found on server. Were they insta-kicked??', false)
 			die()
 		} catch (Exception @ex) {
 			console(@ex)
@@ -33,7 +33,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 			try {
 				discord_private_message(@event['userid'], @welcomeDMMsg)
 			} catch(Exception @ex) {
-				console('[Chat - Discord] Cannot message '.@event['username'].' <@'.@event['userid'].'>, are they a bot?', false)
+				console('[Discord] Cannot message '.@event['username'].' <@'.@event['userid'].'>, are they a bot?', false)
 			}
 		}
 # If new member: Add Delineator roles, or roles new users need to have to access server
@@ -43,7 +43,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 		if(array_index_exists(@membersroles, @event['userid']) && @config['Welcome_Roles_Restore'] == true) {
 			array_push_all(@currentroles, @membersroles[@event['userid']])
 			discord_member_set_roles(@event['userid'], @currentroles)
-			console('[Chat - Discord] '.color(2).'Previous roles restored.', false)
+			console('[Discord] '.color(2).'Previous roles restored.', false)
 		} else {
 			if(is_array(@config['Welcome_Roles'])) {
 				array_push_all(@currentroles, @config['Welcome_Roles'])
@@ -96,7 +96,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) 
 			export('DiscordBot.members.ID', @memberIDs)
 		}
 	}
-	@leaderboard = import('DiscordBot.members.leaderboard')
+	@leaderboard = import('DiscordBot.Leaderboard')
 	if(is_array(@leaderboard)) {
 		if(array_index_exists(@leaderboard, 'members', @event['userid'])) { 
 			if(@config['LB_Remove_On_Leave'] == true) { @lbremove = 1 } else { @lbremove = 0 }
@@ -134,7 +134,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) 
 		}
 		array_remove(@leaderboard['members'], @event['userid'])
 		@leaderboard['lastedit'] = time()
-		export('DiscordBot.members.leaderboard', @leaderboard)
+		export('DiscordBot.Leaderboard', @leaderboard)
 	}
 	
 }
