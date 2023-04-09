@@ -1,6 +1,6 @@
 everyone:/csvim [$filename] [$type1] [$type2] [$] = >>>
 proc _help() {
-	msg(color(6).'CodeGen!')
+	msg(color(6).'CSV reader')
 	msg(color(7).'/codegen'.color(3).' - '.color('f').'Prints a randomly generated code. Defaults to a code 7 characters in length using uppercase, lowercase, and numbers.')
 	msg(color('a').'Command usage: <required> [optional]')
 	msg(color(3).'/codegen [length] [Character type 1] [Character type 2]')

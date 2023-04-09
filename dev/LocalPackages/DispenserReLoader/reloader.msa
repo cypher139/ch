@@ -52,6 +52,7 @@ export(@name.'.player.'.@player['id'].'.verbose', @playerconfig['verbose'])
 	store_value(@name.'.player.'.@player['id'].'.config', @ex)
 }
 
+
 @help = closure(@ex) {
 	@return = array(
 	color(3).'DispenserReLoader: Fill chests or dispensers in one click!',
@@ -150,6 +151,7 @@ case '-build':
 case '-verbose':
 case 'verbose':
 	@verbose = !@verbose
+	@msg = ''
 	#verbose already checked at start
 	if(@verbose == true) {
 		@msg = color('a').'enabled! '.color(7).@name.' will display more useful messages.'
@@ -226,15 +228,13 @@ case '-info':
 case 'view':
 	@playerstats = get_value(@name.'.player.'.@player['id'].'.stats')
 	if(!is_array(@playerstats)) { @playerstats = array('last_run': 0) }
+
 	if(@playerconfig['area'] == '' || @playerconfig['area'] == null) { @playerconfig['area'] = 'All' }
 	if(@playerconfig['item_type'] == '' || @playerconfig['item_type'] == null) { @playerconfig['item_type'] = @serveritemdefaults['item'] }
 	if(@playerconfig['item_qty'] == '' || @playerconfig['item_qty'] == null) { @playerconfig['item_qty'] = @serveritemdefaults['qty'] }
 	if(@playerconfig['fuel_type'] == '' || @playerconfig['fuel_type'] == null) { @playerconfig['fuel_type'] = @serveritemdefaults['fuel'] }
-	if(@verbose == true) {
-		@vmsg = color('a').'Enabled'
-	} else {
-		@vmsg = color('c').'Disabled'
-	}
+	@vmsg = color('c').'Disabled'
+	if(@verbose == true) { @vmsg = color('a').'Enabled'	}
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).@name.' configuration for: '.color('a').@player['display'])
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color('a').@playerconfig['item_type'].color(9).' (Qty: '.@playerconfig['item_qty'].')')
 	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set fuel item: '.color('a').@playerconfig['fuel_type'])	
@@ -277,7 +277,9 @@ case 'st':
 	if(is_array(@lr)) {
 		if(array_index_exists(@lr, 'action')) {	
 			msg(color(7).'Last run: '.color(6).@lr['action'].'.')
-			if(@lr['blocks'] == 1) { assign(@p, 'block') assign(@p2, 'was') } else { assign(@p, 'blocks') assign(@p2, 'were') }
+			@p = 'blocks'
+			@p2 = 'were'
+			if(@lr['blocks'] == 1) { @p = 'block' @p2 = 'was') }
 			msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color('b')._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
 		}
 	}
@@ -513,6 +515,7 @@ case '-set':
 		clear_value(@name.'.player.'.@player['id'].'.set.item.type')
 		clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
 		clear_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+		clear_value(@name.'.player.'.@player['id'].'.area.mode')
 		@playerconfig['item_type'] == ''
 		@playerconfig['fuel_type'] == ''
 		@playerconfig['item_qty'] == ''
@@ -595,11 +598,8 @@ case '-a':
 				} else {
 					@ftdisplay = _reloader_capitalize(@ftkeys[@i])
 				}
-				if(_is_even_number(@i) == true) {		
-					@color = '9'
-				} else {
-					@color = '7'
-				}
+				@color = '7'
+				if(_is_even_number(@i) == true) { @color = '9' }
 				@filledinfo = @filledinfo.color(@color).@ftdisplay.': '.@filled['type'][@ftkeys[@i]].' '
 			}
 		}

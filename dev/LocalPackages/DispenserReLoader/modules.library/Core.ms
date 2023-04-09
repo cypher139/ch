@@ -31,6 +31,8 @@ proc _reloader_getplayerID(@option1) {
 }
 
 proc _reloader_check_perm(@player, @option, @option2) {
+	@permmsg = ''
+	@e = false
 	switch(@option) {
 	case 'item':
 	#item
@@ -82,6 +84,7 @@ proc _reloader_get_server_defaults(@option) {
 	@sdq = 64
 	@sdf = 'COAL'
 	@sdfee = array(tool: 5, area: 35)
+	@return = array()
 	switch(@option) {
 	case 'start':
 	case 'startup':
@@ -123,6 +126,8 @@ proc _reloader_get_server_defaults(@option) {
 }
 
 proc _reloader_item_name(@item) {
+	@id = ''
+	@display = ''
 	switch(@item) {
 	case '':
 	case null:
@@ -134,6 +139,7 @@ proc _reloader_item_name(@item) {
 	}
 	# Legacy Item data support: This checks for one : in the middle of the given item ID. A match means the ID has extra data to it to denote the item.
 	# This argument syntax is not supported internally anymore, translated here
+	@name = ''
 	if(reg_count('[0-9]+:[0-9]+', @item) == 1) {
 		@ids = reg_split(':', @item)
 		@name = data_name(array('name': data_name(@ids[0]), 'data': integer(trim(@ids[1]))))
@@ -183,6 +189,8 @@ proc _reloader_msgAdmins(@msg, @consolemsg, @consoleconcat) {
 }
  
 proc _reloader_number_commaize(@number) {
+	@n = ''
+	@n2 = ''
 	#catch numbers with decimal points, and only commaize the whole numbers.
 	if(reg_match('[0-9]\\.[0-9]', @number)) {
 		@n1 = reg_split('\\.', @number)
@@ -270,6 +278,7 @@ proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbo
 		return(array('msg': color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!', 'size': 0, 'fail': true))
 	}
 # Get the inventory size
+	@size = 0
 	try(
 		@size = get_inventory_size(@xyz)
 	,@fail,
@@ -313,6 +322,7 @@ proc _reloader_fill(@x, @y, @z, @world, @item, @playergiven, @qty, @fuel, @verbo
 	@fqty = 0
 	@re = ''
 	for(@i = 0, @i < @size, @i++) {
+		@fqty1 = 0
 		switch(@filltype) {
 		case 'FURNACE':
 		case 'SMOKER':

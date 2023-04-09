@@ -1,11 +1,11 @@
-admin:/itemname [$option1] [$] = >>>
+admin:/itemname [$option1=3] [$] = >>>
 #testing
 @item = $option1
-@realid = data_values(@item)
+@realid = _get_data_values(@item)
 @itemname = data_name(@realid)
 if(reg_count('[0-9]:[0-9]', @item) == 1, msg('":data" : Yes'), msg('":data" : No'))
-msg('realid: '.@realid)
-msg('itemname: '.@itemname)
-msg('data_values: '.data_values(@item))
-msg('data_name: '.data_name(@item))
+msg('Name: '.data_name(@item))
+msg('ID: '.@realid)
+msg('Name from ID: '.@itemname)
+msg('data_values: '.@realid)
 <<<

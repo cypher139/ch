@@ -42,6 +42,7 @@ case 'l':
 
 case 'read':
 case 'r':
+	@up = 4
 	if(@lgv['members'][@id] == @leaderboard['members'][@id]) { @up = 10 } else { @up = 14 }
 	msg(color(@up).'^'.color('r').@leaderboard['members'][@id])
 

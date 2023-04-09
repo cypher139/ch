@@ -1,7 +1,7 @@
 bind('player_death', array(id: 'EXPBank.Reaper'), null, @death) {
 	@rpacc = get_value('expbank.accounts.reaper')
 	@dev = import('ch.player.'.puuid(player(), 'dashless').'.developer')
-	
+	@new = ''
 	if(is_numeric(@rpacc)) {
 		@new = @rpacc + @death['xp']
 		if(@dev == true) { msg(@rpacc.' + '.@death['xp'])}
@@ -13,6 +13,7 @@ bind('player_death', array(id: 'EXPBank.Reaper'), null, @death) {
 
 bind('entity_death', array(id: 'EXPBank.Reaper.entity'), null, @death) {
 	@rpacc = get_value('expbank.accounts.reaper')
+	@new = ''
 	if(is_numeric(@rpacc)) {
 		@new = @rpacc + @death['xp']
 	} else {

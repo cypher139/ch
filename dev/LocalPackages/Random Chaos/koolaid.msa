@@ -1,6 +1,6 @@
 admin:/koolaid [$qty=1] = >>>
 #{meta: {base: {extended: false, type: UNCRAFTABLE, upgraded: false}, color: {b: 44, g: 15, r: 1}, display: SUS, enchants: {}, flags: {}, lore: null, model: null, modifiers: null, potions: {instant_health: {ambient: false, icon: true, id: 6, particles: true, seconds: 0, strength: 125}}, repair: 0}, name: SPLASH_POTION, qty: 1}}
-assign(@give, array(meta: array(base: array(extended: false, type: UNCRAFTABLE, upgraded: false), color: array(b: 44, g: 15, r: 1), display: SUS, enchants: array(), flags: array(), lore: null, model: null, modifiers: null, potions: array(instant_health: array(ambient: false, icon: true, id: 6, particles: true, seconds: 0, strength: 125)), repair: 0), name: SPLASH_POTION, qty: 1))
+assign(@give, array(meta: array(base: array(extended: false, type: 'UNCRAFTABLE', upgraded: false), color: array(b: 44, g: 15, r: 1), display: 'SUS', enchants: array(), flags: array(), lore: null, model: null, modifiers: null, potions: array(instant_health: array(ambient: false, icon: true, id: 6, particles: true, seconds: 0, strength: 125)), repair: 0), name: 'SPLASH_POTION', qty: 1))
 if(is_integral($qty)) {
 @give['qty'] = $qty
 }

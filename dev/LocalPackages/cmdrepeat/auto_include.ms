@@ -9,7 +9,7 @@ foreach(@v in get_commands()) {
 }
 export('cmdrepeat.all.commands', @allcmds)
 
-if(!is_proc(_getplayerID)) {
+if(!is_proc('_getplayerID')) {
 	proc _getplayerID(@option1) {
 		@pid = array()
 		@uuiddata = import('primus.database.UUID')

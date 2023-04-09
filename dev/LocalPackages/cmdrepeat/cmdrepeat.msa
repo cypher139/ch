@@ -1,8 +1,10 @@
 #version 1.2-tmc
 everyone:/repeat [$cmd] = >>>
 @player = _getplayerID(player())
-
-if(is_numeric($cmd) && $cmd > 0) {
+@cmd = ''
+@cmdid = 0
+if(is_numeric($cmd)) {
+	if(integer($cmd) < 0) { @cmd = 1 }
 	if($cmd - 1 > 9) { @cmd = 9 } else { @cmd = $cmd - 1 }
 } else {
 	@cmd = to_lower($cmd)
@@ -101,24 +103,23 @@ switch(@cmd) {
 	if(@lastcmd == '' || @lastcmd == null) { die(color('c').'['.color(7).'Command'.color('c').'] '.color('c').'Any Recent Commands were not found.'.color('r').' Did you just login? ('.(@cmdid + 1).')') }
 	if(!array_index_exists(@lastcmd, @cmdid)) { die(color('c').'['.color(7).'Command'.color('c').'] '.color('c').'Recent Command #'.(@cmdid + 1).' not found.') }
 	#List cmd used, with CH aliases showing as a different color.
-	if(is_alias(reg_split(' ', @lastcmd[@cmdid])[0])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
+	@cmdcolor = 6
+	if(is_alias(reg_split(' ', @lastcmd[@cmdid])[0])) { @cmdcolor = 3 }
+	if(!has_permission(@player['name'], 'commandhelper.alias.see.is.alias')) { @cmdcolor = 7 }
 	#msg(@lastcmd)
 	msg(color(3).'Re-ran your last command. (#: '.(@cmdid + 1).')')
-	if(@showcmd == true) {
-		if(!has_permission(@player['name'], 'commandhelper.alias.see.is.alias')) { @cmdcolor = 7 }
-		msg('> '.color(@cmdcolor).@lastcmd[@cmdid])
-	}
+	if(@showcmd == true) { msg('> '.color(@cmdcolor).@lastcmd[@cmdid]) }
 	run_cmd(@lastcmd[@cmdid])
 <<<
 
 '/.' [$cmd] = >>>
-call_alias(/repeat $cmd)
+call_alias('/repeat '.$cmd);
 <<<
 
 '/\'' [$cmd] = >>>
-call_alias(/repeat $cmd)
+call_alias('/repeat '.$cmd);
 <<<
 
 '//.' [$cmd] = >>>
-call_alias(/repeat 2)
+call_alias('/repeat 2');
 <<<

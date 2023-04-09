@@ -36,7 +36,7 @@ bind('discord_message_received', array('id': 'DiscordBot.monitor.Leaderboard', '
 	if(!array_index_exists(@leaderboard, 'members', @userID)) {
 		array_set(@leaderboard['members'], @userID, array('last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'msg_count': 0))
 	}
-
+	@userRoles = ''
 # If user has last chatted in last rolling minute, do not award XP. (continues to count message)
 	if((@xptimer[@userID] + 60000) > time()) {
 		@noXP = true 
@@ -100,6 +100,7 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 		@oldroles = array_sort(array_normalize(@userRoles), 'NUMERIC')
 	#Find rank
 		foreach(@i: @rank in @ranknums) {
+			@lastrank = 0
 		# console(@i)
 			if(@i == 0) {
 				@lastrank = 0

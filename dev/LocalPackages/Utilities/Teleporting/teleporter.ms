@@ -12,10 +12,10 @@ if(reg_count('^.+_PRESSURE_PLATE', get_block(@ratchet['location'])) == 0) {
 	if(!array_contains(@otherblocks, get_block(@ratchet['location']))) { 
 		array_push(@otherblocks, get_block(@ratchet['location']))
 		store_value('ch.dev.data.event.pressure_plate.types', @otherblocks)
-		console(color('c').'New: 'color(8).' pressure_plate_activated event occured on a '.get_block(@ratchet['location']))
+		console(color('c').'New: '.color(8).' pressure_plate_activated event occured on a '.get_block(@ratchet['location']))
 		console(color(8).'Current types found:  '.array_implode(@otherblocks, ', '))
 	}
-	if(@dev == true) { msg(color('c').'Note: 'color(8).'pressure_plate_activated event occured on a '.get_block(@ratchet['location'])) }
+	if(@dev == true) { msg(color('c').'Note: '.color(8).'pressure_plate_activated event occured on a '.get_block(@ratchet['location'])) }
 	die()
 }
 #msg(@ratchet)
@@ -48,7 +48,7 @@ if(import('player.'.@uuid.'.command.setteleporter') == true) {
 if(import('player.'.@uuid.'.command.setteleporter.info') == true) {
 	if(array_index_exists(@allteleporters, pworld(), @implodeloc)) {
 		msg(@prefix.'Teleporter at: '.integer(@ratchet['location']['x']).', '.integer(@ratchet['location']['y']).', '.integer(@ratchet['location']['z']))
-		msg(color(3).' Name: '@allteleporters[pworld()][@implodeloc]['name'])
+		msg(color(3).' Name: '.@allteleporters[pworld()][@implodeloc]['name'])
 		msg(color(6).' Warps to: '. array_implode(@allteleporters[pworld()][@implodeloc]['location'], ', '))
 		msg(color(9).' Registered by: '.@allteleporters[pworld()][@implodeloc]['registrar'].'       Used '.@allteleporters[pworld()][@implodeloc]['uses'].' times')
 		msg(color(8).' Active times: '. @allteleporters[pworld()][@implodeloc]['activetime'])
@@ -74,11 +74,9 @@ if(array_index_exists(@allteleporters, pworld(), @implodeloc, 'location')) {
 	@allteleporters[pworld()][@implodeloc]['uses'] = @allteleporters[pworld()][@implodeloc]['uses'] + 1
 	store_value('server.Teleporters.registered', @allteleporters)
 
-	
+	@tpmsg = color(6).'You have been Teleported!'
 	if(@allteleporters[pworld()][@implodeloc]['name'] != null) {
 		@tpmsg = color(6).'You have used the "'.color(9).@allteleporters[pworld()][@implodeloc]['name'].color(6).'" Teleporter!'
-	} else {
-		@tpmsg = color(6).'You have been Teleported!'
 	}
 	msg(@tpmsg)
 }

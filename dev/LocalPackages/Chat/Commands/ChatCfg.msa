@@ -30,6 +30,7 @@ default:
 @prev = import(@prefix.'.config.'.$config)
 
 if(is_array(@ret)) { 
+	@loadtype = ''
 	if(is_array(@prev)) { @loadtype = 'Reloaded' } else { @loadtype = 'Loaded' }
 	msg('['.@prefix.'] '.color(10).@loadtype.' config: '.color(7).$config)
 } else {

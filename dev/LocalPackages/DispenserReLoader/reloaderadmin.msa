@@ -55,12 +55,10 @@ case 'info':
 	if(function_exists('sk_pos1')) {
 		foreach(@extname: @extinfo in extension_info()) {
 			if(array_contains(@extinfo['functions'], 'sk_pos1')) {
-				@ext = @extname
-				@extver = @extinfo['version']
+				msg(color(7).'['.color(6).@name.color(7).'] '.color(9).'Area Selection: '.color('a').@extname.color(7).' (Version: '.@extinfo['version'].')')
 				break()
 			}
 		}
-		msg(color(7).'['.color(6).@name.color(7).'] '.color(9).'Area Selection: '.color('a').@ext.color(7).' (Version: '.@extver.')')
 	} else {
 		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').@name.' is missing access to WorldEdit selections!'.color(7).' Area mode is disabled without access to selection data.')
 		msg(color(3).'Download the SKCompat extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
@@ -70,12 +68,10 @@ case 'info':
 	if(function_exists('acc_add')) {
 		foreach(@extname: @extinfo in extension_info()) {
 			if(array_contains(@extinfo['functions'], 'acc_add')) {
-				@ext = @extname
-				@extver = @extinfo['version']
+				msg(color(7).'['.color(6).@name.color(7).'] '.color(9).'Economy: '.color('a').@extname.color(7).' (Version: '.@extinfo['version'].')')
 				break()
 			}
 		}
-		msg(color(7).'['.color(6).@name.color(7).'] '.color(9).'Economy: '.color('a').@ext.color(7).' (Version: '.@extver.')')
 	} else {
 		msg(color('c').'['.color(7).@name.color('c').'] '.color('c').@name.' is missing access to economy functions and account data!'.color(7).'All script functions will be unable to utilize your server economy!!')
 		msg(color(3).'Download the CHVault extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
@@ -96,6 +92,9 @@ case 'st':
 			die(color('c').'['.color(7).@name.color('c').'] '.color(7).'Please specify a valid player name!')
 		}
 	}
+	@idprefix = ''
+	@startmsg = ''
+	@lr = ''
 	switch(@viewplayer) {
 	case false:
 		@idprefix = @name 
@@ -118,7 +117,8 @@ case 'st':
 	@ttr = @stats['runs_tool']
 	# Stop with 0/null stuff if the player or server has not used the script.
 	if(@atr == 0 && @ttr == 0) { 
-		if(@viewplayer == false) { @msgp = 'server' } else { @msgp = 'player' }		
+		@msgp = 'player'
+		if(@viewplayer == false) { @msgp = 'server' }	
 		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'This '.@msgp.' has not used '.@name.'!') 
 	}
 	msg(color(7).'All time '.@name.' runs:')
@@ -135,9 +135,12 @@ case 'st':
 	if(@lr == 0) { @lr = @stats['last_run'] }
  	if(is_array(@lr)) {
 		if(array_index_exists(@lr, 'action')) {	
-			if(@viewplayer == false) { @lrpm = ', by '.@lr['player'].'.' } else { @lrpm = '.' }
+			@lrpm = '.'
+			if(@viewplayer == false) { @lrpm = ', by '.@lr['player'].'.' }
 			msg(color(7).'Last run: '.color(6).@lr['action'].@lrpm)
-			if(@lr['blocks'] == 1) { assign(@p, 'block') assign(@p2, 'was') } else { assign(@p, 'blocks') assign(@p2, 'were') }
+			@p = 'blocks'
+			@p2 = 'were'
+			if(@lr['blocks'] == 1) { @p = 'block' @p2 = 'was') }
 			msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color('b')._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
 		}
 	}
@@ -174,12 +177,11 @@ case 'set':
 	case 'i':
 		@olditem = @serverdefaults['item']
 		#fuel Check
+		@fuel = false
 		switch(to_lower(@option1)) { 
 		case 'f':
 		case 'fuel':
 			@fuel = true
-		default:
-			@fuel = false
 		}
 		if(@fuel == true) {
 			@olditem = @serverdefaults['fuel']

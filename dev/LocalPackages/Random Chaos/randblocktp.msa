@@ -1,5 +1,7 @@
 #version 1.1-tmc
 ~admin:/randblock [$id='GRASS_BLOCK'] [$tries='20'] [$edity=0] = >>>
+	@id = ''
+	@idn =''
 	if(is_numeric($id)) {
 		@id = data_name($id)
 		@idn = $id

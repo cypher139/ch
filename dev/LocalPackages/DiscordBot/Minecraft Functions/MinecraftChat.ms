@@ -48,7 +48,8 @@ bind('discord_message_received', array('id': 'DiscordBot.mc.Receive'), null, @di
 				@discord['message'] = @discord['message'].'\n <Also attached file:> '
 			}
 			foreach(@num: @attach in @discord['attachments']) {
-				if(@num == 0) { @filenum = 'File: ' } else { @filenum = '  File #'.(@num + 1).': ' }
+				@filenum = 'File: '
+				if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
 				@discord['message'] = @discord['message'].@filenum.@attach['filename']
 			}
 		}

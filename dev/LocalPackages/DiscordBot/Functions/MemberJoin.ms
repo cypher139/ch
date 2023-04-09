@@ -17,6 +17,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 	}
 #Wait a few seconds to avoid mention spam right at first.	
 	set_timeout(5000, closure(){ 
+		@currentroles = array()
 		try {
 			@currentroles = discord_member_get_roles(@event['userid'])
 		} catch (NotFoundException @ex) {
@@ -59,6 +60,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 			store_value('DiscordBot.Welcome.msg.IDs', @msgids)
 		});	
 #Console Log
+		@userDisplay = ''
 		if(@event['username'] == @event['nickname']) {
 			@userDisplay = @event['username'].' <@'.@event['userid'].'>'
 		} else {
@@ -70,6 +72,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 
 bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) {
 	@lbremove = 0
+	@userDisplay = ''
 	if(@event['username'] == @event['nickname']) {
 		@userDisplay = @event['username'].' <@'.@event['userid'].'>'
 	} else {

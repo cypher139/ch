@@ -1,6 +1,6 @@
 #version 1.2-tmc
 bind('player_death', array(id: 'DeathTP.event'), null, @death) {
-	x_new_thread('DeathStats.'@death['player'], closure(@player = @death['player'], @drops = @death['drops']){
+	x_new_thread('DeathStats.'.@death['player'], closure(@player = @death['player'], @drops = @death['drops']){
 		assign(@uuid, puuid(@player, 'dashless'))
 		assign(@dev, import('ch.player.'.@uuid.'.developer'))
 		#save death point for /back

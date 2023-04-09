@@ -9,6 +9,8 @@ proc _codegen(@codelength, @codetype, @codetype2) {
 
 #--- User Input Checks
 	@string = array()
+	@chars = array()
+	@chars2 = array()
 	if(is_numeric(@codelength) == true) {
 		@codelength = integer(@codelength)
 	} else if(@codelength == '') { 

@@ -19,6 +19,9 @@ msg(@args)
 @tptime = null
 @tpname = null
 @tpupdate = false
+@updateindex = 0
+@allteleporters = get_value('server.Teleporters.registered')
+if(!is_array(@allteleporters)) { @allteleporters = array() }
 #name: time: foreach args, if that found set var and remove index
 foreach(@k: @v in @args) {
 	if(reg_count('^[Nn].*:', @v) > 0) {
@@ -30,8 +33,6 @@ foreach(@k: @v in @args) {
 	if(reg_count('^[Rr].*:', @v) > 0) {
 		@rname = reg_split(':', @v)[1]
 		@i = 0
-		@allteleporters = get_value('server.Teleporters.registered')
-		if(!is_array(@allteleporters)) { @allteleporters = array() }
 		foreach(@k: @v in @allteleporters[@pworld]) {
 			if(array_contains_ic(@v, @rname)) {
 				if(@v['registrar'] != player()) { msg(@prefix.color('c').'You do not own this Teleporter!') continue() }
@@ -51,8 +52,6 @@ foreach(@k: @v in @args) {
 	if(reg_count('^[Uu].*:', @v) > 0) {
 		@j = 0
 		@updatename = reg_split(':', @v)[1]	
-		@allteleporters = get_value('server.Teleporters.registered')
-		if(!is_array(@allteleporters)) { @allteleporters = array() }
 		foreach(@k2: @v2 in @allteleporters[@pworld]) {
 			if(array_contains_ic(@v2, @updatename)) {
 				@tpupdate = true
@@ -62,7 +61,7 @@ foreach(@k: @v in @args) {
 		}
 		array_remove(@args, @k)
 		if(@tpupdate == false) { die(@prefix.color(6).'A Teleporter with that name is not registered in this world!') }
-		if(@j > 1) { msg(@prefix.color('c').@j.color(6)' "'.@updatename.'" Teleporters were discovered in this world!'.color(7).' We will only change the last one found, and automatically update the name to: '.@updatename.'-2') @tpname = @updatename.'-2' }
+		if(@j > 1) { msg(@prefix.color('c').@j.color(6).' "'.@updatename.'" Teleporters were discovered in this world!'.color(7).' We will only change the last one found, and automatically update the name to: '.@updatename.'-2') @tpname = @updatename.'-2' }
 	}
 	if(reg_count('^[TtAa].*:', @v) > 0) {
 		@tptime = reg_split(':', @v)
@@ -86,14 +85,14 @@ if(!array_index_exists(@args, 2)) { die(@prefix.color('c').'You need to specify 
 if(array_index_exists(@args, 3)) {
 	if(!array_contains(get_worlds(), @args[3])) { @args[3] = pworld() }
 } else {
-	array_push(@args, pworld())
+	@args[] = pworld()
 }
 #valid location check
-try(
+try {
 	@check = get_block(@args)
-,@fail,
+} catch(Exception @ex) {
 	die(@prefix.color('c').'The coordinates given were not valid.')
-)
+}
 	
 if(@dev == true) {
 msg(get_block_info(@args))
@@ -114,11 +113,10 @@ if(@tpupdate == true) {
 	store_value('server.Teleporters.registered', @allteleporters)
 	msg(@prefix.color(6).'Coordinates accepted!'.color(7).' Update completed for the '.@tpname.' teleporter!!')
 } else {
+	@tpndisplay = 'the "'.@tpname.'"'
 	if(@tpname == null) {
 		@tpndisplay = 'this'
-		@tpname = 'Teleporter'.time()[cslice(9,12)]
-	} else {
-		@tpndisplay = 'the "'.@tpname.'"'
+		@tpname = 'Teleporter'.string(time())[9..12]
 	}
 	export('player.'.@uuid.'.command.setteleporter', true)
 	export('player.'.@uuid.'.command.setteleporter.coords', array('x': @args[0], 'y': @args[1], 'z': @args[2], 'world': @args[3]))
@@ -135,10 +133,17 @@ if(@tpupdate == true) {
 
 
 admin:/teleporterinfo [$] = >>>
-@uuid = puuid(player(),'dashless')
-@dev = import('ch.player.'.@uuid.'.dev.scripts.tp')
+@dev = false
+@uuid = 1
+@world = ''
+if(player() == '~console') {
+	@dev = true
+} else {
+	@uuid = puuid(player(),'dashless')
+	@dev = import('ch.player.'.@uuid.'.dev.scripts.tp')
+	@world = pworld()
+}
 @prefix = color('#ffcc00').'['.color(7).'Teleporter'.color('#ffcc00').'] '
-@world = pworld()
 @allteleporters = get_value('server.Teleporters.registered')
 if(!is_array(@allteleporters)) { @allteleporters = array() }
 
@@ -157,6 +162,7 @@ if(reg_count('^.+_PRESSURE_PLATE', get_block(pcursor())) > 0) {
 } else if(array_size(@args) > 0) {
 #specify name
 	@j = 0
+	@updatename = ''
 	foreach(@k: @v in @args) {
 		foreach(@k2: @v2 in @allteleporters[@world]) {
 			if(array_contains_ic(@v2, @v)) {
@@ -167,10 +173,11 @@ if(reg_count('^.+_PRESSURE_PLATE', get_block(pcursor())) > 0) {
 				@j++
 				msg(@checkcoords)
 				@namefound = true
+				@updatename = @v2['name']
 			}
 		}
 	}
-	if(@j > 1) { msg(@prefix.color('c').@j.color(6)' "'.@updatename.'" Teleporters were discovered in this world!'.color(7).' We will only state the last teleporter found.') }
+	if(@j > 1) { msg(@prefix.color('c').@j.color(6).' "'.@updatename.'" Teleporters were discovered in this world!'.color(7).' We will only state the last teleporter found.') }
 	if(@namefound == false) {		
 		#specify coordinates. 
 		if(array_index_exists(@args, 3)) {
@@ -200,8 +207,8 @@ if(@checkcoords == 'event') {
 	msg(@implodeloc)
 	if(array_index_exists(@allteleporters, @world, @implodeloc)) {
 		msg(@prefix.'Teleporter at: '.integer(@checkcoords['x']).', '.integer(@checkcoords['y']).', '.integer(@checkcoords['z']))
-		msg(color(3).' Name: '@allteleporters[pworld()][@implodeloc]['name'])
-		msg(color(6).' Warps to: '. array_implode(@allteleporters[pworld()][@implodeloc]['location'], ', '))
+		msg(color(3).' Name: '.@allteleporters[pworld()][@implodeloc]['name'])
+		msg(color(6).' Warps to: '.array_implode(@allteleporters[pworld()][@implodeloc]['location'], ', '))
 		msg(color(9).' Registered by: '.@allteleporters[pworld()][@implodeloc]['registrar'].'       Used '.@allteleporters[pworld()][@implodeloc]['uses'].' times')
 		msg(color(8).' Active times: '. @allteleporters[pworld()][@implodeloc]['activetime'])
 		

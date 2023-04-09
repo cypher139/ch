@@ -2,6 +2,7 @@
 admin:/discorddm [$id] [$] = >>>
 @name = 'Discord'
 @DMsrec = get_value('DiscordBot..DMs.received')
+@id = ''
 if(!is_array(@DMsrec)) { @DMsrec = array(array('userid': 'none', 'message': 'initialized DM Array')) }
 switch($id) {
 	case '':
@@ -29,7 +30,8 @@ switch($id) {
 					@sendmsg = @sendmsg.'\n <Also attached file:> '
 				}
 				foreach(@num: @attach in @DMsrec[@msgid]['attachments']) {
-					if(@num == 0) { @filenum = 'File: ' } else { @filenum = '  File #'.(@num + 1).': ' }
+					@filenum = 'File: '
+					if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
 					@sendmsg = @sendmsg.@filenum.@attach['filename']
 				}
 			}

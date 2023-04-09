@@ -9,7 +9,9 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 	if(@dev == true) { msg('p: '.@death['player'].'   c: '.@death['cause'].'   k:'.@death['killer']) }
 	@counter = get_value('DeathCount.players.death.counter')
 	@displaycount = true
-	if(array_index_exists(@counter, @uuid) && @displaycount == true) { @dcdisplay = color(8).'[#'.(@counter[@uuid] + 1).'] '.color('r') } else { @dcdisplay = ''}
+	@entitytype = ''
+	@dcdisplay = ''
+	if(array_index_exists(@counter, @uuid) && @displaycount == true) { @dcdisplay = color(8).'[#'.(@counter[@uuid] + 1).'] '.color('r') }
 	@weapon = null
 	if(@death['killer'] != null) {
 		@entitytype = 'PVP'

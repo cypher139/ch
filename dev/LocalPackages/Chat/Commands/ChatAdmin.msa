@@ -63,6 +63,8 @@ case '-dc':
 
 case 'view':
 case 'v':
+	@color = ''
+	@say = ''
 	switch(@option1) {
 	case '':
 	case null:
@@ -104,6 +106,7 @@ case 'v':
 		msg(color(6).'['.color(7).@name.color(6).'] '.color(7).'Capitalize the first letter in the group name: '.color(@color).@say)
 	default:
 	#view group settings
+		@say = ''
 		@groupinfo = get_value('Chat.format.groups')
 		@group = @option1
 		if(@group == '' || @group == null) { die(color('c').'['.color(7).@name.color('c').'] '.color(7).'You need to specify a group.') }
@@ -116,46 +119,46 @@ case 'v':
 		if(!array_contains_ic(@groupinfokeys, @group)) { die(color('e').'['.color(7).@name.color('e').'] '.color('c').'The "'.@group.'" group does not have any chat format information! '.color(7).'Did you type the group name correctly?') }
 		msg(color(6).'['.color(7).@name.color(6).'] '.color('b').'Chat settings for group: '.color('a').@group)
 		if(@groupinfo[@group]['showhealth'] == true || @groupinfo[@group]['showhealth'] == '' || @groupinfo[@group]['showhealth'] == null ,
-			@hbcolor = 'a'
+			@color = 'a'
 			@say = 'Yes'
 		,
-			@hbcolor = 'c'
+			@color = 'c'
 			@say = 'No'
 		)
-		msg(color(7).' Show health: '.color(@hbcolor).@say)
+		msg(color(7).' Show health: '.color(@color).@say)
 		if(@groupinfo[@group]['namecolor'] == '' || @groupinfo[@group]['namecolor'] == null,
-			@namecolor = 'e'
+			@color = 'e'
 			@say = 'Unset'
 		,
-			@namecolor = @groupinfo[@group]['namecolor']
+			@color = @groupinfo[@group]['namecolor']
 			@say = @groupinfo[@group]['namecolor']
 		)
-		msg(color(7).' Group name\'s color: '.color(@namecolor).@say)
+		msg(color(7).' Group name\'s color: '.color(@color).@say)
 		if(@groupinfo[@group]['usercolor'] == '' || @groupinfo[@group]['usercolor'] == null,
-			@usercolor = 3
+			@color = 3
 			@say = 'Unset'
 		,
-			@usercolor = @groupinfo[@group]['usercolor']
+			@color = @groupinfo[@group]['usercolor']
 			@say = @groupinfo[@group]['usercolor']
 		)
-		msg(color(7).' Group\'s Username color: '.color(@usercolor).@say)
+		msg(color(7).' Group\'s Username color: '.color(@color).@say)
 		if(@groupinfo[@group]['chatcolor'] == '' || @groupinfo[@group]['chatcolor'] == null,
-			@chatcolor = 'f'
+			@color = 'f'
 			@say = 'Unset'
 		,
-			@chatcolor = @groupinfo[@group]['chatcolor']
+			@color = @groupinfo[@group]['chatcolor']
 			@say = @groupinfo[@group]['chatcolor']
 		)
-		msg(color(7).' Group\'s Chat message color: '.color(@chatcolor).@say)
+		msg(color(7).' Group\'s Chat message color: '.color(@color).@say)
 
 		if(@groupinfo[@group]['nickname'] == '' || @groupinfo[@group]['nickname'] == null,
-			@ncolor = 'f'
+			@color = 'f'
 			@say = 'No nickname set'
 		,
-			@ncolor = 2
+			@color = 2
 			@say = @groupinfo[@group]['nickname']
 		)
-		msg(color(7).' Group\'s nickname: '.color(@ncolor).@say)
+		msg(color(7).' Group\'s nickname: '.color(@color).@say)
 	}
 	die(color(6).'['.color(7).@name.color(6).']  --------')
 
@@ -177,6 +180,7 @@ if(@groupinfo[@group]['showhealth']) { msg('yes') } else { msg('n0')}
 	switch(@option1) {
 	case 'option':
 	case 'o':
+		@successmsg = ''
 		switch(@option2) {
 		case 'colorize':
 		case 'color':
@@ -221,6 +225,8 @@ if(@groupinfo[@group]['showhealth']) { msg('yes') } else { msg('n0')}
 	case 'group':
 	case 'g':
 		if(@group == '' || @group == null) { die(color('c').'['.color(7).@name.color('c').'] '.color(7).'You need to specify a group.') }
+		@successmsg = ''
+		@color = ''
 		switch(@option3) {
 		case '':
 		case null:
@@ -247,7 +253,7 @@ if(@groupinfo[@group]['showhealth']) { msg('yes') } else { msg('n0')}
 			@groupinfo[@group]['nickname'] = @option4
 			store_value('Chat.format.groups', @groupinfo)
 			export('Chat.format.groups', @groupinfo)
-			die(color('a').'['.color(7).@name.color('a').'] '.color(7).'The previous nickname for the "'.@group.'" group was '.color(9).@oldcolor.color(7).', and is now: '.color('a').@option4)
+			die(color('a').'['.color(7).@name.color('a').'] '.color(7).'The previous nickname for the "'.@group.'" group was '.color(9).@oldnick.color(7).', and is now: '.color('a').@option4)
 		default:
 		#The next options require a valid color code.
 			@color = strip_colors(@option4)

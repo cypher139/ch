@@ -18,6 +18,7 @@ foreach(@v in @args) {
 		array_remove_values(@args, @v)
 	}
 }
+@uuid = ''
 if(@player == '~console') {	@uuid = 'console' } else { @uuid = puuid(@player, 'dashless') }
 @ds = get_value('ch.player.'.@uuid.'.dev.scripts')
 if(!is_array(@ds)) { @ds = array() }
@@ -73,6 +74,7 @@ if(array_size(@args) > 0) {
 			die()
 		case 'dumpevents':
 		case 'ev':
+			@color = ''
 			msg(@prefix.color(7).'-----')
 			msg(@prefix.color(7).'Current binded events:')
 			msg(@prefix.color(7).'-----')
@@ -123,6 +125,7 @@ if(array_size(@args) > 0) {
 	}
 }
 	@check = import('ch.player.'.@uuid.'.dev.scripts')
+	@dsall = null
 	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
 	foreach(@script in @ds) {
 		export('ch.player.'.@uuid.'.dev.scripts.'.@script, true)

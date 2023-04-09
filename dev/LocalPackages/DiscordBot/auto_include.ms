@@ -99,7 +99,7 @@ proc _db_message_check_ban_mentions(@message, @from, @option) {
 							set_pbanned(@from['name'], true, '[Chat] You have used disallowed mentions several times.')
 							@msgbantype = 'banned'
 						}
-						@msgban = '  Offending player `'.@player.'` was '.@msgbantype.'.'
+						@msgban = '  Offending player `'.@from['name'].'` was '.@msgbantype.'.'
 					}
 				}
 				_db_msg_Admins(@prefix.color(7).'Message from '.@from['display'].' contained a mention of "'.@entry.'".'.@msgban)
@@ -379,6 +379,7 @@ proc _discordBot_WelcomeRolesFinder(@option) {
 	@usersnoroles = array()
 	@userswelcomeroles = array()
 	foreach(@username: @userid in @membernames) {
+	@userroles = null
 	try {
 		@userroles = array_normalize(@memberroles[@userid])
 	} catch(IndexOverflowException @ex) {
@@ -665,14 +666,15 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 #No mentions
 	@command[0] = reg_replace('@', '', @command[0])
 # Setup Arguments
+	@args = array()
 	if(array_index_exists(@command, 1)) {
 		@args = @command[cslice(1, array_size(@command) - 1)]
-	} else {
-		@args = array()
 	}
 #check ************ : @here cmd @here does it remove "@here cmd" due to index shift
 
 	if(is_string(@command[0])) { @command[0] = to_lower(@command[0]) }
+	@commanddismc = ''
+	@commanddisdc = ''
 	if(array_index_exists(@args, 0)) { 
 # Remove mention in arguments 
 		@rmargs = array()
@@ -691,7 +693,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		@commanddismc = 'Args: '.color(9).array_implode(@args, ', ')
 		@commanddisdc = 'Args: `'.array_implode(@args, '`  `').'`' 
 		if(!array_index_exists(@args, 0)) { @commanddisdc = '' }	
-	} else { @commanddismc = '' @commanddisdc = '' }
+	}
 	
 # Deny Admin commands	
 	if(array_contains_ic(@admincommandlist, @command[0]) && @userType != 'Admin') {
@@ -768,6 +770,8 @@ console('retis: '.is_string(@return))
 		}
 	}
 # Send Log Messages and End.
+	@colorret = ''
+	@retdisplay = ''
 	if(@return == true) { @colorret = 3 @retdisplay = '' } else { @colorret = 'c' @retdisplay = ' (Failed)' }
 	console('[Discord] '.@discord['username'].' used command'.@cmdfrom.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, false)
 	_send_discord_message(@discord['username'].' used command'.@cmdfrom.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, 'admin', '')

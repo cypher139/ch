@@ -137,6 +137,7 @@ proc _rainbow(@msg, @type, @returntype) {
 	@color = array_get_rand(@colors)
 	foreach(@k: @char in @msg) {
 #	msg('k:'.@k)
+	@regc = ''
 	#words: need to change color on whitespace only, everyone else continue() if punctuation / spaces, as don't need to colorize those.
 		if(@type == 'words') { 
 			@regc = '\\S'
@@ -163,10 +164,9 @@ proc _rainbow(@msg, @type, @returntype) {
 			@color = array_get_rand(@colors)
 		}
 		#chat() crashes client if color() is used, with "illegal characters in chat', switch to unicode char
+		@colortype = '\u0026'.@color
 		if(@returntype == '' || @returntype == null) {		
 			@colortype = color(@color)
-		} else {
-			@colortype = '\u0026'.@color
 		}
 #		msg('"'.@char.'" :'.@i.'    c: <'.@color.'>')
 		@string = @string.@colortype.@char
@@ -193,6 +193,7 @@ proc _healthbar(@health, string @fullchar = '|', string @emptychar = '.') {
 	}
 	@healthodd = ceil(@health / 2)
 	@healthbar = array(0,0,0,0,0,0,0,0,0,0,0)
+	@color = 8
 	#dead.
 	if(@health == 0) { @color = 8 }
 	#red: 1-4 hearts
@@ -205,6 +206,7 @@ proc _healthbar(@health, string @fullchar = '|', string @emptychar = '.') {
 	if(@health >= 21) { @color = 11 }
 	#for each heart (2 phealth points):
 	foreach(@k: @v in @healthbar) {
+		@char = ''
 		if(@k == 0) { continue() }
 		if(@k <= @healthodd) { @char = @fullchar }
 		#middle char:
@@ -241,7 +243,7 @@ proc _message_check_ban_mentions(@message, @from, @option) {
 							set_pbanned(@from['name'], true, '[Chat] You have used disallowed mentions several times.')
 							@msgbantype = 'banned'
 						}
-						@msgban = '  Offending player `'.@player.'` was '.@msgbantype.'.'
+						@msgban = '  Offending player `'.@from['name'].'` was '.@msgbantype.'.'
 					}
 				}
 				_chat_msg_Admins(@prefix.color(7).'Message from '.@from['display'].' contained a mention of "'.@entry.'".'.@msgban)
@@ -305,9 +307,16 @@ proc _chat_death_msg_format(@player, @msg, @opponent, @weapon) {
 	
 proc _wish_finder(@type, @message, @player, @option1) {
 	@name = 'Wish'
-	try(@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish'),@fail, @dev = false)
+	@dev = false
+	try { 
+		@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish') 
+	} catch(Exception @ex) {
+		console(@ex)
+	}
 	@primaryword = import('wish.words.primary', 'wish')
 	@secondaryword = import('wish.words.secondary', 'i')
+	@usesecondaryword = true
+	@lastchatter = ''
 	if(@option1 == '') { @usesecondaryword = true } else { @usesecondaryword = false } 
 	
 	if(@message == '' || @message  == null) { return(array('wish': 'fail', 'message': 'Message Not Given')) }
@@ -351,7 +360,7 @@ proc _wish_finder(@type, @message, @player, @option1) {
 
 
 	@registeredactions = array('kick', 'die', 'kill', 'dead', 'off', 'dust', 'death', 'fly', 'flew', 'google', 'googling', 'explode', 'explosion', 'friend', 'friends', 'artist', 'poop')
-	@action == ''
+	@action = ''
 	@otherplayer = ''
 	foreach(@word in @messagewords) {
 	#Find Other Player Name
@@ -364,6 +373,7 @@ proc _wish_finder(@type, @message, @player, @option1) {
 
 
 # Find target player to perform action on:
+	@targettype = ''
 	foreach(@key: @word in @messagewords) {
 	# If another player was specified in the message, override checks and use that.
 		if(@otherplayer != '') {
@@ -441,7 +451,8 @@ proc _wish_granter(@action, @target, @player, @option1) {
 	switch(to_lower(@action)) {
 	# Only one action is performed per proc call
 		case 'kick':
-			if(@target == player()) { @kickmsg = @prefix.@player.'s wish has been granted' } else { @kickmsg = @prefix.'Your wish has been granted.' }
+			@kickmsg = @prefix.'Your wish has been granted.'
+			if(@target == player()) { @kickmsg = @prefix.@player.'s wish has been granted' }
 			pkick(@target, @kickmsg)
 		case 'die':
 		case 'kill':
@@ -454,9 +465,11 @@ proc _wish_granter(@action, @target, @player, @option1) {
 		case 'flew':
 		case 'off':
 			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
-			runas('~console', /rocket @target)
+			runas('~console', '/rocket '.@target)
 		case 'google':
 		case 'googling':
+			@returnmsg = @prefix.color(6).@player.'s wish was not granted.'
+			/*
 			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
 			@gkey = ''
 			foreach(@key: @word in @messagewords) {
@@ -478,6 +491,7 @@ proc _wish_granter(@action, @target, @player, @option1) {
 #				http_request('https://cse.google.com/cse?cx=partner-pub-9300639326172081%3Aqi7dvj9mh31&ie=UTF-8&num=5&output=xml_no_dtd&safe=high&q='.@googlemsg, closure(@response){
 #				      console(@response['body']);
 #				});
+*/
 		case 'explode':
 		case 'explosion':
 			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'

@@ -74,4 +74,4 @@ if(player() == '~console') {
 }
 <<<
 
-*:/rsay [$] = call_alias('/rainbow' $)
+*:/rsay [$] = call_alias('/rainbow '.$)

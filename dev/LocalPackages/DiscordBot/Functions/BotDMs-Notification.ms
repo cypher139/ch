@@ -52,7 +52,8 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			}
 			foreach(@num: @attach in @discord['attachments']) {
 				@adesc = ''
-				if(@num == 0) { @filenum = 'File: ' } else { @filenum = '  File #'.(@num + 1).': ' }
+				@filenum = 'File: '
+				if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
 				if(@attach['description'] != '') { @adesc = color(3).'('.@attach['description'].')'.color('r') }
 				@discord['message'] = @discord['message'].@filenum.@attach['filename'].@adesc
 			}
@@ -80,7 +81,8 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			@urls = array()
 			foreach(@num: @attach in @discord['attachments']) {
 				@adesc = ''
-				if(@num == 0) { @filenum = 'File: ' } else { @filenum = 'File #'.(@num + 1).': ' }
+				@filenum = 'File: '
+				if(@num != 0) { @filenum = 'File #'.(@num + 1).': ' }
 				if(@attach['description'] != '') { @adesc = color(3).'('.@attach['description'].')'.color('r') }
 				console(@filenum.@attach['filename'].@adesc.'\n'.color(1).@attach['url'], false)
 				#
@@ -108,10 +110,9 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype = @msgtype.'s' }
 			@msgembed[0]['description'] = '<This user\'s '.@msgtype.' is not shown in DM notifications>'
 		}
+		@dm1 = 'I received a DM!'
 		if(array_size(@userDMs) < 2) {
 			@dm1 = 'I received my first DM from '.@discord['username'].'!  `'.@discord['userid'].'`'
-		} else {
-			@dm1 = 'I received a DM!'
 		}
 		discord_broadcast(@config['Log_Channel'], array('content': ':envelope_with_arrow:  '.@dm1, 'embeds': @msgembed))
 	}

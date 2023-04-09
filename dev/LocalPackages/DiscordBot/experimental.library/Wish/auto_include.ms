@@ -8,10 +8,13 @@
 	
 proc _wish_finder(@type, @message, @player, @option1) {
 	@name = 'Wish'
+	@dev = false
 	try(@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish'),@fail, @dev = false)
 	@primaryword = import('wish.words.primary', 'wish')
 	@secondaryword = import('wish.words.secondary', 'i')
-	if(@option1 == '') { @usesecondaryword = true } else { @usesecondaryword = false } 
+	@lastchatter = ''
+	@usesecondaryword = false
+	if(@option1 == '') { @usesecondaryword = true }
 	
 	if(@message == '' || @message  == null) { return(array('wish': 'fail', 'message': 'Message Not Given')) }
 	if(@type == '' || @type  == null) { return(array('wish': 'fail', 'message': 'Type Not Given')) }
@@ -54,7 +57,7 @@ proc _wish_finder(@type, @message, @player, @option1) {
 
 
 	@registeredactions = array('kick', 'die', 'kill', 'dead', 'off', 'dust', 'death', 'fly', 'flew', 'google', 'googling', 'explode', 'explosion', 'friend', 'friends', 'artist', 'poop')
-	@action == ''
+	@action = ''
 	@otherplayer = ''
 	foreach(@word in @messagewords) {
 	#Find Other Player Name
@@ -65,7 +68,7 @@ proc _wish_finder(@type, @message, @player, @option1) {
 	}
 	if(@action == '') { return(array('wish': false, 'message': 'registered action not found')) }
 
-
+	@targettype = null
 # Find target player to perform action on:
 	foreach(@key: @word in @messagewords) {
 	# If another player was specified in the message, override checks and use that.
@@ -144,7 +147,8 @@ proc _wish_granter(@action, @target, @player, @option1) {
 	switch(to_lower(@action)) {
 	# Only one action is performed per proc call
 		case 'kick':
-			if(@target == player()) { @kickmsg = @prefix.@player.'s wish has been granted' } else { @kickmsg = @prefix.'Your wish has been granted.' }
+			@kickmsg = @prefix.'Your wish has been granted.'
+			if(@target == player()) { @kickmsg = @prefix.@player.'s wish has been granted' }
 			pkick(@target, @kickmsg)
 		case 'die':
 		case 'kill':
@@ -157,10 +161,11 @@ proc _wish_granter(@action, @target, @player, @option1) {
 		case 'flew':
 		case 'off':
 			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
-			runas('~console', /rocket @target)
+			runas('~console', '/rocket '.@target)
 		case 'google':
 		case 'googling':
-			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
+			@returnmsg = @prefix.color(6).@player.'s wish has not been granted.'
+			/*
 			@gkey = ''
 			foreach(@key: @word in @messagewords) {
 				if(@word == 'google',
@@ -181,6 +186,7 @@ proc _wish_granter(@action, @target, @player, @option1) {
 #				http_request('https://cse.google.com/cse?cx=partner-pub-9300639326172081%3Aqi7dvj9mh31&ie=UTF-8&num=5&output=xml_no_dtd&safe=high&q='.@googlemsg, closure(@response){
 #				      console(@response['body']);
 #				});
+*/
 		case 'explode':
 		case 'explosion':
 			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'

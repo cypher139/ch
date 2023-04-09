@@ -204,7 +204,7 @@ ALLAY(true, false, MCVersion.MC1_19),
 			color(@colorplayer).@player.color(@colormsg).' was killed by '.color(@coloralt).'Herobrine'.color(@colormsg).'  ... I mean '.color(@coloralt).'Enderman.'
 		),
 		'ENDER_DRAGON': array(
-			color(@colorplayer).@player.color(@colormsg).' met with the lord of the End. The End.'
+			color(@colorplayer).@player.color(@colormsg).' met with the lord of the End. The End.',
 			color(@colorplayer).@player.color(@colormsg).' tried to steal '.color(@coloralt).'Herobrine\'s'.color(@colormsg).' sweet ride. Turned into lunch.',
 			color(@colorplayer).@player.color(@colormsg).' became redstone in the fight against the '.color(@coloralt).' Ender Dragon.'
 		),

@@ -96,6 +96,8 @@ proc _discordBot_cmd_dm(@discord, @cmdargs) {
 	if(!array_index_exists(@cmdargs, 0)) { @cmdargs = array('view') }
 	switch(string(@cmdargs[0])) {
 	case 'view':
+		@userID = @discord['userid']
+		@userSettings = @userConfig[@discord['userid']]
 		if(array_index_exists(@cmdargs, 1)) {
 			@userID = _discordBot_cmd_proc_finduserID(@cmdargs[1], @discord)
 			if(!is_numeric(@userID)) {
@@ -103,20 +105,16 @@ proc _discordBot_cmd_dm(@discord, @cmdargs) {
 			} else {
 				@userSettings = @userConfig[@userID]
 			}
-		} else {
-			@userID = @discord['userid']
-			@userSettings = @userConfig[@discord['userid']]
 		}
 		@ret = 'DM settings for <@'.@userID.'>: '
 		foreach(@set: @v in @userSettings) {
+			@vd = '`'.@v.'`'
 			if(is_boolean(@v)) {
 				if(@v == true) {
 					@vd = ':white_check_mark:'
 				} else { 
 					@vd = ':x:'
 				}
-			} else {
-				@vd = '`'.@v.'`'
 			}
 			@ret = @ret.'`'.@set.':` '.@vd.'  '
 		}
@@ -124,45 +122,15 @@ proc _discordBot_cmd_dm(@discord, @cmdargs) {
 		
 	case 'notifycontent':
 	case 'nc':
-		@suffix = ' to the Minecraft server and Discord Admin log channel.'
-		if(!array_index_exists(@cmdargs, 1)) {
-			@userType = 'your'
-			@userID = @discord['userid']
-			@userConfig[@userID]['NotifyContent'] = !@userConfig[@userID]['NotifyContent']
-		} else if(@discord['admin'] == false) {
-			return('NotAdmin')
-		} else {
-			@userID = _discordBot_cmd_proc_finduserID(@cmdargs[1], @discord)
-			if(!is_numeric(@userID)) {
-				switch(@userID) {
-				case 'bot':
-					return(array('embeds': array(array('footer': array('text': 'I don\'t know how to DM myself'),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
-				case 'self':
-					@userID = @discord['userid']
-				case 'notfound':
-					return('NoUserFound')
-				case 'multiple':
-					return(false)
-				}
-			}
-			if(!array_index_exists(@userConfig, @userID)) {	array_set(@userConfig, @userID, array('NotifyContent': true, 'URLReadback': false))	}
-			@userType = 'that user\'s'
-			@userConfig[@userID]['NotifyContent'] = !@userConfig[@userID]['NotifyContent']
-		}
-		if(@userConfig[@userID]['NotifyContent'] == true) {
-			@ret = 'Content of '.@userType.' DMs with me shall be displayed'.@suffix
-		} else {
-			@ret = 'Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix	
-		}
-		export('DiscordBot.DMs.user.settings', @userConfig);
-		store_value('DiscordBot.DMs.user.settings', @userConfig);
-		return(@ret)
 	case 'urlreadback':
 	case 'url':
+		@suffix = ' to the Minecraft server and Discord Admin log channel.'
+		@ret = ''
+		@userType = 'that user\'s'
+		@userID = ''
 		if(!array_index_exists(@cmdargs, 1)) {
 			@userType = 'your'
 			@userID = @discord['userid']
-			@userConfig[@userID]['URLReadback'] = !@userConfig[@userID]['URLReadback']
 		} else if(@discord['admin'] == false) {
 			return('NotAdmin')
 		} else {
@@ -170,7 +138,7 @@ proc _discordBot_cmd_dm(@discord, @cmdargs) {
 			if(!is_numeric(@userID)) {
 				switch(@userID) {
 				case 'bot':
-					return(array('embeds': array(array('footer': array('text': 'I don\'t know how to DM myself'),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
+					return(array('embeds': array(array('footer': array('text': 'I don\'t know how to DM myself'), 'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
 				case 'self':
 					@userID = @discord['userid']
 				case 'notfound':
@@ -180,13 +148,24 @@ proc _discordBot_cmd_dm(@discord, @cmdargs) {
 				}
 			}
 			if(!array_index_exists(@userConfig, @userID)) {	array_set(@userConfig, @userID, array('NotifyContent': true, 'URLReadback': false))	}
-			@userType = 'that user\'s'
-			@userConfig[@userID]['URLReadback'] = !@userConfig[@userID]['URLReadback']
 		}
-		if(@userConfig[@userID]['URLReadback'] == true) {
-			@ret = 'I\'ll message the URL of attachments in '.@userType.' DMs with me.'
-		} else {
-			@ret = 'Ok, no more useless URL messages in '.@userType.' DMs with me.'	
+		switch(string(@cmdargs[0])) {
+		case 'notifycontent':
+		case 'nc':
+			@userConfig[@userID]['NotifyContent'] = !@userConfig[@userID]['NotifyContent']
+			if(@userConfig[@userID]['NotifyContent'] == true) {
+				@ret = 'Content of '.@userType.' DMs with me shall be displayed'.@suffix
+			} else {
+				@ret = 'Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix	
+			}
+		case 'urlreadback':
+		case 'url':
+			@userConfig[@userID]['URLReadback'] = !@userConfig[@userID]['URLReadback']
+			if(@userConfig[@userID]['URLReadback'] == true) {
+				@ret = 'I\'ll message the URL of attachments in '.@userType.' DMs with me.'
+			} else {
+				@ret = 'Ok, no more useless URL messages in '.@userType.' DMs with me.'	
+			}
 		}
 		export('DiscordBot.DMs.user.settings', @userConfig);
 		store_value('DiscordBot.DMs.user.settings', @userConfig);
@@ -348,6 +327,7 @@ proc _discordBot_cmd_poo(@discord, @args) {
 	}
 		
 proc _discordBot_cmd_fakeadmin(@discord) {	
+	@msg = false
 	@config = import('DiscordBot.config.Discord')	
 	if(@discord['UseDM'] != 'broadcast') { return('really? This isn\'t a server!') }
 	@userroles = discord_member_get_roles(@discord['username'])

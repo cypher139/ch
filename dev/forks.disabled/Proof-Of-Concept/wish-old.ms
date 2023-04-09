@@ -172,7 +172,7 @@ bind('player_chat', array(id: 'Wish.granter.lolz.o', priority: 'LOW'), null, @ch
 				case 'fly':
 				case 'flew':
 					broadcast(color('e').'['.color('gold').@name.color('e').'] '.color(6).@player.'s wish has been granted.')
-					runas('~console', '/rocket' @vplayer)
+					runas('~console', '/rocket '.@vplayer)
 
 				case 'google':
 				case 'googling':
@@ -191,7 +191,7 @@ bind('player_chat', array(id: 'Wish.granter.lolz.o', priority: 'LOW'), null, @ch
 					@skey2 = array_size(@themsg) - 1
 					@skey3 = @themsg[cslice(@gkey + 1, array_size(@themsg) - 1)]
 					msg(@skey3)
-					@googlemsg = array_implode(@skey3, +)
+					@googlemsg = array_implode(@skey3, '+')
 					broadcast(color('e').'['.color('gold').@name.color('e').'] '.color(6).'Googling: '.color(3).array_implode(@skey3))
 	#not working, keeps 403ing/TOS
 	#				http_request('https://cse.google.com/cse?cx=partner-pub-9300639326172081%3Aqi7dvj9mh31&ie=UTF-8&num=5&output=xml_no_dtd&safe=high&q='.@googlemsg, closure(@response){

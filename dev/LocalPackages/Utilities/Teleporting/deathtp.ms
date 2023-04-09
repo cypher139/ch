@@ -5,7 +5,7 @@ store_value('DeathCount.console.death.counter', get_value('DeathCount.console.de
 
 #Player Deaths
 bind('player_death', array('id': 'DeathTP.event', 'priority': 'MONITOR'), null, @death) {
-	x_new_thread('DeathStats.'@death['player'], closure(@player = @death['player'], @drops = @death['drops']){
+	x_new_thread('DeathStats.'.@death['player'], closure(@player = @death['player'], @drops = @death['drops']){
 		@uuid = puuid(@player, 'dashless')
 		@dev = import('ch.player.'.@uuid.'.developer')
 		

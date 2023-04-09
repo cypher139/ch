@@ -4,9 +4,10 @@ if(function_exists('player')) {
 	set_uncaught_exception_handler(iclosure(@ex){
 		@name = 'ch'
 		@prefix = color('c').'['.color(7).@name.color('c').'] '
+		@dev = false
+		@q43u = 'An error has occured!'
 		if(get_command_block() == null) { 
 		#player
-			@q43u = 'An error has occured!' 
 			try {
 				@dev = import('ch.player.'.puuid(player(), 'dashless').'.developer')
 			} catch(PlayerOfflineException @ex2) {

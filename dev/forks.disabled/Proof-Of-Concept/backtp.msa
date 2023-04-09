@@ -1,10 +1,10 @@
 #version 1.1-tmc
 deathtp:/tp 'back' [$option1=1] = >>>
-assign(@name, 'BackTP')
-
+@name = 'BackTP'
+@dropid = 0
 if(is_numeric($option1)) {
-	assign(@dropid, $option1)
-	if($option1 > 2) {assign(@dropid, 2)}
+	assign(@dropid, integer($option1))
+	if(@dropid > 2) {assign(@dropid, 2)}
 } else {
 	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
 }

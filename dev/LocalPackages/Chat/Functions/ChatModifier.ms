@@ -7,6 +7,7 @@ export('Chat.format.options', get_value('Chat.format.options'))
 bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	@name = import('chatmodifier.name', 'Chat')
 	@player = _getplayerID(player())
+	@group = 'group'
 	try {
 		@group = pgroup(@player['name'])[0]
 	} catch (IndexOverflowException @ex) {
@@ -23,39 +24,32 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 
 #Chat layout formatting: finalization
 	@groupinfo = import(@name.'.format.groups')
-	if(@groupinfo == '' || @groupinfo == null || is_array(@groupinfo) == false,
-		@groupinfo = array()
-	)
+	if(@groupinfo == '' || @groupinfo == null || is_array(@groupinfo) == false) { @groupinfo = array() }
+	
 	@groupinfokeys = array_keys(@groupinfo)
-	if(!array_contains_ic(@groupinfokeys, @group),
-		@groupinfo[@group] = array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': '')
-	)
+	if(!array_contains_ic(@groupinfokeys, @group)) { @groupinfo[@group] = array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': '') }
+	
 	@chatoptions = import(@name.'.format.options')
-	if(@chatoptions == '' || @chatoptions == null || is_array(@chatoptions) == false,
-		@chatoptions = array('colorize': '', 'randcolor': '', 'capitalizechat': '', 'capitalizegroupname': '')
-	)
+	if(@chatoptions == '' || @chatoptions == null || is_array(@chatoptions) == false) { @chatoptions = array('colorize': '', 'randcolor': '', 'capitalizechat': '', 'capitalizegroupname': '') }
+	
     #Defaults
-	if(@groupinfo[@group]['showhealth'] == '' || @groupinfo[@group]['showhealth'] == null, @groupinfo[@group]['showhealth'] = true)
-	if(@groupinfo[@group]['namecolor'] == '' || @groupinfo[@group]['namecolor'] == null, @groupinfo[@group]['namecolor'] = 'e')
-	if(@groupinfo[@group]['usercolor'] == '' || @groupinfo[@group]['usercolor'] == null, @groupinfo[@group]['usercolor'] = 3)
-	if(@groupinfo[@group]['chatcolor'] == '' || @groupinfo[@group]['chatcolor'] == null, @groupinfo[@group]['chatcolor'] = 'f')
+	if(@groupinfo[@group]['showhealth'] == '' || @groupinfo[@group]['showhealth'] == null) { @groupinfo[@group]['showhealth'] = true }
+	if(@groupinfo[@group]['namecolor'] == '' || @groupinfo[@group]['namecolor'] == null) { @groupinfo[@group]['namecolor'] = 'e' }
+	if(@groupinfo[@group]['usercolor'] == '' || @groupinfo[@group]['usercolor'] == null) { @groupinfo[@group]['usercolor'] = 3 }
+	if(@groupinfo[@group]['chatcolor'] == '' || @groupinfo[@group]['chatcolor'] == null) { @groupinfo[@group]['chatcolor'] = 'f' }
 
 	if(@chatoptions['colorize'] == '' || @chatoptions['colorize'] == null, @chatoptions['colorize'] = true)
     #Health
+	@hb = ''
 	if(@groupinfo[@group]['showhealth'] == true) {	@hb = color(0).'('._healthbar(@player['name']).color(0).')' }
 	
 	#Group options
 	# Set nickname
-	if(@groupinfo[@group]['nickname'] == '' || @groupinfo[@group]['nickname'] == null,
-		@groupname = @group
-	,
-		@groupname = @groupinfo[@group]['nickname']
-	)
+	@groupname = @group
+	if(@groupinfo[@group]['nickname'] != '' || @groupinfo[@group]['nickname'] != null) { @groupname = @groupinfo[@group]['nickname'] }
 	#Capitalize the group name?
-	if(@chatoptions['capitalizegroupname'] == '' || @chatoptions['capitalizegroupname'] == null || @chatoptions['capitalizegroupname'] == true,
-		@groupname = _capitalize(@groupname)
-	)
-	
+	if(@chatoptions['capitalizegroupname'] == '' || @chatoptions['capitalizegroupname'] == null || @chatoptions['capitalizegroupname'] == true) { @groupname = _capitalize(@groupname) }
+		
 	#User options
 	@userconfig = import(@name.'.format.users.'.@player['id'])
 	if(@userconfig == '' || @userconfig == null) {

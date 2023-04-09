@@ -11,8 +11,10 @@ bind('discord_message_received', array('id': 'DiscordBot.Cross-Server'), null, @
 #Find if in server 1 channel or server 2 channel
 #broadcast content to opposite, embed (from: user)
 #userroles color: color embed
-	if(array_contains(@config['CS_Server_1_Channels'], @discord['channel'])) { @server1 = true } else { @server1 = false } 
-	if(array_contains(@config['CS_Server_2_Channels'], @discord['channel'])) { @server2 = true } else { @server2 = false } 
+	@server1 = false 
+	@server2 = false
+	if(array_contains(@config['CS_Server_1_Channels'], @discord['channel'])) { @server1 = true }
+	if(array_contains(@config['CS_Server_2_Channels'], @discord['channel'])) { @server2 = true }
 	console(@server1.' <> '.@server2)
 
 	if(xor(@server1, @server2) == true) {
@@ -33,7 +35,8 @@ bind('discord_message_received', array('id': 'DiscordBot.Cross-Server'), null, @
 				@discord['message'] = @discord['message'].'\n <Also attached file:> '
 			}
 			foreach(@num: @attach in @discord['attachments']) {
-				if(@num == 0) { @filenum = 'File: ' } else { @filenum = '  File #'.(@num + 1).': ' }
+				@filenum = 'File: '
+				if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
 				@discord['message'] = @discord['message'].@filenum.@attach['filename']
 			}
 		}
