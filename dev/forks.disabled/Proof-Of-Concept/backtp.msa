@@ -1,0 +1,22 @@
+#version 1.1-tmc
+deathtp:/tp 'back' [$option1=1] = >>>
+@name = 'BackTP'
+@dropid = 0
+if(is_numeric($option1)) {
+	assign(@dropid, integer($option1))
+	if(@dropid > 2) {assign(@dropid, 2)}
+} else {
+	die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+}
+
+assign(@here, get_value('player.'.puuid(player(), 'dashless').'.last.loc.'.@dropid))
+
+switch(@here) {
+	case '':
+	case null:
+		die(color('e').'['.color('gold').@name.color('e').'] '.color(7).'Sorry, you don\'t have a saved teleport point to teleport to!')
+	default:
+		set_ploc(@here)
+		msg(color('e').'['.color('gold').@name.color('e').'] '.color(7).'You were teleported back to where you were before a teleport.')
+}
+<<<

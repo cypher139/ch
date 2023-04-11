@@ -70,6 +70,7 @@ bind('player_command', array('id': 'cmdrepeat.cmd', 'priority': 'HIGH'), null, @
 		if(is_numeric(@cmd[1]) && @cmd[1] < 10 && @cmd[1] > 0) { @cmd[1] = @cmd[1] - 1 }
 	}
 	# Is this a new command or repeat command?
+	@cmdcolor = ''
 	switch(@cmd[0]){
 		case '/.':
 		case '/repeat':

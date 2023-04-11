@@ -21,7 +21,7 @@ proc _sign_help() {
 	msg(color(7).'/sign redo'.color(4).' - '.color('f').'Sets the saved text again on the last set sign.')
 }
 
-
+@here = array()
 if(@player['name'] == '~console') {
 	@here = array(x: '0', y: '0', z: '0', world: 'world')
 } else {

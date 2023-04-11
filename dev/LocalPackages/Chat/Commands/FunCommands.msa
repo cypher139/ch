@@ -1,0 +1,68 @@
+#version 1.1-tmc
+*:/colors [$type] [$] = >>>
+@color = ''
+@usecolor = parse_args($)
+if(array_index_exists(@usecolor, 0)) {
+	@usecolor = reg_replace('#', '', @usecolor[0])
+} else {
+	@usecolor = ''
+}
+switch($type) {
+	case 'all':
+	case '-a':
+	case 'a':
+		@color = color('f').'Colors: '.color(0).'&0 '.color(1).'&1 '.color(2).'&2 '.color(3).'&3 '.color(4).'&4 '.color(5).'&5 '.color(6).'&6 '.color(7).'&7 '.color(8).'&8 '.color(9).'&9 '.color('a').'&a '.color('b').'&b '.color('c').'&c '.color('d').'&d '.color('e').'&e '.color('f').'&f '.color('k').'&k '.color('r').color('l').'&l '.color('r').color('m').'&m '.color('r').color('n').'&n '.color('r').color('o').'&o '.color('r').color('r').'&r'
+	case '15':
+		@color = color('f').'Colors: '.color(0).'&0 '.color(1).'&1 '.color(2).'&2 '.color(3).'&3 '.color(4).'&4 '.color(5).'&5 '.color(6).'&6 '.color(7).'&7 '.color(8).'&8 '.color(9).'&9 '.color(10).'&10 '.color(11).'&11 '.color(12).'&12 '.color(13).'&13 '.color(14).'&14 '.color(15).'&15 '.color('k').'&k '.color('r').color('l').'&l '.color('r').color('m').'&m '.color('r').color('n').'&n '.color('r').color('o').'&o '.color('r').color('r').'&r'
+	case 'html':
+	case '-h':
+	case 'h':
+		@color = color('f').'Assorted HTML Colors: '.color('#8a00ff').'Purple '.color('#ff0000').'Red '.color('#1bae93').'Turquoise '.color('#ba3e39').'Burnt Orange '.color('#f1c40f').'Yellow '.color('#7289da').'Soft Blue '.color('#aadd00').'Light Green '.color('#ffcc00').'Light Orange'
+	case 'hex':
+		@rgbDisplay = ''
+		if(is_proc('_hex_to_rgb')) {
+			@rgb = _hex_to_rgb(@usecolor)
+			@rgbDisplay = ' RGB: '.color(12).'R: '.@rgb['r'].' '.color(10).'G: '.@rgb['g'].' '.color(3).'B: '.@rgb['b']
+		}
+		@color = color('#'.@usecolor).'This is the hex color #'.@usecolor.'!'.@rgbDisplay
+	default:
+		@color = color('f').'Colors: '.color(0).'&0 '.color(1).'&1 '.color(2).'&2 '.color(3).'&3 '.color(4).'&4 '.color(5).'&5 '.color(6).'&6 '.color(7).'&7 '.color(8).'&8 '.color(9).'&9 '.color('a').'&a '.color('b').'&b '.color('c').'&c '.color('d').'&d '.color('e').'&e '.color('f').'&f'
+
+}
+msg(@color)
+<<<
+
+everyone:/hb [$] = >>>
+@dev = import('ch.player.'._getplayerID(player())['id'].'.dev.scripts.chat')
+@args = parse_args($)
+if($ == '' || $ == null) { @args = array(player()) }
+	
+foreach(@k: @v in @args) {
+	if(is_numeric(@v) || _array_string_contains(all_players(), @v)) {
+		@hbmsg = ''
+		if(!is_numeric(@v)) { @hbmsg = '\'s' }
+		msg(color('#aadd00').@v.@hbmsg.' health:'.color(8).' <'._healthbar(@v).color(8).'>')
+		if(@dev == true && !is_numeric(@v)) {
+			msg(pinfo(@v)[5].'   ('.integer(pinfo(@v)[5]).')')
+			msg('odd: '.ceil(integer(pinfo(@v)[5]) / 2))
+		}
+	} else {
+		msg(color('c').'Player Not Online.')
+	}
+}
+<<<
+
+fun:/randcolor [$] = >>>
+@args = parse_args($)
+if(array_size(@args) == 0) { @args = array('This', 'is', 'a', 'test', 'message', '...') }
+@color = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'a', 'b', 'c', 'd', 'e', 'f', 'k', 'l', 'm', 'n', 'o', 'r')
+@msg = ''
+foreach(@i: @arg in @args) {
+	if(@i == 0) {
+		@msg = color(array_get_rand(@color)).@arg
+	} else {
+		@msg = @msg.' '.color(array_get_rand(@color)).@arg
+	}
+}
+msg(color(array_get_rand(@color)).@msg)
+<<<

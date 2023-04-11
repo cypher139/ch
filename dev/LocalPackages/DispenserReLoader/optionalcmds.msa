@@ -9,5 +9,5 @@
 
 #Here is some mis-spelling redirects:
 
-reloader:/relaoder [$] = call_alias('/reloader' $) 
-reloader:/relaod [$] = call_alias('/reloader' $) 
+reloader:/relaoder [$] = call_alias('/reloader '.$) 
+reloader:/relaod [$] = call_alias('/reloader '.$) 

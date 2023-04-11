@@ -9,10 +9,12 @@
 include('modules.library/Core.ms')
 
 #Listen for interactions with the ReLoad tool
-bind('player_interact', array(id: 'ReLoad.tool'), array(button: 'left'), @reload) {
+bind('player_interact', array('id': 'ReLoad.tool'), array('button': 'left'), @reload) {
 	@name = import('dispenserreloader.name')
 	@player = _reloader_getplayerID(@reload['player'])
-	@verbose = import(@name.'.player.'.@player['id'].'.verbose')
+	@playerconfig = import(@name.'.player.'.@player['id'].'.config')
+	if(!is_array(@playerconfig)) { @playerconfig = array('area': 'All', 'fuel_type': '', 'item_type': '', 'item_qty': '', 'verbose': false) }
+	@verbose = @playerconfig['verbose']
 
 	#Find the tool in the players hand. Don't use just a hand, sorry.
 	@tool = pinv(@player['name'], null)
@@ -57,8 +59,6 @@ bind('player_interact', array(id: 'ReLoad.tool'), array(button: 'left'), @reload
 		}
 		# Record stats
 		_reloader_record_stats(@player['name'], 'tool', 1, @fillreturn['filledqty'], @tooldata['item'], @tooldata['qty'])
-		if(@verbose == true) {
-			msg(@fillreturn['msg'])
-		}
+		if(@verbose == true) { msg(@fillreturn['msg']) }
 	}
 }

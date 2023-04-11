@@ -42,7 +42,7 @@ if(!array_index_exists(@args, 0)) {
 	} 
 	#tp player, allow for partial matching
 	if(!is_numeric(@args[0])) {
-		run(/tp $)
+		run('/tp '.$)
 		die()
 	}
 }

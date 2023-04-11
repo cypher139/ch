@@ -1,0 +1,7 @@
+~adventure:/adventure = >>>
+@player = player()
+assign(@sp, get_value(@player.'.adventure.savepoint'))
+if(@sp == null || @sp == '', die())
+	set_ploc(@player, @sp)
+msg('Returning to where you left off in Adventure!')
+<<<

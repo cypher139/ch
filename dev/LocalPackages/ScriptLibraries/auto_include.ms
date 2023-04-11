@@ -105,16 +105,19 @@ proc _array_string_match(@array, @string) {
 
 proc _read_essentials_usermap(@option1) {
 #Check for Essentials player UUID database, and import it.
-	try(
+	@file = ''
+	@floodgateprefix = '_'
+	try {
 		@file = parse_args(reg_replace('\\n', ' ', read(file_resolve(sys_properties()['user.dir'].'/plugins/Essentials/usermap.csv'))))
-	,@fail,
+	} catch(Exception @ex) {
+		console('[read essentials usermap] '.@ex['message'])
 		return(false)
-	)
-	try (
+	}
+	try {
 		@floodgateprefix = string(yml_decode(read(file_resolve(sys_properties()['user.dir'].'/plugins/floodgate/config.yml')))['username-prefix'])
-	,@fail,
+	} catch(Exception @ex) {
 		@floodgateprefix = '_'
-	)
+	}
 	@euuid = associative_array()
 	# playername (lowercase), uuid (dashes)
 	foreach(@line in @file) {
@@ -168,85 +171,93 @@ proc _is_even_number(@number, @round) {
 #Find player UUID when given a player NAME.
 #returns array of name, displayname, nickname, and UUID
 proc _getplayerID(@findID) {
-	@pid = array()
-	@uuiddata = import('primus.database.UUID')
-	if(!is_array(@uuiddata)) { @uuiddata = array() }
-	if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
-		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
-	} else {
-		try {
-			@pid['id'] = puuid(@findID, 'dashless');
-		} catch(Exception @ex) {
-			#puuid throws exception if not found.
-			#if ID not found: search uuid for playername
-			foreach(@k: @v in @uuiddata) {
-				if(equals_ic(@findID, @v[0])) { 
-					@pid['id'] = @k
-					break()
+	if(function_exists('player')) {
+		@pid = array()
+		@uuiddata = import('primus.database.UUID')
+		if(!is_array(@uuiddata)) { @uuiddata = array() }
+		if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
+			@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
+		} else {
+			try {
+				@pid['id'] = puuid(@findID, 'dashless');
+			} catch(Exception @ex) {
+				#puuid throws exception if not found.
+				#if ID not found: search uuid for playername
+				foreach(@k: @v in @uuiddata) {
+					if(equals_ic(@findID, @v[0])) { 
+						@pid['id'] = @k
+						break()
+					}
+				}
+			}
+			#not sure what to return yet
+			if(!array_index_exists(@pid, 'id')) { @pid['id'] = null }
+				
+			#if found in database
+			if(array_index_exists(@uuiddata, @pid['id'])) {
+				@pid['name'] = @uuiddata[@pid['id']][0]
+				@pid['display'] = @uuiddata[@pid['id']][0]
+				if(ponline(@pid['name']) == true) {
+					@pid['nick'] = pinfo(@pid['name'])[4];
+				} else {
+					@pid['nick'] = @uuiddata[@pid['id']][2]	
+				}
+			} else {
+			#not found in database
+				if(ponline(@findID) == true) {
+					@pid['display'] = pinfo(@findID)[0];
+					@pid['name'] = pinfo(@findID)[0];
+					@pid['nick'] = pinfo(@findID)[4];
+				} else {
+					@pid['display'] = @findID
+					@pid['name'] = @findID
+					@pid['nick'] = 'Player Offline'		
 				}
 			}
 		}
-		#not sure what to return yet
-		if(!array_index_exists(@pid, 'id')) { @pid['id'] = null }
-			
-		#if found in database
-		if(array_index_exists(@uuiddata, @pid['id'])) {
-			@pid['name'] = @uuiddata[@pid['id']][0]
-			@pid['display'] = @uuiddata[@pid['id']][0]
-			if(ponline(@pid['name']) == true) {
-				@pid['nick'] = pinfo(@pid['name'])[4];
-			} else {
-				@pid['nick'] = @uuiddata[@pid['id']][2]	
-			}
-		} else {
-		#not found in database
-			if(ponline(@findID) == true) {
-				@pid['display'] = pinfo(@findID)[0];
-				@pid['name'] = pinfo(@findID)[0];
-				@pid['nick'] = pinfo(@findID)[4];
-			} else {
-				@pid['display'] = @findID
-				@pid['name'] = @findID
-				@pid['nick'] = 'Player Offline'		
-			}
+		#Bedrock to Java players come in with name ".NAME", remove dot
+		if(reg_count('^[\\.].*', @pid['name']) == 1) {
+			@pid['display'] = reg_replace('^[\\.]', '', @pid['name'])
 		}
+		return(@pid)
+	} else {
+		return('Running in Command Line')
 	}
-	#Bedrock to Java players come in with name ".NAME", remove dot
-	if(reg_count('^[\\.].*', @pid['name']) == 1) {
-		@pid['display'] = reg_replace('^[\\.]', '', @pid['name'])
-	}
-	return(@pid)
 }
 
 #Find player NAME when given a UUID.
 proc _getplayerName(@findID) {
- 	@pid = array()
-	@uuiddata = import('primus.database.UUID')
-	if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
-		@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
-	} else {
-		try {
-		#throws exception if player offline
-			@pid['name'] = player(@findID)
-			@pid['display'] = player(@findID) 
-			@pid['nick'] = pinfo(@pid['name'])[4]
-			@pid['id'] = @findID
-		} catch(Exception @ex) {
-			#puuid/player throws exception if not found.
-			#if ID not found: search uuid for playername
-			foreach(@k: @v in @uuiddata) {
-				if(equals_ic(@findID, @k)) { 
-					@pid['id'] = @k 
-					@pid['name'] = @v[0] 
-					@pid['display'] = @v[0] 
-					@pid['nick'] = @v[2] 
-					break()
+	if(function_exists('player')) {
+		@pid = array()
+		@uuiddata = import('primus.database.UUID')
+		if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
+			@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
+		} else {
+			try {
+			#throws exception if player offline
+				@pid['name'] = player(@findID)
+				@pid['display'] = player(@findID) 
+				@pid['nick'] = pinfo(@pid['name'])[4]
+				@pid['id'] = @findID
+			} catch(Exception @ex) {
+				#puuid/player throws exception if not found.
+				#if ID not found: search uuid for playername
+				foreach(@k: @v in @uuiddata) {
+					if(equals_ic(@findID, @k)) { 
+						@pid['id'] = @k 
+						@pid['name'] = @v[0] 
+						@pid['display'] = @v[0] 
+						@pid['nick'] = @v[2] 
+						break()
+					}
 				}
 			}
+			if(!array_index_exists(@pid, 'name')) {
+				@pid = array('display': 'null', 'name': null, 'id': null, 'nick': 'ID not Valid')
+			}
 		}
-		if(!array_index_exists(@pid, 'name')) {
-			@pid = array('display': 'null', 'name': null, 'id': null, 'nick': 'ID not Valid')
-		}
+		return(@pid)
+	} else {
+		return('Running in Command Line')
 	}
-	return(@pid)
 }

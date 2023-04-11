@@ -5,6 +5,9 @@ creative:/i [$id=3] [$] = >>>
 #initial populate giveplayer as the same so later functions can use a single variable for actions directed to you or others
 @giveplayer = player()
 @amount = 1
+@id = 1
+@slot = null
+@idn = null
 # Get other player name  
 foreach(@v in @args) {
 	if(array_contains_ic(all_players(), @v)) {
@@ -147,19 +150,17 @@ if(@player != '~console') {
 	die(color(7).'Item IDs returned: '.color(3).@id.color(8).' ('.color('a').@idn.color(8).') '.color(8).'[max:'.max_stack_size(array('name': to_upper(@id), 'meta': null)).']')
 }
 #setup messages
+@msgid = ''
 if(has_permission(@player, 'commandhelper.alias.creative.see.id')) {
 	@msgid = color(8).' ('.@idn.')'
-} else {
-	@msgid = ''
 }
+@display = to_lower(@id)
 if(reg_count('_', @id) > 0) {
 	@display = to_lower(reg_replace('_', ' ', @id))
-} else {
-	@display = to_lower(@id)
 }
 msg(color(6).'Giving '.color(3).@amount.color(6).' of '.color('a').@display.@msgid)
 <<<
 
 creative:/give2 [$player] [$id=3] [$] = >>>
-call_alias(/i $id $player $)
+call_alias('/i '.$id.' '.$player.' '.$)
 <<<

@@ -1,0 +1,60 @@
+###----Aliases----###
+
+# WorldEdit
+/1 = '//pos1'
+/2 = '//pos2'
+/s1 = '//hpos1'
+/s2 = '//hpos2'
+//a = /ascend
+//d = /descend
+/fw [$data=5] = /fixwater $data
+/fl [$data=5] = /fixlava $data
+/s $ = /searchitem $
+/nograss = /br sphere 0 15 \ /mask 31,37,38
+#
+#for users of essentials
+/top = /ascend
+/clearinventory = '/clear -a'
+/sm [$data=pig] [$qty=3] = /spawnmob $data $qty
+#
+# World Time
+/ws = /weather sunny
+/wr = /weather rain
+/td = /time day
+/ts = /time sunrise
+/tn = /time night
+#
+# Misc
+/lw = /listwarps
+#/adopt $data = /spawnmob wolf:tame $data player()
+
+# Uhoh! I need a short command to help me now!
+/b [$data] = /butcher $data
+/g = /god
+/h [$player] = >>>
+@player = $player
+if($player == '' || $player == null) { @player = player() }
+if(!array_contains_ic(all_players(), @player)) { die(color('c').'No player by that name found.') }
+set_phealth(@player, 20)
+set_phunger(@player, 20)
+<<<
+
+#
+#Kits
+/weapon = /kit weapon
+/red = /kit redstone
+/redi = /kit redstoneitems
+/food = /kit foodnow
+/foodi = /give player() pork 3
+
+citizen:/ow [$] = >>>
+run_cmd('/butcher '.$)
+call_alias(/td)
+call_alias(/h)
+<<<
+
+citizen:/f [$] = >>>
+run_cmd('/butcher '.$)
+call_alias(/td)
+call_alias(/h)
+<<<

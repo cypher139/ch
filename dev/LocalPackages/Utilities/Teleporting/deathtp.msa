@@ -2,8 +2,9 @@
 #requires ScriptLibraries - getplayerID and UUID database
 deathtp:/back [$id=1] = >>>
 @name = 'DeathTP'
-
-if(is_numeric($id) && $id > 0) {
+@id = 1
+if(is_numeric($id)) {
+	if(integer($id) < 0) { @id = 1 }
 	if($id - 1 > 9) { @id = 9 } else { @id = $id - 1 }
 } else {
 	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
@@ -22,7 +23,9 @@ if(array_index_exists(@here, @id, 'world')) {
 
 deathitems:/backitems [$id=1] = >>>
 @name = 'DeathTP - GarbageManagement'
-if(is_numeric($id) && $id > 0) {
+@id = 1
+if(is_numeric($id)) {
+	if(integer($id) < 0) { @id = 1 }
 	if($id - 1 > 9) { @id = 9 } else { @id = $id - 1 }
 } else {
 	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
@@ -43,19 +46,12 @@ if(array_index_exists(@bi, @id, 0, 'name')) {
 <<<
 
 deathtp:/deathcounter [$] = >>>
-set_uncaught_exception_handler(closure(@ex){
-	if(import('ch.player.'._getplayerID(player())['id'].'.developer') == true) {
-		msg(color(8).'Error ID: '.color(9).@ex['stackTrace'][0]['line'].'.'.@ex['stackTrace'][0]['col'].' '.color('c').@ex['message']);
-	} else {
-		msg(color('c').@ex['message']);
-	}
-     return(true);
-   });
-   
 proc _msg_count(@count, @player, @pos) {
 	@name = 'DeathCount'
 	@prefix = color('e').'['.color(6).@name.color('e').'] '
-	if(@pos == '' || @pos == null) { @posmsg = ''} else { @posmsg = ' ('.color(4).'#'.@pos.' on leaderboard'.color(7).')' }
+	@posmsg = ' ('.color(4).'#'.@pos.' on leaderboard'.color(7).')'
+	@dcmsg = ''
+	if(@pos == '' || @pos == null) { @posmsg = ''}
 	switch(@count) {
 		case '':
 		case null:
@@ -85,6 +81,7 @@ proc _msg_leaderboard(@board, @max) {
 	msg(@prefix.color(7).' Top '.color('c').@max.color(7).' Deaths Leaderboard:')
 	for(@i = 0, @i < @max, @i++){
 		if(array_index_exists(@board, @i)) {
+			@numcolor = 4
 			switch(@i) {
 			case 0:
 				@numcolor = 'b'
@@ -94,8 +91,6 @@ proc _msg_leaderboard(@board, @max) {
 				@numcolor = 7
 			case 3:
 				@numcolor = '#ba3e39'
-			default:
-				@numcolor = 4
 			}
 			msg(color(@numcolor).'# '.(@i + 1).color(7).':  '.color(@numcolor).@board[@i][0].color(7).' -- '.color('c').@board[@i][1].color(7).' deaths')
 		} else {

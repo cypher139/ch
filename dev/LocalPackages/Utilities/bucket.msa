@@ -40,6 +40,8 @@ default:
 				if(import('bucket.info.enabled.'.@player['id']) == true) {
 					if(@bucket['action'] == 'left_click_block' || @bucket['action'] == 'right_click_block') {
 						cancel()
+						@id = ''
+						@idn = ''
 						if(is_numeric(@bucket['block'])) {
 							@id = _capitalize(data_name(@bucket['block']), '', '', true)
 							@idn = color(3).' ('.@bucket['block'].')'

@@ -1,0 +1,49 @@
+#version 1.0-tmc
+admin:/discordbotdbconv [$clear='false'] [$type=0] [$] = >>>
+	@dbcount = 0
+	@dmcount = 0
+	@orcount = 0
+	foreach(@key: @data in get_values('Chat.Discord')) {
+		store_value(reg_replace('Chat[.]Discord', 'DiscordBot', @key), @data)
+		if(string($clear) == 'true') { clear_value(@key) }
+		if(player() == '~console') { msg(@key) }
+		@dbcount++
+	}
+	foreach(@key: @data in get_values('server.Discord')) {
+		if(@key == 'server.Discord.members.leaderboard') { 
+			store_value('DiscordBot.Leaderboard', @data)
+		} else if(@key == 'server.Discord.members.noroles') {
+			store_value('DiscordBot.members.roles.none', @data)
+		} else if(@key == 'server.Discord.members.welcomerolesonly') {
+			store_value('DiscordBot.members.roles.welcomeroles', @data)
+		} else {
+			store_value(reg_replace('server[.]Discord', 'DiscordBot', @key), @data)
+		}
+		if(string($clear) == 'true') { clear_value(@key) }
+		if(player() == '~console') { msg(@key) }
+		@dbcount++
+	}
+	foreach(@key: @data in get_values('DiscordBot.DMs.user')) {
+		if(@key == 'DiscordBot.DMs.user.settings') { continue() }
+		store_value(reg_replace('user', 'log', @key), @data)
+		clear_value(@key)
+		@dmcount++
+	}
+	@saveoldroles = import('DiscordBot.debug.roles.Leaderboard.undo', get_value('DiscordBot.debug.roles.Leaderboard.undo'))
+	if(!is_array(@saveoldroles)) { @saveoldroles = array() }
+	foreach(@key: @data in get_values('Chat.debug.Discord.User')) {
+		if(!string_ends_with(@key, 'old.roles')) { continue() }
+		# msg(reg_match('[.]\\d+[.]', @key))
+		@userid = reg_replace('[.]', '', reg_match('[.]\\d+[.]', @key)[0])
+		array_set(@saveoldroles, @userid, @data)
+		if(string($clear) == 'true') { clear_value(@key) }
+		if(player() == '~console') { msg(@key) }
+		@orcount++
+	} else { msg('None') }
+	export('DiscordBot.debug.roles.Leaderboard.undo', @saveoldroles)
+	store_value('DiscordBot.debug.roles.Leaderboard.undo', @saveoldroles)
+	msg('[DiscordBot] '.color(7).' Total db entries moved: '.@dbcount)
+	msg('[DiscordBot] '.color(7).' Total DM entries moved: '.@dmcount)
+	msg('[DiscordBot] '.color(7).' Total debug entries moved: '.@orcount)
+	
+<<<

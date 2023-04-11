@@ -9,6 +9,7 @@ bind('player_join', array('id': 'cypher139.login'), null, @login) {
 # Are you a dev for Cypher's scripts on this server?
 # Enables dev message settings.
 	@ds = get_value('ch.player.'.@puuid.'.dev.scripts')
+	@dsall = null
 	if(!is_array(@ds)) { @ds = array() }
 	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
 	#Older scripts / blanket enable/Disable.

@@ -41,6 +41,7 @@ export('dispenserreloader.fuel.items', _reloader_get_fuel_items())
 @reloader_ex = iclosure(@ex){
 	@name = import('dispenserreloader.name', 'ReLoad')
 	@prefix = color('c').'['.color(7).@name.color('c').'] '
+	@dev = false
 	try {
 		@dev = import('ch.player.'.puuid(player(), 'dashless').'.dev.scripts.reload')
 	} catch(PlayerOfflineException @ex2) {
