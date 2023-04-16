@@ -156,9 +156,14 @@ LB_Role_Rewards:
     RoleName: Member
 LB_Stack_Role_Rewards: false
 LB_Remove_On_Leave: true
-LB_Level_Up_Message: "%UserID% just leveled up to level %Level%"
+LB_Level_Up_Message: "%UserID% just leveled up to %Level%"
 # Set to true for current channel, false to disable, log to send to log channel, dm to dm user instead
 LB_Level_Up_Announce: true
+# Start annoucing when level reaches this start threshold
+LB_Level_Up_Announce_Start: 0
+LB_Level_Up_Announce_End: 50
+#Only announce Level up if includes a Role Rewards Rank change
+LB_Level_Up_Announce_OnlyReward: true
 LB_NoXP_Channels:
 - 'botspam'
 - 'join-log'

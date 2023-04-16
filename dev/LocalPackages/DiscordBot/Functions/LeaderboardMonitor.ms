@@ -5,7 +5,6 @@
 give/remove xp, rank
 */
 
-
 export('DiscordBot.Leaderboard', get_value('DiscordBot.Leaderboard'));
 export('DiscordBot.Leaderboard.last.save', time());
 if(!is_array(import('DiscordBot.Leaderboard'))) {
@@ -80,7 +79,7 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 	}
 #Level UP
 	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level'] + 1] && @noXP == false) {
-		@rankmsg = '!'
+		@newrankname = ''
 		@currentrank = ''
 		@oldlevel = @leaderboard['members'][@userID]['level']
 		@newlevel = @leaderboard['members'][@userID]['level'] + 1
@@ -99,6 +98,7 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 		# console(@ranknums)
 		@oldroles = array_sort(array_normalize(@userRoles), 'NUMERIC')
 	#Find rank
+		@rankup = false
 		foreach(@i: @rank in @ranknums) {
 			@lastrank = 0
 		# console(@i)
@@ -109,7 +109,8 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 			}
 			if(@newlevel == @rank) {
 				@currentrank = @config['LB_Role_Rewards'][@rank]
-				@rankmsg = ', and is now a '.@config['LB_Role_Rewards'][@rank]['RoleName'].'!'
+				@newrankname = @config['LB_Role_Rewards'][@rank]['RoleName']
+				@rankup = true
 				break()
 			}
 			#In Between two ranks
@@ -154,25 +155,41 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 /*
 		console(@currentrank)
 		console(@oldroles)
-		console(@userRoles)
+		console(@userRoles)		
 */		
 
 # Message out
 		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Level_Up_Message'])
-		@discordMsg = reg_replace('%Level%', @leaderboard['members'][@userID]['level'].@rankmsg, @discordMsg)
-		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> '.color(3).@oldlevel.color('r').' -> '.color(10).@leaderboard['members'][@userID]['level'].color('r').@rankmsg, false)
-		if(@config['LB_Level_Up_Announce'] != false) {
+		if(@newrankname == '') {
+			@discordMsg = reg_replace('%Level%', 'Level '.@leaderboard['members'][@userID]['level'].'!', @discordMsg)
+		} else {
+			@discordMsg = reg_replace('%Level%', @newrankname.'!  ('.@leaderboard['members'][@userID]['level'].')', @discordMsg)
+		}
+		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> '.color(3).@oldlevel.color('r').' -> '.color(10).@leaderboard['members'][@userID]['level'].' '.color(6).@newrankname, false)
+		@sendMsg = true
+		@sendMsgtoLog = false
+		if(@config['LB_Level_Up_Announce_OnlyReward'] == true) {
+			if(@rankup != true) {
+				@sendMsg = false
+			}
+		} 
+		if(@newlevel < @config['LB_Level_Up_Announce_Start'] || @newlevel > @config['LB_Level_Up_Announce_End']) {
+			@sendMsgtoLog = true
+		}
+		if(@config['LB_Level_Up_Announce'] == false) {
+			@sendMsg = false
+		}
+		if(@sendMsg == true) {
 			@type = 'broadcast'
+			@sendchannel = @discord['channel']
 			switch(string(@config['LB_Level_Up_Announce'])) {
 			case 'log':
 				@sendchannel = @config['Log_Channel'] 
 			case 'dm':
 				@type = 'dm'
 				@sendchannel = @discord['userid']
-			case 'true':
-			default:
-				@sendchannel = @discord['channel']
 			}
+			if(@sendMsgtoLog == true) { @sendchannel = @config['Log_Channel'] @type = 'broadcast' }
 			_send_discord_message(@discordMsg, 'confirm', @sendchannel, @type)
 		}
 	}

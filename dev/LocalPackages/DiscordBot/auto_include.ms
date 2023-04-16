@@ -444,57 +444,58 @@ proc _discordBot_lb_update_database(@args) {
 }
 
 proc _discordBot_lb_levelXP(@args) {
-@levelxp = array(0, 100)
-array_resize(@levelxp, 200)
-@mp = 1
-foreach(@i: @lvl in @levelxp) {
-	if(@i < 2) { continue() }
-	# Define XP needed to reach each level, as a multiplier of level 1 100xp + previous level
-	switch(@i) {
-	case 2:
-		@mp = 2.5
-	case 3:
-		@mp = 2
-	case 4:
-		@mp = 1.7
-	case 5:
-		@mp = 1.5
-	case 6:
-		@mp = 1.4
-	case 7:
-		@mp = 1.3
-	case 8..11:
-		@mp = 1.25
-	case 12..15:
-		@mp = 1.2
-	case 16..22:
-		@mp = 1.15
-	case 23..32:
-		@mp = 1.1
-	case 33..39:
-		@mp = 1.08
-	case 40..49:
-		@mp = 1.06
-	case 50..69:
-		@mp = 1.05
-	case 70..79:
-		@mp = 1.04
-	case 80..89:
-		@mp = 1.03
-	case 90..109:
-		@mp = 1.025
-	case 110..134:
-		@mp = 1.02
-	case 135..159:
-		@mp = 1.015
-	case 160..169:
-		@mp = 1.013
-	case 170..200:
-		@mp = 1.01
+	@levelxp = array(0, 100)
+	array_resize(@levelxp, 200)
+	@mp = 1
+	foreach(@i: @lvl in @levelxp) {
+		if(@i < 2) { continue() }
+		# Define XP needed to reach each level, as a multiplier of level 1 100xp + previous level
+		switch(@i) {
+		case 2:
+			@mp = 2.5
+		case 3:
+			@mp = 2
+		case 4:
+			@mp = 1.7
+		case 5:
+			@mp = 1.5
+		case 6:
+			@mp = 1.4
+		case 7:
+			@mp = 1.3
+		case 8..11:
+			@mp = 1.25
+		case 12..15:
+			@mp = 1.2
+		case 16..22:
+			@mp = 1.15
+		case 23..32:
+			@mp = 1.1
+		case 33..39:
+			@mp = 1.08
+		case 40..49:
+			@mp = 1.06
+		case 50..69:
+			@mp = 1.05
+		case 70..79:
+			@mp = 1.04
+		case 80..89:
+			@mp = 1.03
+		case 90..109:
+			@mp = 1.025
+		case 110..134:
+			@mp = 1.02
+		case 135..159:
+			@mp = 1.015
+		case 160..169:
+			@mp = 1.013
+		case 170..200:
+			@mp = 1.01
+		}
+		@levelxp[@i] = integer(@levelxp[(@i - 1)] * @mp)
 	}
-	@levelxp[@i] = integer(@levelxp[(@i - 1)] * @mp)
-}
-export('DiscordBot.Leaderboard.levelXP', @levelxp)
+	export('DiscordBot.Leaderboard.levelXP', @levelxp)
+	_write_file(import('DiscordBot.logs.dir').'/Leaderboard_LevelXP.json', json_encode(@levelxp), 'CREATE')
 }
 
 #Handle commands from Discord Users

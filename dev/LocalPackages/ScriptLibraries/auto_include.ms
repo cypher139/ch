@@ -1,20 +1,26 @@
-#server startup: set UUID and IP databases
-if(is_array(get_value('primus.database.UUID'))) {
-	export('primus.database.UUID', get_value('primus.database.UUID'))
-} else {
-	export('primus.database.UUID', array('testid': array(1, 5, 10)))
-}
-if(is_array(get_value('primus.database.IP'))) {
-	export('primus.database.IP', get_value('primus.database.IP'))
-} else {
-	export('primus.database.IP', array(1000123: array()))
+if(in_cmdline_mode() == false) {
+	#Minecraft server startup: set UUID and IP databases
+	if(is_array(get_value('primus.database.UUID'))) {
+		export('primus.database.UUID', get_value('primus.database.UUID'))
+	} else {
+		export('primus.database.UUID', array('testid': array(1, 5, 10)))
+	}
+	if(is_array(get_value('primus.database.IP'))) {
+		export('primus.database.IP', get_value('primus.database.IP'))
+	} else {
+		export('primus.database.IP', array(1000123: array()))
+	}
 }
 
-proc _write_file(@path, @content, @mode) {
+proc _write_file(@path, @content, @mode, @option) {
 	if(@path == '' || @content == '') { return(false) }
 	if(@mode == '') { @mode = 'default' }
 	@mode = to_upper(@mode)
+	@create = false
 	switch(@mode[0]) {
+		case 'C':
+		@mode = 'OVERWRITE'
+		@create = true
 		case 'O':
 		@mode = 'OVERWRITE'
 		case 'A':
@@ -24,21 +30,45 @@ proc _write_file(@path, @content, @mode) {
 	}
 	if(extension_exists('CHFiles')) {
 		try {
+			if(file_exists(@path)) {
+				if(@create == true) {
+					return(false)
+				}		
+			} else {
+				create_file(@path)
+			}
+		} catch(Exception @ex) {
+			console('Create file: '.@ex)
+			return(false)
+		}
+		try {
 			write_file(@path, @content, @mode)
 			return(true)
 		} catch(Exception @ex) {
-			msg('File not written: '.@ex['message'])
-			console('File write: '.@ex)
+			msg('File not written, check console logs.')
+			console('Write file: '.@ex)
 			return(false)
 		}
 	}
 	if(extension_exists('CHFile')) {
 		try {
+			if(chf_file_exists(@path)) {
+				if(@create == true) {
+					return(false)
+				}		
+			} else {
+				chf_create_file(@path, true)
+			}
+		} catch(Exception @ex) {
+			console('Create file: '.@ex)
+			return(false)
+		}
+		try {		
 			chf_write(@path, @content, @mode)
 			return(true)
 		} catch(Exception @ex) {
-			msg('File not written: '.@ex['message'])
-			console('File write: '.@ex)
+			msg('File not written, check console logs.')
+			console('Write file: '.@ex)
 			return(false)
 		}	
 	}
@@ -47,12 +77,13 @@ proc _write_file(@path, @content, @mode) {
 			x_write(@path, @content, @mode)  
 			return(true)
 		} catch(Exception @ex) {
-			msg('File not written: '.@ex['message'])
-			console('File write: '.@ex)
+			msg('File not written, check console logs.')
+			console('Write file: '.@ex)
 			return(false)
 		}
 	} else {
-		msg('File not written! CH\'s Core write file functions is commandline only, and compatible extensions were not found.')
+		msg('[Write file] No writing method was found.') 
+		console(color('c').'[Write file] No writing method was found. '.color(6).'Please install the CHFiles or CHFile extension.') 
 		return(false)
 	}
 }
