@@ -46,7 +46,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 							}
 						}					
 						discord_broadcast(@config['VC_Text_Channel_Name'], array('content': @discordMsg))
-						_db_mc_broadcast(@mcMsg)
+						_db_mc_broadcast(@mcMsg, 'player')
 						store_value('DiscordBot.last.ping.'.@config['VC_Role_ID'], time())
 						@stats = get_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')
 						if(!is_array(@stats)) { @stats = array('start': (time() - @timeout), 'end': '', 'users': '', 'channel': @discord['channel']) }
@@ -103,17 +103,20 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		#DM thanks
 		if(@config['VC_DM_Thanks'] == true && array_size(@totalVCUsers) > 1) {
 			foreach(@userid: @username in @totalVCUsers) {
+				@UserRole = ''
+				try {
+					@UserRole = discord_member_get_roles(@userid)
+				} catch(NotFoundException @ex) {
+					console('[Discord] User '.@username.' <@'.@userid.'> was recently in Voice Chat, but now is not found on the server. Did they chat and leave?', false)
+					continue()
+				}	
 				if(@config['VC_DM_VC_Role'] == false) {
-					if(array_contains_ic(discord_member_get_roles(@userid), @config['VC_Role_ID'])) {
+					if(array_contains_ic(@UserRole, @config['VC_Role_ID'])) {
 						continue()
 					}
 				}
-				try {
-					discord_private_message(@userid, @username.', '.@config['VC_DM_Thanks_Message'])
-				} catch(NotFoundException @ex) {
-					console('User '.@username.' "'.@userid.'" was recently in Voice Chat, but now is not found on the server. Did they chat and leave?', false)
-					continue()
-				}
+				@dmMsg = reg_replace('%User%', @username, @config['Welcome_DM_Message'])
+				discord_private_message(@userid, @dmMsg)
 			}
 		}
 		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(@totalVCUsers, ', '), false)
@@ -125,15 +128,18 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		
 		@stats['end'] = time()
 		@stats['users'] = @totalVCUsers
-		
-		@lastmsgs = get_value('DiscordBot.last.VC')
+		@lastmsglone = ''
+		if(array_size(@totalVCUsers) < 2) {
+			@lastmsglone = '.alone'
+		}			
+		@lastmsgs = get_value('DiscordBot.last.VC'.@lastmsglone)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @stats, 0)
 		if(array_index_exists(@lastmsgs, 20)) {
-			_write_file(import('DiscordBot.logs.dir').'/Discord-VC-Stats.txt', '\n'.@lastmsgs[20], 'append')
+			_write_file(import('DiscordBot.logs.dir').'/Discord-VC-Stats'.@lastmsglone.'.txt', '\n'.@lastmsgs[20], 'append')
 			array_remove(@lastmsgs, 20)
 		}
-		store_value('DiscordBot.last.VC', @lastmsgs)
+		store_value('DiscordBot.last.VC'.@lastmsglone, @lastmsgs)
 		clear_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')		
 	} else {
 		store_value('DiscordBot.VC.'.@discord['channelid'].'.users.current', @currentVCUsers)
