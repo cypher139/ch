@@ -5,6 +5,19 @@ assign(@you, player())
 
 
 switch(to_lower($action)) {
+case 'b64':
+@convert = ''
+@type = ''
+if(string_ends_with($option1, '=')) {
+	@type = 'decode'
+	@convert = string_from_bytes(base64_decode(string_get_bytes($option1)))
+} else {
+	@type = 'encode'
+	@convert = string_from_bytes(base64_encode(string_get_bytes($option1)))
+}
+msg('Base64: '.@type.': Converted to:')
+msg(@convert)
+_write_file('b64-'.@type.'.txt', @convert, 'OVERWRITE')
 case 'goto':
 case 'gt':
 	switch(to_lower($option1)) {
