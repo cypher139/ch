@@ -1,4 +1,4 @@
-#version 1.0-tmc
+#version 1.1-tmc
 #requires CHDiscord build #76 or newer
 #Voice Chat monitor:
 /*
@@ -13,41 +13,64 @@ Then this will send a message to the ping role to come join voice chat
 bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
 # Note: import is auto globally saved (example #2), so use new variables to store edits needed
 	@config = import('DiscordBot.config.Discord')
-	if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
+	@vc = ''
+	@isAdmin = false
+	@isRole = false
+	@usePing = false
+	# if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
 	@userroles = discord_member_get_roles(@discord['userid'])
-	@stats = get_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')
-	if(!is_array(@stats)) { @stats = array('start': time(), 'end': '', 'users': '', 'channel': @discord['channel']) }
-	
+	foreach(@role: @roleid in @userroles) {
+		if(array_contains_ic(@config['Role_Admins'], @role)) {
+			@isAdmin = true
+			break()
+		}
+	}
+#setup config
+	if(array_index_exists(@config, 'VC_Options', @discord['channelid'])) {
+		@vc = @config['VC_Options'][@discord['channelid']]
+	} else if(array_index_exists(@config, 'VC_Options', @discord['channel'])) {
+		@vc = @config['VC_Options'][@discord['channel']]
+	} else {	
+		@vc = array('VC_Ping_If_Role_Member': false, 'VC_Role_ID': 123)
+	}
+	if(array_contains(@userroles, @vc['VC_Role_ID'])) { @isRole = true }
+	if(@vc['VC_Ping_If_Role_Member'] == true) {
+		if(@isRole == true) { @usePing = true }
+	} else {
+		if(@isRole == false) { @usePing = true }
+		if(@isAdmin == true) { @usePing = false } 
+	}
 	#Ping @VC role to come join the main VC channel.
-	if(array_contains(@userroles, @config['VC_Role_ID']) && @discord['channel'] == @config['VC_Channel_Name']) {
+	if(@usePing == true && @vc['VC_Role_ID'] != 123) {
 	# Get last time the bot pinged the role
-		@lastping = get_value('DiscordBot.last.ping.'.@config['VC_Role_ID'])
+		@lastping = get_value('DiscordBot.last.ping.'.@vc['VC_Role_ID'])
 		if(@lastping == '' || @lastping == null) { @lastping = 1230768000000 }
 		if(import('DiscordBot.VC.ping.in.progress') == true) { die() } else {
 			@timeout = 60000
-			@discordMsg = reg_replace('%RoleID%', '<@&'.@config['VC_Role_ID'].'>', @config['VC_Ping_Message'])
+			@discordMsg = reg_replace('%RoleID%', '<@&'.@vc['VC_Role_ID'].'>', @vc['VC_Ping_Message'])
 			@discordMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @discordMsg)
 			@discordMsg = reg_replace('%Channel%', @discord['channel'], @discordMsg)
-			@mcMsg = reg_replace('%User%', @discord['username'], @config['VC_Ping_Message_MC'])
+			@mcMsg = reg_replace('%User%', @discord['username'], @vc['VC_Ping_Message_MC'])
 			@mcMsg = reg_replace('%Channel%', @discord['channel'], @mcMsg)
 	# :angrypingemoji: 1 ping every 12 hours only!
-			if(time() > (@lastping + @config['VC_Ping_Timeout'])) {
+			if(time() > (@lastping + @vc['VC_Ping_Timeout'])) {
 				export('DiscordBot.VC.ping.in.progress', true)
 			#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
 				set_timeout(@timeout, closure(){
-					if(discord_member_get_voice_channel(@discord['userid']) == @config['VC_Channel_ID']) {
+					if(discord_member_get_voice_channel(@discord['userid']) == @discord['channelid']) {
 						#Has the role just been mentioned?
 						@lastmsgs = import('DiscordBot.last.message')
 						if(is_array(@lastmsgs)) {
 							foreach(@index: @message in @lastmsgs) {
-								if(reg_count('@'.@config['VC_Role_Name'], @message['message']) > 0) {
+								if(reg_count('@'.@vc['VC_Role_Name'], @message['message']) > 0) {
 									@discordMsg = 'Hey I was going to do that ping!'
+									break()
 								}
 							}
 						}					
-						discord_broadcast(@config['VC_Text_Channel_Name'], array('content': @discordMsg))
+						discord_broadcast(@vc['VC_Text_Channel_ID'], @discordMsg)
 						_db_mc_broadcast(@mcMsg, 'player')
-						store_value('DiscordBot.last.ping.'.@config['VC_Role_ID'], time())
+						store_value('DiscordBot.last.ping.'.@vc['VC_Role_ID'], time())
 						@stats = get_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')
 						if(!is_array(@stats)) { @stats = array('start': (time() - @timeout), 'end': '', 'users': '', 'channel': @discord['channel']) }
 						array_set(@stats, 'pinguser', @discord['username'])
@@ -84,24 +107,32 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 			}
 		}
 	});
-	
 }
 
 
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	@config = import('DiscordBot.config.Discord')
-	if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
+	#setup config
+	@vc = ''
+	if(array_index_exists(@config, 'VC_Options', @discord['channelid'])) {
+		@vc = @config['VC_Options'][@discord['channelid']]
+	} else if(array_index_exists(@config, 'VC_Options', @discord['channel'])) {
+		@vc = @config['VC_Options'][@discord['channel']]
+	} else {	
+		@vc = array('VC_DM_Thanks': false)
+	}
+	# if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
+	@totalVCUsers = get_value('DiscordBot.VC.'.@discord['channelid'].'.users.total')
+	if(!is_array(@totalVCUsers)) { die() }
 	@currentVCUsers = get_value('DiscordBot.VC.'.@discord['channelid'].'.users.current')
 	if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
-	@totalVCUsers = get_value('DiscordBot.VC.'.@discord['channelid'].'.users.total')
-	if(!is_array(@totalVCUsers)) { @totalVCUsers = die() }
 	
 	if(array_contains(@currentVCUsers, @discord['userid'])) { array_remove_values(@currentVCUsers, @discord['userid']) }
 	
 	#End of call
 	if(!array_index_exists(@currentVCUsers, 0)) {
 		#DM thanks
-		if(@config['VC_DM_Thanks'] == true && array_size(@totalVCUsers) > 1) {
+		if(@vc['VC_DM_Thanks'] == true && array_size(@totalVCUsers) > 1) {
 			foreach(@userid: @username in @totalVCUsers) {
 				@UserRole = ''
 				try {
@@ -109,17 +140,33 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 				} catch(NotFoundException @ex) {
 					console('[Discord] User '.@username.' <@'.@userid.'> was recently in Voice Chat, but now is not found on the server. Did they chat and leave?', false)
 					continue()
-				}	
-				if(@config['VC_DM_VC_Role'] == false) {
-					if(array_contains_ic(@UserRole, @config['VC_Role_ID'])) {
+				}
+				@otherVCUsers = array_shallow_clone(@totalVCUsers)
+				array_remove_values(@otherVCUsers, @username)
+				if(@vc['VC_DM_VC_Role'] == false) {
+					if(array_contains_ic(@UserRole, @vc['VC_Role_ID'])) {
 						continue()
 					}
 				}
-				@dmMsg = reg_replace('%User%', @username, @config['Welcome_DM_Message'])
+				@isAdmin = false
+				foreach(@role: @roleid in @UserRole) {
+					if(array_contains_ic(@config['Role_Admins'], @role)) {
+						@isAdmin = true
+						break()
+					}
+				}				
+				if(@isAdmin == true) { continue() }
+				@dmMsg = reg_replace('%User%', @username, @vc['VC_DM_Thanks_Message'])
+				if(array_size(@otherVCUsers) < 2) {
+					@dmMsg = reg_replace('%OtherUsers%', array_implode(@otherVCUsers, ''), @dmMsg)
+				} else {
+					@dmMsg = reg_replace('%OtherUsers%', array_implode(@otherVCUsers[..-2], ',').' and '.@otherVCUsers[..-1], @dmMsg)
+				}
+				# @dmMsg = reg_replace('%TotalUsers%', array_implode(@totalVCUsers, ' and '), @dmMsg)
 				discord_private_message(@userid, @dmMsg)
 			}
 		}
-		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.array_implode(@totalVCUsers, ', '), false)
+		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.color(3).array_implode(@totalVCUsers, ', '), false)
 		#Save Stats
 		clear_value('DiscordBot.VC.'.@discord['channelid'].'.users.current')
 		clear_value('DiscordBot.VC.'.@discord['channelid'].'.users.total')
