@@ -80,7 +80,6 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) 
 	}
 	console('[Discord] Member '.color(12).'left: '.color(9).@userDisplay, false)
 	@config = import('DiscordBot.config.Discord')
-	if(!is_array(@config['Welcome_Roles'])) { die('plz fill welcome roles config') }
 
 	# Remove user entry from internal storages
 	@membernames = import('DiscordBot.members.names')
@@ -134,10 +133,10 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) 
 			if(!is_array(@oldlb)) { @oldlb = array() }
 			array_set(@oldlb, @event['userid'], array('removed': time(), 'data': @leaderboard['members'][@event['userid']]))
 			store_value('DiscordBot.members.leaderboard.removed', @oldlb)
+			_write_file(import('DiscordBot.logs.dir').'/Leaderboard_Removed.json', json_encode(@oldlb), 'Overwrite')
 		}
 		array_remove(@leaderboard['members'], @event['userid'])
 		@leaderboard['lastedit'] = time()
 		export('DiscordBot.Leaderboard', @leaderboard)
 	}
-	
 }

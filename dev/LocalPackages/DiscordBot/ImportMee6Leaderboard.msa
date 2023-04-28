@@ -29,7 +29,7 @@ proc _convert_json_data(@raw) {
 	}
 	@rr = array('LB_XP_Per_Message': @json['xp_per_message'], 'LB_XP_Gain_Rate': @json['xp_rate'], 'LB_Role_Rewards': array())
 	foreach(@j: @role in @json['role_rewards']) {
-		array_set(@rr['LB_Role_Rewards'], @role['rank'], array('RoleID': @role['role']['id'], 'RoleName': @role['role']['name']))
+		array_set(@rr['LB_Role_Rewards'], integer(@role['rank']), array('RoleID': integer(@role['role']['id']), 'RoleName': @role['role']['name']))
 	}
 	@newLeaderboard['role_rewards'] = @rr
 	#avatar:	https://cdn.discordapp.com/avatars/<USERID>/<AVATARID under {avatar: 123}>.webp?size=512
