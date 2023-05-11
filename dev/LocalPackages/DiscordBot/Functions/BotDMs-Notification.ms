@@ -108,7 +108,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			@msgtype = 'message content'
 			if(array_index_exists(@discord, 'attachments', 0, 'filename') && @saveDM['message'] == '') { @msgtype = 'attachment' }
 			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype = @msgtype.'s' }
-			@msgembed[0]['description'] = '<This user\'s '.@msgtype.' is not shown in DM notifications>'
+			@msgembed[0]['description'] = '<<<user '.@msgtype.' not displayed>>>'
 		}
 		@dm1 = 'I received a DM!'
 		if(array_size(@userDMs) < 2) {

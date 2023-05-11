@@ -62,7 +62,11 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 						@lastmsgs = import('DiscordBot.last.message')
 						if(is_array(@lastmsgs)) {
 							foreach(@index: @message in @lastmsgs) {
-								if(reg_count('@'.@vc['VC_Role_Name'], @message['message']) > 0) {
+							# Only check messages that are posted within timeout period. 
+								if(@message['time'] < (time() - @vc['VC_Ping_Timeout'])) {
+									continue()
+								}
+								if(reg_count('@'.@vc['VC_Role_Name'], @message['message']) > 0) {						
 									@discordMsg = 'Hey I was going to do that ping!'
 									break()
 								}
