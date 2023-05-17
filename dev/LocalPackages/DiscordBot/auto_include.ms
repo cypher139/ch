@@ -32,6 +32,7 @@ proc _is_Command(@line) {
 proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') { 
 	if(@cfgtype == '' || @cfgtype == null) { @cfgtype = 'Discord' }
 	@loadcfg = ''
+	@prevcfg = import(@prefix.'.config.'.@cfgtype)
 	try {
 		@loadcfg = yml_decode(read(import(@prefix.'.config.dir').'/'.@cfgtype.'.yml'))
 	} catch(IOException @ex) {
@@ -60,11 +61,14 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 			_db_msg_Admins(color(12).'[Chat - Discord] Config file is still using default values. Please configure it in order to use various Discord features.') 
 			return(false)
 		}
-		if(@loadcfg['VC_Role_ID'] == 123) {
+		if(array_index_exists(@loadcfg, 'VC_Options', '987654321')) {
 			_db_msg_Admins(color(14).'[Chat - Discord] Voice Chat Config is still using defaults. Please configure it in order to use the VC Role Ping feature.') 
 		}
 		if(@loadcfg['Welcome_Text_Channel_Name'] == 'default') {
 			_db_msg_Admins(color(14).'[Chat - Discord] Member Config is still using defaults. Please configure it in order to use the Welcome Message feature.') 
+		}
+		if(@prevcfg != null) {
+			_db_setup(@loadcfg);
 		}
 	case 'Experimental':
 	case 'ex':
@@ -291,7 +295,6 @@ proc _send_discord_message(@message, @from, @channel, @type, @option) {
 		_db_msg_Admins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@ex['message'])
 		return(false)
 	}
-	
 }
 
 proc _discordBot_dc_add_member(@discord) {
@@ -327,9 +330,53 @@ proc _db_mc_broadcast(@msg, @args) {
 			console('[DiscordBot] Bot Service is not running on a Minecraft server! Messages to broadcast to Minecraft players will be redirected to the console.', false)
 			export('DiscordBot.debug.broadcast.Console.msg', true)
 		}
-		console(@msg, false)
+		if(import('DiscordBot.Console.receive') != true) {
+			if(@args == '' || @args == null) {
+				console(@msg, false)
+			}
+		} else {
+			console(@msg, false)
+		}
 	}
 	return(true)
+}
+
+
+proc _db_setup(@config, @args) {
+	if(@config == '' || @config == null) {
+		@config = import('DiscordBot.config.Discord')
+	}
+	if(get_value('DiscordBot.Console.receive') == true) {
+		export('DiscordBot.Console.receive', true)
+		# console('[DiscordBot] Console receives chat from Discord Users.', false)
+	} else {
+		export('DiscordBot.Console.receive', false)
+	}
+# Set Bot Activity
+	@acttypes8901 = reg_split('of\\s|[,.]\\s(?:or\\s)*', reflect_docs('discord_set_activity', 'description'))[2..]
+	foreach(@k: @v in @acttypes8901) {
+		if(to_upper(@v) != @v) { array_remove(@acttypes8901, @k) }
+	}
+	if(array_contains(@acttypes8901, to_upper(@config['Activity_Type']))) {
+		try {
+			discord_set_activity(to_upper(@config['Activity_Type']), string(@config['Activity_Message']));
+		} catch(Exception @ex) {
+			_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color('r').@ex['message'])
+			console(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color(12).@ex['classType'].': '.@ex['message'], false)
+		}
+	} else {
+		_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Selected Bot Activity Type is not supported!')
+	}
+# Setup Leaderboard
+	if(@config['LB_Enable'] == true) {
+		if(import('DiscordBot.Leaderboard.last.save') == '') {
+			export('DiscordBot.Leaderboard.last.save', time());
+		}
+		if(!is_array(import('DiscordBot.Leaderboard'))) {
+			export('DiscordBot.Leaderboard', array('lastedit': time(), 'members': array()))
+		}
+		_discordBot_lb_levelXP();
+	}
 }
 
 #### Command Functions
@@ -430,7 +477,7 @@ proc _discordBot_lb_update_database(@args) {
 	@config = import('DiscordBot.config.Discord')
 	@leaderboard = import('DiscordBot.Leaderboard', array('lastedit': 0));
 	@lastsave = import('DiscordBot.Leaderboard.last.save', time());
-	if(@leaderboard['lastedit'] > @lastsave) {
+	if(@leaderboard['lastedit'] > @lastsave && @config['LB_Enable'] == true) {
 		# console('[Discord] Saved Leaderboard Database.', false)
 		store_value('DiscordBot.Leaderboard', @leaderboard)
 		@saveoldroles = import('DiscordBot.debug.roles.Leaderboard.undo')
@@ -443,6 +490,205 @@ proc _discordBot_lb_update_database(@args) {
 	# } else { console('nosave') }
 }
 
+proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
+	if(!is_array(@discord)) {
+		console('[DiscordBot] No data given to Leaderboard system, exiting', false)
+		return(false)
+	}
+	# if(@noXP == '' || @noXP == null) {
+		# @noXP = false
+	# }
+	@mi = ''
+	try {
+		@mi = discord_member_info(@discord['userid'])
+	} catch(NotFoundException @ex) {
+		console('[DiscordBot] Member Info not found for user '.@discord['username'].', exiting', false)
+		return(false)
+	}
+	@config = import('DiscordBot.config.Discord')
+	@userID = @discord['userid']
+	@levelxp = import('DiscordBot.Leaderboard.levelXP')
+	if(@levelxp == null) { @levelxp = _discordBot_lb_levelXP(); }
+	# Do not count messages from Command spam channel or Channels marked as no XP earning.
+	if(array_contains(@config['LB_NoXP_Channels'], @discord['channel'])) { @noXP = true }
+	if(@discord['channel'] == @config['CMD_Default_Channel']) { @noXP = true }
+	@leaderboard = import('DiscordBot.Leaderboard');
+	if(@leaderboard == null) { 
+		console('[DiscordBot] Leaderboard data not initialized') 
+		return(false)
+	}
+	@xptimer = import('DiscordBot.Leaderboard.xptimer', array('test': 123))
+	if(!array_index_exists(@xptimer, @userID)) {
+		array_set(@xptimer, @userID, (time() - 70000))
+	}
+	
+	if(!array_index_exists(@leaderboard, 'members', @userID)) {
+		array_set(@leaderboard['members'], @userID, array('last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'msg_count': 0))
+	}
+	@userRoles = ''
+# If user has last chatted in last rolling minute, do not award XP. (continues to count message)
+	if((@xptimer[@userID] + 60000) > time()) {
+		@noXP = true 
+	} else {
+# Check if user has a no XP earning role.
+		try { 
+			@userRoles = discord_member_get_roles(@userID)
+		} catch(Exception @ex) {
+			return(false)
+		}
+		foreach(@role in @userRoles) {
+			if(array_contains(@config['LB_NoXP_RoleID'], @role)) {
+				@noXP = true
+				break()
+			}
+		}
+	}
+# Increment Message count and XP
+	@leaderboard['members'][@userID]['msg_count'] = @leaderboard['members'][@userID]['msg_count'] + 1
+	@leaderboard['members'][@userID]['last_msg'] = time()
+	if(@noXP == false) {
+		@newxp = rand(@config['LB_XP_Per_Message'][0], @config['LB_XP_Per_Message'][1])
+		@xptimer[@userID] = time()
+		@leaderboard['members'][@userID]['xp'] = @leaderboard['members'][@userID]['xp'] + @newxp
+	}
+	# noxp true time not counted, so next immediate message (if eligible) would count and update timer
+
+# If current XP is greater than the max for the next level:
+#Levelxp: (key: xp to be at this level). to get level up need to check next level
+/*
+console('max lvlxp for level '.@leaderboard['members'][@userID]['level'].': '.@levelxp[@leaderboard['members'][@userID]['level']])
+console('max lvlxp for next level '.(@leaderboard['members'][@userID]['level'] + 1).': '.@levelxp[(@leaderboard['members'][@userID]['level'] + 1)])
+console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
+*/
+
+#maxlevel
+	if(!array_index_exists(@levelxp, (@leaderboard['members'][@userID]['level'] + 1))) {
+		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> is at the maximum level '.@leaderboard['members'][@userID]['level'].'!', false)
+		export('DiscordBot.Leaderboard', @leaderboard)
+		return(false)
+	}
+#Level UP
+	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level'] + 1] && @noXP == false) {
+		@newrankname = ''
+		@currentrank = ''
+		@oldlevel = @leaderboard['members'][@userID]['level']
+		@newlevel = @leaderboard['members'][@userID]['level'] + 1
+		if(@leaderboard['members'][@userID]['xp'] > @levelxp[@newlevel + 1]) {
+			#multiple level up, skip to last	
+			foreach(@i: @lvl in @levelxp) {
+				if(@leaderboard['members'][@userID]['xp'] < @lvl) {
+					@newlevel = @i - 1
+					@oldlevel = '    '.@oldlevel
+					break()
+				}
+			}
+		}				
+		@leaderboard['members'][@userID]['level'] = @newlevel
+		@ranknums = array_sort(array_keys(@config['LB_Role_Rewards']), 'NUMERIC')
+		# console(@ranknums)
+		@oldroles = array_sort(array_normalize(@userRoles), 'NUMERIC')
+	#Find rank
+		@rankup = false
+		foreach(@i: @rank in @ranknums) {
+			@lastrank = 0
+		# console(@i)
+			if(@i == 0) {
+				@lastrank = 0
+			} else {
+				@lastrank = @ranknums[(@i - 1)]
+			}
+			if(@newlevel == @rank) {
+				@currentrank = @config['LB_Role_Rewards'][@rank]
+				@newrankname = @config['LB_Role_Rewards'][@rank]['RoleName']
+				@rankup = true
+				break()
+			}
+			#In Between two ranks
+			if(@newlevel < @rank && @newlevel > @lastrank) {
+				#No level ups yet
+				if(@lastrank == 0) { 
+					break()
+				} else {
+					@currentrank = @config['LB_Role_Rewards'][@lastrank]
+					break()
+				}
+			}
+			#Has highest rank
+			if(array_size(@ranknums) - 1 == @i && @newlevel > @rank) {
+				@currentrank = @config['LB_Role_Rewards'][@rank]
+				break()
+			}
+		}
+		@userRoles = array_normalize(@userRoles)
+		@saveoldroles = import('DiscordBot.debug.roles.Leaderboard.undo', get_value('DiscordBot.debug.roles.Leaderboard.undo'))
+		if(!is_array(@saveoldroles)) { @saveoldroles = array() }
+		array_set(@saveoldroles, @discord['userid'], @userRoles)
+		export('DiscordBot.debug.roles.Leaderboard.undo', @saveoldroles)
+		
+	# Remove old role rewards
+		if(@config['LB_Stack_Role_Rewards'] == false) {
+			foreach(@role in @config['LB_Role_Rewards']) {
+				array_remove_values(@userRoles, @role['RoleID'])
+			}
+		}
+	# Place and Set new role
+		# console(@currentrank)
+		if(@currentrank != '') {
+			array_push(@userRoles, @currentrank['RoleID'])
+			#Set New roles
+			try { 
+				discord_member_set_roles(@userID, @userRoles, 'Role Rewards: Awarded New Rank '.@currentrank['RoleName'])
+			} catch(Exception @ex) {
+				return(false)
+			}
+		}
+/*
+		console(@currentrank)
+		console(@oldroles)
+		console(@userRoles)		
+*/		
+
+# Message out
+		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Level_Up_Message'])
+		if(@newrankname == '') {
+			@discordMsg = reg_replace('%Level%', 'Level '.@leaderboard['members'][@userID]['level'].'!', @discordMsg)
+		} else {
+			@discordMsg = reg_replace('%Level%', @newrankname.'!  ('.@leaderboard['members'][@userID]['level'].')', @discordMsg)
+		}
+		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> '.color(3).@oldlevel.color('r').' -> '.color(10).@leaderboard['members'][@userID]['level'].' '.color(6).@newrankname, false)
+		@sendMsg = true
+		@sendMsgtoLog = false
+		if(@config['LB_Level_Up_Announce_OnlyReward'] == true) {
+			if(@rankup != true) {
+				@sendMsg = false
+			}
+		} 
+		if(@newlevel < @config['LB_Level_Up_Announce_Start'] || @newlevel > @config['LB_Level_Up_Announce_End']) {
+			@sendMsgtoLog = true
+		}
+		if(@config['LB_Level_Up_Announce'] == false) {
+			@sendMsg = false
+		}
+		if(@sendMsg == true) {
+			@type = 'broadcast'
+			@sendchannel = @discord['channel']
+			switch(string(@config['LB_Level_Up_Announce'])) {
+			case 'log':
+				@sendchannel = @config['Log_Channel'] 
+			case 'dm':
+				@type = 'dm'
+				@sendchannel = @discord['userid']
+			}
+			if(@sendMsgtoLog == true) { @sendchannel = @config['Log_Channel'] @type = 'broadcast' }
+			_send_discord_message(@discordMsg, 'confirm', @sendchannel, @type)
+		}
+	}
+#Save edits
+	@leaderboard['lastedit'] = time()
+	export('DiscordBot.Leaderboard', @leaderboard)
+	export('DiscordBot.Leaderboard.xptimer', @xptimer)
+	return(true)
+}
 proc _discordBot_lb_levelXP(@args) {
 	@levelxp = array(0, 100)
 	array_resize(@levelxp, 200)
@@ -496,6 +742,7 @@ proc _discordBot_lb_levelXP(@args) {
 	}
 	export('DiscordBot.Leaderboard.levelXP', @levelxp)
 	_write_file(import('DiscordBot.logs.dir').'/Leaderboard_LevelXP.json', json_encode(@levelxp), 'CREATE')
+	return(@levelxp)
 }
 
 #Handle commands from Discord Users

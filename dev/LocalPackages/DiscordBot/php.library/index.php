@@ -1,6 +1,9 @@
 <html>
 <?php
 //Version 0.9
+// ------------------------------
+	$secretKey = "123"
+// -----------------------
 	$sortType = 'level';
 	if(array_key_exists('sort', $_GET)) {
 		$sortType = $_GET['sort'];
@@ -9,24 +12,31 @@
 	if(array_key_exists('limit', $_GET)) {
 		$limit = $_GET['limit'];
 	}
+
 	function doSort($a,$b) {
 		global $sortType;
 		return $a->{$sortType} < $b->{$sortType};
 	};
 	 
-    $json = file_get_contents("{$secretKey}/Leaderboard.json");
+	$json = file_get_contents("{$secretKey}/Leaderboard.json");
 	$boardType = 'Leaderboard';
 	if(array_key_exists('removed', $_GET)) {
 		$json = file_get_contents("{$secretKey}/Leaderboard_Removed.json");
 		$boardType = 'Leaderboard (Removed Users)';
+	// array_set(@oldlb, @event['userid'], array('removed': time(), 'data': @leaderboard['members'][@event['userid']]))
 	}
 	$xpjson = file_get_contents("Leaderboard_LevelXP.json");
-    $levelxp = json_decode($xpjson);
+	$levelxp = json_decode($xpjson);
 	$data = get_object_vars(json_decode($json));
 	$guild = get_object_vars($data['guild']);
-    $members = get_object_vars($data['members']);
+	$members = get_object_vars($data['members']);
+	// echo is_array($members)? 'Array' : 'not an Array';
+	//echo var_dump($members);
 	$entrycount = 0;
-     uasort($members, "doSort");
+	// $totalcount = array_keys($members);
+	//  asort($members, SORT_ASC);
+
+	uasort($members, "doSort");
 ?>
 	<head>
 	<title><?php echo $data['LB_Guild_Name']; ?> <?php echo $boardType ?></title>

@@ -4,6 +4,7 @@ Bot_ID: 1000000
 Bot_Name: bot
 Log_Channel: bot-logs
 Use_Second_Server: false
+Showcase_Channel: 123235346
 # Accepted types: PLAYING, STREAMING, LISTENING, WATCHING, CUSTOM_STATUS, or COMPETING
 Activity_Type: PLAYING
 Activity_Message: Minecraft
@@ -53,6 +54,7 @@ Default_Channel: minecraft
 #
 #
 #Commands
+CMD_Enable: true
 #php CMD_Command_Prefix: "^([?!@#%*/.$,=]+)?[Cc][Hh](?(1)(?:(?1)|[\\s]?)|(?1)+)"
 CMD_Command_Prefix: ^(?:[?!@#%*/.$,=]+[Cc][Hh](?!$)[?!@#%*/.$,=]*|[Cc][Hh][?!@#%*/.$,=]+)
 CMD_Channels_Receive:
@@ -134,6 +136,7 @@ Welcome_DM_Message: "Welcome to *our server*! \n\n We would like to get to know 
 #
 #
 # Leaderboards
+LB_Enable: true
 LB_Guild_Name: test123
 LB_XP_Per_Message:
 - 15

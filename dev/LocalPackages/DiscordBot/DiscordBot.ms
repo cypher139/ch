@@ -12,9 +12,10 @@
 # Command Line Prerequisites
 if(in_cmdline_mode()) {
 	@pathparent = reg_replace('[^/]+$', '', pwd())
-	# Libraries
+	# Shared Libraries
     if(array_contains(ls(@pathparent), 'ScriptLibraries')) {
 		include(@pathparent.'/ScriptLibraries/UncaughtException.ms')
+		include(@pathparent.'/ScriptLibraries/Functions.library/Database.ms')
         include(@pathparent.'/ScriptLibraries/auto_include.ms')
     }
 	# External Scripts
@@ -30,7 +31,6 @@ if(in_cmdline_mode()) {
 	}
 }
 
-		
 # Startup Discord Functions
 if(function_exists('discord_connect')) {
 # Databases Startup
@@ -44,28 +44,8 @@ if(function_exists('discord_connect')) {
 # Connect
 	try {
 		discord_connect(@return8762['Profile_Name'], closure(){
+			_db_setup(@return8762);
 			_db_mc_broadcast(@connectmsg);
-			if(get_value('DiscordBot.Console.receive') == true) {
-				export('DiscordBot.Console.receive', true)
-				console('[Chat - Discord] Console receives Chat from Discord Users.', false)
-			} else {
-				export('DiscordBot.Console.receive', false)
-			}
-# Set Bot Activity
-			@acttypes8901 = reg_split('of\\s|[,.]\\s(?:or\\s)*', reflect_docs('discord_set_activity', 'description'))[2..]
-			foreach(@k: @v in @acttypes8901) {
-				if(to_upper(@v) != @v) { array_remove(@acttypes8901, @k) }
-			}
-			if(array_contains(@acttypes8901, to_upper(@return8762['Activity_Type']))) {
-				try {
-					discord_set_activity(to_upper(@return8762['Activity_Type']), string(@return8762['Activity_Message']));
-				} catch(Exception @ex) {
-					_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color('r').@ex['message'])
-					console(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color(12).@ex['classType'].': '.@ex['message'], false)
-				}
-			} else {
-				_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Selected Bot Activity Type is not supported!')
-			}	
 		});
 	} catch(Exception @ex) {
 		console(color(4).'['.color(9).'Server'.color(4).'] '.color(4).'NOT Connected to Discord: '.color('r').@ex['message'])

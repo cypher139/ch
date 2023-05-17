@@ -1,5 +1,6 @@
-#version 1.0-tmc
-#requires CHDiscord build #70 or higher
+#version 1.1-tmc
+# Requires CHDiscord build #81 or higher 
+# - 70 - message callback, 81 - set role reason
 
 #Welcome DM and Message for new Discord Server Members
 bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event) {
@@ -43,12 +44,12 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 		if(!is_array(@membersroles)) { @membersroles = array() }
 		if(array_index_exists(@membersroles, @event['userid']) && @config['Welcome_Roles_Restore'] == true) {
 			array_push_all(@currentroles, @membersroles[@event['userid']])
-			discord_member_set_roles(@event['userid'], @currentroles)
+			discord_member_set_roles(@event['userid'], @currentroles, 'Previous Member Roles Restored')
 			console('[Discord] '.color(2).'Previous roles restored.', false)
 		} else {
 			if(is_array(@config['Welcome_Roles'])) {
 				array_push_all(@currentroles, @config['Welcome_Roles'])
-				discord_member_set_roles(@event['userid'], @currentroles)
+				discord_member_set_roles(@event['userid'], @currentroles, 'Add Welcome Roles')
 			}
 		}
 #Welcome User Messages

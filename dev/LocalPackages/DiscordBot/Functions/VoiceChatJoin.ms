@@ -183,14 +183,11 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		if(array_size(@totalVCUsers) < 2) {
 			@lastmsglone = '.alone'
 		}			
-		@lastmsgs = get_value('DiscordBot.last.VC'.@lastmsglone)
+		@lastmsgs = get_value('DiscordBot.VC.'.@discord['channelid'].@lastmsglone)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @stats, 0)
-		if(array_index_exists(@lastmsgs, 20)) {
-			_write_file(import('DiscordBot.logs.dir').'/Discord-VC-Stats'.@lastmsglone.'.txt', '\n'.@lastmsgs[20], 'append')
-			array_remove(@lastmsgs, 20)
-		}
-		store_value('DiscordBot.last.VC'.@lastmsglone, @lastmsgs)
+		_write_file(import('DiscordBot.logs.dir').'/Discord-VC-Stats'.@lastmsglone.'--'.@discord['channelid'].'.json', json_encode(@lastmsgs), 'overwrite')
+		store_value('DiscordBot.VC.'.@discord['channelid'].@lastmsglone, @lastmsgs)
 		clear_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')		
 	} else {
 		store_value('DiscordBot.VC.'.@discord['channelid'].'.users.current', @currentVCUsers)
