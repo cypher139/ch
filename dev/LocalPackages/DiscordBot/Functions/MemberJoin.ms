@@ -29,6 +29,8 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 			console(@ex)
 			die()
 		}
+#Setup list of server members for reference in mentions
+		_discordBot_dc_add_member(@event);
 #Welcome User DM
 		if(@config['Welcome_Send_DM'] == true) {
 			@welcomeDMMsg = reg_replace('%WelcomeChannel%', '<#'.@config['Welcome_Text_Channel_ID'].'>', @config['Welcome_DM_Message'])

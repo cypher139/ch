@@ -8,13 +8,13 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	@config = import('DiscordBot.config.Discord')
 	array_set(@discord, 'time', time())
 #Setup list of server members for reference in mentions
-	_discordBot_dc_add_member(@discord);
+	# _discordBot_dc_add_member(@discord);
 #Message Formatting
 	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 		@discord['message'] = '<Sent a GIF>'
 	}
 	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
-		if(@discord['message'] == '') {			
+		if(@discord['message'] == '') {	
 			@discord['message'] = '<Sent a file> '
 		} else {
 			@discord['message'] = @discord['message'].'\n <Also attached file:> '
@@ -29,15 +29,21 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 #Save Recent Messages for reference	
 	# if(reg_count(@config['CMD_Command_Prefix'], @discord['message']) == 0) {
 	if(is_consumed() == false) {
-		@lastmsgs = import('DiscordBot.last.message')
+		@loadBot = ''
+		if(@discord['bot'] == true) {
+			@loadBot = '.bot'
+		}
+		@lastmsgs = import('DiscordBot.last.message'.@loadBot)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
 		if(array_index_exists(@lastmsgs, 50)) { array_remove(@lastmsgs, 50) }
-		export('DiscordBot.last.message', @lastmsgs)
+		export('DiscordBot.last.message'.@loadBot, @lastmsgs)
 	}	
 	
 #Send data to leaderboard
-	_discordBot_lb_process_message(@discord, is_consumed())
+	if(@discord['bot'] == false) {
+		_discordBot_lb_process_message(@discord, is_consumed())
+	}
 	#proc, and noxp status
 	
 #Send message to Minecraft players and/or console
@@ -69,6 +75,9 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		}
 	#Send			
 		@sendmsg = color(@usernamecolor).'['.@discord['username'].'] '.color(7).@discord['message']
+		if(@discord['bot'] == true) {
+			@sendmsg = color(@usernamecolor).'[Bot]'.@sendmsg
+		}
 		@sendto = 'players'
 		if(import('DiscordBot.Console.receive') == true) {
 			@sendto = ''

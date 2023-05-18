@@ -369,7 +369,7 @@ proc _db_setup(@config, @args) {
 	}
 # Setup Leaderboard
 	if(@config['LB_Enable'] == true) {
-		if(import('DiscordBot.Leaderboard.last.save') == '') {
+		if(import('DiscordBot.Leaderboard.last.save') == null) {
 			export('DiscordBot.Leaderboard.last.save', time());
 		}
 		if(!is_array(import('DiscordBot.Leaderboard'))) {
@@ -475,9 +475,14 @@ proc _discordBot_WelcomeRolesFinder(@option) {
 proc _discordBot_lb_update_database(@args) {
 #check for import leaderboard, and import (database lastedittime)
 	@config = import('DiscordBot.config.Discord')
+	if(@config['LB_Enable'] != true) {
+		# console('noenable')
+		return(false)
+	}
 	@leaderboard = import('DiscordBot.Leaderboard', array('lastedit': 0));
-	@lastsave = import('DiscordBot.Leaderboard.last.save', time());
-	if(@leaderboard['lastedit'] > @lastsave && @config['LB_Enable'] == true) {
+	@lastsave = import('DiscordBot.Leaderboard.last.save');
+	if(@lastsave == null) { @lastsave = time() }
+	if(@leaderboard['lastedit'] > @lastsave) {
 		# console('[Discord] Saved Leaderboard Database.', false)
 		store_value('DiscordBot.Leaderboard', @leaderboard)
 		@saveoldroles = import('DiscordBot.debug.roles.Leaderboard.undo')
@@ -486,8 +491,9 @@ proc _discordBot_lb_update_database(@args) {
 		}
 		export('DiscordBot.Leaderboard.last.save', time())
 		_write_file(import('DiscordBot.logs.dir').'/Leaderboard_'.reg_replace('\\s', '_', @leaderboard['guild']['name']).'.json', json_encode(@leaderboard), 'OVERWRITE')
+		return(true)
 	}
-	# } else { console('nosave') }
+	# } else { console('nosave') return(false) }
 }
 
 proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
@@ -502,7 +508,7 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	try {
 		@mi = discord_member_info(@discord['userid'])
 	} catch(NotFoundException @ex) {
-		console('[DiscordBot] Member Info not found for user '.@discord['username'].', exiting', false)
+		console('[DiscordBot] Member Info not found for user '.@discord['username'].' <@'.@discord['userid'].'>, exiting', false)
 		return(false)
 	}
 	@config = import('DiscordBot.config.Discord')
