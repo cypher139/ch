@@ -80,6 +80,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	@serverConfig = import('Chat.config.Server')
+	@pinglevel = @serverConfig['Ping_Message_Level']
 	# Repeated pings get special message
 	@ipnumbers = reg_replace('\\.*:*', '', @ping['ip'])
 	@iplastping = import('Chat.ping.IP.'.@ipnumbers, (time() - 10000))
@@ -107,18 +108,16 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			}
 			@players = array_implode(@ipdata[@ipnumbers], ', ')
 			@msgdisplay = ' ('.color(3).@players.color(7).')'
-		} else {
-			if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { die() }
 		}
-	} else {
-		if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { die() }
 	}
+	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { @pinglevel = 1 }
+
 	# Admin Ping Messages:
 	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from '.@ping['ip'].@msgdisplay
-	if(@serverConfig['Ping_Message_Discord'] == true) {
+	if(@serverConfig['Ping_Message_Discord'] == true && @pinglevel > 1) {
 		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@adminPingMessage, 'none', '', 'admin') }
 	}
-	if(@serverConfig['Ping_Message_Console'] == true) {
+	if(@serverConfig['Ping_Message_Console'] == true && @pinglevel > 0) {
 		console(@adminPingMessage, false)
 	}
 }

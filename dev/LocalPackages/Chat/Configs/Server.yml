@@ -23,6 +23,8 @@ MOTD_Rainbow_Type: "ps2"
 # Send Ping Notification (includes IP and all players IP has connected with) to:
 Ping_Message_Console: true
 Ping_Message_Discord: true
+# Level of Pings: 0 for none, 1 for Console only, 2 for Console and Discord
+Ping_Message_Level: 2
 # This MOTD is given if the last ping was up to 7 seconds ago.
 Repeated_Ping_Message: "Stop pinging me, and start playing on this server!"
 # These IPs should bypass ping message, example localhost.
