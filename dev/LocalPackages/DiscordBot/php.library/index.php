@@ -39,13 +39,13 @@
 	uasort($members, "doSort");
 ?>
 	<head>
-	<title><?php echo $data['LB_Guild_Name']; ?> <?php echo $boardType ?></title>
+	<title><?php echo $data['Guild_Name']; ?> <?php echo $boardType ?></title>
 	<link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
 	<link rel="stylesheet" type="text/css" href="../assets/theme.css">
 </head>
 
 <body>
-	<img src="../assets/TMClogo.png" />&nbsp;<b><?php echo $data['LB_Guild_Name']; ?> <?php echo $boardType ?></b>&nbsp;&nbsp;&nbsp;&nbsp;<a href="../index.html">Main Site</a>
+	<img src="../assets/TMClogo.png" />&nbsp;<b><?php echo $data['Guild_Name']; ?> <?php echo $boardType ?></b>&nbsp;&nbsp;&nbsp;&nbsp;<a href="../index.html">Main Site</a>
 	<hr />
 	<?php echo $boardType ?>&nbsp;&nbsp;&nbsp;&nbsp;<em>Sorted by <?php echo $sortType ?> </em><br />
 <table>

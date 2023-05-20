@@ -89,6 +89,6 @@ bind('discord_message_received', array('id': 'DiscordBot.Cross-Server'), null, @
 		
 		
 		
-		_send_discord_message(@sendarray, 'cross', @channel)
+		_discordBot_send_message(@sendarray, 'cross', @channel)
 	}
 }

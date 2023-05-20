@@ -13,7 +13,7 @@ if(array_contains(@args, 'help')) {
 proc _convert_json_data(@raw) {
 	@json = json_decode(@raw)
 	@config = import('DiscordBot.config.Discord')
-	@newLeaderboard = array('LB_Guild_Name': @config['LB_Guild_Name'], 'lastedit': time(), 'members': array(), 'role_rewards': '', 'guild': @json['guild'], 'LB_XP_Per_Message': @json['xp_per_message'], 'LB_XP_Gain_Rate': @json['xp_rate'])
+	@newLeaderboard = array('Guild_Name': @config['LB_Options']['Guild_Name'], 'lastedit': time(), 'members': array(), 'options': '', 'guild': @json['guild'])
 	foreach(@i: @user in @json['players']) {
 		@userid = @json['players'][@i]['id']
 		array_set(@newLeaderboard['members'], @userid, @user)
@@ -27,11 +27,11 @@ proc _convert_json_data(@raw) {
 		array_remove(@newLeaderboard['members'][@userid], 'message_count')
 		array_set(@newLeaderboard['members'][@userid], 'last_msg', 0)
 	}
-	@rr = array('LB_XP_Per_Message': @json['xp_per_message'], 'LB_XP_Gain_Rate': @json['xp_rate'], 'LB_Role_Rewards': array())
+	@rr = array('XP_Per_Message': @json['xp_per_message'], 'XP_Gain_Rate': @json['xp_rate'], 'Role_Rewards': array())
 	foreach(@j: @role in @json['role_rewards']) {
-		array_set(@rr['LB_Role_Rewards'], integer(@role['rank']), array('RoleID': integer(@role['role']['id']), 'RoleName': @role['role']['name']))
+		array_set(@rr['Role_Rewards'], integer(@role['rank']), array('RoleID': integer(@role['role']['id']), 'RoleName': @role['role']['name']))
 	}
-	@newLeaderboard['role_rewards'] = @rr
+	@newLeaderboard['options'] = @rr
 	#avatar:	https://cdn.discordapp.com/avatars/<USERID>/<AVATARID under {avatar: 123}>.webp?size=512
 	msg('Leaderboard size: '.array_size(@newLeaderboard['members'])) 
 	export('DiscordBot.Leaderboard', @newLeaderboard);

@@ -112,7 +112,6 @@ VC_Options:
 # Discord New Member welcome
 # Welcome Message channel. Case sensitive!
 # This channel will have the Welcome message placed here.
-# Note: CHDiscord does not support threads or other special channel types at this time.
 Welcome_Text_Channel_Name: general
 # Voice Chat text Channel ID. (Right click channel, Copy ID)
 Welcome_Text_Channel_ID: 123456789
@@ -137,43 +136,44 @@ Welcome_DM_Message: "Welcome to *our server*! \n\n We would like to get to know 
 #
 # Leaderboards
 LB_Enable: true
-LB_Guild_Name: test123
-LB_XP_Per_Message:
-- 15
-- 25
-LB_XP_Gain_Rate: 1
-LB_Role_Rewards:
-  1:
-    RoleID: 123
-    RoleName: Newbie
-  10:
-    RoleID: 234
-    RoleName: "Active Level 1"
-  20:
-    RoleID: 345
-    RoleName: "Active Level 2"
-  30:
-    RoleID: 456
-    RoleName: "Active Level 3"
-  50:
-    RoleID: 567
-    RoleName: "Most Active"
-  5:
-    RoleID: 678
-    RoleName: Member
-LB_Stack_Role_Rewards: false
-LB_Remove_On_Leave: true
-LB_Level_Up_Message: "%UserID% just leveled up to %Level%"
+LB_Options:
+  Guild_Name: test123
+  XP_Per_Message:
+  - 15
+  - 25
+  XP_Gain_Rate: 1
+  Role_Rewards:
+    1:
+      RoleID: 123
+      RoleName: Newbie
+    10:
+      RoleID: 234
+      RoleName: "Active Level 1"
+    20:
+      RoleID: 345
+      RoleName: "Active Level 2"
+    30:
+      RoleID: 456
+      RoleName: "Active Level 3"
+    50:
+      RoleID: 567
+      RoleName: "Most Active"
+    5:
+      RoleID: 678
+      RoleName: Member
+  Stack_Role_Rewards: false
+  Remove_On_Leave: true
+  Level_Up_Message: "%UserID% just leveled up to %Level%"
 # Set to true for current channel, false to disable, log to send to log channel, dm to dm user instead
-LB_Level_Up_Announce: true
+  Level_Up_Announce: true
 # Start annoucing when level reaches this start threshold
-LB_Level_Up_Announce_Start: 0
-LB_Level_Up_Announce_End: 50
+  Level_Up_Announce_Start: 0
+  Level_Up_Announce_End: 50
 #Only announce Level up if includes a Role Rewards Rank change
-LB_Level_Up_Announce_OnlyReward: true
-LB_NoXP_Channels:
-- 'botspam'
-- 'join-log'
-LB_NoXP_RoleID:
-- 123
-- 456
+  Level_Up_Announce_OnlyReward: true
+  NoXP_Channels:
+  - 'botspam'
+  - 'join-log'
+  NoXP_RoleID:
+  - 123
+  - 456

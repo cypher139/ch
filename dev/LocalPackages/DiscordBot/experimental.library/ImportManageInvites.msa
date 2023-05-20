@@ -1,0 +1,31 @@
+#version 0.7-tmc
+admin:/importmi [$serverid=] [$] = >>>
+@name = 'Discord'
+@id = $serverid
+@args = parse_args($)
+@config = import('DiscordBot.config.Discord')
+if(array_contains(@args, 'help')) {
+	msg('This imports the server invite data, for use with a CH based invite log system.')
+	die()
+}
+@currentinvites = import('DiscordBot.debug.invites.importmi')
+if(@currentinvites == null) {
+	discord_retrieve_invites(closure(@ex) { 
+		export('DiscordBot.debug.invites.importmi', @ex)
+		msg('Gathering active invites now, restarting command')
+		call_alias('/importmi '.@id.' '.$)
+	});
+	die()
+}
+
+# msg(@currentinvites)
+
+@mibotdata = json_decode(read(import('DiscordBot.logs.dir').'/response_mi.json'))['data']
+msg(@mibotdata)
+if(@mibotdata[0]['guildID'] != @id) {
+	die('Guild given to command does not match guild in bot data')
+}
+
+
+
+<<<

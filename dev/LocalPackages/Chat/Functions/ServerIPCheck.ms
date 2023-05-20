@@ -18,8 +18,8 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 			}
 			@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'`'.@login['player'].'` tried to connect with IP '.@login['ip'].'; however '.@serverConfig['Concurrent_Accs_IP'].' accounts are already connected using the same IP address: '.@players
 			if(@serverConfig['Ping_Message_Discord'] == true) { 
-				if(is_proc('_send_discord_message')) {
-					_send_discord_message(@adminPingMessage, 'none', '', 'admin')
+				if(is_proc('_discordBot_send_message')) {
+					_discordBot_send_message(@adminPingMessage, 'none', '', 'admin')
 				}
 			}
 			if(@serverConfig['Ping_Message_Console'] == true) { console(@adminPingMessage, false) }
@@ -37,8 +37,8 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 						modify_event('result', 'KICK_OTHER')
 						@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'IP '.@login['ip'].' tried to connect; this server does not allow more than '.@serverConfig['Allowed_Account_Amount'].' accounts using the same IP address. (Account names: '.color(3).@players.')'
 						if(@serverConfig['Ping_Message_Discord'] == true) { 
-							if(is_proc('_send_discord_message')) {
-								_send_discord_message(@adminPingMessage, 'none', '', 'admin')
+							if(is_proc('_discordBot_send_message')) {
+								_discordBot_send_message(@adminPingMessage, 'none', '', 'admin')
 							}
 						}
 						if(@serverConfig['Ping_Message_Console'] == true) { console(@adminPingMessage, false) }

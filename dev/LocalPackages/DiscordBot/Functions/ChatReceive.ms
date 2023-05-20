@@ -7,8 +7,6 @@ set_interval(600000, 100000, closure(){ _discordBot_lb_update_database() });
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
 	@config = import('DiscordBot.config.Discord')
 	array_set(@discord, 'time', time())
-#Setup list of server members for reference in mentions
-	# _discordBot_dc_add_member(@discord);
 #Message Formatting
 	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 		@discord['message'] = '<Sent a GIF>'

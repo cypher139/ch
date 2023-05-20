@@ -25,7 +25,7 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 	}
 	# Final Channel check: If not in allowed list, switch channel to default
 	if(!array_contains(@config['Channels_Send'], @channel)) { @channel = @config['Default_Channel'] }
-	_send_discord_message(@sendmsg, player(), @channel)
+	_discordBot_send_message(@sendmsg, player(), @channel)
 }
 
 bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), null, @death) {
@@ -68,9 +68,9 @@ bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), 
 			)
 			@pvpmsg = array_get_rand(@pvpmsg)
 		}
-		_send_discord_message(@dc.'\n'.':put_litter_in_its_place: '.@pvpmsg, 'death')
+		_discordBot_send_message(@dc.'\n'.':put_litter_in_its_place: '.@pvpmsg, 'death')
 	} else {
-		_send_discord_message(@dc.@death['death_message'], 'death')
+		_discordBot_send_message(@dc.@death['death_message'], 'death')
 	}
 }
 # :people_wrestling: :put_litter_in_its_place: 
@@ -95,5 +95,5 @@ bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MO
 		# remove channel mention from message content	
 		@sendmsg = reg_split('^(#+[a-zA-Z0-9-_]{1,})', @sendmsg)[1]
 	}
-	_send_discord_message(@sendmsg, 'Server', @channel)
+	_discordBot_send_message(@sendmsg, 'Server', @channel)
 }	

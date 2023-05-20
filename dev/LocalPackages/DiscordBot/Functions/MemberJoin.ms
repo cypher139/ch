@@ -104,8 +104,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) 
 	@leaderboard = import('DiscordBot.Leaderboard')
 	if(is_array(@leaderboard)) {
 		if(array_index_exists(@leaderboard, 'members', @event['userid'])) { 
-			if(@config['LB_Remove_On_Leave'] == true) { @lbremove = 1 } else { @lbremove = 0 }
-			if(@leaderboard['members'][@event['userid']]['level'] < 6) { @lbremove = 1 }			
+			if(@config['LB_Options']['Remove_On_Leave'] == true) { @lbremove = 1 }
+			if(@leaderboard['members'][@event['userid']]['level'] < 6) { @lbremove = 1 }		
 		}
 	}
 	

@@ -18,7 +18,7 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 		case null:
 		case '':
 			modify_event('join_message', null)
-			# if(is_proc('_send_discord_message')) { _send_discord_message('Admin '.@playerID['name'].' stealthily joined server', 'admin', '', 'join') }
+			# if(is_proc('_discordBot_send_message')) { _discordBot_send_message('Admin '.@playerID['name'].' stealthily joined server', 'admin', '', 'join') }
 			die()
 		case 'example':
 		case 'test':
@@ -37,7 +37,7 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 # Send Message	
 	modify_event('join_message', @joinmsg)
 # Send Join message to Discord as well (if enabled)
-	if(is_proc('_send_discord_message')) { _send_discord_message(@playerID['name'], 'none', '', 'join') }
+	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], 'none', '', 'join') }
 }
 
 bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
@@ -62,7 +62,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 		case null:
 		case '':
 			modify_event('message', null)
-			# if(is_proc('_send_discord_message')) { _send_discord_message('Admin '.@playerID['name'].' stealthily left server', 'admin', '', 'leave') }
+			# if(is_proc('_discordBot_send_message')) { _discordBot_send_message('Admin '.@playerID['name'].' stealthily left server', 'admin', '', 'leave') }
 			die()
 		case 'example':
 		case 'test':
@@ -75,7 +75,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	modify_event('message', @quitmsg)
 	export('Server.player.'.@playerID['id'].'.last.quit', time())
 # Send Quit message to Discord as well (if enabled)
-	if(is_proc('_send_discord_message')) { _send_discord_message(@playerID['name'], 'none', '', 'leave') }
+	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], 'none', '', 'leave') }
 }
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
@@ -116,7 +116,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	# Admin Ping Messages:
 	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from '.@ping['ip'].@msgdisplay
 	if(@serverConfig['Ping_Message_Discord'] == true) {
-		if(is_proc('_send_discord_message')) { _send_discord_message(@adminPingMessage, 'none', '', 'admin') }
+		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@adminPingMessage, 'none', '', 'admin') }
 	}
 	if(@serverConfig['Ping_Message_Console'] == true) {
 		console(@adminPingMessage, false)

@@ -43,7 +43,7 @@ proc _discordBot_cmd_codegen(@discord, @args) {
 					@prefix = 'Randomly Generated code: \n'
 					@channel = @discord['userid']
 				}
-				_send_discord_message(@prefix.@code, 'discord', @channel, @dmCode)
+				_discordBot_send_message(@prefix.@code, 'discord', @channel, @dmCode)
 			});
 			return(true)
 		} else { return('NoCmd') }
@@ -56,7 +56,7 @@ proc _discordBot_cmd_wrf(@discord, @cmdargs) {
 		@return = _discordBot_WelcomeRolesFinder(@cmdargs[0])
 		
 		if(reg_count('^[WwNn]', @cmdargs[0]) > 0) {
-			_send_discord_message(@return['amount'].' '.@return['msg'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(@return['amount'].' '.@return['msg'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 			@IDs = array_implode(@return['list'], '\n')
 			if(reg_count('[\\s\\S]{1,1970}(?:>|$)', @IDs) > 1) {
 				@split = array()
@@ -99,15 +99,15 @@ proc _discordBot_cmd_codegen_pl(@discord, @args) {
 				}
 				console(@results)
 				@service = array_get_rand(array('your mom', '<redacted>', 'FTP'))
-				_send_discord_message('Passwords for '.@service.': '.array_implode(@results, '\n --: '), 'discord', @discord['SendChannel'], @discord['UseDM'])
+				_discordBot_send_message('Passwords for '.@service.': '.array_implode(@results, '\n --: '), 'discord', @discord['SendChannel'], @discord['UseDM'])
 			});	
 		} else {
 			return('NoCmd')
 		}
 		case 3:
-			_send_discord_message(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
 		default:
-			_send_discord_message(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
 	}
 }
 
