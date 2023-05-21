@@ -5,7 +5,6 @@
 #Welcome DM and Message for new Discord Server Members
 bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event) {
 	@config = import('DiscordBot.config.Discord')
-	if(@config['Welcome_Text_Channel_Name'] == '' || @config['Welcome_Text_Channel_ID'] == '') { die() }
 # Restore leaderboard entry	
 	@leaderboard = import('DiscordBot.Leaderboard')
 	@oldlb = get_value('DiscordBot.members.leaderboard.removed')
@@ -42,10 +41,10 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 		}
 # If new member: Add Delineator roles, or roles new users need to have to access server
 # If previous member: Restore old roles.
-		@membersroles = get_value('DiscordBot.members.roles')   
-		if(!is_array(@membersroles)) { @membersroles = array() }
-		if(array_index_exists(@membersroles, @event['userid']) && @config['Welcome_Roles_Restore'] == true) {
-			array_push_all(@currentroles, @membersroles[@event['userid']])
+		@membersFR = get_value('DiscordBot.members.former.roles')   
+		if(!is_array(@membersFR)) { @membersFR = array() }
+		if(array_index_exists(@membersFR, @event['userid']) && @config['Welcome_Roles_Restore'] == true) {
+			array_push_all(@currentroles, @membersFR[@event['userid']])
 			discord_member_set_roles(@event['userid'], @currentroles, 'Previous Member Roles Restored')
 			console('[Discord] '.color(2).'Previous roles restored.', false)
 		} else {
@@ -59,7 +58,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @event)
 		discord_broadcast(@config['Welcome_Text_Channel_Name'], array('content': @welcomeMsg), closure(@ex){
 			@msgids = get_value('DiscordBot.Welcome.msg.IDs')
 			if(!is_array(@msgids)) { @msgids = array() }
-			array_set(@msgids, @event['userid'], array('time': time(), 'id': @ex))
+			array_set(@msgids, @event['userid'], array('time': time(), 'id': @ex, 'user': @event['username']))
 			store_value('DiscordBot.Welcome.msg.IDs', @msgids)
 		});	
 #Console Log
@@ -85,20 +84,31 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) 
 	@config = import('DiscordBot.config.Discord')
 
 	# Remove user entry from internal storages
-	@membernames = import('DiscordBot.members.names')
-	if(is_array(@membernames)) { 
-		if(array_contains(array_keys(@membernames), @event['username'])) {
-			array_remove(@membernames, @event['username'])
-			store_value('DiscordBot.members.names', @membernames)
-			export('DiscordBot.members.names', @membernames)
+	@membersRoles = get_value('DiscordBot.members.roles')
+	if(!is_array(@membersRoles)) { @membersRoles = array() }
+	@membersFR = get_value('DiscordBot.members.former.roles')
+	if(!is_array(@membersFR)) { @membersFR = array() }
+	if(array_contains(array_keys(@membersRoles), @event['userid'])) {
+		array_set(@membersFR, @event['userid'], array('removed': time(), 'data': @membersRoles[@event['userid']]))
+		array_remove(@membersRoles, @event['userid'])
+		store_value('DiscordBot.members.roles', @membersRoles)
+		store_value('DiscordBot.members.former.roles', @membersFR)
+	}
+	
+	@membersNames = import('DiscordBot.members.names')
+	if(is_array(@membersNames)) { 
+		if(array_contains(array_keys(@membersNames), @event['username'])) {
+			array_remove(@membersNames, @event['username'])
+			store_value('DiscordBot.members.names', @membersNames)
+			export('DiscordBot.members.names', @membersNames)
 		}
 	}
-	@memberIDs = import('DiscordBot.members.ID')
-	if(is_array(@memberIDs)) { 
-		if(array_contains(@memberIDs, @event['userid'])) {
-			array_remove_values(@memberIDs, @event['userid'])
-			store_value('DiscordBot.members.ID', @memberIDs)
-			export('DiscordBot.members.ID', @memberIDs)
+	@membersID = import('DiscordBot.members.ID')
+	if(is_array(@membersID)) { 
+		if(array_contains(@membersID, @event['userid'])) {
+			array_remove_values(@membersID, @event['userid'])
+			store_value('DiscordBot.members.ID', @membersID)
+			export('DiscordBot.members.ID', @membersID)
 		}
 	}
 	@leaderboard = import('DiscordBot.Leaderboard')
@@ -111,6 +121,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) 
 	
 	# Remove Welcome message
 	@msgids = get_value('DiscordBot.Welcome.msg.IDs')
+	@rmmsgids = 0
 	if(!is_array(@msgids)) { @msgids = array() }
 	if(array_contains(array_keys(@msgids), @event['userid'])) {
 		if(time() < (@msgids[@event['userid']]['time'] + @config['Welcome_Message_Timeout'])) { 
@@ -126,8 +137,20 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @event) 
 				console('[Discord] Unable to remove Welcome Message! '.color('c').@ex['classType'].': '.@ex['message'], false)
 			}
 			array_remove(@msgids, @event['userid'])
-			store_value('DiscordBot.Welcome.msg.IDs', @msgids)
+			@rmmsgids++
 		}
+		#Database Maintenance: 
+		foreach(@k: @v in @msgids) {
+			if(time() > (@v['time'] + 1209600000)) {
+			# Join Date is past 2 weeks message removal limits, remove msgids and archive join time
+				@rmmsgids++
+				@user = ''
+				if(array_index_exists(@v, 'user')) { @user = ','.@v['user'] }
+				_write_file(import('DiscordBot.logs.dir').'/Archived-Join-Dates.csv', @v['time'].','.@k.@user.'\n', 'Append')
+				array_remove(@msgids, @k)
+			}
+		}
+		if(@rmmsgids != 0) { store_value('DiscordBot.Welcome.msg.IDs', @msgids) }
 	}
 	
 	if(@lbremove != 0) { 
