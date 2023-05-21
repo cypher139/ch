@@ -186,7 +186,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		@lastmsgs = get_value('DiscordBot.VC.'.@discord['channelid'].@lastmsglone)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @stats, 0)
-		_write_file(import('DiscordBot.logs.dir').'/Discord-VC-Stats'.@lastmsglone.'--'.@discord['channelid'].'.json', json_encode(@lastmsgs), 'overwrite')
+		_write_file(import('DiscordBot.logs.dir').'/VC-Stats'.@lastmsglone.'-'.@discord['channelid'].'.json', json_encode(@lastmsgs), 'overwrite')
 		store_value('DiscordBot.VC.'.@discord['channelid'].@lastmsglone, @lastmsgs)
 		clear_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')		
 	} else {

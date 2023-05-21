@@ -37,7 +37,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		} else { array_remove(@saveDM, 'attachments') }
 		array_remove(@saveDM, 'userid')
 		array_insert(@userDMs, @saveDM, 0)
-		_write_file(import('DiscordBot.logs.dir').'/Discord-DMs-User-'.@discord['userid'].'.json', json_encode(@userDMs), 'overwrite')
+		_write_file(import('DiscordBot.logs.dir').'/DMs/UserDMs-'.@discord['userid'].'.json', json_encode(@userDMs), 'overwrite')
 		store_value('DiscordBot.DMs.recent', @recentDMs)
 		store_value('DiscordBot.DMs.log.'.@discord['userid'], @userDMs)
 	#Message Display

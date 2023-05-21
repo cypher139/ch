@@ -14,6 +14,9 @@ if(in_cmdline_mode() == false) {
 
 proc _write_file(@path, @content, @mode, @option) {
 	if(@path == '' || @content == '') { return(false) }
+	@pathparent = reg_replace('[^/]+$', '', @path)
+	@pathlayout = reg_match('(.+)([\\/].+)([\\/].+)$', @path)
+	# 1 = root path, 2 = /parent, 3 = /filename or current dir
 	if(@mode == '') { @mode = 'default' }
 	@mode = to_upper(@mode)
 	@create = false
@@ -29,6 +32,15 @@ proc _write_file(@path, @content, @mode, @option) {
 		@mode = 'OVERWRITE'
 	}
 	if(extension_exists('CHFiles')) {
+		try {
+			if(!is_dir(@pathlayout[1].@pathlayout[2])) {
+				create_dir(@pathlayout[1].@pathlayout[2])
+			}
+		}
+		catch(Exception @ex) {
+			console('Create Parent Folder: '.@ex)
+			return(false)
+		}
 		try {
 			if(file_exists(@path)) {
 				if(@create == true) {
@@ -88,7 +100,7 @@ proc _write_file(@path, @content, @mode, @option) {
 	}
 }
 
-proc _hex_to_rgb(@num) {
+proc _hex_to_rgb(@num, @string = false) {
 	@num = reg_replace('#', '', @num)
 	if(length(@num) == 3) {
 		@num = reg_split('(?<=\\G.)', @num)
@@ -101,9 +113,48 @@ proc _hex_to_rgb(@num) {
 		throw('ms.lang.CastException', 'Unsupported Hex code given.')
 	}
 	@results = array('r': parse_int(@num[0], 16), 'g': parse_int(@num[1], 16), 'b': parse_int(@num[2], 16))
+	if(@string == true) { @results = @results['r'].', '.@results['g'].', '.@results['b'] }
 	return(@results)
 }
 
+proc _rgb_to_hex(@R, @G, @B, @prefix = '') {
+	if(is_array(@R)) {
+		if(array_size(@R) != 3) {
+			throw('ms.lang.CastException', 'Not enough array elements present.')
+		}
+		if(@G != null) { @prefix = @G }
+		@checkarray = array('r', 'g', 'b')
+		foreach(@k: @v in @R) {
+			if(is_associative(@R) && !array_contains(@checkarray, @k)) { throw('ms.lang.CastException', 'Unsupported array index given.') }
+			if(@v > 255) { throw('ms.lang.CastException', 'Unsupported RGB code given. ('.@k.')') }
+			switch(@k) {
+			case 0:
+			case 'r':
+				@R = @v
+			case 1:
+			case 'g':
+				@G = @v
+			case 2:
+			case 'b':
+				@B = @v
+			}
+		}
+	} else {
+		if(reg_count('\\D+', @R) > 0) {
+			@new = reg_split('\\D+', @R)
+			if(array_size(@new) != 3) {	throw('ms.lang.CastException', 'Not enough array elements present. (2)') }
+			@R = @new[0]
+			@G = @new[1]
+			@B = @new[2]
+		}
+		if(@R > 255 || @R == null) { throw('ms.lang.CastException', 'Unsupported RGB code given. (3)') }
+		if(@G > 255 || @G == null) { throw('ms.lang.CastException', 'Unsupported RGB code given. (4)') }
+		if(@B > 255 || @B == null) { throw('ms.lang.CastException', 'Unsupported RGB code given. (5)') }
+	}
+	@results = to_radix(@R, 16).to_radix(@G, 16).to_radix(@B, 16)
+	if(@prefix != '') { @results = @prefix.@results }
+	return(@results)
+}
 
 proc _array_string_contains(@array, @string, @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }

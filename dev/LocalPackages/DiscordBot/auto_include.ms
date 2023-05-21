@@ -698,6 +698,153 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 	export('DiscordBot.Leaderboard.xptimer', @xptimer)
 	return(true)
 }
+
+proc _discordBot_backup_members(@args) {
+	@config = import('DiscordBot.config.Discord')
+	@data = array(
+	'membersID': get_value('DiscordBot.members.ID'),
+	'membersNames': get_value('DiscordBot.members.names'),
+	'membersRoles': get_value('DiscordBot.members.roles'),
+	'membersInfo': get_value('DiscordBot.members.info'),
+	'membersWR': get_value('DiscordBot.members.roles.welcomeroles'),
+	'membersNoRoles': get_value('DiscordBot.members.roles.none'),
+	'rolesTotal': get_value('DiscordBot.roles.total'),
+	'rolesMembers': get_value('DiscordBot.roles.members'),
+	'Leaderboard': import('DiscordBot.Leaderboard')
+	)
+	@time = time();
+	foreach(@k: @v in @data) {
+		if(@v == '' || @v == null) { continue() }
+		_write_file(import('DiscordBot.logs.dir').'/Backup/'.simple_date('MM-dd-yy_HHmm_', @time).@k.'.json', json_encode(@v), 'CREATE')
+	}
+}
+
+proc _discordBot_update_members(@args) {
+	@debugstats = array('size': array(), 'nf': 0, 'total': 0, 'af': 0, 'norole': 0, 'wr': 0, 'fails': 0)
+	@membersID = discord_get_members()
+	@membersNames = array()
+	@membersRoles = array()
+	@membersInfo = array()
+	@membersWR = array()
+	@membersNoRoles = array()
+	@totalroles = array()
+	@rolesMembers = array()
+	@config = import('DiscordBot.config.Discord')
+	@leaderboard = import('DiscordBot.Leaderboard')
+	@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC')
+	/*
+	store_value('DiscordBot.previous.members.roles', get_value('DiscordBot.members.roles'))
+	store_value('DiscordBot.previous.roles.members', get_value('DiscordBot.roles.members'))
+	store_value('DiscordBot.previous.roles.total', get_value('DiscordBot.roles.total'))
+	*/
+	foreach(@index: @id in @membersID) {
+		@idInfo = ''
+		try {
+			@idInfo = discord_member_info(@id)
+		} catch(NotFoundException @ex) {
+			console('[DiscordBot] Update Roles: Not found: '.@id)
+			@debugstats['nf']++
+			continue()		
+		} catch(Exception @ex) {
+			console('[DiscordBot] error on id: '.@id.'\n'.@ex['message'])		
+			@debugstats['fails']++
+			continue()
+		}
+		@idRoles = discord_member_get_roles(@id)
+		if(!is_array(@idRoles)) {
+			@debugstats['af']++
+			continue()
+		}
+		if(!array_index_exists(@idRoles, 0)) {
+			@debugstats['norole']++
+			array_push(@membersNoRoles, @id)
+			continue()
+		}
+		
+		array_set(@membersRoles, @id, @idRoles)
+		array_set(@membersInfo, @id, @idInfo)
+		array_set(@membersNames, @idInfo['username'], @id)
+
+		#Leaderboard: Avatars, usernames, color
+		if(@config['LB_Enable'] == true && is_array(@leaderboard) && @idInfo['bot'] == false) {
+			if(array_index_exists(@leaderboard, 'members', @id)) {
+				@newavatar = reg_match('([^/]+)[.][A-Za-z]{2,}$', @idInfo['avatar'])
+				@newcolor = _rgb_to_hex(@idInfo['color'])
+				if(array_index_exists(@newavatar, 1)) { array_set(@leaderboard['members'][@id], 'avatar', @newavatar[1]) }
+				array_set(@leaderboard['members'][@id], 'color', @newcolor)
+				array_set(@leaderboard['members'][@id], 'username', @idInfo['username'])
+			}
+		}
+		
+		# Total roles ( id: name )
+		foreach(@k: @v in @idRoles) {
+			if(!array_contains(array_keys(@totalroles), @v)) {
+				array_set(@totalroles, @v, @k)
+			}
+		}
+
+	# Just welcome roles		
+		if(array_size(@idRoles) == array_size(@sortWR)) {
+			@results = array()
+			#sort arrays so roles are in same key order
+			@sortUR = array_sort(array_normalize(@idRoles), 'NUMERIC')
+
+			foreach(@key: @roleid in @sortWR) {
+				if(@roleid == @sortUR[@key]) {
+					array_push(@results, true)
+				} else {
+					array_push(@results, false)
+				}
+			}
+			if(array_every(@results, closure(@value) { return(@value) }) == true) {
+				array_push(@membersWR, @id)
+				@debugstats['wr']++
+			}
+			@results = array()
+		}
+		@debugstats['total']++
+	}
+		@rolesMembers = array()
+		foreach(@roleid: @rolename in @totalroles) {
+			array_set(@rolesMembers, @roleid, array())
+		}
+	# Load roles members
+		foreach(@memberid: @mr in @membersRoles) {
+		# server member roles array: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
+			foreach(@k: @v in @mr) { 
+			#this foreach value sees: @k = role, @v = 123
+			#loop through each role present, push memberid to main list
+				array_push(@rolesMembers[@v], @memberid)
+			}
+		}
+
+	#save data
+	if(@config['LB_Enable'] == true && is_array(@leaderboard)) {
+		export('DiscordBot.Leaderboard', @leaderboard)
+	}
+	store_value('DiscordBot.members.ID', @membersID)
+	export('DiscordBot.members.ID', @membersID)
+	array_set(@debugstats['size'], 'ID', array_size(@membersID))
+	store_value('DiscordBot.members.roles', @membersRoles)
+	array_set(@debugstats['size'], 'mr', array_size(@membersRoles))
+	store_value('DiscordBot.roles.members', @rolesMembers)
+	array_set(@debugstats['size'], 'rm', array_size(@rolesMembers))
+	store_value('DiscordBot.roles.total', @totalroles)
+	array_set(@debugstats['size'], 'rt', array_size(@totalroles))
+	store_value('DiscordBot.members.names', @membersNames)
+	array_set(@debugstats['size'], 'mn', array_size(@membersNames))
+	store_value('DiscordBot.members.roles.welcomeroles', @membersWR)
+	array_set(@debugstats['size'], 'wr', array_size(@membersWR))
+	store_value('DiscordBot.members.roles.none', @membersNoRoles)
+	array_set(@debugstats['size'], 'norole', array_size(@membersNoRoles))
+	export('DiscordBot.members.names', @membersNames)
+	store_value('DiscordBot.members.info', @membersInfo)
+	export('DiscordBot.members.info', @membersInfo)
+	array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
+	export('DiscordBot.debug.stats.last.updatemembers', @debugstats)
+	return(true)
+}
+
 proc _discordBot_lb_levelXP(@args) {
 	@levelxp = array(0, 100)
 	array_resize(@levelxp, 200)
@@ -778,11 +925,11 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 	if(@dm == '') { @dm = 'broadcast' }
 	if(is_array(@discord)) {
 		if(!array_index_exists(@discord, 'userid')) {
-			console('[Chat - Discord] Required data array not given to Command Handler!', false)
+			console('[Discord] Required data array not given to Command Handler!', false)
 			return(false)
 		}
 	} else {
-		console('[Chat - Discord] Required data array not given to Command Handler!', false)
+		console('[Discord] Required data array not given to Command Handler!', false)
 		return(false)
 	}
 	@return = ''
@@ -844,7 +991,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@config = import('DiscordBot.config.Discord')
 	if(is_array(@discord)) {
 		if(!array_index_exists(@discord, 'userid')) {
-			console('[Chat - Discord] Required data array not given to Command Handler!', false)
+			console('[Discord] Required data array not given to Command Handler!', false)
 			return(false)
 		} else {
 			if(!array_index_exists(@discord, 'time')) {
@@ -852,7 +999,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			}
 		}
 	} else {
-		console('[Chat - Discord] Required data array not given to Command Handler!', false)
+		console('[Discord] Required data array not given to Command Handler!', false)
 		return(false)
 	}
 	@return = ''

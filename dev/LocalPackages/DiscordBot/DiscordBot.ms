@@ -44,7 +44,11 @@ if(function_exists('discord_connect')) {
 # Connect
 	try {
 		discord_connect(@return8762['Profile_Name'], closure(){
+			#Setup: on every Config Load
 			_db_setup(@return8762);
+			# Setup: on Initial Start
+			set_cron('@daily', closure(){ _discordBot_update_members() });
+			set_cron('@weekly', closure(){ _discordBot_backup_members() });
 			_db_mc_broadcast(@connectmsg);
 		});
 	} catch(Exception @ex) {
