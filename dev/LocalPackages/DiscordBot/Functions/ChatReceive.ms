@@ -7,6 +7,8 @@ set_interval(600000, 100000, closure(){ _discordBot_lb_update_database() });
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
 	@config = import('DiscordBot.config.Discord')
 	array_set(@discord, 'time', time())
+	@noXP = false
+	if(@discord['bot'] == true || is_consumed() == true) { @noXP = true }
 #Message Formatting
 	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 		@discord['message'] = '<Sent a GIF>'
@@ -39,10 +41,9 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	}	
 	
 #Send data to leaderboard
-	if(@discord['bot'] == false) {
-		_discordBot_lb_process_message(@discord, is_consumed())
-	}
-	#proc, and noxp status
+	# if(@discord['bot'] == false) {
+		_discordBot_lb_process_message(@discord, @noXP)
+	# }
 	
 #Send message to Minecraft players and/or console
 	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true) {

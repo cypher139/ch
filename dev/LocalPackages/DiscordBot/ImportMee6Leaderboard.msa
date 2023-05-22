@@ -17,10 +17,20 @@ proc _convert_json_data(@raw) {
 	foreach(@i: @user in @json['players']) {
 		@userid = @json['players'][@i]['id']
 		array_set(@newLeaderboard['members'], @userid, @user)
+	# Remove settings unused by DiscordBot
 		array_remove(@newLeaderboard['members'][@userid], 'guild_id')
-		array_remove(@newLeaderboard['members'][@userid], 'id')
+		array_remove(@newLeaderboard['members'][@userid], 'id') 
+		# ID is given via array index
 		array_remove(@newLeaderboard['members'][@userid], 'is_monetize_subscriber')
 		array_remove(@newLeaderboard['members'][@userid], 'monetize_xp_boost')
+	# Mee6's detailed_xp:
+	# 0 - User's Total XP - current level's XP (i.e. XP earned on this rank level)
+	# 1 - Total of XP needed to earn next level up
+	# 2 - User's Total XP
+	# DiscordBot will recalculate this when needed
+		array_set(@leaderboard['members'][@userid], 'mee6_xp', @json['players'][@i]['detailed_xp'][2])
+		array_remove(@newLeaderboard['members'][@userid], 'detailed_xp')
+	# Rename indexes to shorter names
 		array_set(@newLeaderboard['members'][@userid], 'tag', @json['players'][@i]['discriminator'])
 		array_set(@newLeaderboard['members'][@userid], 'msg_count', @json['players'][@i]['message_count'])
 		array_remove(@newLeaderboard['members'][@userid], 'discriminator')
@@ -32,6 +42,9 @@ proc _convert_json_data(@raw) {
 		array_set(@rr['Role_Rewards'], integer(@role['rank']), array('RoleID': integer(@role['role']['id']), 'RoleName': @role['role']['name']))
 	}
 	@newLeaderboard['options'] = @rr
+	if(array_index_exists(@json, 'user_guild_settings')) {
+		array_set(@newLeaderboard['guild'], 'mee6_user_guild_settings', @json['user_guild_settings'])
+	}
 	#avatar:	https://cdn.discordapp.com/avatars/<USERID>/<AVATARID under {avatar: 123}>.webp?size=512
 	msg('Leaderboard size: '.array_size(@newLeaderboard['members'])) 
 	export('DiscordBot.Leaderboard', @newLeaderboard);

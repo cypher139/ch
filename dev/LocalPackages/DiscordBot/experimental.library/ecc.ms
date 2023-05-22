@@ -20,4 +20,4 @@
 			*/
 		}
 # _discordBot_backup_members();	
-_discordBot_update_members();	
+# _discordBot_update_members();	

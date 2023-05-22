@@ -508,15 +508,11 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	# if(@noXP == '' || @noXP == null) {
 		# @noXP = false
 	# }
-	@mi = ''
-	try {
-		@mi = discord_member_info(@discord['userid'])
-	} catch(NotFoundException @ex) {
-		console('[DiscordBot] Member Info not found for user '.@discord['username'].' <@'.@discord['userid'].'>, exiting', false)
-		return(false)
-	}
 	@config = import('DiscordBot.config.Discord')
 	@userID = @discord['userid']
+	@xpType = 2
+	# Event consumed
+	if(@noXP == true) { @xpType = 0 }
 	@levelxp = import('DiscordBot.Leaderboard.levelXP')
 	if(@levelxp == null) { 
 		@levelxp = _discordBot_lb_levelXP();
@@ -524,20 +520,25 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 		array_set(@leaderboard, 'Guild_Name', @config['LB_Options']['Guild_Name'])
 		}
 	# Do not count messages from Command spam channel or Channels marked as no XP earning.
-	if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel'])) { @noXP = true }
-	if(@discord['channel'] == @config['CMD_Default_Channel']) { @noXP = true }
+	if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel'])) { @noXP = true @xpType = 0 }
+	if(@discord['channel'] == @config['CMD_Default_Channel']) { @noXP = true @xpType = 0 }
 	@xptimer = import('DiscordBot.Leaderboard.xptimer', array('test': 123))
 	if(!array_index_exists(@xptimer, @userID)) {
 		array_set(@xptimer, @userID, (time() - 70000))
 	}
 	
 	if(!array_index_exists(@leaderboard, 'members', @userID)) {
-		array_set(@leaderboard['members'], @userID, array('last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'msg_count': 0))
+	#all_xp: {xp from bot spams, xp from messages in same minute, total XP}
+		array_set(@leaderboard['members'], @userID, array('all_xp': array(0, 0, 0), 'last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'msg_count': 0))
 	}
 	@userRoles = ''
 # If user has last chatted in last rolling minute, do not award XP. (continues to count message)
 	if((@xptimer[@userID] + 60000) > time()) {
-		@noXP = true 
+		#If already true, presume botspam
+		if(@noXP == false) {
+			@noXP = true
+			@xpType = 1
+		}
 	} else {
 # Check if user has a no XP earning role.
 		try { 
@@ -548,6 +549,7 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 		foreach(@role in @userRoles) {
 			if(array_contains(@config['LB_Options']['NoXP_RoleID'], @role)) {
 				@noXP = true
+				@xpType = 0
 				break()
 			}
 		}
@@ -555,8 +557,14 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 # Increment Message count and XP
 	@leaderboard['members'][@userID]['msg_count'] = @leaderboard['members'][@userID]['msg_count'] + 1
 	@leaderboard['members'][@userID]['last_msg'] = time()
-	if(@noXP == false) {
-		@newxp = rand(@config['LB_Options']['XP_Per_Message'][0], @config['LB_Options']['XP_Per_Message'][1])
+	@newxp = rand(@config['LB_Options']['XP_Per_Message'][0], @config['LB_Options']['XP_Per_Message'][1])
+	#All XP:
+	# 0: #botspam. Either user talked in ignored channels, has a ignored role, executed a bot command, or is a bot. Also occurs if message event was consumed (ex. showcase check).
+	# 1: Another message was already counted in timeout period
+	# 2: Normal message
+	@leaderboard['members'][@userID]['all_xp'][@xpType] = @leaderboard['members'][@userID]['all_xp'][@xpType] + @newxp
+
+	if(@xpType == 2) {
 		@xptimer[@userID] = time()
 		@leaderboard['members'][@userID]['xp'] = @leaderboard['members'][@userID]['xp'] + @newxp
 	}
@@ -656,7 +664,6 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 		console(@oldroles)
 		console(@userRoles)		
 */		
-
 # Message out
 		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Options']['Level_Up_Message'])
 		if(@newrankname == '') {
@@ -837,56 +844,69 @@ proc _discordBot_update_members(@args) {
 	return(true);
 }
 
-proc _discordBot_lb_levelXP(@args) {
+proc _discordBot_lb_levelXP(@args = 1) {
 	@levelxp = array(0, 100)
 	array_resize(@levelxp, 200)
 	@mp = 1
-	foreach(@i: @lvl in @levelxp) {
-		if(@i < 2) { continue() }
-		# Define XP needed to reach each level, as a multiplier of level 1 100xp + previous level
-		switch(@i) {
-		case 2:
-			@mp = 2.5
-		case 3:
-			@mp = 2
-		case 4:
-			@mp = 1.7
-		case 5:
-			@mp = 1.5
-		case 6:
-			@mp = 1.4
-		case 7:
-			@mp = 1.3
-		case 8..11:
-			@mp = 1.25
-		case 12..15:
-			@mp = 1.2
-		case 16..22:
-			@mp = 1.15
-		case 23..32:
-			@mp = 1.1
-		case 33..39:
-			@mp = 1.08
-		case 40..49:
-			@mp = 1.06
-		case 50..69:
-			@mp = 1.05
-		case 70..79:
-			@mp = 1.04
-		case 80..89:
-			@mp = 1.03
-		case 90..109:
-			@mp = 1.025
-		case 110..134:
-			@mp = 1.02
-		case 135..159:
-			@mp = 1.015
-		case 160..169:
-			@mp = 1.013
-		case 170..200:
-			@mp = 1.01
+# Mee6 XP formula:
+	# https://github.com/randomairborne/experienced/blob/main/mee6/src/lib.rs
+	# https://github.com/Mee6/Mee6-documentation/blob/master/docs/levels.md
+	# The operation used to calculate how many XP a given level is is (5 / 6) * level * (2 * level * level + 27 * level + 91)
+	if(@args == 0) {
+		foreach(@i: @lvl in @levelxp) {
+			if(@i < 2) { continue() }
+			@levelxp[@i] = integer((5 / 6) * @i * (2 * @i * @i + 27 * @i + 91))
 		}
-		@levelxp[@i] = integer(@levelxp[(@i - 1)] * @mp)
+	}
+# cypher139's XP reimplementation via estimates. Allows to reach new levels much easier.
+	if(@args == 1) {
+		foreach(@i: @lvl in @levelxp) {
+			if(@i < 2) { continue() }
+			# Define XP needed to reach each level, as a multiplier of level 1 100xp + previous level
+			switch(@i) {
+			case 2:
+				@mp = 2.5
+			case 3:
+				@mp = 2
+			case 4:
+				@mp = 1.7
+			case 5:
+				@mp = 1.5
+			case 6:
+				@mp = 1.4
+			case 7:
+				@mp = 1.3
+			case 8..11:
+				@mp = 1.25
+			case 12..15:
+				@mp = 1.2
+			case 16..22:
+				@mp = 1.15
+			case 23..32:
+				@mp = 1.1
+			case 33..39:
+				@mp = 1.08
+			case 40..49:
+				@mp = 1.06
+			case 50..69:
+				@mp = 1.05
+			case 70..79:
+				@mp = 1.04
+			case 80..89:
+				@mp = 1.03
+			case 90..109:
+				@mp = 1.025
+			case 110..134:
+				@mp = 1.02
+			case 135..159:
+				@mp = 1.015
+			case 160..169:
+				@mp = 1.013
+			case 170..200:
+				@mp = 1.01
+			}
+			@levelxp[@i] = integer(@levelxp[(@i - 1)] * @mp)
+		}
 	}
 	export('DiscordBot.Leaderboard.levelXP', @levelxp)
 	_write_file(import('DiscordBot.logs.dir').'/Leaderboard_LevelXP.json', json_encode(@levelxp), 'CREATE')

@@ -33,6 +33,9 @@ msg(_hex_to_rgb($option1))
 case 'r2h':
 msg(_rgb_to_hex($option1 $))
 
+case 'task':
+msg(tm_get_tasks())
+
 case 'wr':
 	assign(@choices, array(
 		jackpot: 3,
