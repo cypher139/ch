@@ -732,11 +732,7 @@ proc _discordBot_update_members(@args) {
 	@config = import('DiscordBot.config.Discord')
 	@leaderboard = import('DiscordBot.Leaderboard')
 	@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC')
-	/*
-	store_value('DiscordBot.previous.members.roles', get_value('DiscordBot.members.roles'))
-	store_value('DiscordBot.previous.roles.members', get_value('DiscordBot.roles.members'))
-	store_value('DiscordBot.previous.roles.total', get_value('DiscordBot.roles.total'))
-	*/
+
 	foreach(@index: @id in @membersID) {
 		@idInfo = ''
 		try {
@@ -750,13 +746,13 @@ proc _discordBot_update_members(@args) {
 			@debugstats['fails']++
 			continue()
 		}
-		@idRoles = discord_member_get_roles(@id)
+		@idRoles = discord_member_get_roles(@id);
 		if(!is_array(@idRoles)) {
 			@debugstats['af']++
 			continue()
 		}
-		if(!array_index_exists(@idRoles, 0)) {
-			@debugstats['norole']++
+		# if(@idInfo['color'] == null) { console(@id.' i '.@idInfo, false) }
+		if(array_size(@idRoles) == 0) {
 			array_push(@membersNoRoles, @id)
 			continue()
 		}
@@ -769,7 +765,8 @@ proc _discordBot_update_members(@args) {
 		if(@config['LB_Enable'] == true && is_array(@leaderboard) && @idInfo['bot'] == false) {
 			if(array_index_exists(@leaderboard, 'members', @id)) {
 				@newavatar = reg_match('([^/]+)[.][A-Za-z]{2,}$', @idInfo['avatar'])
-				@newcolor = _rgb_to_hex(@idInfo['color'])
+				@newcolor = 'fff'
+				if(@idInfo['color'] != null) { @newcolor = _rgb_to_hex(@idInfo['color']) }
 				if(array_index_exists(@newavatar, 1)) { array_set(@leaderboard['members'][@id], 'avatar', @newavatar[1]) }
 				array_set(@leaderboard['members'][@id], 'color', @newcolor)
 				array_set(@leaderboard['members'][@id], 'username', @idInfo['username'])
@@ -798,25 +795,23 @@ proc _discordBot_update_members(@args) {
 			}
 			if(array_every(@results, closure(@value) { return(@value) }) == true) {
 				array_push(@membersWR, @id)
-				@debugstats['wr']++
 			}
 			@results = array()
 		}
-		@debugstats['total']++
 	}
-		@rolesMembers = array()
-		foreach(@roleid: @rolename in @totalroles) {
-			array_set(@rolesMembers, @roleid, array())
+	@rolesMembers = array()
+	foreach(@roleid: @rolename in @totalroles) {
+		array_set(@rolesMembers, @roleid, array())
+	}
+# Load roles members
+	foreach(@memberid: @mr in @membersRoles) {
+	# server member roles array: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
+		foreach(@k: @v in @mr) { 
+		#this foreach value sees: @k = role, @v = 123
+		#loop through each role present, push memberid to main list
+			array_push(@rolesMembers[@v], @memberid)
 		}
-	# Load roles members
-		foreach(@memberid: @mr in @membersRoles) {
-		# server member roles array: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
-			foreach(@k: @v in @mr) { 
-			#this foreach value sees: @k = role, @v = 123
-			#loop through each role present, push memberid to main list
-				array_push(@rolesMembers[@v], @memberid)
-			}
-		}
+	}
 
 	#save data
 	if(@config['LB_Enable'] == true && is_array(@leaderboard)) {

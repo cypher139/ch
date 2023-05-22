@@ -140,6 +140,7 @@ proc _rgb_to_hex(@R, @G, @B, @prefix = '') {
 			}
 		}
 	} else {
+		if(@R == null) { @R = 0 @G = 0 @B = 0 }
 		if(reg_count('\\D+', @R) > 0) {
 			@new = reg_split('\\D+', @R)
 			if(array_size(@new) != 3) {	throw('ms.lang.CastException', 'Not enough array elements present. (2)') }

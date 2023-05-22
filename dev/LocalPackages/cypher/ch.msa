@@ -27,7 +27,7 @@ if(array_contains(all_players(), @option1)) { @player = @option1 }
 @playerID = _getplayerID(@player)
 
 #action list help
-proc(_ch_help,
+proc _ch_help() {
 	msg(color(6).'CommandHelper debug scripts help:')
 	msg(color('a').'Command usage: <required> [optional]')
 	msg(color('a').'/ch <action> [option1] [option2]')
@@ -41,7 +41,7 @@ proc(_ch_help,
 	msg(color(7).'/ch extfunctions'.color(4).' - '.color('f').'Shows available Extension Events and Functions.')
 	msg(color(7).'/ch ext'.color(4).' - '.color('f').'Shows installed extensions.')
 	msg(color(7).'/ch'.color(4).' - '.color('f').'Reloads aliases and reloads dev message settings.')
-)
+}
 
 @prefix = color(7).'['.color(6).@name.color(7).'] '
 
@@ -238,15 +238,22 @@ case 'rd':
 	msg(reflect_docs(@args[0], 'description'))
 case 'sd':
 case 'date':
-	if(is_numeric(@args[0])) {
-		msg(simple_date('MM/dd/yyyy HH:mm:ss', @args[0]))
-	} else {
-		msg('Not a timestamp?')
-	}
-
+	@time = 0
+	if(array_index_exists(@args, 0)) {
+		if(is_numeric(@args[0])) {
+			@time = @args[0]
+		} else if(@args[0] == 'time') {
+			@time = time();
+		} else {
+			die('Not a timestamp?')
+		}
+	} else { @time = time(); }
+	msg(simple_date('MM/dd/yyyy HH:mm:ss', @time))
+	msg(simple_date('MM-dd-yy_HH-mm_', @time))
 case '':
 case null:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')
+	@dsall = null
 	if(!is_array(@ds)) { @ds = array() }
 	if(array_contains(@ds, 'all') || @player == '~console') {
 		run(/reloadaliases)
@@ -290,7 +297,7 @@ if(array_contains(all_players(), @option1)) { @player = @option1 }
 if(array_size(@args) == 0) { array_push(@args, player()) }
 
 #action list help
-proc(_ch_help,
+proc _ch_help() {
 	msg(color(6).'CommandHelper Database help:  '.color('c').'FOR DEBUG USE ONLY.')
 	msg(color('a').'Command usage: <required> [optional]')
 	msg(color('a').'/chdb <action> [option1] [option2]')
@@ -302,7 +309,7 @@ proc(_ch_help,
 	msg(color(7).'/chdb getvalues <player> [value]'.color(4).' - '.color('f').'Gets the values from the specified key. If none is provided, tries the current player.')
 	msg(color(7).'/chdb export <value> <data>'.color(4).' - '.color('f').'Stores the data into the specified value into ch\'s memory persistance, that will be lost on server reboot. FOR DEBUG USE ONLY.')
 	msg(color(7).'/chdb import <value>'.color(4).' - '.color('f').'Gets the specified value from ch\'s memory persistance.')
-)
+}
 
 @prefix = color(7).'['.color(6).@name.color(7).'] '
 
@@ -329,12 +336,15 @@ case 'import':
 	@v = import(@args[0])
 	@arraymsg = ''
 	@as = 0
+	@ak = ''
 	@color = 7
 	if(is_array(@v)) {
 		@as = array_size(@v)
 		@arraymsg = color(3).' Array size: '.@as
 		if(array_index_exists(@args, 1)) {
-			if(array_index_exists(@v, @args[1])) {
+			if(@args[1] == '-keys') {
+				@v = color(3).'Keys Only: \n'.color(@color).array_keys(@v)
+			} else if(array_index_exists(@v, @args[1])) {
 				@v = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
 			} else {
 				@v = color(12).'Index '.@args[1].' was not found!'
@@ -430,6 +440,7 @@ case 'ci':
 
 case 'hasvalue':
 case 'hv':
+	@hv = ''
 	if(array_size(@args) == 0) { 
 		@hv = color('e').'eh, what value?!'
 	} else if(has_value(@args[0]) == true) {

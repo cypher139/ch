@@ -1,10 +1,20 @@
 #version 1.0-tmc
+#version 1.1-tmc
+#requires build #81
 admin:/discordbot [$action] [$] = >>>
 @name = 'Discord'
 @prefix = '['.@name.'] '
 @args = parse_args($)
 @action = to_lower(string($action))
 switch(@action) {
+case 'update':
+			_discordBot_update_members();
+		msg(import('DiscordBot.debug.stats.last.updatemembers'))
+case 'memberinfo':
+	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to view!') }
+	@gmr = discord_member_info(@args[0])
+	msg(color('a').'Member info:')
+	msg(@gmr)
 case 'transferroles':
 	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to copy from!') }
 	if(!array_index_exists(@args, 1)) { die(color('c').'Specify the Discord user ID to copy to!') }

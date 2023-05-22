@@ -47,8 +47,8 @@ if(function_exists('discord_connect')) {
 			#Setup: on every Config Load
 			_db_setup(@return8762);
 			# Setup: on Initial Start
-			set_cron('@daily', closure(){ _discordBot_update_members() });
-			set_cron('@weekly', closure(){ _discordBot_backup_members() });
+			set_cron('0 1 * * 0', closure(){ _discordBot_update_members() });
+			set_cron('7 0 * * 0', closure(){ _discordBot_backup_members() });
 			_db_mc_broadcast(@connectmsg);
 		});
 	} catch(Exception @ex) {
