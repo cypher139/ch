@@ -720,7 +720,7 @@ proc _discordBot_backup_members(@args) {
 }
 
 proc _discordBot_update_members(@args) {
-	@debugstats = array('size': array(), 'nf': 0, 'total': 0, 'af': 0, 'norole': 0, 'wr': 0, 'fails': 0)
+	@debugstats = array('size': array(), 'nf': 0, 'af': 0, 'fails': 0)
 	@membersID = discord_get_members()
 	@membersNames = array()
 	@membersRoles = array()
@@ -734,6 +734,7 @@ proc _discordBot_update_members(@args) {
 	@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC')
 
 	foreach(@index: @id in @membersID) {
+	# Member Info (avatar, isBot, Username, etc)
 		@idInfo = ''
 		try {
 			@idInfo = discord_member_info(@id)
@@ -746,22 +747,9 @@ proc _discordBot_update_members(@args) {
 			@debugstats['fails']++
 			continue()
 		}
-		@idRoles = discord_member_get_roles(@id);
-		if(!is_array(@idRoles)) {
-			@debugstats['af']++
-			continue()
-		}
-		# if(@idInfo['color'] == null) { console(@id.' i '.@idInfo, false) }
-		if(array_size(@idRoles) == 0) {
-			array_push(@membersNoRoles, @id)
-			continue()
-		}
-		
-		array_set(@membersRoles, @id, @idRoles)
 		array_set(@membersInfo, @id, @idInfo)
 		array_set(@membersNames, @idInfo['username'], @id)
-
-		#Leaderboard: Avatars, usernames, color
+	# Leaderboard: Avatars, usernames, role color
 		if(@config['LB_Enable'] == true && is_array(@leaderboard) && @idInfo['bot'] == false) {
 			if(array_index_exists(@leaderboard, 'members', @id)) {
 				@newavatar = reg_match('([^/]+)[.][A-Za-z]{2,}$', @idInfo['avatar'])
@@ -772,20 +760,29 @@ proc _discordBot_update_members(@args) {
 				array_set(@leaderboard['members'][@id], 'username', @idInfo['username'])
 			}
 		}
-		
-		# Total roles ( id: name )
+	# Roles: Check for No Roles
+		@idRoles = discord_member_get_roles(@id);
+		if(!is_array(@idRoles)) {
+			@debugstats['af']++
+			continue()
+		}
+		# if(@idInfo['color'] == null) { console(@id.' i '.@idInfo, false) }
+		if(array_size(@idRoles) == 0) {
+			array_push(@membersNoRoles, @id)
+			continue()
+		}	
+		array_set(@membersRoles, @id, @idRoles)	
+	# Add discovered roles to Total roles ( id: name )
 		foreach(@k: @v in @idRoles) {
 			if(!array_contains(array_keys(@totalroles), @v)) {
 				array_set(@totalroles, @v, @k)
 			}
 		}
-
-	# Just welcome roles		
+	# If Just welcome roles, add member to WR
 		if(array_size(@idRoles) == array_size(@sortWR)) {
 			@results = array()
 			#sort arrays so roles are in same key order
 			@sortUR = array_sort(array_normalize(@idRoles), 'NUMERIC')
-
 			foreach(@key: @roleid in @sortWR) {
 				if(@roleid == @sortUR[@key]) {
 					array_push(@results, true)
@@ -799,13 +796,13 @@ proc _discordBot_update_members(@args) {
 			@results = array()
 		}
 	}
+# Roles Members
 	@rolesMembers = array()
 	foreach(@roleid: @rolename in @totalroles) {
 		array_set(@rolesMembers, @roleid, array())
 	}
-# Load roles members
 	foreach(@memberid: @mr in @membersRoles) {
-	# server member roles array: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
+	# server member roles array: id: {role: 123, role2: 4235}
 		foreach(@k: @v in @mr) { 
 		#this foreach value sees: @k = role, @v = 123
 		#loop through each role present, push memberid to main list
@@ -813,7 +810,7 @@ proc _discordBot_update_members(@args) {
 		}
 	}
 
-	#save data
+# Save data
 	if(@config['LB_Enable'] == true && is_array(@leaderboard)) {
 		export('DiscordBot.Leaderboard', @leaderboard)
 	}
@@ -837,7 +834,7 @@ proc _discordBot_update_members(@args) {
 	export('DiscordBot.members.info', @membersInfo)
 	array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
 	export('DiscordBot.debug.stats.last.updatemembers', @debugstats)
-	return(true)
+	return(true);
 }
 
 proc _discordBot_lb_levelXP(@args) {
