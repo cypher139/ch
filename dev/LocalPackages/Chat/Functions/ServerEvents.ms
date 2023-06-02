@@ -1,4 +1,4 @@
-#version 1.2-tmc
+#version 1.3-tmc
 bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @login) {
 	@serverConfig = import('Chat.config.Server')
 	@playerID = _getplayerID(player())
@@ -78,6 +78,22 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], 'none', '', 'leave') }
 }
 
+
+#Ignored IP pings notification
+set_cron('59 23 * * *', closure(){ 
+	@serverConfig = import('Chat.config.Server')
+	@iplog = import('Server.log.ignore.IP', array())
+	foreach(@ipnum: @data in @iplog) {
+		@s = ''
+		if(@data['times'] > 1) { @s = 's' }
+		@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' Received '.color(12).@data['times'].color(7).' ping'.@s.' from ignored IP %format%'.color(9).@data['ip'].color(7).'%format%'
+		if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
+			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), 'none', '', 'admin') }
+		}
+		if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
+	}
+ });
+
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	@serverConfig = import('Chat.config.Server')
 	@pinglevel = @serverConfig['Ping_Message_Level']
@@ -110,14 +126,24 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			@msgdisplay = ' ('.color(3).@players.color(7).')'
 		}
 	}
-	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { @pinglevel = 1 }
-
-	# Admin Ping Messages:
-	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from '.@ping['ip'].@msgdisplay
+# Ignored IP: Log internally, don't (immediately) message.
+	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { 
+		@ignoredIPPings = get_value('Server.pings.log.ignore.IP')
+		@iplog = import('Server.log.ignore.IP', array())
+		if(!is_array(@ignoredIPPings)) { @ignoredIPPings = array() }
+		if(!array_index_exists(@ignoredIPPings, @ipnumbers)) { array_set(@ignoredIPPings, @ipnumbers, array()) }
+		array_push(@ignoredIPPings[@ipnumbers], time())
+		store_value('Server.pings.log.ignore.IP', @ignoredIPPings)
+		
+		if(!array_index_exists(@iplog, @ipnumbers)) { array_set(@iplog, @ipnumbers, array('ip': @ping['ip'], 'times': 0)) }
+		@iplog[@ipnumbers]['times']++
+		export('Server.log.ignore.IP', @iplog)	
+		@pinglevel = 0 
+	}
+# Admin Ping Messages:
+	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from %format%'.@ping['ip'].@msgdisplay.'%format%'
 	if(@serverConfig['Ping_Message_Discord'] == true && @pinglevel > 1) {
-		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@adminPingMessage, 'none', '', 'admin') }
+		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), 'none', '', 'admin') }
 	}
-	if(@serverConfig['Ping_Message_Console'] == true && @pinglevel > 0) {
-		console(@adminPingMessage, false)
-	}
+	if(@serverConfig['Ping_Message_Console'] == true && @pinglevel > 0) { console(replace(@adminPingMessage, '%format%', ''), false) }
 }
