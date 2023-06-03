@@ -7,6 +7,9 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 	@config = import('DiscordBot.config.'.@discord['guild']);
 	
 	if(@discord['channelid'] == @config['Showcase_Channel']) {
+		@isUser = false
+		@isOtherUser = false
+		@isAllowed = false
 		@reaction = 'To show your cool project please include a picture!\n To react, add a reaction and talk in <#'.@config['Welcome_Text_Channel_ID'].'>'
 		if(!array_index_exists(@discord, 'attachments', 0, 'filename')) {
 			@lastmsgs = import('DiscordBot.'.@discord['guild'].'.last.message')

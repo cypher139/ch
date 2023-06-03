@@ -16,6 +16,17 @@ parse_args = action is 0, item is 1, qty 2, etc
 if action not found insert 'tool' as argument 0, shift to right
 then can assign at start item = arg1, etc
 
+rl $action $
+then option1 = if args0, etc
+if array_contains fuel, set fuel true and remove index
+
+
+move logic to procs
+
+allow for sign usages
+sign has 60sec cooldown
+
+
 */
 
 

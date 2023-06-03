@@ -81,7 +81,7 @@ case 'cvs':
 case 'hasexport':
 case 'he':
 case 'ci':
-	call_alias(/chdb @action $)	
+	call_alias('/chdb '.@action.' '.$)	
 
 case 'events':
 case 'dumpevents':
@@ -91,6 +91,7 @@ case 'ev':
 	msg(@prefix.color(7).'-----')
 	@j = 0
 	@previoustype = ''
+	@color = ''
 	foreach(@k: @v in dump_events()) {
 	# Parsing: (event_type) Event.ID:/file/system/path/file.ms:24
 		@eventtype = reg_split(' ', reg_replace('^\\((.+)\\)', '$1', @v))[0]
@@ -171,7 +172,7 @@ case 'verbose':
 case 'dev':
 case 'devmsg':
 	@sendargs = array_implode(@args, ' ')
-	call_alias(/devmsg @sendargs)
+	call_alias('/devmsg '.@sendargs)
 
 case 'extfunctions':
 case 'extinfo':
@@ -210,6 +211,7 @@ case 'randnumber':
 	@rand = rand(@args[0], @args[1])
 	msg(@rand)
 case 'even':
+	@cr = ''
 	@return = _is_even_number(@args[0], @args[1])
 	if(@return == true) { @cr = 'a' } else { @cr = 'c' }
 	msg(@prefix.color(9).'Even Number? '.color(@cr)._capitalize(@return))
@@ -315,6 +317,7 @@ proc _ch_help() {
 
 switch(@action){
 case 'export':
+# TODO port store value
 	if(@args[0] == 'undo') {
 		@undo = import('ch.export.undo', array())
 		if(array_size(@undo) == 0) {
@@ -574,7 +577,20 @@ case 'he':
 	if(@changedcount > 0) { @changedmsg = color(14).' Changed: '.@changedcount }
 	if(@falsecount > 0) { @falsemsg = color(12).' False: '.@falsecount }
 	msg(@prefix.color(7).'Totals: '.@truemsg.@changedmsg.@falsemsg)	
-	
+case 'copy':
+case 'cp':
+	if(!array_index_exists(@args, 1)) { die(@prefix.color('c').'Not enough arguments provided.') }
+	@v = get_value(@args[0])
+	if(@v == '' || @v == null) {
+		die(@prefix.color('e').'Source value is blank.')
+	}
+	@w = get_value(@args[1])
+	if(@w != '' || @w != null) {
+		if(!array_index_exists(@args, 2)) {
+			die(@prefix.color('e').'Existing data in destination, use "overwrite" to copy.')
+		}
+	}	
+	store_value(@args[1], @v)
 
 default:
 	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'Action not recognized.')

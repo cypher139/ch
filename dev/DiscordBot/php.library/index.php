@@ -1,9 +1,6 @@
 <html>
 <?php
 //Version 0.9
-// ------------------------------
-	$secretKey = "123"
-// -----------------------
 	$sortType = 'level';
 	if(array_key_exists('sort', $_GET)) {
 		$sortType = $_GET['sort'];
@@ -63,10 +60,12 @@
             $xp = $row->xp;
             $username = $row->username;
             $msg_count = $row->msg_count;
+			$avatar = "https://cdn.discordapp.com/avatars/"$key"/"$row->avatar".webp?size=48";
+			$usercolor = $row->color;
 			$entrycount++;
     ?>
     <tr>
-        <td><?php echo $username ?></td>
+        <td style="color:#<?php echo $usercolor ?>"><?php if($entrycount < 11) { echo $avatar }?>&nbsp;&nbsp;<?php echo $username ?></td>
 		<td><?php echo $level ?></td>
         <td><?php echo $xp ?></td>
         <td><?php echo $msg_count ?></td>

@@ -1,0 +1,14 @@
+#commandbook: quick kit replacement
+everyone:/powerup = >>>
+#array: meta, qty, name
+assign(@player, player())
+#278
+pgive_item(@player, array('name': 'DIAMOND_PICKAXE', 'qty': '1'))
+#50
+pgive_item(@player, array('name': 'WALL_TORCH', 'qty': '64'))
+#314
+set_pinv(@player, array(103: array('name': 'GOLDEN_HELMET', 'qty': 1)))
+#317
+set_pinv(@player, array(100: array('name': 'GOLDEN_BOOTS', 'qty': 1)))
+msg(color(14).'Kit \'powerup\' given!')
+<<<

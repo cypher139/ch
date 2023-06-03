@@ -40,6 +40,22 @@ case 'memberinfo':
 	@gmr = discord_member_info(@args[0])
 	msg(color('a').'Member info:')
 	msg(@gmr)
+case 'getmembers':
+	@gmr = discord_get_members()
+	msg('All members:')
+	msg(@gmr)
+case 'getmemberroles':
+case 'gmr':
+	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord role ID to view!') }
+	@gmr = discord_get_members_with_role(@args[0])
+	msg(color('a').'Members with role "'.@args[0].'":')
+	msg(@gmr)
+case 'viewinvites':
+	discord_retrieve_invites(closure(@ex) { 
+		console(@ex) 
+		store_value('DiscordBot.debug.invites.save', @ex)
+		_write_file(import('DiscordBot.logs.dir').'/rawinvites.yml', yml_encode(@ex, true), 'overwrite')
+	});
 case 'transferroles':
 	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to copy from!') }
 	if(!array_index_exists(@args, 1)) { die(color('c').'Specify the Discord user ID to copy to!') }
