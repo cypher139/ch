@@ -3,7 +3,11 @@
 #Handle commands from Discord Users
 # Data: userid, username, nickname, channel, message, id, attachments {{url, filename, description}}
 bind('discord_message_received', array('id': 'DiscordBot.cmd', 'priority': 'HIGH'), null, @discord) {
-	@config = import('DiscordBot.config.Discord')
+	array_set(@discord, 'guild', import('DiscordBot.server.ID'))
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['guild'])) { die('noGuild') }
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@discord['guild'])
+
 # If channel is not authorized to send to, output to DM instead.	
 	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel'])) { @discord['channel'] = @discord['userid'] @ChannelType = 'dm' } else { @ChannelType = 'broadcast' }
 #############	

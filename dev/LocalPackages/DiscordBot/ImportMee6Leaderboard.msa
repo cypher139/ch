@@ -3,16 +3,22 @@ admin:/importmee6lb [$serverid] [$] = >>>
 @name = 'Discord'
 @id = $serverid
 @args = parse_args($)
-@config = import('DiscordBot.config.Discord')
+@botconfig = import('DiscordBot.config.Discord')
+@config = import('DiscordBot.config.'.$serverid, '???')
+if(@config = '???') {
+	msg(color('c').'Guild given is not recognized by DiscordBot')
+	die()
+}
 if(array_contains(@args, 'help')) {
 	msg('This imports the Mee6 Leaderboard data to CH storage, for use with a CH based leaderboard ranking system.')
 	msg('specify the Mee6 server ID to use after the command. ex. if your leaderboard link is "https://mee6.xyz/en/leaderboard/123456" the server ID is "123456".')
 	die()
 }
 
-proc _convert_json_data(@raw) {
+proc _convert_json_data(@raw, @guild) {
 	@json = json_decode(@raw)
-	@config = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@guild)
 	@newLeaderboard = array('Guild_Name': @config['LB_Options']['Guild_Name'], 'lastedit': time(), 'members': array(), 'options': '', 'guild': @json['guild'])
 	foreach(@i: @user in @json['players']) {
 		@userid = @json['players'][@i]['id']
@@ -47,24 +53,24 @@ proc _convert_json_data(@raw) {
 	}
 	#avatar:	https://cdn.discordapp.com/avatars/<USERID>/<AVATARID under {avatar: 123}>.webp?size=512
 	msg('Leaderboard size: '.array_size(@newLeaderboard['members'])) 
-	export('DiscordBot.Leaderboard', @newLeaderboard);
-	store_value('DiscordBot.Leaderboard', @newLeaderboard);
-	_write_file(import('DiscordBot.logs.dir').'/Converted-Mee6-Leaderboard-'.@json['guild']['name'].'.json', json_encode(@newLeaderboard), 'OVERWRITE')
-	_write_file(import('DiscordBot.logs.dir').'/Converted-Mee6-RoleRewards-Config-'.@json['guild']['name'].'.yml', yml_encode(@rr, true), 'OVERWRITE')
+	export('DiscordBot.'.@guild.'.Leaderboard', @newLeaderboard);
+	store_value('DiscordBot.'.@guild.'.Leaderboard', @newLeaderboard);
+	_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Converted-Mee6-Leaderboard-'.@json['guild']['name'].'.json', json_encode(@newLeaderboard), 'OVERWRITE')
+	_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Converted-Mee6-RoleRewards-Config-'.@json['guild']['name'].'.yml', yml_encode(@rr, true), 'OVERWRITE')
 	msg('The import of '.@json['guild']['name'].'\'s Leaderboard was successful.')
-	msg('You will need to add the Role Rewards configuration manually to the DiscordBot Config file. A config file was provided to copypaste from.')
+	msg('You will need to add the Role Rewards configuration manually to the DiscordBot Guild Config file. A config file was provided to copypaste from.')
 	return(true)
 }
 
 
 if($serverid == 'local') { 
 	try { 
-		@LeaderboardData = import('DiscordBot.logs.dir').'/Import-Leaderboard.json'
+		@LeaderboardData = import('DiscordBot.logs.dir').'/'.@guild.'/Import-Leaderboard.json'
 	} catch(Exception @ex) {
 		die(@ex['message'])
 	}
-	_write_file(import('DiscordBot.logs.dir').'/Mee6-Leaderboard-'.@LeaderboardData['guild']['name'].'.json', @LeaderboardData, 'OVERWRITE')
-	_convert_json_data(@LeaderboardData)
+	_write_file(import('DiscordBot.logs.dir').'/'.$serverid.'/Mee6-Leaderboard-'.@LeaderboardData['guild']['name'].'.json', @LeaderboardData, 'OVERWRITE')
+	_convert_json_data(@LeaderboardData, $serverid)
 	die()
 }
 	
@@ -73,7 +79,7 @@ if(!is_numeric($serverid)) {
 }
 
 if(array_contains(@args, 'view')) {
-msg(get_value('DiscordBot.Leaderboard'))
+msg(get_value('DiscordBot.'.@guild.'.Leaderboard'))
 die()
 }
 
@@ -86,8 +92,8 @@ http_request('https://mee6.xyz/api/plugins/levels/leaderboard/'.$serverid.'?limi
 		export('DiscordBot.debug.http.error', @data)
 		return(false)
 	} else {
-		_write_file(import('DiscordBot.logs.dir').'/Mee6-Leaderboard-'.json_decode(@data['body'])['guild']['name'].'.json', @data['body'], 'OVERWRITE')
-		_convert_json_data(@data['body'])
+		_write_file(import('DiscordBot.logs.dir').'/'.$serverid.'/Mee6-Leaderboard-'.json_decode(@data['body'])['guild']['name'].'.json', @data['body'], 'OVERWRITE')
+		_convert_json_data(@data['body'], $serverid)
 		return(true)
 	}
 }));

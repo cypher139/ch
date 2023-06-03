@@ -2,12 +2,13 @@
 
 #Send Minecraft Player message to Discord
 bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
-	@config = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@channel = @config['Default_Channel']
 	@sendmsg = @chat['message']
 	
 	# Automatically chat on last channel a message was received on.
-	@lastmsg = import('DiscordBot.last.message')
+	@lastmsg = import('DiscordBot.'.@botconfig['Primary_Guild'].'.last.message')
 	if(is_array(@lastmsg)) {
 		if(array_index_exists(@lastmsg, 0, 'channel')) {
 			if(time() < (@lastmsg[0]['time'] + 234567)) {
@@ -77,10 +78,12 @@ bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), 
 
 bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MONITOR'), array('prefix': 'say', 'type': 'console'), @event) {
 	if(@event['prefix'] == @event['command']) { console(color(4).'You need to actually say something with say!', false) die() }
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
-	@channel = import('DiscordBot.config.Discord')['Default_Channel']
+	@channel = @config['Default_Channel']
 	# Automatically chat on last channel a message was received on.
-	@lastmsg = import('DiscordBot.last.message')
+	@lastmsg = import('DiscordBot.'.@botconfig['Primary_Guild'].'.last.message')
 	if(is_array(@lastmsg)) {
 		if(array_index_exists(@lastmsg, 0, 'channel')) {
 			if(time() < (@lastmsg[0]['time'] + 234567)) {

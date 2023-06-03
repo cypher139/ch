@@ -77,8 +77,8 @@ proc _discordBot_cmd_cypher(@discord) {
 }
 
 proc _discordBot_cmd_dm(@discord, @cmdargs) {
-	@config = import('DiscordBot.config.Discord')
-	@membernames = import('DiscordBot.members.names')
+	@config = import('DiscordBot.config.'.@discord['guild'])
+	@membernames = import('DiscordBot.'.@discord['guild'].'.members.names')
 	if(!is_array(@membernames)) { 
 		@membernames = array()
 		array_set(@membernames, @discord['username'], @discord['userid']) 
@@ -195,7 +195,8 @@ proc _discordBot_cmd_say(@discord, @cmdargs) {
 
 
 proc _discordBot_cmd_fakeban(@discord, @cmdargs) {
-	@config = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@discord['guild'])
 	@word = 'ban'
 	@fromuser = @discord['userid']
 	@target = ''
@@ -219,7 +220,7 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs) {
 			@target = @discord['userid']
 		}
 	}
-	@membernames = get_value('DiscordBot.members.names')
+	@membernames = get_value('DiscordBot.'.@discord['guild'].'.members.names')
 	if(!is_array(@membernames)) { 
 		@membernames = array()
 		array_set(@membernames, @discord['username'], @discord['userid']) 
@@ -328,7 +329,7 @@ proc _discordBot_cmd_poo(@discord, @args) {
 		
 proc _discordBot_cmd_fakeadmin(@discord) {	
 	@msg = false
-	@config = import('DiscordBot.config.Discord')	
+	@config = import('DiscordBot.config.'.@discord['guild'])	
 	if(@discord['UseDM'] != 'broadcast') { return('really? This isn\'t a server!') }
 	@userroles = discord_member_get_roles(@discord['username'])
 # debug		store_value('DiscordBot.test.roles.'.@discord['username'], @userroles)
@@ -347,7 +348,7 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 		array_push(@userroles, @config['Fake_Admin_Role'])
 		@msg = '<@'.@discord['userid'].'> is now a **'.@config['Fake_Admin_Rolename'].'**!'
 	}
-	discord_member_set_roles(@discord['userid'], @userroles)
+	discord_member_set_roles(@discord['userid'], @userroles, 'Fake Admin Role command')
 	return(@msg)
 }
 

@@ -5,8 +5,12 @@
 set_interval(600000, 100000, closure(){ _discordBot_lb_update_database() });
 
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
-	@config = import('DiscordBot.config.Discord')
-	array_set(@discord, 'time', time())
+	array_set(@discord, 'guild', import('DiscordBot.server.ID'))
+	array_set(@discord, 'time', time());
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['guild'])) { die('noGuild') }
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@discord['guild'])
+	
 	@noXP = false
 	if(@discord['bot'] == true || is_consumed() == true) { @noXP = true }
 #Message Formatting
@@ -33,11 +37,11 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		if(@discord['bot'] == true) {
 			@loadBot = '.bot'
 		}
-		@lastmsgs = import('DiscordBot.last.message'.@loadBot)
+		@lastmsgs = import('DiscordBot.'.@discord['guild'].'.last.message'.@loadBot)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
 		if(array_index_exists(@lastmsgs, 50)) { array_remove(@lastmsgs, 50) }
-		export('DiscordBot.last.message'.@loadBot, @lastmsgs)
+		export('DiscordBot.'.@discord['guild'].'.last.message'.@loadBot, @lastmsgs)
 	}	
 	
 #Send data to leaderboard
@@ -51,7 +55,9 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		@userroles = array_keys(discord_member_get_roles(@discord['username']))
 	#Set username color based on data previously set from Discord colors
 	#keys system gives roles alphabetically, not server's order
-		@usernamecolor = 3
+		@usernamecolor = 'ad0'
+		@leaderboard = import('DiscordBot.'.@discord['guild'].'.Leaderboard', array())
+		if(array_index_exists(@leaderboard, 'members', @discord['userid'], 'color')) { @usernamecolor = @leaderboard['members'][@discord['userid']]['color'] }
 		@isAdmin = false
 		foreach(@role in @userroles) {
 			if(array_contains_ic(@config['Role_Admins'], @role)) {
@@ -59,32 +65,29 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 				break()
 			}
 		}
-#dev		broadcast(discord_member_get_roles(@discord['username']))
 		foreach(@role in @userroles) {
 			if(array_contains_ic(array_keys(@config['Role_Colors']), @role)) {
 				#admin colors: ensure an admin role gets picked for color
 				if(@isAdmin == true && !array_contains_ic(@config['Role_Admins'], @role)) {
 					continue()
 				}
-				@usernamecolor = '#'.@config['Role_Colors'][@role]
-#dev				broadcast(@role, all_players())
+				@usernamecolor = @config['Role_Colors'][@role]
+#dev				console('chose role: '.@role)
 				#Only go with first role found
 				break()
 			}
 		}
-	#Send			
-		@sendmsg = color(@usernamecolor).'['.@discord['username'].'] '.color(7).@discord['message']
+	#Send
+		@sendmsg = color('#'.@usernamecolor).'['.@discord['username'].'] '.color(7).@discord['message']
 		if(@discord['bot'] == true) {
 			@sendmsg = color(@usernamecolor).'[Bot]'.@sendmsg
 		}
 		@sendto = 'players'
-		if(import('DiscordBot.Console.receive') == true) {
-			@sendto = ''
-		}
-		_db_mc_broadcast(@sendmsg, @sendto)
+		if(@config['Console_Receive_Msgs'] == true) { @sendto = '' }
+		_db_mc_broadcast(@sendmsg, @sendto, @config['Console_Receive_Msgs'])
 		if(array_index_exists(@discord, 'attachments', 0, 'filename') && @config['URL_Broadcast'] == true) {
 			foreach(@num: @attach in @discord['attachments']) {
-				_db_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], @sendto)
+				_db_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], @sendto, @config['Console_Receive_Msgs'])
 			}
 		}
 	}

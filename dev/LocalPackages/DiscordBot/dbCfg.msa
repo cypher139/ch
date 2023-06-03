@@ -24,7 +24,9 @@ case 'DiscordBot':
 	@prefix = 'DiscordBot'
 	@ret = _db_load_config($config, @prefix)
 default:
-	die(color(12).'Type not recognized.')
+	if(!is_numeric($config)) { die(color(12).'Type not recognized.') }
+	@prefix = 'DiscordBot'
+	@ret = _db_load_config($config, @prefix)
 }
 
 @prev = import(@prefix.'.config.'.$config)

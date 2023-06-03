@@ -1,13 +1,17 @@
 #version 1.1-tmc
 #Check Showcase chat for attachment only
 bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null, @discord) {
-	@config = import('DiscordBot.config.Discord')
+	array_set(@discord, 'guild', import('DiscordBot.server.ID'));
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['guild'])) { die('noGuild') }
+	@botconfig = import('DiscordBot.config.Discord');
+	@config = import('DiscordBot.config.'.@discord['guild']);
+	
 	if(@discord['channelid'] == @config['Showcase_Channel']) {
 		@reaction = 'To show your cool project please include a picture!\n To react, add a reaction and talk in <#'.@config['Welcome_Text_Channel_ID'].'>'
 		if(!array_index_exists(@discord, 'attachments', 0, 'filename')) {
-			@lastmsgs = import('DiscordBot.last.message')
-			@checkMsg = array()
-			@checkIndex = time()
+			@lastmsgs = import('DiscordBot.'.@discord['guild'].'.last.message')
+			@checkMsg = array();
+			@checkIndex = time();
 			if(is_array(@lastmsgs)) {
 				foreach(@i: @msg in @lastmsgs) {
 					if(@msg['channelid'] != @config['Showcase_Channel']) {
@@ -21,7 +25,8 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 					@checkIndex = @i
 					break()
 				}
-				export('DiscordBot.debug.showcase.checkmsg', array(@checkIndex, @checkMsg))
+				export('DiscordBot.'.@discord['guild'].'.debug.showcase.checkmsg', array(@checkIndex, @checkMsg));
+			#reference: id,message,userid,username
 				#same user commenting
 				if(@checkMsg['userid'] == @discord['userid']) {
 					# previous message was the showcase
@@ -54,10 +59,10 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 				}
 			}
 			if(@isAllowed == false) {
-				consume()
-				discord_delete_message(@discord['channel'], @discord['id'])
-				discord_broadcast(@discord['channelid'], @reaction)
+				consume();
+				discord_delete_message(@discord['channel'], @discord['id']);
+				discord_broadcast(@discord['channelid'], @reaction);
 			}
 		}
-	}
+	}	
 }

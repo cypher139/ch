@@ -52,11 +52,9 @@ proc _discordBot_cmd_codegen(@discord, @args) {
 
 proc _discordBot_cmd_wrf(@discord, @cmdargs) {
 	if(is_proc('_discordBot_WelcomeRolesFinder')) {
-		if(!array_index_exists(@cmdargs, 0)) { @cmdargs = array('arg') }
+		if(!array_index_exists(@cmdargs, 0)) { @cmdargs = array('welcome') }
 		@return = _discordBot_WelcomeRolesFinder(@cmdargs[0])
-		
-		if(reg_count('^[WwNn]', @cmdargs[0]) > 0) {
-			_discordBot_send_message(@return['amount'].' '.@return['msg'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+		if(reg_count('^[WwNn0]', @cmdargs[0]) > 0) {	
 			@IDs = array_implode(@return['list'], '\n')
 			if(reg_count('[\\s\\S]{1,1970}(?:>|$)', @IDs) > 1) {
 				@split = array()
@@ -72,14 +70,11 @@ proc _discordBot_cmd_wrf(@discord, @cmdargs) {
 			} else {
 				discord_private_message(@discord['userid'], '```List of IDs:``` \n'.@IDs)
 			}
-		} else {		
-			if(array_index_exists(@return, 'zero')) {
-				return(array('embeds': array(array('title': 'Welcome Roles Finder', 'description': @return['zero'].' members were detected as having 0 roles.', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': ' requested by @'.@discord['username'].'. Use "wrf noroles" to view IDs.')))))
-				# discord_broadcast(@discord['SendChannel'], @return['zero'].' members were detected as having 0 roles. \n Use "wrf norole" to view IDs.')
-			}
-			if(array_index_exists(@return, 'welcome')) {
-				return(array('embeds': array(array('title': 'Welcome Roles Finder', 'description': @return['welcome'].' members were detected as having only the Welcome Roles.', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': ' requested by @'.@discord['username'].'. Use "wrf welcomeroles" to view IDs.')))))
-			}
+			# _discordBot_send_message(@return['amount'].' '.@return['msg'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+			return(array('embeds': array(array('title': 'Welcome Roles Finder', 'description': @return['amount'].' '.@return['msg'], 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': ' requested by @'.@discord['username'])))))
+			
+		} else {
+			return('Specify the type you want: WelcomeRoles for members with just welcome roles, None for those with no roles.')
 		}
 	} else {
 		return('NoCmd')

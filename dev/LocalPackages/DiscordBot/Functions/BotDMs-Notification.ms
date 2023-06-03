@@ -6,7 +6,10 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	array_set(@discord, 'time', time())
 	@saveDM = array_deep_clone(@discord)
 #Don't save or notify if this is a command message
-	@config = import('DiscordBot.config.Discord')
+	array_set(@discord, 'guild', import('DiscordBot.server.ID'))
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['guild'])) { die('noGuild') }
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@discord['guild'])
 	if(reg_count(@config['CMD_Command_Prefix'], @discord['message']) > 0) {
 		array_set(@discord, 'channel', @discord['userid'])
 		@return = _discordBot_handlecommand(@discord, 'dm', 'dm')
@@ -66,7 +69,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		
 		@msgembed = array(array('title': @discord['username'], 'color': array('r': 109, 'g': 109, 'b': 109), 'description': @discord['message']))
 		#Get Avatar
-		@leaderboards = import('DiscordBot.Leaderboard');
+		@leaderboards = import('DiscordBot.'.@discord['guild'].'.Leaderboard');
 		if(is_array(@leaderboards)) {
 			if(array_index_exists(@leaderboards, 'members', @discord['userid'], 'avatar')) {
 				array_set(@msgembed[0], 'author', array('icon_url': 'https://cdn.discordapp.com/avatars/'.@discord['userid'].'/'.@leaderboards['members'][@discord['userid']]['avatar'].'.webp?size=48', 'name': @discord['username']))

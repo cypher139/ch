@@ -72,17 +72,6 @@ if(function_exists('discord_connect')) {
 		die()
 #		console(@ex)
 	}
-	
-# Second server Connect
-	if(@return8762['Use_Second_Server'] == true) {
-		try {
-			discord_connect('discordCredentials2', closure(){
-				_db_mc_broadcast(@connectmsg.' #2');
-			})
-		} catch(Exception @ex) {
-			console(color(4).'['.color(9).'Server'.color(4).'] '.color(4).'NOT Connected to Discord #2: '.color('r').@ex['message'])
-		}
-	}
 	*/
 # Command Line: Start rest of script
 	if(in_cmdline_mode()) {

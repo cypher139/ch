@@ -14,10 +14,10 @@ case 'lbu':
 			array_set(@leaderboard['members'][@k], 'mee6_xp', @v['detailed_xp'][2])
 			array_remove(@leaderboard['members'][@k], 'detailed_xp')
 		}
-		if(array_index_exists(@v, 'all_xp')) {
-			array_remove(@leaderboard['members'][@k], 'all_xp')
+		if(!array_index_exists(@v, 'all_xp')) {
+			# array_remove(@leaderboard['members'][@k], 'all_xp')
+			array_set(@leaderboard['members'][@k], 'all_xp', array(0,0,@v['xp']))
 		}
-		array_set(@leaderboard['members'][@k], 'all_xp', array(0,0,@v['xp']))
 	}
 case 'backup':
 	_discordBot_backup_members();
@@ -43,13 +43,20 @@ case 'memberinfo':
 case 'transferroles':
 	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to copy from!') }
 	if(!array_index_exists(@args, 1)) { die(color('c').'Specify the Discord user ID to copy to!') }
-	if(!array_index_exists(@args, 2)) { @args[] = 'none' }
+	if(!array_index_exists(@args, 2)) { @args[] = import('DiscordBot.server.ID') }
+	if(!array_index_exists(@args, 3)) { @args[] = 'none' }
 	# admin:/discordtransferroles [@args[0]] [@args[1]] [$] = >>>
 	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
 		die(color('c').'Discord Usernames are not supported in this command.')
 	}
 
 	@roles = get_value('DiscordBot.members.roles')
+	if(!is_array(@roles)) { 
+		_discordBot_update_members();
+		@roles = get_value('DiscordBot.members.roles')
+	}
+	@rolesFR = get_value('DiscordBot.members.former.roles')
+	if(!is_array(@rolesFR)) { @rolesFR = array() }
 	@fromroles = ''
 	@toroles = ''
 	@saveoldroles = get_value('DiscordBot.debug.roles.Transfer.undo')
@@ -62,11 +69,14 @@ case 'transferroles':
 		if(is_array(@roles)) {
 			if(array_index_exists(@roles, @args[0])) {
 				@fromroles = @roles[@args[0]]
+				msg(color('e').'From ID: Not Found on Server, using internal cache.')
+			} else if(array_index_exists(@rolesFR, @args[0])) {
+				@fromroles = @rolesFR[@args[0]]
 				msg(color('e').'From ID: Not Found on Server, using internal storage.')
 			} else {
-				die(color('c').'From ID was Not Found on Server or internal storage!')
+				die(color('c').'From ID was Not Found on Server or internal cache!')
 			}
-		} else { die(color('c').'From ID was Not Found on Server or internal storage!') }
+		} else { die(color('c').'From ID was Not Found on Server; internal storage not initialized!') }
 	}
 	# To User check
 	try {
@@ -74,7 +84,7 @@ case 'transferroles':
 	} catch(Exception @ex) {
 		die(color('c').'To ID Not Found on Server: '.@ex['message'])
 	}
-	if(@args[2] == 'undo') {
+	if(@args[3] == 'undo') {
 	#does not add from roles.
 		# @toroles = get_value('Chat.debug.Discord.User.'.@args[1].'.old.roles')
 		if(array_index_exists(@saveoldroles, @args[1])) {

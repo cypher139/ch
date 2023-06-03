@@ -33,26 +33,31 @@ if(in_cmdline_mode()) {
 
 # Startup Discord Functions
 if(function_exists('discord_connect')) {
-# Databases Startup
-	export('DiscordBot.members.ID', get_value('DiscordBot.members.ID'))
-	export('DiscordBot.members.names', get_value('DiscordBot.members.names'))
-	export('DiscordBot.Leaderboard', get_value('DiscordBot.Leaderboard'))
-# Load Discord Configs
-	@return8762 = _db_load_config('Discord')
+# Load DiscordBot Configs
+	@return8762 = _db_load_config('Discord');
 	if(!is_array(@return8762)) { die() }
 	@connectmsg = color(6).'['.color(9).'Server'.color(6).'] '.color('a').'Connected'.color(8).' to Discord'
 # Connect
 	try {
 		discord_connect(@return8762['Profile_Name'], closure(){
-			#Setup: on every Config Load
-			_db_setup(@return8762);
-			# Setup: on Initial Start
-			set_cron('0 1 * * 0', closure(){ _discordBot_update_members() });
-			set_cron('7 0 * * 0', closure(){ _discordBot_backup_members() });
-			_db_mc_broadcast(@connectmsg);
+			export('DiscordBot.server.ID', xml_read(read(sys_properties()['user.dir'].'/plugins/CommandHelper/prefs/profiles.xml'), '/profiles/profile[@id="'.@return8762['Profile_Name'].'"]/serverId'))
+			# Setup Each guild's config
+			@ret8901 = _db_load_guilds(array(123,456));
+			# If successful: Setup initial tasks
+			if(@ret8901 == true) {
+				set_cron('0 1 * * 0', closure(){ _discordBot_update_members() });
+				set_cron('7 0 * * 0', closure(){ _discordBot_backup_members() });
+				_write_file(import('DiscordBot.logs.dir').'/Bot-Started.txt', simple_date('MM-dd-yy_HHmm', time()).'\n', 'append');
+				_discordBot_set_activity();
+				_db_mc_broadcast(@connectmsg, '', true);
+			} else {
+				discord_disconnect();
+				_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] '.color('e').'Guild Configurations were not found.'.color(8).'Disconnected from Discord')
+				die()
+			}
 		});
 	} catch(Exception @ex) {
-		console(color(4).'['.color(9).'Server'.color(4).'] '.color(4).'NOT Connected to Discord: '.color('r').@ex['message'])
+		_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] '.color(4).'NOT Connected to Discord: '.color('r').@ex['message'])
 		die()
 #		console(@ex)
 	}

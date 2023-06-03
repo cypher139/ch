@@ -11,8 +11,11 @@ Then this will send a message to the ping role to come join voice chat
 */
 
 bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
+	array_set(@discord, 'guild', import('DiscordBot.server.ID'))
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['guild'])) { die('noGuild') }
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@discord['guild'])
 # Note: import is auto globally saved (example #2), so use new variables to store edits needed
-	@config = import('DiscordBot.config.Discord')
 	@vc = ''
 	@isAdmin = false
 	@isRole = false
@@ -45,7 +48,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	# Get last time the bot pinged the role
 		@lastping = get_value('DiscordBot.last.ping.'.@vc['VC_Role_ID'])
 		if(@lastping == '' || @lastping == null) { @lastping = 1230768000000 }
-		if(import('DiscordBot.VC.ping.in.progress') == true) { die() } else {
+		if(import('DiscordBot.'.@discord['guild'].'.VC.ping.in.progress') == true) { die() } else {
 			@timeout = 60000
 			@discordMsg = reg_replace('%RoleID%', '<@&'.@vc['VC_Role_ID'].'>', @vc['VC_Ping_Message'])
 			@discordMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @discordMsg)
@@ -54,12 +57,12 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 			@mcMsg = reg_replace('%Channel%', @discord['channel'], @mcMsg)
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping + @vc['VC_Ping_Timeout'])) {
-				export('DiscordBot.VC.ping.in.progress', true)
+				export('DiscordBot.'.@discord['guild'].'.VC.ping.in.progress', true)
 			#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
 				set_timeout(@timeout, closure(){
 					if(discord_member_get_voice_channel(@discord['userid']) == @discord['channelid']) {
 						#Has the role just been mentioned?
-						@lastmsgs = import('DiscordBot.last.message')
+						@lastmsgs = import('DiscordBot.'.@discord['guild'].'.last.message')
 						if(is_array(@lastmsgs)) {
 							foreach(@index: @message in @lastmsgs) {
 							# Only check messages that are posted within timeout period. 
@@ -75,14 +78,14 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 						discord_broadcast(@vc['VC_Text_Channel_ID'], @discordMsg)
 						_db_mc_broadcast(@mcMsg, 'player')
 						store_value('DiscordBot.last.ping.'.@vc['VC_Role_ID'], time())
-						@stats = get_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')
+						@stats = get_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.current.stats')
 						if(!is_array(@stats)) { @stats = array('start': (time() - @timeout), 'end': '', 'users': '', 'channel': @discord['channel']) }
 						array_set(@stats, 'pinguser', @discord['username'])
-						store_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats', @stats)
+						store_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.current.stats', @stats)
 					}
 				});
 				set_timeout((@timeout + 10000), closure(){
-					export('DiscordBot.VC.ping.in.progress', false)
+					export('DiscordBot.'.@discord['guild'].'.VC.ping.in.progress', false)
 				});
 			}
 		}
@@ -91,23 +94,23 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	#Save current users in channel, only after 90 seconds so user is stayin
 	set_timeout(90000, closure(){
 		if(discord_member_get_voice_channel(@discord['userid']) == @discord['channelid']) {
-			@currentVCUsers = get_value('DiscordBot.VC.'.@discord['channelid'].'.users.current')
+			@currentVCUsers = get_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.current')
 			if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
-			@totalVCUsers = get_value('DiscordBot.VC.'.@discord['channelid'].'.users.total')
+			@totalVCUsers = get_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.total')
 			if(!is_array(@totalVCUsers)) { @totalVCUsers = array() }
-			@stats = get_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')
+			@stats = get_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.current.stats')
 			if(!is_array(@stats)) { 
 				@stats = array('start': (time() - 90000), 'end': '', 'users': '', 'channel': @discord['channel'])
-				store_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats', @stats)
+				store_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.current.stats', @stats)
 			}
 				
 			if(!array_contains(@currentVCUsers, @discord['userid'])) { 
 				@currentVCUsers[] = @discord['userid']
-				store_value('DiscordBot.VC.'.@discord['channelid'].'.users.current', @currentVCUsers)
+				store_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.current', @currentVCUsers)
 			}
 			if(!array_contains(@totalVCUsers, @discord['userid'])) { 
 				array_set(@totalVCUsers, @discord['userid'], @discord['username'])
-				store_value('DiscordBot.VC.'.@discord['channelid'].'.users.total', @totalVCUsers)
+				store_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.total', @totalVCUsers)
 			}
 		}
 	});
@@ -115,7 +118,10 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 
 
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
-	@config = import('DiscordBot.config.Discord')
+	array_set(@discord, 'guild', import('DiscordBot.server.ID'));
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['guild'])) { die('noGuild') }
+	@botconfig = import('DiscordBot.config.Discord');
+	@config = import('DiscordBot.config.'.@discord['guild']);
 	#setup config
 	@vc = ''
 	if(array_index_exists(@config, 'VC_Options', @discord['channelid'])) {
@@ -126,9 +132,9 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		@vc = array('VC_DM_Thanks': false)
 	}
 	# if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
-	@totalVCUsers = get_value('DiscordBot.VC.'.@discord['channelid'].'.users.total')
+	@totalVCUsers = get_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.total')
 	if(!is_array(@totalVCUsers)) { die() }
-	@currentVCUsers = get_value('DiscordBot.VC.'.@discord['channelid'].'.users.current')
+	@currentVCUsers = get_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.current')
 	if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
 	
 	if(array_contains(@currentVCUsers, @discord['userid'])) { array_remove_values(@currentVCUsers, @discord['userid']) }
@@ -146,7 +152,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 					continue()
 				}
 				@otherVCUsers = array_shallow_clone(@totalVCUsers)
-				array_remove_values(@otherVCUsers, @username)
+				array_remove_values(@otherVCUsers, @username);
 				if(@vc['VC_DM_VC_Role'] == false) {
 					if(array_contains_ic(@UserRole, @vc['VC_Role_ID'])) {
 						continue()
@@ -167,14 +173,14 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 					@dmMsg = reg_replace('%OtherUsers%', array_implode(@otherVCUsers[..-2], ',').' and '.@otherVCUsers[..-1], @dmMsg)
 				}
 				# @dmMsg = reg_replace('%TotalUsers%', array_implode(@totalVCUsers, ' and '), @dmMsg)
-				discord_private_message(@userid, @dmMsg)
+				discord_private_message(@userid, @dmMsg);
 			}
 		}
 		console('[Discord] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.color(3).array_implode(@totalVCUsers, ', '), false)
 		#Save Stats
-		clear_value('DiscordBot.VC.'.@discord['channelid'].'.users.current')
-		clear_value('DiscordBot.VC.'.@discord['channelid'].'.users.total')
-		@stats = get_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')
+		clear_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.current');
+		clear_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.total');
+		@stats = get_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.current.stats')
 		if(!is_array(@stats)) { die() }
 		
 		@stats['end'] = time()
@@ -183,13 +189,13 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		if(array_size(@totalVCUsers) < 2) {
 			@lastmsglone = '.alone'
 		}			
-		@lastmsgs = get_value('DiscordBot.VC.'.@discord['channelid'].@lastmsglone)
+		@lastmsgs = get_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].@lastmsglone)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-		array_insert(@lastmsgs, @stats, 0)
-		_write_file(import('DiscordBot.logs.dir').'/VC-Stats'.@lastmsglone.'-'.@discord['channelid'].'.json', json_encode(@lastmsgs), 'overwrite')
-		store_value('DiscordBot.VC.'.@discord['channelid'].@lastmsglone, @lastmsgs)
-		clear_value('DiscordBot.VC.'.@discord['channelid'].'.current.stats')		
+		array_insert(@lastmsgs, @stats, 0);
+		_write_file(import('DiscordBot.logs.dir').'/'.@discord['guild'].'/VC-Stats'.@lastmsglone.'-'.@discord['channelid'].'.json', json_encode(@lastmsgs), 'overwrite')
+		store_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].@lastmsglone, @lastmsgs);
+		clear_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.current.stats');
 	} else {
-		store_value('DiscordBot.VC.'.@discord['channelid'].'.users.current', @currentVCUsers)
+		store_value('DiscordBot.'.@discord['guild'].'.VC.'.@discord['channelid'].'.users.current', @currentVCUsers);
 	}
 }
