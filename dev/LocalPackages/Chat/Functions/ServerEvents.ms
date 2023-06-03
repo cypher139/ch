@@ -92,6 +92,7 @@ set_cron('59 23 * * *', closure(){
 		}
 		if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
 	}
+	export('Server.log.ignore.IP', array())
  });
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
