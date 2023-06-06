@@ -14,8 +14,14 @@ if(in_cmdline_mode() == false) {
 
 proc _write_file(@path, @content, @mode, @option) {
 	if(@path == '' || @content == '') { return(false) }
-	@pathparent = reg_replace('[^/]+$', '', @path)
-	@pathlayout = reg_match('(.+)([\\/].+)([\\/].+)$', @path)
+	@pf = '/'
+	@notpf = '\\\\'
+	#backslash escapes on regex: must add extra backslash
+	if(get_os() == 'WINDOWS') { @pf = '\\\\' @notpf = '/' }
+	@path = reg_replace('['.@notpf.']', @pf, @path)
+	@pathparent = reg_replace('[^'.@pf.']+$', '', @path)
+	@pathlayout = reg_match('(.+)(['.@pf.'].+)(['.@pf.'].+)$', @path)
+	# console(@pathlayout)
 	# 1 = root path, 2 = /parent, 3 = /filename or current dir
 	if(@mode == '') { @mode = 'default' }
 	@mode = to_upper(@mode)
