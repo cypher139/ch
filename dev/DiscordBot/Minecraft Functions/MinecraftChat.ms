@@ -26,7 +26,7 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 	}
 	# Final Channel check: If not in allowed list, switch channel to default
 	if(!array_contains(@config['Channels_Send'], @channel)) { @channel = @config['Default_Channel'] }
-	_discordBot_send_message(@sendmsg, player(), @channel)
+	_discordBot_send_message(@sendmsg, player(), @channel, '', @botconfig['Primary_Guild'])
 }
 
 bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), null, @death) {
@@ -98,5 +98,5 @@ bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MO
 		# remove channel mention from message content	
 		@sendmsg = reg_split('^(#+[a-zA-Z0-9-_]{1,})', @sendmsg)[1]
 	}
-	_discordBot_send_message(@sendmsg, 'Server', @channel)
+	_discordBot_send_message(@sendmsg, 'Server', @channel, '', @botconfig['Primary_Guild'])
 }	

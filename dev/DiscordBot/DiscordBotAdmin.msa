@@ -5,9 +5,20 @@ admin:/discordbot [$action] [$] = >>>
 @prefix = '['.@name.'] '
 @args = parse_args($)
 @action = to_lower(string($action))
+@botconfig = import('DiscordBot.config.Discord')
+@guilds = import('DiscordBot.Guilds')
+@guild = @botconfig['Primary_Guild']
+foreach(@arg in @args) {
+	if(array_contains(@guilds, @arg)) {
+		@guild = @arg
+		array_remove_values(@args, @arg)
+		break()
+	}
+}
+msg('Using Server ID: '.@guild)
 switch(@action) {
 case 'lbu':
-	@leaderboard = import('DiscordBot.Leaderboard')
+	@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard')
 	if(!is_array(@leaderboard)) { die()}
 	foreach(@k: @v in @leaderboard['members']) {
 		if(array_index_exists(@v, 'detailed_xp')) {
@@ -23,7 +34,7 @@ case 'backup':
 	_discordBot_backup_members();
 case 'update':
 	@startTime = time();
-	msg(color('a').'Updating internal caches...')
+	msg(color('a').'Updating DiscordBot\'s internal cache data for each guild...')
 	_discordBot_update_members();
 	@stats = import('DiscordBot.debug.stats.last.updatemembers')
 	if(is_array(@stats)) {
@@ -37,21 +48,21 @@ case 'update':
 	msg(color(3).'Time elapsed: '.@timeElapsed.'ms.')
 case 'memberinfo':
 	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to view!') }
-	@gmr = discord_member_info(@args[0])
+	@gmr = discord_member_info(@guild, @args[0])
 	msg(color('a').'Member info:')
 	msg(@gmr)
 case 'getmembers':
-	@gmr = discord_get_members()
+	@gmr = discord_get_members(@guild)
 	msg('All members:')
 	msg(@gmr)
 case 'getmemberroles':
 case 'gmr':
 	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord role ID to view!') }
-	@gmr = discord_get_members_with_role(@args[0])
+	@gmr = discord_get_members_with_role(@guild, @args[0])
 	msg(color('a').'Members with role "'.@args[0].'":')
 	msg(@gmr)
 case 'viewinvites':
-	discord_retrieve_invites(closure(@ex) { 
+	discord_retrieve_invites(@guild, closure(@ex) { 
 		console(@ex) 
 		store_value('DiscordBot.debug.invites.save', @ex)
 		_write_file(import('DiscordBot.logs.dir').'/rawinvites.yml', yml_encode(@ex, true), 'overwrite')
@@ -59,28 +70,26 @@ case 'viewinvites':
 case 'transferroles':
 	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to copy from!') }
 	if(!array_index_exists(@args, 1)) { die(color('c').'Specify the Discord user ID to copy to!') }
-	if(!array_index_exists(@args, 2)) { @args[] = import('DiscordBot.server.ID') }
-	if(!array_index_exists(@args, 3)) { @args[] = 'none' }
-	# admin:/discordtransferroles [@args[0]] [@args[1]] [$] = >>>
+	if(!array_index_exists(@args, 2)) { @args[] = 'none' }
 	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
 		die(color('c').'Discord Usernames are not supported in this command.')
 	}
 
-	@roles = get_value('DiscordBot.members.roles')
+	@roles = get_value('DiscordBot.'.@guild.'.members.roles')
 	if(!is_array(@roles)) { 
 		_discordBot_update_members();
-		@roles = get_value('DiscordBot.members.roles')
+		@roles = get_value('DiscordBot.'.@guild.'.members.roles')
 	}
-	@rolesFR = get_value('DiscordBot.members.former.roles')
+	@rolesFR = get_value('DiscordBot.'.@guild.'.members.former.roles')
 	if(!is_array(@rolesFR)) { @rolesFR = array() }
 	@fromroles = ''
 	@toroles = ''
-	@saveoldroles = get_value('DiscordBot.debug.roles.Transfer.undo')
+	@saveoldroles = get_value('DiscordBot.'.@guild.'.debug.roles.Transfer.undo')
 	if(!is_array(@saveoldroles)) { @saveoldroles = array() }
 
 	# From User check
 	try {
-		@fromroles = discord_member_get_roles(@args[0])
+		@fromroles = discord_member_get_roles(@guild, @args[0])
 	} catch(Exception @ex) {
 		if(is_array(@roles)) {
 			if(array_index_exists(@roles, @args[0])) {
@@ -96,11 +105,11 @@ case 'transferroles':
 	}
 	# To User check
 	try {
-		@toroles = discord_member_get_roles(@args[1])
+		@toroles = discord_member_get_roles(@guild, @args[1])
 	} catch(Exception @ex) {
 		die(color('c').'To ID Not Found on Server: '.@ex['message'])
 	}
-	if(@args[3] == 'undo') {
+	if(@args[2] == 'undo') {
 	#does not add from roles.
 		# @toroles = get_value('Chat.debug.Discord.User.'.@args[1].'.old.roles')
 		if(array_index_exists(@saveoldroles, @args[1])) {
@@ -111,13 +120,13 @@ case 'transferroles':
 	} else {
 	# adds from roles, not sets to!
 		array_set(@saveoldroles, @args[1], @toroles)
-		store_value('DiscordBot.debug.roles.Transfer.undo', @saveoldroles)
+		store_value('DiscordBot.'.@guild.'.debug.roles.Transfer.undo', @saveoldroles)
 		@toroles = array_merge(@toroles, @fromroles)
 	}
 	# console(@toroles, false)
 	# console(@fromroles)
 		
-	discord_member_set_roles(@args[1], @toroles)
+	discord_member_set_roles(@guild, @args[1], @toroles)
 	msg(color('a').'Discord User '.color(3).@args[1].color('a').' had their Roles set to:\n'.color('r').array_keys(@toroles))
 
 case 'getroles':
@@ -129,7 +138,7 @@ case 'getroles':
 	case 'discord':
 	case 'chd':
 		try {
-			@roles = discord_member_get_roles(@args[0])
+			@roles = discord_member_get_roles(@guild, @args[0])
 			if(player() != '~console') { @roles = array_keys(@roles) }
 		} catch(NotFoundException @ex) {
 			die(@prefix.color('e').'User ID Not Found on Server.')
@@ -139,7 +148,7 @@ case 'getroles':
 	case 1:
 	case 'saved':
 	case 'gv':
-		@roles = get_value('DiscordBot.members.roles')
+		@roles = get_value('DiscordBot.'.@guild.'.members.roles')
 		if(is_array(@roles)) {
 			if(array_index_exists(@roles, @args[0])) {
 				@roles = @roles[@args[0]]
@@ -156,7 +165,7 @@ case 'vcstats':
 case 'vc':
 	@id = null
 	if(!array_index_exists(@args, 0)) { @args = array('None') }
-	@stats = get_value('DiscordBot.last.VC')
+	@stats = get_value('DiscordBot.'.@guild.'.last.VC')
 	if(!is_array(@stats)) { die('['.@name.'] There are no stats saved.') }	
 	if(is_numeric(@args[0])) {
 		@id = $id - 1

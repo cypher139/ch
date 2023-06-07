@@ -5,11 +5,10 @@
 set_interval(600000, 100000, closure(){ _discordBot_lb_update_database() });
 
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
-	array_set(@discord, 'guild', import('DiscordBot.server.ID'))
 	array_set(@discord, 'time', time());
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['guild'])) { die('noGuild') }
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord')
-	@config = import('DiscordBot.config.'.@discord['guild'])
+	@config = import('DiscordBot.config.'.@discord['serverid'])
 	
 	@noXP = false
 	if(@discord['bot'] == true || is_consumed() == true) { @noXP = true }
@@ -37,11 +36,11 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		if(@discord['bot'] == true) {
 			@loadBot = '.bot'
 		}
-		@lastmsgs = import('DiscordBot.'.@discord['guild'].'.last.message'.@loadBot)
+		@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
 		if(array_index_exists(@lastmsgs, 50)) { array_remove(@lastmsgs, 50) }
-		export('DiscordBot.'.@discord['guild'].'.last.message'.@loadBot, @lastmsgs)
+		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastmsgs)
 	}	
 	
 #Send data to leaderboard
@@ -52,11 +51,11 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 #Send message to Minecraft players and/or console
 	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true) {
 		
-		@userroles = array_keys(discord_member_get_roles(@discord['username']))
+		@userroles = array_keys(discord_member_get_roles(@discord['serverid'], @discord['username']))
 	#Set username color based on data previously set from Discord colors
 	#keys system gives roles alphabetically, not server's order
 		@usernamecolor = 'ad0'
-		@leaderboard = import('DiscordBot.'.@discord['guild'].'.Leaderboard', array())
+		@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard', array())
 		if(array_index_exists(@leaderboard, 'members', @discord['userid'], 'color')) { @usernamecolor = @leaderboard['members'][@discord['userid']]['color'] }
 		@isAdmin = false
 		foreach(@role in @userroles) {

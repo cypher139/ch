@@ -1,12 +1,16 @@
 ### Core Startup
 if(in_cmdline_mode()) {
+	@pf = '/'
+	if(get_os() == 'WINDOWS') { @pf = '\\' }
 	export('DiscordBot.version', '1.0-tmc-cmd')
-	export('DiscordBot.config.dir', file_resolve(pwd().'/Configs'))
-	export('DiscordBot.logs.dir', file_resolve(pwd().'/Logs'))
+	export('DiscordBot.config.dir', file_resolve(pwd().@pf.'Configs'))
+	export('DiscordBot.logs.dir', file_resolve(pwd().@pf.'Logs'))
 } else {
+	@pf = '/'
+	if(get_os() == 'WINDOWS') { @pf = '\\' }
 	export('DiscordBot.version', '1.0-tmc')
-	export('DiscordBot.config.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/DiscordBot/Configs'))
-	export('DiscordBot.logs.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/DiscordBot/Logs'))
+	export('DiscordBot.config.dir', file_resolve(sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot'.@pf.'Configs'))
+	export('DiscordBot.logs.dir', file_resolve(sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot'.@pf.'Logs'))
 }
 
 ### Functions
@@ -29,7 +33,7 @@ proc _is_Command(@line) {
 }
 */
 
-proc _discordBot_set_activity(@type = '', @message = '') {
+proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
 	@config = import('DiscordBot.config.Discord')	
 	if(@type == '' || @type == null) { @type = @config['Activity_Type'] }
 	if(@message == '' || @message == null) { @message = @config['Activity_Message'] }
@@ -40,7 +44,7 @@ proc _discordBot_set_activity(@type = '', @message = '') {
 	}
 	if(array_contains(@acttypes8901, to_upper(@type))) {
 		try {
-			discord_set_activity(to_upper(@type), string(@message));
+			discord_set_activity(to_upper(@type), string(@message), @url);
 		} catch(Exception @ex) {
 			_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color('r').@ex['message'], color(12).' ('.@ex['classType'].')', true)
 		}
@@ -54,6 +58,7 @@ proc _db_load_guilds(array @guilds = array()) {
 	if(array_size(@guilds) == 0) { return(false) }
 	@guildList = array()
 	foreach(@guild in @guilds) {
+		if(!is_numeric(@guild)) { continue() } 
 		@return = _db_load_config(@guild)
 		if(!is_array(@return)) {
 			continue()
@@ -311,7 +316,7 @@ proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option)
 							}
 						}
 					}						
-					discord_broadcast(@channel, @msg)
+					discord_broadcast(@guild, @channel, @msg)
 				}
 			} else {
 				if(is_array(@message)) {
@@ -323,7 +328,7 @@ proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option)
 						}
 					}
 				}
-				discord_broadcast(@channel, @sendmsg)
+				discord_broadcast(@guild, @channel, @sendmsg)
 			}
 			return(true)
 		case 'pm':
@@ -361,18 +366,18 @@ proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option)
 			if(array_index_exists(@split, 0)) {
 				foreach(@i: @msg in @split) { 
 					@option = @option.' (Message '.(@i + 1).' of '.array_size(@split).')'
-					discord_broadcast(@channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @msg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))))
+					discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @msg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))))
 				}
 			} else {
-				discord_broadcast(@channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @sendmsg))))
+				discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @sendmsg))))
 			}
 			return(true)	
 		case 'join':
-			discord_broadcast(@channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:join:1066426544387543080> Joined:', 'description': @sendmsg))))
+			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:join:1066426544387543080> Joined:', 'description': @sendmsg))))
 			return(true)
 		case 'leave':
 		case 'quit':
-			discord_broadcast(@channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': ' <:leave:1066426677481197618> Left: ', 'description': @sendmsg))))
+			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': ' <:leave:1066426677481197618> Left: ', 'description': @sendmsg))))
 			return(true)
 		}
 	} catch(Exception @ex) {
@@ -383,21 +388,21 @@ proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option)
 }
 
 proc _discordBot_dc_add_member(@discord) {
-	@membersID = import('DiscordBot.'.@discord['guild'].'.members.ID')
-	if(@membersID == null) { @membersID = get_value('DiscordBot.'.@discord['guild'].'.members.ID') }
-	if(!is_array(@membersID)) { @membersID = discord_get_members() }
+	@membersID = import('DiscordBot.'.@discord['serverid'].'.members.ID')
+	if(@membersID == null) { @membersID = get_value('DiscordBot.'.@discord['serverid'].'.members.ID') }
+	if(!is_array(@membersID)) { @membersID = discord_get_members(@discord['serverid']) }
 	if(!array_contains(@membersID, @discord['userid'])) {
 		array_push(@membersID, @discord['userid'])
-		store_value('DiscordBot.'.@discord['guild'].'.members.ID', @membersID)
-		export('DiscordBot.'.@discord['guild'].'.members.ID', @membersID)
+		store_value('DiscordBot.'.@discord['serverid'].'.members.ID', @membersID)
+		export('DiscordBot.'.@discord['serverid'].'.members.ID', @membersID)
 	}
-	@membersnames = import('DiscordBot.'.@discord['guild'].'.members.names')
-	if(@membersnames == null) { @membersnames = get_value('DiscordBot.'.@discord['guild'].'.members.names') }
+	@membersnames = import('DiscordBot.'.@discord['serverid'].'.members.names')
+	if(@membersnames == null) { @membersnames = get_value('DiscordBot.'.@discord['serverid'].'.members.names') }
 	if(!is_array(@membersnames)) { @membersnames = array() }
 	if(!array_contains(@membersnames, @discord['userid'])) {
 		array_set(@membersnames, @discord['username'], @discord['userid'])
-		store_value('DiscordBot.'.@discord['guild'].'.members.names', @membersnames)
-		export('DiscordBot.'.@discord['guild'].'.members.names', @membersnames)
+		store_value('DiscordBot.'.@discord['serverid'].'.members.names', @membersnames)
+		export('DiscordBot.'.@discord['serverid'].'.members.names', @membersnames)
 	}
 }
 
@@ -502,7 +507,9 @@ proc _discordBot_lb_update_database(@args) {
 }
 
 proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
-	@leaderboard = import('DiscordBot.'.@discord['guild'].'.Leaderboard');
+	@config = import('DiscordBot.config.'.@discord['serverid'])
+	if(@config['LB_Enable'] != true) { return(false) }
+	@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard');
 	if(@leaderboard == null) { 
 		console('[DiscordBot] Leaderboard data not initialized, exiting', false) 
 		return(false)
@@ -514,21 +521,20 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	# if(@noXP == '' || @noXP == null) {
 		# @noXP = false
 	# }
-	@config = import('DiscordBot.config.'.@discord['guild'])
 	@userID = @discord['userid']
 	@xpType = 2
 	# Event consumed
 	if(@noXP == true) { @xpType = 0 }
-	@levelxp = import('DiscordBot.'.@discord['guild'].'.Leaderboard.levelXP')
+	@levelxp = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.levelXP')
 	if(@levelxp == null) { 
-		@levelxp = _discordBot_lb_levelXP(@discord['guild'], @config['LB_Options']['XP_Type']);
+		@levelxp = _discordBot_lb_levelXP(@discord['serverid'], @config['LB_Options']['XP_Type']);
 		array_set(@leaderboard['options'], 'levelXP', @levelxp)
 		array_set(@leaderboard, 'Guild_Name', @config['LB_Options']['Guild_Name'])
 		}
 	# Do not count messages from Command spam channel or Channels marked as no XP earning.
 	if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel'])) { @noXP = true @xpType = 0 }
 	if(@discord['channel'] == @config['CMD_Default_Channel']) { @noXP = true @xpType = 0 }
-	@xptimer = import('DiscordBot.'.@discord['guild'].'.Leaderboard.xptimer', array('test': 123))
+	@xptimer = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.xptimer', array('test': 123))
 	if(!array_index_exists(@xptimer, @userID)) {
 		array_set(@xptimer, @userID, (time() - 70000))
 	}
@@ -548,7 +554,7 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	} else {
 # Check if user has a no XP earning role.
 		try { 
-			@userRoles = discord_member_get_roles(@userID)
+			@userRoles = discord_member_get_roles(@discord['serverid'], @userID)
 		} catch(Exception @ex) {
 			return(false)
 		}
@@ -587,7 +593,7 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 #maxlevel
 	if(!array_index_exists(@levelxp, (@leaderboard['members'][@userID]['level'] + 1))) {
 		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> is at the maximum level '.@leaderboard['members'][@userID]['level'].'!', false)
-		export('DiscordBot.'.@discord['guild'].'.Leaderboard', @leaderboard)
+		export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 		return(false)
 	}
 #Level UP
@@ -643,10 +649,10 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 			}
 		}
 		@userRoles = array_normalize(@userRoles)
-		@saveoldroles = import('DiscordBot.'.@discord['guild'].'.debug.roles.Leaderboard.undo', get_value('DiscordBot.'.@discord['guild'].'.debug.roles.Leaderboard.undo'))
+		@saveoldroles = import('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo', get_value('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo'))
 		if(!is_array(@saveoldroles)) { @saveoldroles = array() }
 		array_set(@saveoldroles, @discord['userid'], @userRoles)
-		export('DiscordBot.'.@discord['guild'].'.debug.roles.Leaderboard.undo', @saveoldroles)
+		export('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo', @saveoldroles)
 		
 	# Remove old role rewards
 		if(@config['LB_Options']['Stack_Role_Rewards'] == false) {
@@ -660,7 +666,7 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 			array_push(@userRoles, @currentrank['RoleID'])
 			#Set New roles
 			try { 
-				discord_member_set_roles(@userID, @userRoles, 'Role Rewards: Awarded New Rank '.@currentrank['RoleName'])
+				discord_member_set_roles(@discord['serverid'], @userID, @userRoles, 'Role Rewards: Awarded New Rank '.@currentrank['RoleName'])
 			} catch(Exception @ex) {
 				return(false)
 			}
@@ -702,13 +708,13 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 				@sendchannel = @discord['userid']
 			}
 			if(@sendMsgtoLog == true) { @sendchannel = @config['Log_Channel'] @type = 'broadcast' }
-			_discordBot_send_message(@discordMsg, 'confirm', @sendchannel, @type)
+			_discordBot_send_message(@discordMsg, 'confirm', @sendchannel, @type, @discord['serverid'])
 		}
 	}
 #Save edits
 	@leaderboard['lastedit'] = time()
-	export('DiscordBot.'.@discord['guild'].'.Leaderboard', @leaderboard)
-	export('DiscordBot.'.@discord['guild'].'.Leaderboard.xptimer', @xptimer)
+	export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
+	export('DiscordBot.'.@discord['serverid'].'.Leaderboard.xptimer', @xptimer)
 	return(true)
 }
 
@@ -726,7 +732,7 @@ proc _discordBot_backup_members(@args) {
 		'membersNoRoles': get_value('DiscordBot.'.@guild.'.members.roles.none'),
 		'rolesTotal': get_value('DiscordBot.'.@guild.'.roles.total'),
 		'rolesMembers': get_value('DiscordBot.'.@guild.'.roles.members'),
-		'Leaderboard': import('DiscordBot.'.@guild.'.Leaderboard')
+		'Leaderboard': import('DiscordBot.'.@guild.'.Leaderboard'),
 		)
 		@time = time();
 		foreach(@k: @v in @data) {
@@ -742,7 +748,14 @@ proc _discordBot_update_members(@args) {
 	if(array_size(@guilds) == 0) { return(false) }
 	foreach(@guild in @guilds) {
 	@debugstats = array('size': array(), 'nf': 0, 'af': 0, 'fails': 0)
-	@membersID = discord_get_members()
+	@membersID = array()
+	try {
+		@membersID = discord_get_members(@guild)
+	} catch(NotFoundException @ex) {
+		array_remove_values(@guilds, @guild)
+		_db_msg_Admins('[DiscordBot] Bot is not a member of guild "'.@guild.'"! Removed from active guild list.')
+		continue()
+	}
 	@membersNames = array()
 	@membersRoles = array()
 	@membersInfo = array()
@@ -758,7 +771,7 @@ proc _discordBot_update_members(@args) {
 	# Member Info (avatar, isBot, Username, etc)
 		@idInfo = ''
 		try {
-			@idInfo = discord_member_info(@id)
+			@idInfo = discord_member_info(@guild, @id)
 		} catch(NotFoundException @ex) {
 			console('[DiscordBot] Update Roles: Not found: '.@id)
 			@debugstats['nf']++
@@ -782,7 +795,7 @@ proc _discordBot_update_members(@args) {
 			}
 		}
 	# Roles: Check for No Roles
-		@idRoles = discord_member_get_roles(@id);
+		@idRoles = discord_member_get_roles(@guild, @id);
 		if(!is_array(@idRoles)) {
 			@debugstats['af']++
 			continue()
@@ -852,6 +865,7 @@ proc _discordBot_update_members(@args) {
 	store_value('DiscordBot.'.@guild.'.members.info', @membersInfo)
 	export('DiscordBot.'.@guild.'.members.info', @membersInfo)
 	array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
+	array_set(@debugstats['size'], 'inv', array_size(@membersInfo))
 	export('DiscordBot.'.@guild.'.debug.stats.last.updatemembers', @debugstats)
 	}
 	return(true);
@@ -1022,15 +1036,15 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			if(!array_index_exists(@discord, 'time')) {
 				array_set(@discord, 'time', time())
 			}
-			if(!array_index_exists(@discord, 'guild')) {
-				array_set(@discord, 'guild', @botconfig['Primary_Guild'])
+			if(!array_index_exists(@discord, 'serverid')) {
+				array_set(@discord, 'serverid', @botconfig['Primary_Guild'])
 			}
 		}
 	} else {
 		console('[Discord] Required data array not given to Command Handler!', false)
 		return(false)
 	}
-	@config = import('DiscordBot.config.'.@discord['guild'])
+	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@return = ''
 	
 	# Include Commands Actions
@@ -1066,7 +1080,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@userType = 'User'
 	@isAdmin = false
 	try (
-		@userroles = array_keys(discord_member_get_roles(@discord['username']))
+		@userroles = array_keys(discord_member_get_roles(@discord['serverid'], @discord['username']))
 		foreach(@role in @userroles) {
 			if(array_contains_ic(@config['Role_Admins'], @role)) {
 				@userType = 'Admin'
@@ -1092,7 +1106,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@command = parse_args(reg_replace(@config['CMD_Command_Prefix'], '', @discord['message']))
 # No Command Given
 	if(!array_index_exists(@command, 0)) {
-		_discordBot_send_message(array('embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))), 'none', @discord['SendChannel'], @discord['UseDM'])	
+		_discordBot_send_message(array('embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))), 'none', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])	
 		return('NoCmdGiven')
 	}
 #No mentions
@@ -1119,7 +1133,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		if(array_index_exists(@rmargs, 0)) {
 			@rmargs = array_implode(array_unique(@rmargs), ', ')
 			_db_msg_Admins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Removed "'.@rmargs.'" from '.@discord['username'].'\'s command arguments.')
-			discord_broadcast(@config['Log_Channel'], 'Removed `'.@rmargs.'` from '.@discord['username'].'\'s command arguments.')	
+			discord_broadcast(@discord['serverid'], @config['Log_Channel'], 'Removed `'.@rmargs.'` from '.@discord['username'].'\'s command arguments.')	
 			if(@config['Message_On_Mention'] == true) { discord_private_message(@discord['userid'], 'Mention(s) `'.@rmargs.'` are not allowed on the server.') }
 		}
 		@commanddismc = 'Args: '.color(9).array_implode(@args, ', ')
@@ -1130,7 +1144,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 # Deny Admin commands	
 	if(array_contains_ic(@admincommandlist, @command[0]) && @userType != 'Admin') {
 		console('[Discord] '.@discord['username'].' tried to use an admin command'.@cmdfrom.': '.color(3).@command[0].'  '.color('r').@commanddismc, false)
-		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfrom.': `'.@command[0].'`  '.strip_colors(@commanddisdc), 'admin', '')
+		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfrom.': `'.@command[0].'`  '.strip_colors(@commanddisdc), 'admin', '', '', @discord['serverid'])
 		return('NotAdmin')
 	}
 	array_set(@discord, 'admin', @isAdmin)
@@ -1140,7 +1154,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	if(array_index_exists(@actions, @command[0])) {
 		@return = @actions[@command[0]](@discord, @args);
 	} else {
-		_discordBot_send_message('I have no idea what that command was about, try help.', 'command', @discord['SendChannel'], @discord['UseDM'])
+		_discordBot_send_message('I have no idea what that command was about, try help.', 'command', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 		@lastmsgs = get_value('DiscordBot.last.cmd.not.found')
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		@fail = array('time': time(), 'user': @discord['username'], 'command': @command[0], 'args': @args)
@@ -1176,28 +1190,28 @@ console('retis: '.is_string(@return))
 #Send Messages
 	if(is_string(@return)) {
 		if(@return == 'NoCmd') {
-			_discordBot_send_message('A required command module is not installed.', 'command', @discord['SendChannel'], @discord['UseDM']) 
+			_discordBot_send_message('A required command module is not installed.', 'command', @discord['SendChannel'], @discord['UseDM'], @discord['serverid']) 
 			@return = false
 		} else if(@return == 'NotAdmin') {
-			_discordBot_send_message(':no_entry: This command is restricted to use by Admin only.', 'discord', @discord['SendChannel'], @discord['UseDM']) 
+			_discordBot_send_message(':no_entry: This command is restricted to use by Admin only.', 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid']) 
 			@return = false
 		} else if(@return == 'NoUserFound') {
-			_discordBot_send_message(':question: User ID given not found on server.', 'discord', @discord['SendChannel'], @discord['UseDM']) 
+			_discordBot_send_message(':question: User ID given not found on server.', 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid']) 
 			@return = false
 		} else if(@return == 'pong') {
 			@timeElapsed = (time() - @discord['time'])
-			_discordBot_send_message('Pong! ('.(@timeElapsed / 1000).')', 'command', @discord['SendChannel'], @discord['UseDM']) 
+			_discordBot_send_message('Pong! ('.(@timeElapsed / 1000).')', 'command', @discord['SendChannel'], @discord['UseDM'], @discord['serverid']) 
 			@return = true
 		} else {
-			_discordBot_send_message(@return, 'discord', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(@return, 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 			@return = true
 		}
 	} else if(is_array(@return)) {
 		if(array_index_exists(@return, 'content') || array_index_exists(@return, 'embeds')) {
-			_discordBot_send_message(@return, 'discord', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(@return, 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 			@return = true
 		} else {
-			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@return, 'admin', '')
+			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@return, 'admin', '', '', @discord['serverid'])
 			@return = false
 		}
 	}
@@ -1206,16 +1220,16 @@ console('retis: '.is_string(@return))
 	@retdisplay = ''
 	if(@return == true) { @colorret = 3 @retdisplay = '' } else { @colorret = 'c' @retdisplay = ' (Failed)' }
 	console('[Discord] '.@discord['username'].' used command'.@cmdfrom.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, false)
-	_discordBot_send_message(@discord['username'].' used command'.@cmdfrom.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, 'admin', '')
+	_discordBot_send_message(@discord['username'].' used command'.@cmdfrom.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, 'admin', '', '', @discord['serverid'])
 	return(@return)
 }
 
 
 proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 	@botconfig = import('DiscordBot.config.Discord')
-	if(!array_index_exists(@discord, 'guild')) { array_set(@discord, 'guild', @botconfig['Primary_Guild']) }
-	@config = import('DiscordBot.config.'.@discord['guild'])
-	@membernames = get_value('DiscordBot.'.@discord['guild']'.members.names')
+	if(!array_index_exists(@discord, 'serverid')) { array_set(@discord, 'serverid', @botconfig['Primary_Guild']) }
+	@config = import('DiscordBot.config.'.@discord['serverid'])
+	@membernames = get_value('DiscordBot.'.@discord['serverid']'.members.names')
 	if(!is_array(@membernames)) { @membernames = array() }
 	if(is_numeric(@target)) {
 		if(@target == @config['Bot_ID']) {
@@ -1225,7 +1239,7 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 			return('self')
 		}	
 		try {
-			@memberroles = discord_member_get_roles(@target)
+			@memberroles = discord_member_get_roles(@discord['serverid'], @target)
 		} catch (NotFoundException @ex) {
 			console('[Chat - Discord] User ID given not found on server: '.@target.'!', false)
 			return('notfound')

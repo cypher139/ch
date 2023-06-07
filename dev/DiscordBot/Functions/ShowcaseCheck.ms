@@ -1,10 +1,9 @@
 #version 1.1-tmc
 #Check Showcase chat for attachment only
 bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null, @discord) {
-	array_set(@discord, 'guild', import('DiscordBot.server.ID'));
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['guild'])) { die('noGuild') }
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord');
-	@config = import('DiscordBot.config.'.@discord['guild']);
+	@config = import('DiscordBot.config.'.@discord['serverid']);
 	
 	if(@discord['channelid'] == @config['Showcase_Channel']) {
 		@isUser = false
@@ -12,7 +11,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 		@isAllowed = false
 		@reaction = 'To show your cool project please include a picture!\n To react, add a reaction and talk in <#'.@config['Welcome_Text_Channel_ID'].'>'
 		if(!array_index_exists(@discord, 'attachments', 0, 'filename')) {
-			@lastmsgs = import('DiscordBot.'.@discord['guild'].'.last.message')
+			@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message')
 			@checkMsg = array();
 			@checkIndex = time();
 			if(is_array(@lastmsgs)) {
@@ -28,7 +27,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 					@checkIndex = @i
 					break()
 				}
-				export('DiscordBot.'.@discord['guild'].'.debug.showcase.checkmsg', array(@checkIndex, @checkMsg));
+				export('DiscordBot.'.@discord['serverid'].'.debug.showcase.checkmsg', array(@checkIndex, @checkMsg));
 			#reference: id,message,userid,username
 				#same user commenting
 				if(@checkMsg['userid'] == @discord['userid']) {
@@ -63,8 +62,8 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 			}
 			if(@isAllowed == false) {
 				consume();
-				discord_delete_message(@discord['channel'], @discord['id']);
-				discord_broadcast(@discord['channelid'], @reaction);
+				discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
+				discord_broadcast(@discord['serverid'], @discord['channelid'], @reaction);
 			}
 		}
 	}	

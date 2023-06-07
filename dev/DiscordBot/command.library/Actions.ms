@@ -63,22 +63,22 @@ proc _discordBot_cmd_help(@discord) {
 	@embeds = array(array('fields': @fields, 'color': array('r': 255, 'g': 204, 'b': 0), 'description': 'Command List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/925074738437570600.webp?size=32', 'text': 'the cool bot.')))
 	@aliasembed = array('fields': array(array('name': 'Aliases', 'value': '`'.array_implode(array_unique(@aliaseslist), '` `').'`', 'inline': false)), 'color': array('r': 170, 'g': 221, 'b': 0))
 	if(@discord['admin'] == true) { array_push(@embeds, @aliasembed) }
-	_discordBot_send_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds), 'discord', @discord['userid'], 'dm')
+	_discordBot_send_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds), 'discord', @discord['userid'], 'dm', @discord['serverid'])
 	return(true)
 }
 
 proc _discordBot_cmd_cypher(@discord) {
 	if(@discord['username'] != 'Cypher') {
-		_discordBot_send_message('Cypher no Cyphing!', 'discord', @discord['SendChannel'], @discord['UseDM'])
+		_discordBot_send_message('Cypher no Cyphing!', 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 	} else {
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'Cypher was here'), 'image': 'https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'Cypher was here'), 'image': 'https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 	}
 	return(true)
 }
 
 proc _discordBot_cmd_dm(@discord, @cmdargs) {
-	@config = import('DiscordBot.config.'.@discord['guild'])
-	@membernames = import('DiscordBot.'.@discord['guild'].'.members.names')
+	@config = import('DiscordBot.config.'.@discord['serverid'])
+	@membernames = import('DiscordBot.'.@discord['serverid'].'.members.names')
 	if(!is_array(@membernames)) { 
 		@membernames = array()
 		array_set(@membernames, @discord['username'], @discord['userid']) 
@@ -178,17 +178,17 @@ proc _discordBot_cmd_dm(@discord, @cmdargs) {
 
 proc _discordBot_cmd_say(@discord, @cmdargs) {
 	if(!array_index_exists(@cmdargs, 0)) {
-		_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/Ks8QMnG25nMAAAAC/kevin-hart-say-what.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+		_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/Ks8QMnG25nMAAAAC/kevin-hart-say-what.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 		die()
 	}
 	switch(rand(1,6)) {
 	case 2:
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 	case 4:
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 	default:
 		@sayicons = array('https://media.tenor.com/qJUcFWzUWlIAAAAd/xtina-christina-aguilera.gif', 'https://media.tenor.com/nMkuF8c3DV0AAAAC/zootopia-fox.gif', 'https://media.tenor.com/EJieOpbWHS8AAAAi/i-have-nothing-to-say-real-housewives-of-beverly-hills.gif')
-		_discordBot_send_message(array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username'])))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+		_discordBot_send_message(array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username'])))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 	}
 	return(true)
 }
@@ -196,7 +196,7 @@ proc _discordBot_cmd_say(@discord, @cmdargs) {
 
 proc _discordBot_cmd_fakeban(@discord, @cmdargs) {
 	@botconfig = import('DiscordBot.config.Discord')
-	@config = import('DiscordBot.config.'.@discord['guild'])
+	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@word = 'ban'
 	@fromuser = @discord['userid']
 	@target = ''
@@ -220,7 +220,7 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs) {
 			@target = @discord['userid']
 		}
 	}
-	@membernames = get_value('DiscordBot.'.@discord['guild'].'.members.names')
+	@membernames = get_value('DiscordBot.'.@discord['serverid'].'.members.names')
 	if(!is_array(@membernames)) { 
 		@membernames = array()
 		array_set(@membernames, @discord['username'], @discord['userid']) 
@@ -230,7 +230,7 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs) {
 		array_remove_values(@cmdargs, @target)
 		if(@discord['UseDM'] != 'dm' && @target != @config['Bot_ID']) {
 			try {
-				@test = discord_member_get_roles(@target)
+				@test = discord_member_get_roles(@discord['serverid'], @target)
 			} catch (NotFoundException @ex) {
 				discord_private_message(@discord['userid'], 'Fake Ban: Typo detected in user ID, using yourself instead :P')
 				console('[DiscordBot] Fake Ban: Typo detected in user ID: '.@target.'!', false)
@@ -329,9 +329,9 @@ proc _discordBot_cmd_poo(@discord, @args) {
 		
 proc _discordBot_cmd_fakeadmin(@discord) {	
 	@msg = false
-	@config = import('DiscordBot.config.'.@discord['guild'])	
+	@config = import('DiscordBot.config.'.@discord['serverid'])	
 	if(@discord['UseDM'] != 'broadcast') { return('really? This isn\'t a server!') }
-	@userroles = discord_member_get_roles(@discord['username'])
+	@userroles = discord_member_get_roles(@discord['serverid'], @discord['username'])
 # debug		store_value('DiscordBot.test.roles.'.@discord['username'], @userroles)
 	if(@discord['admin'] == true) { discord_private_message(@discord['userid'], 'really? You\'re already a server Admin!') }
 	
@@ -348,7 +348,7 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 		array_push(@userroles, @config['Fake_Admin_Role'])
 		@msg = '<@'.@discord['userid'].'> is now a **'.@config['Fake_Admin_Rolename'].'**!'
 	}
-	discord_member_set_roles(@discord['userid'], @userroles, 'Fake Admin Role command')
+	discord_member_set_roles(@discord['serverid'], @discord['userid'], @userroles, 'Fake Admin Role command')
 	return(@msg)
 }
 

@@ -43,7 +43,7 @@ proc _discordBot_cmd_codegen(@discord, @args) {
 					@prefix = 'Randomly Generated code: \n'
 					@channel = @discord['userid']
 				}
-				_discordBot_send_message(@prefix.@code, 'discord', @channel, @dmCode)
+				_discordBot_send_message(@prefix.@code, 'discord', @channel, @dmCode, @discord['serverid'])
 			});
 			return(true)
 		} else { return('NoCmd') }
@@ -94,15 +94,15 @@ proc _discordBot_cmd_codegen_pl(@discord, @args) {
 				}
 				console(@results)
 				@service = array_get_rand(array('your mom', '<redacted>', 'FTP'))
-				_discordBot_send_message('Passwords for '.@service.': '.array_implode(@results, '\n --: '), 'discord', @discord['SendChannel'], @discord['UseDM'])
+				_discordBot_send_message('Passwords for '.@service.': '.array_implode(@results, '\n --: '), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 			});	
 		} else {
 			return('NoCmd')
 		}
 		case 3:
-			_discordBot_send_message(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 		default:
-			_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 	}
 }
 
