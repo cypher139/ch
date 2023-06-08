@@ -44,10 +44,10 @@ if(@action == 'verbose',
 	if(array_contains_ic(@entry, @newsetting),
 		store_value(@you.'.'.@name.'.verbose', @newsetting)
 		if(equals_ic(@newsetting, @entry[0]),
-			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are enabled! '.color(7).@name.' will display more messages than normal now.')
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] '.color(3).'Extra messages are enabled! '.color(7).@name.' will display more messages than normal now.')
 		)
 		if(equals_ic(@newsetting, @entry[1]),
-			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] 'color(3).'Extra messages are now disabled! '.color(7).@name.' will NOT display lots of messages now.')
+			assign(@successmsg, color(7).'['.color(6).@name.color(7).'] '.color(3).'Extra messages are now disabled! '.color(7).@name.' will NOT display lots of messages now.')
 		)
 		msg(@newsetting)
 		die(@successmsg),	

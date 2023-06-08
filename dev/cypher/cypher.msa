@@ -31,7 +31,7 @@ case 'gt':
 case 'h2r':
 msg(_hex_to_rgb($option1))
 case 'r2h':
-msg(_rgb_to_hex($option1 $))
+msg(_rgb_to_hex($option1.' '.$))
 
 case 'task':
 msg(tm_get_tasks())

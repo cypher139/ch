@@ -31,13 +31,6 @@ array proc _find_scripts(string @parent = pwd().'/Addons', array @files = array(
 msg(_find_scripts())
 die()
 	
-# Command Line: Start rest of script
-	if(in_cmdline_mode()) {
-		# Load Addons
-		#Note: DOES include .disabled
-		include_dir('Addons', true)
-	}
-}
 
 /*
 array proc _find_scripts(string @parent = pwd(), array @files = array()) {

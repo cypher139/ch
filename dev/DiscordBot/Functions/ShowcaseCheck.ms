@@ -30,7 +30,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 				export('DiscordBot.'.@discord['serverid'].'.debug.showcase.checkmsg', array(@checkIndex, @checkMsg));
 			#reference: id,message,userid,username
 				#same user commenting
-				if(@checkMsg['userid'] == @discord['userid']) {
+				if(@checkMsg['userid'] = @discord['userid']) {
 					# previous message was the showcase
 					if(array_index_exists(@checkMsg, 'attachments', 0, 'filename')) {
 						@isAllowed = true
