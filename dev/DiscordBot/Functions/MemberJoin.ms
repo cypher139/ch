@@ -1,12 +1,13 @@
-#version 1.1-tmc
-# Requires CHDiscord build #81 or higher 
-# - 70 - message callback, 81 - set role reason
+#version 1.2-tmc
+# Requires CHDiscord build #85 or higher 
+# - 70 - message callback, 81 - set role reason, 84 - invites, 85 - multiple guilds
 
 #Welcome DM and Message for new Discord Server Members
 bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
+	@time = time();
 # Restore leaderboard entry	
 	@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard')
 	@oldlb = get_value('DiscordBot.'.@discord['serverid'].'.members.former.leaderboard')
@@ -18,8 +19,8 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 		}
 	}
-#Wait a few seconds to avoid mention spam right at first.	
-	set_timeout(5000, closure(){ 
+#Wait a few milliseconds to see if another bot insta-kicks first.
+	set_timeout(500, closure(){ 
 		@currentroles = array()
 		try {
 			@currentroles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
@@ -47,7 +48,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		@membersFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former.roles')   
 		if(!is_array(@membersFR)) { @membersFR = array() }
 		if(array_index_exists(@membersFR, @discord['userid']) && @config['Welcome_Roles_Restore'] == true) {
-			array_push_all(@currentroles, @membersFR[@discord['userid']])
+			array_push_all(@currentroles, @membersFR[@discord['userid']]['data'])
 			discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Previous Member Roles Restored')
 			console('[Discord] '.color(2).'Previous roles restored.', false)
 		} else {
@@ -57,13 +58,95 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			}
 		}
 #Welcome User Messages
-		@welcomeMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @config['Welcome_Message'])
-		discord_broadcast(@discord['serverid'], @config['Welcome_Text_Channel_Name'], array('content': @welcomeMsg), closure(@ex){
-			@msgids = get_value('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs')
-			if(!is_array(@msgids)) { @msgids = array() }
-			array_set(@msgids, @discord['userid'], array('time': time(), 'id': @ex, 'user': @discord['username']))
-			store_value('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', @msgids)
-		});	
+		if(@config['Welcome_Send_Message'] == true) {
+			@welcomeMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @config['Welcome_Message'])
+			discord_broadcast(@discord['serverid'], @config['Welcome_Text_Channel_Name'], @welcomeMsg, closure(@ex){
+				@msgids = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs')
+				if(!is_array(@msgids)) { @msgids = array() }
+				array_set(@msgids, @discord['userid'], @ex)
+				export('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', @msgids)
+			});	
+		}
+#Log Invite Code Usage
+		if(@config['Log_Invites'] == true) {
+			@membersInfo = get_value('DiscordBot.'.@discord['serverid'].'.members.info')
+			try {
+				discord_retrieve_invites(@discord['serverid'], closure(@raw) { 
+					@previnv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
+					if(!is_array(@previnv)) {
+						@previnv = array()
+						foreach(@i: @invite in @raw) { array_set(@previnv, @invite['code'], @invite) }
+						store_value('DiscordBot.'.@discord['serverid'].'.Invites', @previnv) 
+					}
+					@inv = array_deep_clone(@previnv)
+					foreach(@i: @invite in @raw) {
+						array_set(@inv, @invite['code'], @invite)
+						if(array_index_exists(@previnv, @invite['code'], 'leaves')) {
+							array_set(@inv[@invite['code']], 'leaves', @previnv[@invite['code']]['leaves'])	
+						}
+						if(array_index_exists(@previnv, @invite['code'], 'username')) {
+							array_set(@inv[@invite['code']], 'username', @previnv[@invite['code']]['username'])
+						} else if(array_contains(@membersInfo, @invite['userid'])) {
+							array_set(@inv[@invite['code']], 'username', @membersInfo[@invite['userid']]['username'])
+						} 
+					}
+					@saveinv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv')
+					if(!is_array(@saveinv)) { @saveinv = array() }
+					@results = array('code': 'Not Found', 'inviter': 'Not Found', 'inviterid': 0, 'use': 0)
+					@matches = array()
+					foreach(@code: @data in @inv) {
+						if(array_index_exists(@previnv, @data['code'])) {
+							if(@data['uses'] > @previnv[@data['code']]['uses']) {
+								array_push(@matches, @code)
+								console('[DiscordBot] [Invite] '.color(3).@data['code'].color('r').' <'.color('a').@data['uses'].color('r').' > '.color(9).@previnv[@data['code']]['uses'].color('r').'>', false)
+							}
+						} else if(@data['uses'] == 1) {
+							array_push(@matches, @code)
+							console('[DiscordBot] [Invite] '.@data['code'].' <New invite>', false)
+						}
+					}
+					
+					if(array_size(@matches) == 0) {
+						console('[DiscordBot] [Invite] No invite code match found!', false)				
+					}
+					if(array_size(@matches) > 1) {
+						console('[DiscordBot] [Invite] Multiple invite codes matched!! \n'.@matches, false)
+						array_set(@results, 'code', @matches)
+					}
+					if(array_size(@matches) == 1) {
+						@selectedinv = array_implode(@matches, '')
+						@invitername = ''
+						try { 
+							@invitername = discord_member_info(@discord['serverid'], @inv[@selectedinv]['userid'])['username']
+						} catch(Exception @ex) {
+							@invitername = '<@'.@inv[@selectedinv]['userid'].'>'
+						}
+						@results = array('code': @inv[@selectedinv]['code'], 'inviter': @invitername, 'inviterid': @inv[@selectedinv]['userid'], 'use': @inv[@selectedinv]['uses'])
+						_discordBot_send_message('`'.@discord['username'].'`  joined! [ID:'.@discord['userid'].'] \nInvited by: *'.@results['inviter'].'* ['.@results['inviterid'].'] using invite: '.@results['code'].' (used '.@results['use'].' times).', 'admin', '', '', @discord['serverid'])
+						# **{user.tag}** joined! 
+# [ID: {user.id}] [AccAge:  {user.createdat}] 
+# Invited by:
+ # *{inviter.tag}* [ID: {inviter.id}] using invite: {invite.code} (used {invite.uses} times).
+					}
+					
+					array_set(@saveinv, @discord['userid'], @results)
+					export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', @saveinv)
+					store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
+					_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Invites.yml', yml_encode(@inv, true), 'overwrite')
+				});
+			} catch(InsufficientPermissionException @ex) {
+				if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
+					@msg = 'Invite Logging is Enabled, however bot does not have permission to view invites!'
+					console('[DiscordBot] ['.@guild.'] '.@msg, false)
+					_discordBot_send_message(@msg, 'admin', '', '', @discord['serverid'])
+				} else {
+					console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
+				}
+			} catch(Exception @ex) {
+				console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
+			}
+		}
+		
 #Console Log
 		@userDisplay = ''
 		if(@discord['username'] == @discord['nickname']) {
@@ -72,6 +155,37 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			@userDisplay = @discord['nickname'].' ('.@discord['username'].') <@'.@discord['userid'].'>'
 		}
 		console('[Discord] Member '.color(10).'joined: '.color(9).@userDisplay, false)
+	});
+# Get data from closures, save
+	set_timeout(10000, closure(){
+		@wm = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
+		@inv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())
+		@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
+		# add to array, remove imports
+		if(!is_array(@joininfo)) { @joininfo = array() }
+		foreach(@user: @data in @inv) {
+		if(!array_index_exists(@joininfo, @user)) { array_set(@joininfo, @user, array()) }
+			array_set(@joininfo[@user], 'time', @time);
+			array_set(@joininfo[@user], 'user', @discord['username']);
+			foreach(@k: @v in @data) {
+				array_set(@joininfo[@user], @k, @v);
+				# array('time': @time, 'wmid': @ex, 'user': @discord['username'], 'invite': @inv['code'], 'inviter': @inv['inviter'], 'inviterid': @inv['inviterid']))
+			}
+		}
+		foreach(@user: @data in @wm) {
+		if(!array_index_exists(@joininfo, @user)) { array_set(@joininfo, @user, array()) }
+			array_set(@joininfo[@user], 'time', @time);
+			array_set(@joininfo[@user], 'user', @discord['username']);
+			array_set(@joininfo[@user], 'wmid', @data);
+		}
+		export('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
+		export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())
+		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)
+		# @jointimes = get_value('DiscordBot.'.@discord['serverid'].'.Join.times')
+		# if(!is_array(@jointimes)) { @jointimes = array() }
+		# array_set(@jointimes, @time, array('userid': @discord['userid'], 'user': @discord['username']))
+		# store_value('DiscordBot.'.@discord['serverid'].'.Join.times', @jointimes)
+		_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')
 	});
 }
 
@@ -88,7 +202,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	}
 	console('[Discord] Member '.color(12).'left: '.color(9).@userDisplay, false)
 
-	# Remove user entry from internal storages
+# Remove user entry from internal storages
 	@membersRoles = get_value('DiscordBot.'.@discord['serverid'].'.members.roles')
 	if(!is_array(@membersRoles)) { @membersRoles = array() }
 	@membersFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former.roles')
@@ -98,7 +212,6 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		array_remove(@membersRoles, @discord['userid'])
 		store_value('DiscordBot.'.@discord['serverid'].'.members.roles', @membersRoles)
 	}
-	
 	@membersNames = import('DiscordBot.'.@discord['serverid'].'.members.names')
 	if(is_array(@membersNames)) { 
 		if(array_contains(array_keys(@membersNames), @discord['username'])) {
@@ -123,43 +236,48 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		}
 	}
 	
-	# Remove Welcome message
-	@msgids = get_value('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs')
-	@rmmsgids = 0
-	if(!is_array(@msgids)) { @msgids = array() }
-	if(array_contains(array_keys(@msgids), @discord['userid'])) {
-		if(time() < (@msgids[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) { 
-			# Remove leaderboard entry too
+# Remove Welcome message and save invite data
+	@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
+	@joininfoFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former')
+	if(!is_array(@joininfo)) { @joininfo = array() }
+	if(!is_array(@joininfoFR)) { @joininfoFR = array() }
+	if(array_contains(array_keys(@joininfo), @discord['userid'])) {
+	# Add leave stats to invite used
+		if(array_index_exists(@joininfo, 'code')) {
+			@inv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
+			if(!is_array(@inv)) { @inv = array() }
+			if(array_index_exists(@inv, @joininfo['code'])) {
+				if(!array_index_exists(@inv, @joininfo['code'], 'leaves')) { array_set(@inv[@joininfo['code']], 'leaves', 0) }
+				@inv[@joininfo['code']]['leaves']++
+				@inv[@joininfo['code']]['uses']--
+				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
+			}
+		}
+	# New Members:	
+		if(time() < (@joininfo[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) { 
+			# Remove leaderboard entry, but don't record in former entry
 			if(is_array(@leaderboard)) {
 				if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { @lbremove = 2 }
 			}
 			# Remove Welcome message
 			try { 
-				discord_delete_message(@discord['serverid'], @config['Welcome_Text_Channel_Name'], @msgids[@discord['userid']]['id'])
+				discord_delete_message(@discord['serverid'], @config['Welcome_Text_Channel_Name'], @joininfo[@discord['userid']]['wmid'])
 				console('[Discord] New joiner! Welcome message removed.', false)
 			} catch(Exception @ex) {
 				console('[Discord] Unable to remove Welcome Message! '.color('c').@ex['classType'].': '.@ex['message'], false)
-			}
-			array_remove(@msgids, @discord['userid'])
-			@rmmsgids++
+			}	
 		} else {
-			#Also, only write former roles if not new member
+			#Also, only write former roles if not a new member
 			store_value('DiscordBot.'.@discord['serverid'].'.members.former.roles', @membersFR)
 		}
-		#Database Maintenance: 
-		foreach(@k: @v in @msgids) {
-			if(time() > (@v['time'] + 1209600000)) {
-			# Join Date is past 2 weeks message removal limits, remove msgids and archive join time
-				@rmmsgids++
-				@user = ''
-				if(array_index_exists(@v, 'user')) { @user = ','.@v['user'] }
-				_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Archived-Join-Dates.csv', @v['time'].','.@k.@user.'\n', 'Append')
-				array_remove(@msgids, @k)
-			}
-		}
-		if(@rmmsgids != 0) { store_value('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', @msgids) }
+		array_set(@joininfoFR, @discord['userid'], @joininfo[@discord['userid']])
+		array_set(@joininfoFR[@discord['userid']], 'removed', time())
+		store_value('DiscordBot.'.@discord['serverid'].'.members.former', @joininfoFR)
+		array_remove(@joininfo, @discord['userid'])
+		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)	
 	}
 	
+#Remove Leaderboard entry, save entry if not a new member
 	if(@lbremove != 0) { 
 		if(@lbremove != 2) {
 			@oldlb = get_value('DiscordBot.'.@discord['serverid'].'.members.former.leaderboard')
@@ -173,4 +291,17 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		@leaderboard['lastedit'] = time()
 		export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 	}
+	@amsgids = get_value('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs')
+	if(is_array(@amsgids)) {
+		foreach(@k: @v in @amsgids) {
+			# if(time() > (@v['time'] + 1209600000)) {
+			# Join Date is past 2 weeks message removal limits, remove msgids and archive join time
+				@user = ''
+				if(array_index_exists(@v, 'user')) { @user = ','.@v['user'] }
+				_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Archived-Join-Dates.csv', @v['time'].','.@k.@user.'\n', 'Append')
+				array_remove(@amsgids, @k)
+			# }
+		}
+		clear_value('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs')
+	}	
 }

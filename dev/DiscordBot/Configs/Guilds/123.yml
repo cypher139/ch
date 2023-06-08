@@ -1,5 +1,6 @@
 # General admin
 Console_Receive_Msgs: false
+Log_Invites: true
 Showcase_Channel: 123235346
 #
 #
@@ -121,6 +122,7 @@ Welcome_Roles_Restore: true
 # Default: 4 days hours = 345600000
 Welcome_Message_Timeout: 345600000
 # What should we say to the new Discord members?
+Welcome_Send_Message: true
 Welcome_Message: "Welcome %UserID% to *our server*! \n Come introduce yourself by chatting below."
 # What should we DM the new Discord member?
 Welcome_Send_DM: false

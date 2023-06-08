@@ -1,31 +1,54 @@
-#version 0.7-tmc
-admin:/importmi [$serverid=] [$] = >>>
+#version 0.8-tmc
+admin:/importmi [$serverid] [$] = >>>
 @name = 'Discord'
 @id = $serverid
 @args = parse_args($)
 @config = import('DiscordBot.config.Discord')
 if(array_contains(@args, 'help')) {
-	msg('This imports the server invite data, for use with a CH based invite log system.')
+	msg('This imports the MangaeInvite bot server invite data, for use with a CH based invite log system. Requires manual additions of codes.')
 	die()
 }
-@currentinvites = import('DiscordBot.debug.invites.importmi')
-if(@currentinvites == null) {
-	discord_retrieve_invites(closure(@ex) { 
-		export('DiscordBot.debug.invites.importmi', @ex)
-		msg('Gathering active invites now, restarting command')
-		call_alias('/importmi '.@id.' '.$)
-	});
-	die()
-}
-
-# msg(@currentinvites)
-
-@mibotdata = json_decode(read(import('DiscordBot.logs.dir').'/response_mi.json'))['data']
-msg(@mibotdata)
+@mibotdata = json_decode(read(import('DiscordBot.logs.dir').'/'.@id.'/response_mi.json'))['data']
+# msg(@mibotdata)
 if(@mibotdata[0]['guildID'] != @id) {
-	die('Guild given to command does not match guild in bot data')
+	die('Guild given to command does not match guild in bot data!')
 }
 
-
-
+# userid = userID
+@inv = array()
+foreach(@i: @data in @mibotdata) {
+	if(!array_index_exists(@data, 'code')) {
+		msg('Cannot import index '.@i.' from user '.@data['userID'].', no code given. ['.@data['regular'].' - '.@data['leaves'].']') 
+		continue()
+	}
+	if(!array_index_exists(@inv, @data['code'])) { array_set(@inv, @data['code'], array()) }
+	array_set(@inv[@data['code']], 'code', @data['code'])
+	if(array_index_exists(@data, 'leaves')) { array_set(@inv[@data['code']], 'leaves', @data['leaves']) }
+	if(array_index_exists(@data, 'userID')) { array_set(@inv[@data['code']], 'userid', @data['userID']) }
+	if(array_index_exists(@data, 'username')) { array_set(@inv[@data['code']], 'username', @data['username']) }
+	if(array_index_exists(@data, 'regular')) { array_set(@inv[@data['code']], 'uses', @data['regular']) }
+}
+msg(color('a').'Imported saved ManageInvite bot data'.color('r').', now checking current invites:')
+try {
+	discord_retrieve_invites(@id, closure(@raw) { 
+		foreach(@i: @invite in @raw) {
+			if(array_index_exists(@inv, @invite['code'])) {
+				array_set(@inv[@invite['code']], 'uses', @invite['uses'])
+				array_set(@inv[@invite['code']], 'max_uses', @invite['max_uses'])
+				array_set(@inv[@invite['code']], 'channelid', @invite['channelid'])	
+			} else { array_set(@inv, @invite['code'], @invite) }
+		}
+		store_value('DiscordBot.'.@id.'.Invites', @inv)
+		msg(color('a').'Current Invite data added and saved.')
+	});
+} catch(InsufficientPermissionException @ex) {
+	if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
+		msg(color('c').'Sorry, bot does not have permission to view invites!')
+		store_value('DiscordBot.'.@id.'.Invites', @inv)
+	} else {
+		die(@ex['message'])
+	}
+} catch(Exception @ex) {
+	die('[importmi] '.@ex['message'], false)
+}
 <<<

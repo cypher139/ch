@@ -733,6 +733,7 @@ proc _discordBot_backup_members(@args) {
 		'rolesTotal': get_value('DiscordBot.'.@guild.'.roles.total'),
 		'rolesMembers': get_value('DiscordBot.'.@guild.'.roles.members'),
 		'Leaderboard': import('DiscordBot.'.@guild.'.Leaderboard'),
+		'Invites': get_value('DiscordBot.'.@guild.'.Invites')
 		)
 		@time = time();
 		foreach(@k: @v in @data) {
@@ -765,8 +766,32 @@ proc _discordBot_update_members(@args) {
 	@rolesMembers = array()
 	@config = import('DiscordBot.config.'.@guild)
 	@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard')
+	@invites = get_value('DiscordBot.'.@guild.'.Invites')
 	@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC')
-
+	
+	#Invites: only update if it does not already exist, else let member join handle updates
+	if(!is_array(@invites) && @config['Log_Invites'] == true) {
+		try {
+			discord_retrieve_invites(@guild, closure(@raw) { 
+				@inv = array()
+				foreach(@i: @invite in @raw) {
+					array_set(@inv, @invite['code'], @invite)
+				}
+				store_value('DiscordBot.'.@guild.'.Invites', @inv)
+				_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Invites.yml', yml_encode(@inv, true), 'overwrite')
+			});
+		} catch(InsufficientPermissionException @ex) {
+			if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
+				array_set(@config, 'NoInvites', true)
+				console('[DiscordBot] ['.@guild.'] Invite Logging is Enabled, but bot does not have permission to view invites!', false)
+			} else {
+				console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
+			}
+		} catch(Exception @ex) {
+			console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
+		}
+	}
+	
 	foreach(@index: @id in @membersID) {
 	# Member Info (avatar, isBot, Username, etc)
 		@idInfo = ''
