@@ -54,7 +54,7 @@ proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
 }
 
 proc _db_load_guilds(array @guilds = array()) {
-	#psuedo code waiting on support "discord_get_bot_guilds();"
+	if(array_size(@guilds) == 0) { @guilds = discord_get_servers() }
 	if(array_size(@guilds) == 0) { return(false) }
 	@guildList = array()
 	foreach(@guild in @guilds) {

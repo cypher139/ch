@@ -42,7 +42,7 @@ if(function_exists('discord_connect')) {
 		discord_connect(@return8762['Profile_Name'], closure(){
 			export('DiscordBot.server.ID', xml_read(read(sys_properties()['user.dir'].'/plugins/CommandHelper/prefs/profiles.xml'), '/profiles/profile[@id="'.@return8762['Profile_Name'].'"]/serverId'))
 			# Setup Each guild's config
-			@ret8901 = _db_load_guilds(array(123,456));
+			@ret8901 = _db_load_guilds(discord_get_servers());
 			# If successful: Setup initial tasks
 			if(@ret8901 == true) {
 				set_cron('0 1 * * 0', closure(){ _discordBot_update_members() });
