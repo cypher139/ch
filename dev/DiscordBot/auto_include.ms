@@ -268,8 +268,9 @@ proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option)
 	}
 	switch(to_lower(@from)) {
 	case 'admin':
-	case 'log':
 		@channel = @config['Log_Channel']
+	case 'log':
+		@channel = @config['Server_Log_Channel']
 	case 'none':
 	case 'cross':
 	case 'discord':
@@ -297,13 +298,17 @@ proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option)
 	}	
 	switch(@type){
 	case 'admin':
-	case 'log':
 		@channel = @config['Log_Channel']
-		# console('[Chat - Discord] '.@sendmsg, false)
+	case 'console':
+		@channel = @config['Log_Channel']
+		console('[DiscordBot] [Send Message] '.@sendmsg, false)
+	case 'log':
+		@channel = @config['Server_Log_Channel']
 	}	
 	try {	
 		switch(@type){
 		case 'admin':
+		case 'console':
 		case 'broadcast':
 		case 'b':
 		case 'log':

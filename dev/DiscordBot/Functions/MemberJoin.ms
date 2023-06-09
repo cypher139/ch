@@ -72,6 +72,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			@membersInfo = get_value('DiscordBot.'.@discord['serverid'].'.members.info')
 			try {
 				discord_retrieve_invites(@discord['serverid'], closure(@raw) { 
+					@invMessage = @config['Log_Invites_Message']
 					@previnv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
 					if(!is_array(@previnv)) {
 						@previnv = array()
@@ -92,7 +93,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					}
 					@saveinv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv')
 					if(!is_array(@saveinv)) { @saveinv = array() }
-					@results = array('code': 'Not Found', 'inviter': 'Not Found', 'inviterid': 0, 'use': 0)
+					@results = array('code': '', 'inviter': 'Not Found', 'inviterid': 0, 'use': 0)
 					@matches = array()
 					foreach(@code: @data in @inv) {
 						if(array_index_exists(@previnv, @data['code'])) {
@@ -107,9 +108,11 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					}
 					
 					if(array_size(@matches) == 0) {
+						@invMessage = 'I could not figure out how **%User%** [%UserID%] joined!'
 						console('[DiscordBot] [Invite] No invite code match found!', false)				
 					}
 					if(array_size(@matches) > 1) {
+						@invMessage = '**%User%** [%UserID%] joined! I found multiple possible invites: \n `%InviteCode%`'
 						console('[DiscordBot] [Invite] Multiple invite codes matched!! \n'.@matches, false)
 						array_set(@results, 'code', @matches)
 					}
@@ -122,13 +125,14 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 							@invitername = '<@'.@inv[@selectedinv]['userid'].'>'
 						}
 						@results = array('code': @inv[@selectedinv]['code'], 'inviter': @invitername, 'inviterid': @inv[@selectedinv]['userid'], 'use': @inv[@selectedinv]['uses'])
-						_discordBot_send_message('`'.@discord['username'].'`  joined! [ID:'.@discord['userid'].'] \nInvited by: *'.@results['inviter'].'* ['.@results['inviterid'].'] using invite: '.@results['code'].' (used '.@results['use'].' times).', 'admin', '', '', @discord['serverid'])
-						# **{user.tag}** joined! 
-# [ID: {user.id}] [AccAge:  {user.createdat}] 
-# Invited by:
- # *{inviter.tag}* [ID: {inviter.id}] using invite: {invite.code} (used {invite.uses} times).
 					}
-					
+					@invMessage = reg_replace('%User%', @discord['username'], @invMessage)
+					@invMessage = reg_replace('%UserID%', @discord['userid'], @invMessage)
+					@invMessage = reg_replace('%InviteCode%', @results['code'], @invMessage)
+					@invMessage = reg_replace('%Uses%', @results['use'], @invMessage)
+					@invMessage = reg_replace('%Inviter%', @results['inviter'], @invMessage)
+					@invMessage = reg_replace('%InviterID%', @results['inviterid'], @invMessage)
+					_discordBot_send_message(@invMessage, 'log', '', '', @discord['serverid'])
 					array_set(@saveinv, @discord['userid'], @results)
 					export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', @saveinv)
 					store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
@@ -138,7 +142,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
 					@msg = 'Invite Logging is Enabled, however bot does not have permission to view invites!'
 					console('[DiscordBot] ['.@guild.'] '.@msg, false)
-					_discordBot_send_message(@msg, 'admin', '', '', @discord['serverid'])
+					_discordBot_send_message(@msg, 'log', '', '', @discord['serverid'])
 				} else {
 					console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
 				}
@@ -241,17 +245,24 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	@joininfoFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former')
 	if(!is_array(@joininfo)) { @joininfo = array() }
 	if(!is_array(@joininfoFR)) { @joininfoFR = array() }
+	@invmsgSuffix = ', but I didn\'t figure out how they had joined it.'
 	if(array_contains(array_keys(@joininfo), @discord['userid'])) {
 	# Add leave stats to invite used
-		if(array_index_exists(@joininfo, 'code')) {
+		if(!is_array(@joininfo[@discord['userid']]['code']) && @joininfo[@discord['userid']]['code'] != '') {
 			@inv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
 			if(!is_array(@inv)) { @inv = array() }
-			if(array_index_exists(@inv, @joininfo['code'])) {
-				if(!array_index_exists(@inv, @joininfo['code'], 'leaves')) { array_set(@inv[@joininfo['code']], 'leaves', 0) }
-				@inv[@joininfo['code']]['leaves']++
-				@inv[@joininfo['code']]['uses']--
+			if(@config['Log_Invites'] == true) {
+				_discordBot_send_message('**'.@discord['username'].'** left the server, they were invited by *'.@joininfo[@discord['userid']]['inviter'].'*', 'log', '', '', @discord['serverid'])
+			}
+			if(array_index_exists(@inv, @joininfo[@discord['userid']]['code'])) {
+				if(!array_index_exists(@inv, @joininfo[@discord['userid']]['code'], 'leaves')) { array_set(@inv[@joininfo[@discord['userid']]['code']], 'leaves', 0) }
+				@inv[@joininfo[@discord['userid']]['code']]['leaves']++
+				@inv[@joininfo[@discord['userid']]['code']]['uses']--
 				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
 			}
+		} else if(@config['Log_Invites'] == true) {
+			if(is_array(@joininfo[@discord['userid']]['code'])) { @invmsgSuffix = ', but I\'m not sure which of these invites were used: `'.array_implode(@joininfo[@discord['userid']]['code'], '  ').'`' }
+			_discordBot_send_message(@discord['username'].' left the server'.@invmsgSuffix, 'log', '', '', @discord['serverid'])
 		}
 	# New Members:	
 		if(time() < (@joininfo[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) { 
@@ -275,6 +286,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		store_value('DiscordBot.'.@discord['serverid'].'.members.former', @joininfoFR)
 		array_remove(@joininfo, @discord['userid'])
 		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)	
+	} else if(@config['Log_Invites'] == true) {
+		_discordBot_send_message(@discord['username'].' left the server'.@invmsgSuffix, 'log', '', '', @discord['serverid'])
 	}
 	
 #Remove Leaderboard entry, save entry if not a new member

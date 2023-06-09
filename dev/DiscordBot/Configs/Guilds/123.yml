@@ -1,6 +1,9 @@
 # General admin
 Console_Receive_Msgs: false
 Log_Invites: true
+Log_Invites_Message: "**%User%**  [%UserID%] joined with invite **%InviteCode%** *(use #: %Uses%)* \n `Invite from: %Inviter% [ID: %InviterID%]`"
+Log_Channel: bot-logs
+Server_Log_Channel: bot-logs
 Showcase_Channel: 123235346
 #
 #
