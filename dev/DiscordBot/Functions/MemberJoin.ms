@@ -73,6 +73,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			try {
 				discord_retrieve_invites(@discord['serverid'], closure(@raw) { 
 					@invMessage = @config['Log_Invites_Message']
+					# Convert raw arrays to associative
 					@previnv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
 					if(!is_array(@previnv)) {
 						@previnv = array()
@@ -95,6 +96,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					if(!is_array(@saveinv)) { @saveinv = array() }
 					@results = array('code': '', 'inviter': 'Not Found', 'inviterid': 0, 'use': 0)
 					@matches = array()
+					# Find Changed Uses Count
 					foreach(@code: @data in @inv) {
 						if(array_index_exists(@previnv, @data['code'])) {
 							if(@data['uses'] > @previnv[@data['code']]['uses']) {
@@ -257,7 +259,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			if(array_index_exists(@inv, @joininfo[@discord['userid']]['code'])) {
 				if(!array_index_exists(@inv, @joininfo[@discord['userid']]['code'], 'leaves')) { array_set(@inv[@joininfo[@discord['userid']]['code']], 'leaves', 0) }
 				@inv[@joininfo[@discord['userid']]['code']]['leaves']++
-				@inv[@joininfo[@discord['userid']]['code']]['uses']--
+				# @inv[@joininfo[@discord['userid']]['code']]['uses']--
+				#Discord does not decrement uses number
 				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
 			}
 		} else if(@config['Log_Invites'] == true) {
@@ -304,17 +307,4 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		@leaderboard['lastedit'] = time()
 		export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 	}
-	@amsgids = get_value('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs')
-	if(is_array(@amsgids)) {
-		foreach(@k: @v in @amsgids) {
-			# if(time() > (@v['time'] + 1209600000)) {
-			# Join Date is past 2 weeks message removal limits, remove msgids and archive join time
-				@user = ''
-				if(array_index_exists(@v, 'user')) { @user = ','.@v['user'] }
-				_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Archived-Join-Dates.csv', @v['time'].','.@k.@user.'\n', 'Append')
-				array_remove(@amsgids, @k)
-			# }
-		}
-		clear_value('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs')
-	}	
 }

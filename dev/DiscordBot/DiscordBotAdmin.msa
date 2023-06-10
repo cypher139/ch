@@ -1,5 +1,5 @@
 #version 1.1-tmc
-#requires build #81
+#requires build #84
 admin:/discordbot [$action] [$] = >>>
 @name = 'Discord'
 @prefix = '['.@name.'] '
@@ -65,7 +65,7 @@ case 'viewinvites':
 	discord_retrieve_invites(@guild, closure(@ex) { 
 		console(@ex) 
 		store_value('DiscordBot.debug.invites.save', @ex)
-		_write_file(import('DiscordBot.logs.dir').'/rawinvites.yml', yml_encode(@ex, true), 'overwrite')
+		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
 	});
 case 'transferroles':
 	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to copy from!') }
