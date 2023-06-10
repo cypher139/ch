@@ -750,153 +750,155 @@ proc _discordBot_backup_members(@args) {
 }
 
 proc _discordBot_update_members(@args) {
-	@guilds = import('DiscordBot.Guilds', array())
+	@guilds = import('DiscordBot.Guilds', array());
 	if(array_size(@guilds) == 0) { return(false) }
 	foreach(@guild in @guilds) {
-	@debugstats = array('size': array(), 'nf': 0, 'af': 0, 'fails': 0)
-	@membersID = array()
-	try {
-		@membersID = discord_get_members(@guild)
-	} catch(NotFoundException @ex) {
-		array_remove_values(@guilds, @guild)
-		_db_msg_Admins('[DiscordBot] Bot is not a member of guild "'.@guild.'"! Removed from active guild list.')
-		continue()
-	}
-	@membersNames = array()
-	@membersRoles = array()
-	@membersInfo = array()
-	@membersWR = array()
-	@membersNoRoles = array()
-	@totalroles = array()
-	@rolesMembers = array()
-	@config = import('DiscordBot.config.'.@guild)
-	@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard')
-	@invites = get_value('DiscordBot.'.@guild.'.Invites')
-	@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC')
-	
-	#Invites: only update if it does not already exist, else let member join handle updates
-	if(!is_array(@invites) && @config['Log_Invites'] == true) {
+		@debugstats = array('size': array(), 'nf': 0, 'af': 0, 'fails': 0);
+		@membersID = array();
 		try {
-			discord_retrieve_invites(@guild, closure(@raw) { 
-				@inv = array()
-				foreach(@i: @invite in @raw) {
-					array_set(@inv, @invite['code'], @invite)
+			@membersID = discord_get_members(@guild);
+		} catch(NotFoundException @ex) {
+			array_remove_values(@guilds, @guild);
+			_db_msg_Admins('[DiscordBot] Bot is not a member of guild "'.@guild.'"! Removed from active guild list.')
+			continue();
+		}
+		@membersNames = array();
+		@membersRoles = array();
+		@membersInfo = array();
+		@membersWR = array();
+		@membersNoRoles = array();
+		@totalroles = array();
+		@rolesMembers = array();
+		@config = import('DiscordBot.config.'.@guild);
+		@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard');
+		@invites = get_value('DiscordBot.'.@guild.'.Invites');
+		@sortWR = array(123,456);
+		if(@config['Welcome_Roles_Award'] == true) {
+			@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC');
+		}
+	#Invites: only update if it does not already exist, else let member join handle updates
+		if(!is_array(@invites) && @config['Log_Invites'] == true) {
+			try {
+				discord_retrieve_invites(@guild, closure(@raw) { 
+					@inv = array()
+					foreach(@i: @invite in @raw) {
+						array_set(@inv, @invite['code'], @invite)
+					}
+					store_value('DiscordBot.'.@guild.'.Invites', @inv)
+					_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Invites.yml', yml_encode(@inv, true), 'overwrite')
+				});
+			} catch(InsufficientPermissionException @ex) {
+				if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
+					array_set(@config, 'NoInvites', true)
+					console('[DiscordBot] ['.@guild.'] Invite Logging is Enabled, but bot does not have permission to view invites!', false)
+				} else {
+					console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
 				}
-				store_value('DiscordBot.'.@guild.'.Invites', @inv)
-				_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Invites.yml', yml_encode(@inv, true), 'overwrite')
-			});
-		} catch(InsufficientPermissionException @ex) {
-			if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
-				array_set(@config, 'NoInvites', true)
-				console('[DiscordBot] ['.@guild.'] Invite Logging is Enabled, but bot does not have permission to view invites!', false)
-			} else {
+			} catch(Exception @ex) {
 				console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
 			}
-		} catch(Exception @ex) {
-			console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
-		}
-	}
-	
-	foreach(@index: @id in @membersID) {
-	# Member Info (avatar, isBot, Username, etc)
-		@idInfo = ''
-		try {
-			@idInfo = discord_member_info(@guild, @id)
-		} catch(NotFoundException @ex) {
-			console('[DiscordBot] Update Roles: Not found: '.@id)
-			@debugstats['nf']++
-			continue()		
-		} catch(Exception @ex) {
-			console('[DiscordBot] error on id: '.@id.'\n'.@ex['message'])		
-			@debugstats['fails']++
-			continue()
-		}
-		array_set(@membersInfo, @id, @idInfo)
-		array_set(@membersNames, @idInfo['username'], @id)
-	# Leaderboard: Avatars, usernames, role color
-		if(@config['LB_Enable'] == true && is_array(@leaderboard) && @idInfo['bot'] == false) {
-			if(array_index_exists(@leaderboard, 'members', @id)) {
-				@newavatar = reg_match('([^/]+)[.][A-Za-z]{2,}$', @idInfo['avatar'])
-				@newcolor = 'fff'
-				if(@idInfo['color'] != null) { @newcolor = _rgb_to_hex(@idInfo['color']) }
-				if(array_index_exists(@newavatar, 1)) { array_set(@leaderboard['members'][@id], 'avatar', @newavatar[1]) }
-				array_set(@leaderboard['members'][@id], 'color', @newcolor)
-				array_set(@leaderboard['members'][@id], 'username', @idInfo['username'])
-			}
-		}
-	# Roles: Check for No Roles
-		@idRoles = discord_member_get_roles(@guild, @id);
-		if(!is_array(@idRoles)) {
-			@debugstats['af']++
-			continue()
-		}
-		# if(@idInfo['color'] == null) { console(@id.' i '.@idInfo, false) }
-		if(array_size(@idRoles) == 0) {
-			array_push(@membersNoRoles, @id)
-			continue()
 		}	
-		array_set(@membersRoles, @id, @idRoles)	
-	# Add discovered roles to Total roles ( id: name )
-		foreach(@k: @v in @idRoles) {
-			if(!array_contains(array_keys(@totalroles), @v)) {
-				array_set(@totalroles, @v, @k)
-			}
-		}
-	# If Just welcome roles, add member to WR
-		if(array_size(@idRoles) == array_size(@sortWR)) {
-			@results = array()
-			#sort arrays so roles are in same key order
-			@sortUR = array_sort(array_normalize(@idRoles), 'NUMERIC')
-			foreach(@key: @roleid in @sortWR) {
-				if(@roleid == @sortUR[@key]) {
-					array_push(@results, true)
-				} else {
-					array_push(@results, false)
-				}
-			}
-			if(array_every(@results, closure(@value) { return(@value) }) == true) {
-				array_push(@membersWR, @id)
+		foreach(@index: @id in @membersID) {
+	# Member Info (avatar, isBot, Username, etc)
+			@idInfo = ''
+			try {
+				@idInfo = discord_member_info(@guild, @id)
+			} catch(NotFoundException @ex) {
+				console('[DiscordBot] Update Roles: Not found: '.@id)
+				@debugstats['nf']++
+				continue()		
+			} catch(Exception @ex) {
+				console('[DiscordBot] error on id: '.@id.'\n'.@ex['message'])		
+				@debugstats['fails']++
 				continue()
 			}
-			@results = array()
+			array_set(@membersInfo, @id, @idInfo)
+			array_set(@membersNames, @idInfo['username'], @id)
+		# Leaderboard: Avatars, usernames, role color
+			if(@config['LB_Enable'] == true && is_array(@leaderboard) && @idInfo['bot'] == false) {
+				if(array_index_exists(@leaderboard, 'members', @id)) {
+					@newavatar = reg_match('([^/]+)[.][A-Za-z]{2,}$', @idInfo['avatar'])
+					@newcolor = 'fff'
+					if(@idInfo['color'] != null) { @newcolor = _rgb_to_hex(@idInfo['color']) }
+					if(array_index_exists(@newavatar, 1)) { array_set(@leaderboard['members'][@id], 'avatar', @newavatar[1]) }
+					array_set(@leaderboard['members'][@id], 'color', @newcolor)
+					array_set(@leaderboard['members'][@id], 'username', @idInfo['username'])
+				}
+			}
+		# Roles: Check for No Roles
+			@idRoles = discord_member_get_roles(@guild, @id);
+			if(!is_array(@idRoles)) {
+				@debugstats['af']++
+				continue()
+			}
+			# if(@idInfo['color'] == null) { console(@id.' i '.@idInfo, false) }
+			if(array_size(@idRoles) == 0) {
+				array_push(@membersNoRoles, @id)
+				continue()
+			}	
+			array_set(@membersRoles, @id, @idRoles)	
+		# Add discovered roles to Total roles ( id: name )
+			foreach(@k: @v in @idRoles) {
+				if(!array_contains(array_keys(@totalroles), @v)) {
+					array_set(@totalroles, @v, @k)
+				}
+			}
+		# If Just welcome roles, add member to WR
+			if(array_size(@idRoles) == array_size(@sortWR)) {
+				@results = array()
+				#sort arrays so roles are in same key order
+				@sortUR = array_sort(array_normalize(@idRoles), 'NUMERIC')
+				foreach(@key: @roleid in @sortWR) {
+					if(@roleid == @sortUR[@key]) {
+						array_push(@results, true)
+					} else {
+						array_push(@results, false)
+					}
+				}
+				if(array_every(@results, closure(@value) { return(@value) }) == true) {
+					array_push(@membersWR, @id)
+					continue()
+				}
+				@results = array()
+			}
 		}
-	}
-# Roles Members
-	foreach(@roleid: @rolename in @totalroles) {
-		array_set(@rolesMembers, @roleid, array())
-	}
-	foreach(@memberid: @mr in @membersRoles) {
-	# server member roles array: id: {role: 123, role2: 4235}
-		foreach(@roleName: @roleID in @mr) { 
-			array_push(@rolesMembers[@roleID], @memberid)
+	# Roles Members
+		foreach(@roleid: @rolename in @totalroles) {
+			array_set(@rolesMembers, @roleid, array())
 		}
-	}
-
-# Save data
-	if(@config['LB_Enable'] == true && is_array(@leaderboard)) {
-		export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
-	}
-	store_value('DiscordBot.'.@guild.'.members.ID', @membersID)
-	export('DiscordBot.'.@guild.'.members.ID', @membersID)
-	array_set(@debugstats['size'], 'ID', array_size(@membersID))
-	store_value('DiscordBot.'.@guild.'.members.roles', @membersRoles)
-	array_set(@debugstats['size'], 'mr', array_size(@membersRoles))
-	store_value('DiscordBot.'.@guild.'.roles.members', @rolesMembers)
-	array_set(@debugstats['size'], 'rm', array_size(@rolesMembers))
-	store_value('DiscordBot.'.@guild.'.roles.total', @totalroles)
-	array_set(@debugstats['size'], 'rt', array_size(@totalroles))
-	store_value('DiscordBot.'.@guild.'.members.names', @membersNames)
-	array_set(@debugstats['size'], 'mn', array_size(@membersNames))
-	store_value('DiscordBot.'.@guild.'.members.roles.welcomeroles', @membersWR)
-	array_set(@debugstats['size'], 'wr', array_size(@membersWR))
-	store_value('DiscordBot.'.@guild.'.members.roles.none', @membersNoRoles)
-	array_set(@debugstats['size'], 'norole', array_size(@membersNoRoles))
-	export('DiscordBot.'.@guild.'.members.names', @membersNames)
-	store_value('DiscordBot.'.@guild.'.members.info', @membersInfo)
-	export('DiscordBot.'.@guild.'.members.info', @membersInfo)
-	array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
-	array_set(@debugstats['size'], 'inv', array_size(@membersInfo))
-	export('DiscordBot.'.@guild.'.debug.stats.last.updatemembers', @debugstats)
+		foreach(@memberid: @mr in @membersRoles) {
+		# server member roles array: id: {role: 123, role2: 4235}
+			foreach(@roleName: @roleID in @mr) { 
+				array_push(@rolesMembers[@roleID], @memberid)
+			}
+		}
+	# Save data
+		@alldebugstats = import('DiscordBot.debug.stats.last.updatemembers', array())
+		if(@config['LB_Enable'] == true && is_array(@leaderboard)) {
+			export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
+		}
+		store_value('DiscordBot.'.@guild.'.members.ID', @membersID)
+		export('DiscordBot.'.@guild.'.members.ID', @membersID)
+		array_set(@debugstats['size'], 'ID', array_size(@membersID))
+		store_value('DiscordBot.'.@guild.'.members.roles', @membersRoles)
+		array_set(@debugstats['size'], 'mr', array_size(@membersRoles))
+		store_value('DiscordBot.'.@guild.'.roles.members', @rolesMembers)
+		array_set(@debugstats['size'], 'rm', array_size(@rolesMembers))
+		store_value('DiscordBot.'.@guild.'.roles.total', @totalroles)
+		array_set(@debugstats['size'], 'rt', array_size(@totalroles))
+		store_value('DiscordBot.'.@guild.'.members.names', @membersNames)
+		array_set(@debugstats['size'], 'mn', array_size(@membersNames))
+		store_value('DiscordBot.'.@guild.'.members.roles.welcomeroles', @membersWR)
+		array_set(@debugstats['size'], 'wr', array_size(@membersWR))
+		store_value('DiscordBot.'.@guild.'.members.roles.none', @membersNoRoles)
+		array_set(@debugstats['size'], 'norole', array_size(@membersNoRoles))
+		export('DiscordBot.'.@guild.'.members.names', @membersNames)
+		store_value('DiscordBot.'.@guild.'.members.info', @membersInfo)
+		export('DiscordBot.'.@guild.'.members.info', @membersInfo)
+		array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
+		array_set(@debugstats['size'], 'inv', array_size(@membersInfo))
+		array_set(@alldebugstats, @guild, @debugstats)
+		export('DiscordBot.debug.stats.last.updatemembers', @alldebugstats)
 	}
 	return(true);
 }

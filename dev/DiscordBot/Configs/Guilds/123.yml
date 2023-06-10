@@ -113,8 +113,7 @@ Welcome_Text_Channel_Name: general
 # Voice Chat text Channel ID. (Right click channel, Copy ID)
 Welcome_Text_Channel_ID: 123456789
 # What roles, if any, do new joins need to be equipped with?
-# To not award any roles, remove the roles array below, and uncomment this line below:
-# Welcome_Roles: false
+Welcome_Roles_Award: false
 Welcome_Roles:
 - 123
 - 456

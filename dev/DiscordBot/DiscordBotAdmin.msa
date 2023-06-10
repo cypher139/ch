@@ -1,5 +1,5 @@
 #version 1.1-tmc
-#requires build #84
+#requires build #85
 admin:/discordbot [$action] [$] = >>>
 @name = 'Discord'
 @prefix = '['.@name.'] '
@@ -17,19 +17,6 @@ foreach(@arg in @args) {
 }
 msg('Using Server ID: '.@guild)
 switch(@action) {
-case 'lbu':
-	@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard')
-	if(!is_array(@leaderboard)) { die()}
-	foreach(@k: @v in @leaderboard['members']) {
-		if(array_index_exists(@v, 'detailed_xp')) {
-			array_set(@leaderboard['members'][@k], 'mee6_xp', @v['detailed_xp'][2])
-			array_remove(@leaderboard['members'][@k], 'detailed_xp')
-		}
-		if(!array_index_exists(@v, 'all_xp')) {
-			# array_remove(@leaderboard['members'][@k], 'all_xp')
-			array_set(@leaderboard['members'][@k], 'all_xp', array(0,0,@v['xp']))
-		}
-	}
 case 'backup':
 	_discordBot_backup_members();
 case 'update':
@@ -38,9 +25,12 @@ case 'update':
 	_discordBot_update_members();
 	@stats = import('DiscordBot.debug.stats.last.updatemembers')
 	if(is_array(@stats)) {
-		foreach(@k: @v in @stats) {
-			if(is_array(@v) || @v > 0) {
-				msg(@k.': '.@v)
+		foreach(@guild: @data in @stats) {
+			msg('Guild: '.@guild)
+			foreach(@k: @v in @data) {
+				if(is_array(@v) || @v > 0) {
+					msg(@k.': '.@v)
+				}
 			}
 		}
 	}
@@ -51,20 +41,9 @@ case 'memberinfo':
 	@gmr = discord_member_info(@guild, @args[0])
 	msg(color('a').'Member info:')
 	msg(@gmr)
-case 'getmembers':
-	@gmr = discord_get_members(@guild)
-	msg('All members:')
-	msg(@gmr)
-case 'getmemberroles':
-case 'gmr':
-	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord role ID to view!') }
-	@gmr = discord_get_members_with_role(@guild, @args[0])
-	msg(color('a').'Members with role "'.@args[0].'":')
-	msg(@gmr)
 case 'viewinvites':
 	discord_retrieve_invites(@guild, closure(@ex) { 
 		console(@ex) 
-		store_value('DiscordBot.debug.invites.save', @ex)
 		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
 	});
 case 'transferroles':

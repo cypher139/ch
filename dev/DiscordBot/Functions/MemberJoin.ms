@@ -52,9 +52,17 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Previous Member Roles Restored')
 			console('[Discord] '.color(2).'Previous roles restored.', false)
 		} else {
-			if(is_array(@config['Welcome_Roles'])) {
+			if(is_array(@config['Welcome_Roles']) && @config['Welcome_Roles_Award'] == true) {
 				array_push_all(@currentroles, @config['Welcome_Roles'])
-				discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Add Welcome Roles')
+				try {
+					discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Add Welcome Roles');
+				} catch(NotFoundException @ex) {
+					@id = ''
+					foreach(@word in parse_args(@ex['message'])) {
+						if(string_starts_with(@word, '"')) { @id = replace(@word, '"', '') }
+					}
+					console('[DiscordBot] ['.@discord['serverid'].'] Welcome role ID '.color('c').@id.color('r').' does not exist!', false)
+				}
 			}
 		}
 #Welcome User Messages
