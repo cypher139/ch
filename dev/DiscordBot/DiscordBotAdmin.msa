@@ -1,0 +1,212 @@
+#version 1.1-tmc
+#requires build #84
+admin:/discordbot [$action] [$] = >>>
+@name = 'Discord'
+@prefix = '['.@name.'] '
+@args = parse_args($)
+@action = to_lower(string($action))
+@botconfig = import('DiscordBot.config.Discord')
+@guilds = import('DiscordBot.Guilds')
+@guild = @botconfig['Primary_Guild']
+foreach(@arg in @args) {
+	if(array_contains(@guilds, @arg)) {
+		@guild = @arg
+		array_remove_values(@args, @arg)
+		break()
+	}
+}
+msg('Using Server ID: '.@guild)
+switch(@action) {
+case 'lbu':
+	@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard')
+	if(!is_array(@leaderboard)) { die()}
+	foreach(@k: @v in @leaderboard['members']) {
+		if(array_index_exists(@v, 'detailed_xp')) {
+			array_set(@leaderboard['members'][@k], 'mee6_xp', @v['detailed_xp'][2])
+			array_remove(@leaderboard['members'][@k], 'detailed_xp')
+		}
+		if(!array_index_exists(@v, 'all_xp')) {
+			# array_remove(@leaderboard['members'][@k], 'all_xp')
+			array_set(@leaderboard['members'][@k], 'all_xp', array(0,0,@v['xp']))
+		}
+	}
+case 'backup':
+	_discordBot_backup_members();
+case 'update':
+	@startTime = time();
+	msg(color('a').'Updating DiscordBot\'s internal cache data for each guild...')
+	_discordBot_update_members();
+	@stats = import('DiscordBot.debug.stats.last.updatemembers')
+	if(is_array(@stats)) {
+		foreach(@k: @v in @stats) {
+			if(is_array(@v) || @v > 0) {
+				msg(@k.': '.@v)
+			}
+		}
+	}
+	@timeElapsed = time() - @startTime;
+	msg(color(3).'Time elapsed: '.@timeElapsed.'ms.')
+case 'memberinfo':
+	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to view!') }
+	@gmr = discord_member_info(@guild, @args[0])
+	msg(color('a').'Member info:')
+	msg(@gmr)
+case 'getmembers':
+	@gmr = discord_get_members(@guild)
+	msg('All members:')
+	msg(@gmr)
+case 'getmemberroles':
+case 'gmr':
+	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord role ID to view!') }
+	@gmr = discord_get_members_with_role(@guild, @args[0])
+	msg(color('a').'Members with role "'.@args[0].'":')
+	msg(@gmr)
+case 'viewinvites':
+	discord_retrieve_invites(@guild, closure(@ex) { 
+		console(@ex) 
+		store_value('DiscordBot.debug.invites.save', @ex)
+		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
+	});
+case 'transferroles':
+	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to copy from!') }
+	if(!array_index_exists(@args, 1)) { die(color('c').'Specify the Discord user ID to copy to!') }
+	if(!array_index_exists(@args, 2)) { @args[] = 'none' }
+	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
+		die(color('c').'Discord Usernames are not supported in this command.')
+	}
+
+	@roles = get_value('DiscordBot.'.@guild.'.members.roles')
+	if(!is_array(@roles)) { 
+		_discordBot_update_members();
+		@roles = get_value('DiscordBot.'.@guild.'.members.roles')
+	}
+	@rolesFR = get_value('DiscordBot.'.@guild.'.members.former.roles')
+	if(!is_array(@rolesFR)) { @rolesFR = array() }
+	@fromroles = ''
+	@toroles = ''
+	@saveoldroles = get_value('DiscordBot.'.@guild.'.debug.roles.Transfer.undo')
+	if(!is_array(@saveoldroles)) { @saveoldroles = array() }
+
+	# From User check
+	try {
+		@fromroles = discord_member_get_roles(@guild, @args[0])
+	} catch(Exception @ex) {
+		if(is_array(@roles)) {
+			if(array_index_exists(@roles, @args[0])) {
+				@fromroles = @roles[@args[0]]
+				msg(color('e').'From ID: Not Found on Server, using internal cache.')
+			} else if(array_index_exists(@rolesFR, @args[0])) {
+				@fromroles = @rolesFR[@args[0]]
+				msg(color('e').'From ID: Not Found on Server, using internal storage.')
+			} else {
+				die(color('c').'From ID was Not Found on Server or internal cache!')
+			}
+		} else { die(color('c').'From ID was Not Found on Server; internal storage not initialized!') }
+	}
+	# To User check
+	try {
+		@toroles = discord_member_get_roles(@guild, @args[1])
+	} catch(Exception @ex) {
+		die(color('c').'To ID Not Found on Server: '.@ex['message'])
+	}
+	if(@args[2] == 'undo') {
+	#does not add from roles.
+		# @toroles = get_value('Chat.debug.Discord.User.'.@args[1].'.old.roles')
+		if(array_index_exists(@saveoldroles, @args[1])) {
+			@toroles = @saveoldroles[@args[1]]
+		} else {
+			die(color('c').'That user has nothing to undo!')
+		}
+	} else {
+	# adds from roles, not sets to!
+		array_set(@saveoldroles, @args[1], @toroles)
+		store_value('DiscordBot.'.@guild.'.debug.roles.Transfer.undo', @saveoldroles)
+		@toroles = array_merge(@toroles, @fromroles)
+	}
+	# console(@toroles, false)
+	# console(@fromroles)
+		
+	discord_member_set_roles(@guild, @args[1], @toroles)
+	msg(color('a').'Discord User '.color(3).@args[1].color('a').' had their Roles set to:\n'.color('r').array_keys(@toroles))
+
+case 'getroles':
+	if(!array_index_exists(@args, 0)) { die(@prefix.color('c').'Specify the Discord user ID!') }
+	if(!array_index_exists(@args, 1)) { @args[] = 0 }
+	@roles = ''
+	switch(@args[1]) {
+	case 0:
+	case 'discord':
+	case 'chd':
+		try {
+			@roles = discord_member_get_roles(@guild, @args[0])
+			if(player() != '~console') { @roles = array_keys(@roles) }
+		} catch(NotFoundException @ex) {
+			die(@prefix.color('e').'User ID Not Found on Server.')
+		} catch(Exception @ex) {
+			die(@prefix.color('c').'Discord User ID: '.@ex['message'])
+		}
+	case 1:
+	case 'saved':
+	case 'gv':
+		@roles = get_value('DiscordBot.'.@guild.'.members.roles')
+		if(is_array(@roles)) {
+			if(array_index_exists(@roles, @args[0])) {
+				@roles = @roles[@args[0]]
+			} else {
+				die(@prefix.color('c').'Discord User ID not found in internal storage!')
+			}
+		} else { die(@prefix.'Internal storage not found') }
+	default:
+		die(color('e').'Specify Search type: CHDiscord cache or internal storage')
+	}
+	msg(color('a').@prefix.'Roles found for User '.color(3).@args[0].color('a').': '.color('r').@roles)
+
+case 'vcstats':
+case 'vc':
+	@id = null
+	if(!array_index_exists(@args, 0)) { @args = array('None') }
+	@stats = get_value('DiscordBot.'.@guild.'.last.VC')
+	if(!is_array(@stats)) { die('['.@name.'] There are no stats saved.') }	
+	if(is_numeric(@args[0])) {
+		@id = $id - 1
+	}
+	switch(@id) {
+	case 0..19:
+		if(array_index_exists(@stats, @id)) {
+			msg(color(9).'['.@name.'] Last Voice Chat stat #'.(@id + 1).':');
+			msg('Channel: '.@stats[@id]['channel'].' Start: '.simple_date('MM/dd/yy HH:mm', @stats[@id]['start']).' / End: '.simple_date('MM/dd/yy HH:mm', @stats[@id]['end']));
+			msg('Users joined: '.color('b').array_implode(@stats[@id]['users'], ', '));
+			if(array_index_exists(@stats[@id], 'pinguser')) {
+				msg('User that triggered VC Role ping: '.@stats[@id]['pinguser']);
+			}
+		} else { msg('['.@name.'] Voice Chat ID was not found.') }
+	case null:
+		msg('['.@name.'] Last Voice Chat stats:')
+		foreach(@i: @stat in @stats) {
+			msg(color(9).'#'.(@i + 1).':'.color('r').' Channel: '.@stat['channel'].' Start: '.simple_date('MM/dd/yy HH:mm', @stat['start']).' / End: '.simple_date('MM/dd/yy HH:mm', @stat['end']));
+			msg('Users joined: '.color('b').array_implode(@stat['users'], ', '));
+			if(array_index_exists(@stat, 'pinguser')) { msg('User that triggered VC Role ping: '.@stat['pinguser']) }
+		}
+	default:
+		msg('['.@name.'] Last Voice Chat ID not recognized.');
+	}
+
+case 'wrf':
+case 'welcomerolesfinder':
+	if(!array_index_exists(@args, 0)) { @args = array('r') }
+	@return = _discordBot_WelcomeRolesFinder(@args[0])
+	if(reg_count('^[WwNn]', @args[0]) > 0) {
+		msg('['.@name.'] IDs: \n'.array_implode(@return['list'], '\n'))
+		msg('['.@name.'] '.@return['amount'].' '.@return['msg'])
+	} else {
+		if(array_index_exists(@return, 'zero')) {
+			msg('['.@name.'] '.@return['zero'].' members were detected as having 0 roles.')
+		}
+		if(array_index_exists(@return, 'welcome')) {
+			msg('['.@name.'] '.@return['welcome'].' members were detected as having only the Welcome Roles.')
+		}
+	}
+default:
+msg('Action Not Recognized!')	
+}
+<<<

@@ -1,0 +1,41 @@
+#version 1.1-tmc
+admin:/discordbotcfg [$config='Discord'] [$type='DiscordBot'] [$] = >>>
+proc _chat_help() {
+	msg(color(6).'Chat: Admin help:')
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color('a').'/discordbotcfg <action> [option1] [option2] [option3] [option4]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/discordbotcfg <config>'.color(4).' - '.color('f').'Reloads specified config.')
+
+}
+if($config == 'help') { _chat_help() die() }
+
+@ret = ''
+@prefix = ''
+@type = $type
+switch($type) {
+case 'c':
+case 'Chat':
+	@prefix = 'Chat'
+	@ret = _db_load_config($config, @prefix)
+case 'd':
+case 'db':
+case 'DiscordBot':
+	@prefix = 'DiscordBot'
+	@ret = _db_load_config($config, @prefix)
+default:
+	if(!is_numeric($config)) { die(color(12).'Type not recognized.') }
+	@prefix = 'DiscordBot'
+	@ret = _db_load_config($config, @prefix)
+}
+
+@prev = import(@prefix.'.config.'.$config)
+
+if(is_array(@ret)) { 
+	@loadtype = ''
+	if(is_array(@prev)) { @loadtype = 'Reloaded' } else { @loadtype = 'Loaded' }
+	msg('['.@prefix.'] '.color(10).@loadtype.' config: '.color(7).$config)
+} else {
+	msg('['.@prefix.'] '.color(12).'Failed to load config: '.color(7).$config)
+}
+<<<

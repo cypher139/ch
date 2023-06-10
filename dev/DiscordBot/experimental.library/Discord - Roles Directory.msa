@@ -1,0 +1,290 @@
+######################################################
+#
+#   Discord: Record all of your server's roles and members, and what members belong in which roles.
+#   You can them message the results into a channel of your choosing!
+#
+######################################################
+
+admin:/discordroles [$] = >>>
+@name = 'DiscordRoles'
+@prefix = color(7).'['.color(6).@name.color(7).'] '
+
+proc _help() {
+	msg(color(6).'script help:')
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/discordroles update 1'.color(4).' - '.color('f').'add initial user list array. this needs manually configured in this file. expects an entire array of Discord User IDs only. ex. array(1234567890, 234456576890, 2234523, 524352, 43523) etc')
+	#MemberList bot /server filetype:csv flags:all . csv regex replace ^.+[#][0-9]{4}["][,]["] replace with '' and ["][,].+ replace with '' then replace \r\n with ', '. encase line in array()
+	msg(color(7).'/discordroles update 2'.color(4).' - '.color('f').'Takes members IDs and gets all roles each member belongs to, and also outputs list of total roles seen.')
+	msg(color(7).'/discordroles update 3'.color(4).' - '.color('f').'Takes list of members and their roles, output a list of roles and what members belong to that role.')
+	msg(color(7).'/discordroles update 4'.color(4).' - '.color('f').'Outputs the list of role groups and what members belong to each role in that group. \n Outputs via Discord messages mentions and/or file output. \n -- We take no repsonsibility for users who are mad about many automated pings. \n -- **File output requires manually configured discord tags and IDs into persistance. ex. array(discorduser#0123: 2873654872153, ) etc.**')
+}
+
+
+@args = parse_args($)
+@player = player()
+# Get other player name  
+foreach(@v in @args) {
+	if(array_contains_ic(all_players(), @v)) {
+		@otherplayer = player(@v)
+	}
+}
+
+if(array_size(@args) == 0) {
+	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'No action specified.')
+	_help()
+	die()
+}
+
+switch(@args[0]) {
+
+case 'u':
+case 'update':
+	switch(@args[1]) {
+	case 0:
+		@memberids = get_value('DiscordBot.members.ID')
+		foreach(@k: @id in @memberids) {
+		@timeout = @k * 1000
+		set_timeout(@timeout, closure(){
+			msg(@k)
+		});
+		}
+	case 1:
+#part 1: MANUAL give array of all member ids {123, 456, 789}
+#(bind join to add new to a NEW array, MANUAL add them in)
+		store_value('DiscordBot.previous.members.ID', get_value('DiscordBot.members.ID'))
+		#store_value('DiscordBot.members.ID', array())
+		store_value('DiscordBot.members.ID', array())
+		msg(@prefix.'List Update: (blank) Part 1 Successful!')
+	case 2:
+#part 2: get all member roles, save 2 arrays:
+		x_new_thread(@name.'Update.2', closure(){
+			
+			@starttime = time()
+			@memberids = get_value('DiscordBot.members.ID')
+			if(!is_array(@memberids)) { die('part1plz') }
+			@totalroles = array()
+			@servermemberroles = get_value('DiscordBot.members.roles')
+			if(!is_array(@servermemberroles)) { @servermemberroles = array() }
+			@f = 0
+			@f1 = 0
+			@noarraycount = 0
+			@norolescount = 0
+			foreach(@timeid: @id in @memberids) {
+				@timeout = @timeid * 200
+				set_timeout(@timeout, closure(){
+
+
+				@memberroles = null
+			#	(key rolename, value roleid)
+				try(
+					#not found throws exception
+					#bots do this
+					@memberroles = discord_member_get_roles(@id)
+					tmsg(@player, 'id: '.@id)	
+					tmsg(@player, @memberroles)					
+					@f1++
+				,@fail,
+					if(@fail['message'] == 'A member with the id "'.@id.'" was not found on Discord server.') {
+					tmsg(@player, 'notfound: '.@id)		
+					} else {
+					tmsg(@player, 'error on id: '.@id)		
+					}
+					@f++
+					continue()
+				)
+				if(!is_array(@memberroles)) {
+					@noarraycount++
+					continue()
+				}
+				if(array_size(@memberroles) == 0) { 
+					@norolescount++
+					continue()
+				}
+				# server member roles array
+				# array 1: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
+				if(array_contains(array_keys(@servermemberroles), @id)) {
+					@servermemberroles[@id] = @memberroles 
+				} else {
+					array_set(@servermemberroles, @id, @memberroles)
+				}
+				  
+				# total roles array. reset per run
+				# array 2: {123: role 1, 456: roles2}
+				foreach(@k: @v in @memberroles) {
+					if(!array_contains(array_keys(@totalroles), @v)){
+						array_set(@totalroles, @v, @k)
+					}
+				  }
+				});
+			}
+			@timeout = @timeout + 2000
+			set_timeout(@timeout, closure(){
+			# save roles
+			store_value('DiscordBot.previous.members.roles', get_value('DiscordBot.members.roles'))
+			store_value('DiscordBot.members.roles', @servermemberroles)
+			store_value('DiscordBot.previous.roles.total', get_value('DiscordBot.roles.total'))
+			store_value('DiscordBot.roles.total', @totalroles)
+			# @servermemberroles = array of all members with all their roles
+			# @totalroles = array of all role names seen from computing members and their roles.
+
+			@endtime = (time() - @starttime) / 1000
+			tmsg(@player, @prefix.'List Update: Part 2 Success! Time Elapsed: '.@endtime.' seconds.')
+			tmsg(@player, 'Debug: memberid size: '.array_size(@memberids).', getroles success: '.@f1.', getroles fails: '.@f.', array fails: '.@noarraycount.', no roles found: '.@norolescount)
+			});
+		});
+	case 3:
+		#part 3: membersinrole array: formulate what members belong to each role
+	# version2:
+# loop through members, push their status to roleid lists.
+		x_new_thread(@name.'Update.3', closure(){
+			@starttime = time()
+			@servermemberroles = get_value('DiscordBot.members.roles')
+			@totalroles = get_value('DiscordBot.roles.total')
+			if(!is_array(@servermemberroles)) { die('part2 plz') }
+			if(!is_array(@totalroles)) { die('part2 plz') }
+
+
+			@rolesMembers = array()
+			foreach(@roleid: @rolename in @totalroles) {
+				array_set(@rolesMembers, @roleid, array())
+			}
+			#  load in loop with info of that member's entire roles.
+			foreach(@memberid: @memberroles in @servermemberroles) {
+			# server member roles array: {memberid: {role: 123, role2: 4235}, memberid: {role: 234}, }
+				foreach(@k: @v in @memberroles) { 
+				#this foreach value sees: @k = role, @v = 123
+				#loop through each role present, push memberid to membersinrole[roleid]
+					array_push(@rolesMembers[@v], @memberid)
+				}
+			}
+
+			store_value('DiscordBot.previous.roles.members', get_value('DiscordBot.roles.members'))
+			store_value('DiscordBot.roles.members', @rolesMembers)
+			@endtime = time()
+			# membersinrole
+			# {roleid: {memberid1, memberid2, }, roleid2: {memberid1, memberid2, }}
+			@endtime = (time() - @starttime) / 1000
+			tmsg(@player, @prefix.'List Update: Part 3 Success! Time Elapsed: '.@endtime.' seconds.')
+		});
+	case 4:
+	#msg directory of who has what group and mod type in group
+		@usediscordmsg = false
+		@usewritefile = true
+		@sdrg = get_value('DiscordBot.roles.groups')
+		if(!is_array(@sdrg)) { die('part1plz') }
+		@totalroles = get_value('DiscordBot.roles.total')
+		@membersinrole = get_value('DiscordBot.roles.members')
+		@membersnames = get_value('DiscordBot.members.names')
+		@channel = 'mod-directory'
+		@filearray = array()
+		@userarray = array()
+		foreach(@index1: @currentgroup in array_unique(array_normalize(@sdrg))) {
+			if(@usediscordmsg == true) { discord_broadcast(@channel, associative_array(content: '```'.@currentgroup.'```')) }
+			if(@usewritefile == true) { array_push(@filearray, @currentgroup.' \r\n') }
+			foreach(@k: @v in @sdrg) {
+				if(@currentgroup != @v) {continue()}
+				if(@usediscordmsg == true) { discord_broadcast(@channel, associative_array(content: '`'.@k.'`')) }
+				if(@usewritefile == true) { array_push(@filearray, @k.' \r\n') }
+				#rolename: groupname
+				foreach(@k2: @v2 in @totalroles) {
+					if(@v2 == @k) {
+						@roleid = @k2
+						break()
+					}
+				}
+				if(@usewritefile == true) {
+					foreach(@k3: @v3 in @membersinrole[@roleid]) {
+						#get name of userid
+						@usernick = null
+		#				try(
+		#					@usernick = discord_member_get_nickname(@v3)
+		#				,@fail,
+		#					continue()
+		#				)
+		#				if(@usernick == '' || @usernick == null) {
+							foreach(@k4: @v4 in @membersnames) {
+								if(@v4 == @v3) {
+									@usernick = @k4
+									break()
+								}
+							}
+		#				}
+						array_push(@userarray, @usernick)
+					}
+					array_push(@filearray, '@'.array_implode(@userarray, ', @').' \r\n')
+					@userarray = array()
+				}
+ # msg out to arrayarray_push
+ 
+ #msg to new array array(line1: array(rolename: membername, membername), line2,) etc. write file array_implode(@thisarray, '\r\n')	
+ 
+				if(@usediscordmsg == true) {
+					@usermsg = '<@'.array_implode(@membersinrole[@roleid], '> <@').'>'
+					if(length(@usermsg) > 1999) {
+						@color2000 = 'c'
+					} else {
+						@color2000 = 'a'
+					}		
+					msg(@k.' is '.color(@color2000).length(@usermsg).' chars')
+					discord_broadcast(@channel, associative_array(content: 'f'))
+				#	discord_broadcast(@channel, associative_array(content: @usermsg))
+				}
+			}
+		}
+		if(@usewritefile == true) {
+			#msg(@filearray)
+			store_value('DiscordBot.roles.directory', @filearray)
+			if(function_exists('write_file')) { @writemethod = 1 }
+			if(function_exists('chf_write')) { @writemethod = 2 }
+			if(in_cmdline_mode()) { @writemethod = 3 }
+			switch(@writemethod) {
+			case 1:
+			if(extension_exists('CHFiles')) {
+				write_file('../directory.csv', array_implode(@filearray, ''), 'OVERWRITE')	
+			}
+			case 2:
+			if(extension_exists('CHFile')) {
+#				msg(chf_directory_list('../'))
+				#../ is parent folder of script location
+				chf_write('../directory.csv', array_implode(@filearray, ''), 'OVERWRITE')
+			}
+			case 3:
+			default:
+				try (	
+					x_write('../directory.csv', array_implode(@filearray, ''), 'OVERWRITE')  
+				,@fail,
+					msg('File not written, as CH\'s Core write files are commandline only functions.')
+				)
+			}
+		}
+		if(@usediscordmsg == true) { @dmsgdisplay = 'Please wait for Discord Rate-limiting to catch up with the messages spam.' } else { @dmsgdisplay = '' }
+		if(@usewritefile == true) { @filemsgdisplay = 'Check your CommandHelper folder for the directory CSV file.' } else { @filemsgdisplay = '' }
+		tmsg(@player, @prefix.'List Update: Part 4 Success! \n '.@dmsgdisplay.@filemsgdisplay)
+	default:
+		msg('specify a update part number')
+	}
+case 'msg':
+case 'test':
+	msg('messages embed test coming soon')
+case 'help':
+case '-help':
+case '?':
+case '/?':
+	_help()
+
+default:
+	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'No action specified.')
+	_help()
+}
+
+<<<
+/*
+ for adding roles:
+ -get current roles @memberroles = get_value (members.roles)
+ -add new roles to array 
+ if(array_contains(@memberroles[memberid], roleid) continue()
+ array_push(@memberroles[memberid], role) loop
+ -set roles (@memberroles[memberid])
+ -save new array (store_value members.roles[memberid])
+ */

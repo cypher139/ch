@@ -1,0 +1,20 @@
+#version 1.0-tmc
+admin:/discordbotdbconvmg [$clear='false'] [$type=0] [$] = >>>
+	@dbcount = 0
+	@dmcount = 0
+	@orcount = 0	
+	@botconfig = import('DiscordBot.config.Discord')
+	@guild = @botconfig['Primary_Guild']
+	foreach(@key: @data in get_values('DiscordBot.')) {
+		if(reg_count('DMs', @key) > 0) { continue() }
+		if(reg_count('last', @key) > 0) { continue() }
+		if(reg_count('Console', @key) > 0) { continue() }
+		if(reg_count('DiscordBot[.][0-9]', @key) > 0) { continue() }
+		store_value(reg_replace('DiscordBot.', 'DiscordBot.'.@guild.'.', @key), @data)
+		if(string($clear) == 'true') { clear_value(@key) }
+		if(player() == '~console') { msg(@key) }
+		
+		@dbcount++
+	}
+	msg('[DiscordBot] '.color(7).' Total db entries moved: '.@dbcount)
+<<<

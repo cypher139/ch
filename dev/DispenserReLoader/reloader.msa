@@ -1,0 +1,684 @@
+######################################################
+#
+#   ReLoad: Fill blocks that have inventories in one click!
+#   version 1.2-tmc
+#
+######################################################
+#test layout:/rl      area       fuel       263         64
+
+
+/*
+add tool action:
+
+if action not found default to make it tool action
+remove reassigns
+parse_args = action is 0, item is 1, qty 2, etc
+if action not found insert 'tool' as argument 0, shift to right
+then can assign at start item = arg1, etc
+
+rl $action $
+then option1 = if args0, etc
+if array_contains fuel, set fuel true and remove index
+
+
+move logic to procs
+
+allow for sign usages
+sign has 60sec cooldown
+
+
+*/
+
+
+reloader:/reloader [$action] [$option1] [$option2] [$option3] [$] = >>>
+#Include required backend functions
+include('modules.library/Core.ms')
+@name = string(import('dispenserreloader.name'))
+@args = parse_args($)
+### Get server item defaults
+@serveritemdefaults = _reloader_get_server_defaults()
+@defaultitem = @serveritemdefaults['item']
+@defaultitemqty = @serveritemdefaults['qty']
+ 
+@action = to_lower($action)
+@option1 = $option1
+@option2 = $option2
+@option3 = $option3
+@player = _reloader_getplayerID(player())
+
+@playerconfig = import(@name.'.player.'.@player['id'].'.config', 'new')
+if(@playerconfig == 'new') {
+	@playerconfig = get_value(@name.'.player.'.@player['id'].'.config')
+	export(@name.'.player.'.@player['id'].'.config', @playerconfig)
+}
+if(!is_array(@playerconfig)) { @playerconfig = array('area': 'All', 'fuel_type': '', 'item_type': '', 'item_qty': '', 'verbose': false) }
+export(@name.'.player.'.@player['id'].'.verbose', @playerconfig['verbose'])
+@verbose = @playerconfig['verbose']
+
+
+@dev = import('ch.player.'.@player['id'].'.dev.scripts.reload')
+
+@updateconfig = closure(@ex) {
+	export(@name.'.player.'.@player['id'].'.config', @ex)
+	store_value(@name.'.player.'.@player['id'].'.config', @ex)
+}
+
+
+@help = closure(@ex) {
+	@return = array(
+	color(3).'DispenserReLoader: Fill chests or dispensers in one click!',
+	color(6).'- Help:',
+	color(10).'Command usage: action <required> [optional]',
+	color(6).'- Information:',
+	color(7).'/reloader help'.color(4).' - '.color('f').'Shows this help screen.',
+	color(7).'/reloader info'.color(4).' - '.color('f').'Shows your settings, such as the currently set item, or extra messages.',
+	color(7).'/reloader stats'.color(4).' - '.color('f').'Shows your statistics for '.@name.', such as the total area or tool runs, total blocks filled, total items used, etc.',
+	color(7).'/reloader verbose'.color(4).' - '.color('f').'Allows you to turn on or off extra messages '.@name.' can display.',
+	color(6).'- Special Item Types:',
+	color(7).'clear'.color(4).' - '.color('f').' Uses the server default item or quantity.',
+	color(7).'this'.color(4).' - '.color('f').' Uses what you are holding and its max stack size as the item and quantity to use.',
+	color(6).'- Actions:',
+	color(7).'Most commands support specifying the item type and quantity to use, or you can use "/reloader set" to always use a specific item without having to type it each time.',
+	color(7).'/reloader [item] [qty]'.color(4).' - '.color('f').'Binds the tool you are holding to fill any chest, dispenser, or furnace block with the specified item (defaults to arrows).',
+	color(7).'/reloader set <item> [qty]'.color(4).' - '.color('f').'Allows you to set what item type and quantity you would like to automatically use when you just type \'/reloader\'. Use "default" as your item type to reset to defaults.',
+	color(7).'/reloader area [item] [qty]'.color(4).' - '.color('f').'This uses your WorldEdit selection to fill every fillable block in the selection with the specified item (defaults to arrows). Useful for walls of death.',
+	color(7).'/reloader area fuel [item] [qty]'.color(4).' - '.color('f').'This uses your WorldEdit selection to fill every furnace\'s fuel in the selection with the specified item.',
+	color(7).'/reloader fuel [item] [qty]'.color(4).' - '.color('f').'This binds your tool to fill the fuel portion of a furnace, instead of filling the block to burn.',
+	color(7).'/reloader mode <itemtype>'.color(4).' - '.color('f').'Sets /reloader area to only fill a chest, dispenser, or furnace, or all 3 types. Useful for not wiping chest contents ;)',
+	color(7).'/reloader managebind'.color(4).' - '.color('f').'Unbind, or re-bind the '.@name.' tool to your currently held item!'
+	)
+	return(array_implode(@return, '\n'))
+}
+
+# More option conflicts:
+# /reloader area fuel needs option variable conversions, due to the extra action command.
+@fuel = ''
+switch(@action) {
+case 's':
+case 'set':
+case '-set':
+case 'a':
+case 'ar':
+case 'area':
+case '-area':
+case '-a':
+	if(reg_count('^[fF]', @option1) > 0) {
+		#item type = @option1
+		@option1 = @option2
+		#item quantity = @option2
+		@option2 = @option3
+		@fuel = true
+		@defaultitem = @serveritemdefaults['fuel']
+	}
+case 'f':
+case 'fuel':
+	@fuel = true
+}
+ 
+# Setup previously set item type and quantity
+@setitem = @playerconfig['item_type']
+@setitemqty = @playerconfig['item_qty']
+# Check: verify item name and qty is legit
+if(@fuel == true) {
+	@setitem = @playerconfig['fuel_type']
+	if(_reloader_item_name(@setitem)['name'] == null) {
+		@setitem = @serveritemdefaults['fuel']
+		@playerconfig['fuel_type'] = @serveritemdefaults['fuel']
+		@updateconfig(@playerconfig);
+		if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set fuel type was not valid, reset to server default.')}
+	}
+} else {
+	if(_reloader_item_name(@setitem)['name'] == null) {
+		@setitem = @serveritemdefaults['item']
+		@playerconfig['item_type'] = @serveritemdefaults['item']
+		@updateconfig(@playerconfig);
+		if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set item type was not valid, reset to server default.')}
+	}
+}
+if(!is_integral(@setitemqty) || @setitemqty == 0) {
+	@setitemqty = @serveritemdefaults['qty']
+	@playerconfig['item_qty'] = @serveritemdefaults['qty']
+	@updateconfig(@playerconfig);
+	if(@dev == true) {msg(color(7).'[DEV]: '.color('f').'Set item qty was not valid, reset to server default.')}
+}
+ 
+
+### All Actions List:
+switch(@action){
+### These actions don't need the main parts of the script / the main checks to run, so they are listed here.
+case 'help':
+case '-help':
+case '?':
+case '/?':
+	die(@help())
+# Version check
+case 'version':
+case 'build':
+case '-version':
+case '-build':
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Version: '.import('dispenserreloader.version'))
+	die()
+# Extra messages
+case '-verbose':
+case 'verbose':
+	@verbose = !@verbose
+	@msg = ''
+	#verbose already checked at start
+	if(@verbose == true) {
+		@msg = color('a').'enabled! '.color(7).@name.' will display more useful messages.'
+	} else {
+		@msg = color('c').'disabled! '.color(7).@name.' will display only normal messages'
+	}
+	@playerconfig['verbose'] = @verbose
+	@updateconfig(@playerconfig);
+	export(@name.'.player.'.@player['id'].'.verbose', @verbose)
+	die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Extra messages are '.@msg)
+# Set which item type to fill on /reloader area
+case '-mode':
+case 'mode':
+case 'setmode':
+case 'areamode':
+case 'm':
+	@setareamode = 'unset'
+	@msgaccepttypes = color(6).'Barrel'.color('f').', '.color(9).'Blast Furnace'.color('f').', '.color(6).'Brewing'.color('f').', '.color(9).'Chest'.color('f').', '.color(6).'Dispenser'.color('f').', '.color(9).'Furnace'.color('f').', '.color(6).'Shulker Box'.color('f').', '.color(9).'Smoker'.color('f').', '.color(6).'Trapped Chest.'
+	@msggrouptypes = color(2).'Group Options: \n'.color('a').'All'.color('7').' - Use all block types listed. \n'.color('a').'Chests'.color(7).' - Use Barrel/Chest/Shulker Box/Trapped Chest. \n'.color('a').'Furnaces'.color(7).' - Use Blast Furnace/Brewing/Furnace/Smoker.'
+	@areamode = @playerconfig['area']
+	if(@areamode == '' || @areamode == null) { @areamode = 'All' }
+	#Switch doesn't support wildcard matching, so regex route it is.
+	@option1 = to_lower(@option1)
+	if(reg_count('^[a]', @option1) > 0) {	@setareamode = 'All' }
+	if(reg_count('^[b][a]', @option1) > 0) { @setareamode = 'Barrel' }
+	if(reg_count('^[b][l]', @option1) > 0) { @setareamode = 'Blast_Furnace' }
+	if(reg_count('^[b][r]', @option1) > 0) { @setareamode = 'Brewing' }
+	if(reg_count('^[c]', @option1) > 0) { @setareamode = 'Chest'
+		if(reg_count('^[c].*[s]$', @option1) > 0) {
+			@setareamode = 'Group_Chest'
+		}
+	}
+	if(reg_count('^[d]', @option1) > 0) {
+		@setareamode = 'Dispenser'
+	}
+	if(reg_count('^[f]', @option1) > 0) { @setareamode = 'Furnace'
+		if(reg_count('^[b]', @option2) > 0) {
+			@setareamode = 'Blast_Furnace'
+		}
+		if(reg_count('^[f].*[s]$', @option1) > 0) {
+			@setareamode = 'Group_Furnace'
+		}
+	}
+	if(reg_count('^[s][h]', @option1) > 0) { @setareamode = 'Shulker_Box' }
+	if(reg_count('^[s][m]', @option1) > 0) { @setareamode = 'Smoker' }
+	if(reg_count('^[t]', @option1) > 0) { @setareamode = 'Trapped_Chest' }
+	# Groups
+	if(reg_count('^[g].*[c]', @option1) > 0) { @setareamode = 'Group_Chest' }
+	if(reg_count('^[g].*[f]', @option1) > 0) { @setareamode = 'Group_Furnace' }
+	
+	# Dyed shulker boxes
+	if(reg_count('^.+[-_][s][h]', @option1) > 0) {
+		@shcolor = reg_split('[-_][s]', @option1)
+		@acceptshcolor = array('black', 'blue', 'brown', 'cyan', 'gray', 'green', 'light-blue', 'light-gray', 'light_blue', 'light_gray', 'lime', 'magenta', 'orange', 'pink', 'purple', 'red', 'white', 'yellow')
+		if(array_contains(@acceptshcolor, @shcolor[0])) {	
+			@setareamode = _reloader_capitalize(@shcolor[0], null, 1).'_Shulker_Box' 
+		} else {
+			die(color('c').'['.color(6).@name.color('c').'] '.color(7).'Please specify a *valid* type of dyed Shulker Box. Accepted dye colors are: \n'.color(9).array_implode(@acceptshcolor, ', '))
+		}
+	}
+	
+	if(@setareamode == 'unset' || @option1 = '' || @option1 = null) {
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Current Area mode: '.@areamode)
+		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'To change your area mode, please specify a *valid* type of item. Accepted item types are: '.@msgaccepttypes.'\n'.@msggrouptypes)
+	}
+	@playerconfig['area'] = @setareamode
+	@updateconfig(@playerconfig);
+	die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode set to: '._reloader_capitalize(@setareamode, 1))
+# Information, such as the last item used, set modes, etc.
+case 'info':
+case '-i':
+case 'i':
+case '-info':
+case 'view':
+	@playerstats = get_value(@name.'.player.'.@player['id'].'.stats')
+	if(!is_array(@playerstats)) { @playerstats = array('last_run': 0) }
+
+	if(@playerconfig['area'] == '' || @playerconfig['area'] == null) { @playerconfig['area'] = 'All' }
+	if(@playerconfig['item_type'] == '' || @playerconfig['item_type'] == null) { @playerconfig['item_type'] = @serveritemdefaults['item'] }
+	if(@playerconfig['item_qty'] == '' || @playerconfig['item_qty'] == null) { @playerconfig['item_qty'] = @serveritemdefaults['qty'] }
+	if(@playerconfig['fuel_type'] == '' || @playerconfig['fuel_type'] == null) { @playerconfig['fuel_type'] = @serveritemdefaults['fuel'] }
+	@vmsg = color('c').'Disabled'
+	if(@verbose == true) { @vmsg = color('a').'Enabled'	}
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(6).@name.' configuration for: '.color('a').@player['display'])
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set item: '.color('a').@playerconfig['item_type'].color(9).' (Qty: '.@playerconfig['item_qty'].')')
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Set fuel item: '.color('a').@playerconfig['fuel_type'])	
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Area mode: '.color(7)._reloader_capitalize(@playerconfig['area'], 1))
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Verbose (extra) messages: '.@vmsg)
+	if(is_array(@playerstats['last_run'])) {
+		@lastitemused = _reloader_item_name(@playerstats['last_run']['item'])
+		msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Last item used: '.color(7).@lastitemused['display'].' ['.@lastitemused['id'].'] '.color(9).'(Qty: '.@playerstats['last_run']['qty'].')')
+	}
+	die()
+# Statistics: How many items have you used? how many blocks filled? How many times have you run reload?
+case '-stats':
+case 'stats':
+case 'statistics':
+case 'stat':
+case 'st':
+	msg(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' stats for: '.color(9).@player['name']) 
+	msg(color(9).' -------')
+	@playerstats = get_value(@name.'.player.'.@player['id'].'.stats')
+	if(!is_array(@playerstats)) { @playerstats = array('filled_blocks': 0, 'items': array(), 'runs_area': 0, 'runs_tool': 0, 'last_run': array()) }
+	
+	@atr = @playerstats['runs_area']
+	@ttr = @playerstats['runs_tool']
+	# Stop with 0/null stuff if the player or server has not used the script.
+	if(@atr == 0 && @ttr == 0) { 	
+		die(color('c').'['.color(7).@name.color('c').'] '.color('c').'You have not used '.@name.'!') 
+	}
+	msg(color(7).'All time '.@name.' runs:')
+	msg(color(6).'/reload area: '.color('b')._reloader_number_commaize(@atr).' runs')
+	msg(color(6).'/reload (tool): '.color('b')._reloader_number_commaize(@ttr).' runs')
+	msg(color(6).'Total '.@name.' runs: '.color('b')._reloader_number_commaize(@atr + @ttr).' runs')
+	
+	msg(color(9).' -------')
+ 
+	msg(color(7).'Total blocks filled: '.color('b')._reloader_number_commaize(@playerstats['filled_blocks']))
+	
+	msg(color(9).' -------')
+ 
+	@lr = @playerstats['last_run']
+	if(is_array(@lr)) {
+		if(array_index_exists(@lr, 'action')) {	
+			msg(color(7).'Last run: '.color(6).@lr['action'].'.')
+			@p = 'blocks'
+			@p2 = 'were'
+			if(@lr['blocks'] == 1) { @p = 'block' @p2 = 'was') }
+			msg(color('a')._reloader_number_commaize(@lr['blocks']).' '.@p.color(7).' '.@p2.' filled, using '.color('b')._reloader_number_commaize(@lr['filledqty']).' '.color(3).to_lower(@lr['item']).'.')
+		}
+	}
+	msg(color(9).' -------')
+ 
+	if(is_array(@playerstats['items'])) { 
+		msg(color(9).'Total items used to fill blocks:')	
+	} else {
+		@playerstats['items'] = array()
+	}
+	@tiu = 0
+	foreach(@itemname: @itemqty in @playerstats['items']) {
+			@tiu = @tiu + @itemqty
+			msg(color(3)._reloader_item_name(@itemname)['display'].': '.color(7)._reloader_number_commaize(@itemqty))
+	} else {
+		die(color(7).'['.color(6).@name.color(7).'] '.color(7).'No blocks have been filled?! Try using /reload to refill your block inventories!')
+	}
+	msg(color(9).'Total items used: '._reloader_number_commaize(@tiu))
+	die(color(9).'['.color(7).@name.color(9).'] '.color(9).' -----')
+# Bind/Unbind reload tool
+case 'managebind':
+case 'bind':
+case 'unbind':
+	@index = null
+	#Find the tool in the players hand. Don't use just a hand, sorry.
+	@tool = pinv(@player['name'], @index)['name']
+	if(@tool == null) {
+		#ReLoad tool does not bind to Hand.	
+        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'Your hands aren\'t that magical! Equip a tool and use \'/reloader\' again.')
+	}
+	@tooldisplay = _reloader_item_name(@tool)
+	@tooldata = import(@name.'.player.'.@player['id'].'.tool.'.@tool)
+	if(@dev == true) { msg(color(7).'[DEV] Tool to bind/unbind: '.color('f').@tool) }
+	
+	if(is_array(@tooldata)) {
+		if(array_index_exists(@tooldata, 'use')) {
+		# this tool has been used before
+			if(@tooldata['use'] == true) {
+			# Disable tool.
+				@tooldata['use'] = false
+				export(@name.'.player.'.@player['id'].'.tool.id.'.@tool, @tooldata)
+				die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Tool unbound from your '.color('a').@tooldisplay['display'].'.')
+			} else {
+		#Not enabled, but a tool has previously been setup
+			# Enable tool.
+				@tooldata['use'] = true
+				export(@name.'.player.'.@player['id'].'.tool.id.'.@tool, @tooldata)
+				die(color(7).'['.color(6).@name.color(7).'] '.color(3).'ReLoad tool re-bound to your '.color('a').@tooldisplay['display'].color(3).', utilizing previously used settings for this item.')	
+			}	
+		}
+	} else {
+		#no data found
+		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'This tool was not previously bound. You need to use \'/reloader\' to setup this tool for use!') 
+	}
+# All other actions that can't be acted upon right here are still listed in order to detect an unknown action later.
+case 's':
+case 'set':
+case '-set':
+case 'a':
+case 'ar':
+case 'area':
+case '-area':
+case '-a':
+case 'fuel':
+case 'this':
+case 'that':
+# A null action is supported, as tool does not specify an action
+case '':
+case null:
+	if(@dev == true) { msg(color(7).'[DEV] '.color('f').'passed info area')}
+}
+
+### Continuing on...
+
+switch(@action) {
+#Conflict: Since no action above was performed, we need to move the options into the correct order for the item and qty checks below.
+# The order is already set for commands with actions, 
+# but tool does not have an action yet still specifies item type and quantity.
+# so actions get escaped in switch() here to allow the below checks to have the correct values to check for both area and tool mode. 
+# Aliases for set & area action must be mentioned here too.
+case 's':
+case 'set':
+case '-set':
+case 'a':
+case 'ar':
+case 'area':
+case '-area':
+case '-a':
+	if(@dev == true) { msg(color(7).'[DEV] remap:'.color('f').'set or area')}
+# Set Defaults for fuel 	
+case 'fuel':
+case 'f':
+	if(@dev == true) { msg(color(7).'[DEV] remap:'.color('f').'fuel')}
+	@defaultitem = @serveritemdefaults['fuel']
+	
+### Continuing on... Tool usage:
+# No more actions to perform, we are now using tool. Move options into proper places that checks expect values to be for tool usage.	
+case 'this':
+case 'that':
+# 'this/that' action is handled later, but need item and qty remapped properly if tool used.
+default:
+	if(@dev == true) { msg(color(7).'[DEV] remap:'.color('f').'tool')}
+	@option3 = @option2
+	@option2 = @option1
+	@option1 = @action
+}
+
+# Set defaults:
+# No set item? We'll load the variable with the default item then.
+@isdefaultqty = ''
+if(@setitem == '' || @setitem == null) {@setitem = @defaultitem}
+# No set item quantity? We'll load the variable with the default qty then.
+if(@setitemqty == '' || @setitemqty == null,
+        @setitemqty = @defaultitemqty
+        @isdefaultqty = true
+)
+
+ 
+# Override set settings:
+# Did you use the 'that' acronym for item being held?
+switch(@option1) {
+case 'this':
+case 'that':
+#item - onhand tool
+	if(pinv(@player['name'], null) == null) {
+	#slot empty - is hand. use defaults.
+        @option1 = @defaultitem
+	} else {
+	#use equipped item 
+		@option1 = pinv(@player['name'], null)['name']
+	}
+	@option2 = max_stack_size(array('name': @option1, 'meta': null))
+	if(@dev == true) { msg(color(7).'[DEV] that item/qty:'.color('f').@option1.' '.@option2) }
+}
+# Are you specifying the item type?
+@item = @option1
+if(@item == '' || @item == null) { @item = @setitem }
+
+# Are you specifying the quantity?
+@itemqty = @option2
+if(@itemqty == 0) {die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify your quantity in a positive number.')}
+if(@itemqty == '' || @itemqty == null) {
+	@itemqty = @setitemqty
+} else {
+	@isdefaultqty = false
+}
+if(!is_integral(@itemqty)) {die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You need to specify your quantity in a number.')}
+ 
+#Did you say default?
+switch(@option1){
+case '-':
+case 'remove':
+case 'default':
+case 'clear':
+	@item = @defaultitem
+	@itemqty = @defaultitemqty
+}
+
+ 
+# Check: Did you specify a item name or ID?
+# We need to translate the item given into the proper Item Name.
+#Perform Name / ID checks.
+@itemids = _reloader_item_name(@item)
+@item = @itemids['name']
+@itemname = @itemids['name']
+
+# Check: Null.
+# WARNING: If data_name comes up with null, this probably indicates a unsupported, non-vanilla item.
+# In setting items CH doesn't care if the item actually exists, it will just set the container full
+# of what it was told to set it to.
+# If a client tries to view this non-existent item: Instant client crash.
+# (and the server might report that a entity ID has invalid items)
+if(@item == null || @item == '') {
+	msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'That item isn\'t supported!')
+	_reloader_msgAdmins(color('c').'['.color(6).@name.color('c').'] '.color('c').@player['display'].' tried to use a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', color('c').'['.color(6).@name.color('c').'] '.color('c').@player['display'].' tried to use a non-vanilla item in '.@name.'! '.color(7).'Only vanilla items are supported!', ' Note: If you are running a modded server, you will need to notify CommandHelper of the data names for blocks/items that mods add. Ask on CommandHelper\'s IRC channel for help in doing this.', true)
+	die()
+}
+ 
+# Check: Is this air?
+if(@item == '0' || string_contains_ic(@item, 'air')) {
+        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You cannot use air!')
+} 
+ 
+# Check: Item permissions
+if(@defaultitem != @item) {
+	if(_reloader_check_perm(@player['name'], 'item', @item) == false) {
+		die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to use this item type. ('.@itemids['display'].')')
+	}
+}
+ 
+# Check: Legitimate quantity stacks
+@itemstacksize = max_stack_size(array('name': @item, 'meta': null))
+if(@dev == true) {msg(color(7).'[DEV] max_stack_size for '.color('f').@item.': '.@itemstacksize)}
+
+if(@isdefaultqty == true) {
+	# This is the default quantity, the player hasn't set any different quantity.
+	if(@dev == true) {msg(color(7).'[DEV] default qty: '.color('f').@itemqty)}
+	# Bump down the quantity according to the max stack size.
+	if(@itemqty > @itemstacksize) {
+		@itemqty = @itemstacksize
+	}
+} else {
+#Not using the default qty
+	if(has_permission(@player['name'], 'commandhelper.alias.reloader.stack.illegitimate')) {
+		if(@dev == true && @itemqty > @itemstacksize) { 
+			msg(color(7).'[DEV] stack: '.color('f').'Using illegitimate stack perm')
+		} else {
+			msg(color(7).'[DEV] stack: '.color('f').'legit')
+		}
+	} else {
+		# perm check returns nope.
+		if(@itemqty > @itemstacksize) {
+			die(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permissions to make an illegitimate stack!')
+		}
+	}
+}
+ 
+if(@dev == true) {msg(color(7).'[DEV] Final item & quantity: '.color('f').@item.' ('.@itemqty.')')}
+### More actions:
+ 
+# Set the item type to automatically use on /reloader
+switch(@action) {
+case 's':
+case 'set':
+case '-set':
+@msg1 = ''
+	switch(@option1) {
+	# at this point option1 is item id
+	case '-':
+	case 'remove':
+	case 'default':
+	case 'clear':
+		clear_value(@name.'.player.'.@player['id'].'.set.item.type')
+		clear_value(@name.'.player.'.@player['id'].'.set.item.qty')
+		clear_value(@name.'.player.'.@player['id'].'.set.item.type.fuel')
+		clear_value(@name.'.player.'.@player['id'].'.area.mode')
+		@playerconfig['item_type'] == ''
+		@playerconfig['fuel_type'] == ''
+		@playerconfig['item_qty'] == ''
+		@updateconfig(@playerconfig);
+		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set item, quantity, and fuel item has been cleared!')
+	default:
+		if(@fuel == true) {
+			@setitem = @playerconfig['fuel_type']
+			if(@setitem == '' || @setitem == null) { @setitem = @serveritemdefaults['fuel'] }
+			@playerconfig['fuel_type'] = @item
+			@msg1 = 'Fuel '
+			@updateconfig(@playerconfig);
+		} else {
+			@playerconfig['item_type'] = @item
+			@playerconfig['item_qty'] = @itemqty
+			@updateconfig(@playerconfig);
+		}
+		die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Your previously set '.@msg1.'item was: '.color(7).@setitem.' (Quantity: '.@setitemqty.')'.color(3).', and is now: '.color('a').@itemids['display'].' (Quantity: '.@itemqty.')')
+	}
+}
+ 
+### Continuing on to filling the block inventories! 
+ 
+# Randomizer - area 
+@random = false
+
+### Fill an area
+switch(@action) {
+case 'a':
+case 'ar':
+case 'area':
+case '-area':
+case '-a':
+	if(has_permission(@player['name'], 'commandhelper.alias.reloader.area')) {
+		@world = pworld(@player['name'])
+		# Include require module functions
+		include('modules.library/Area.ms')
+
+	  # Get the player's area mode
+		@areamode = get_value(@name.'.player.'.@player['id'].'.area.mode')
+		if(@areamode == '' || @areamode == null) {@areamode = 'ALL'}
+		#Area mode message display
+		switch(to_upper(@areamode)) {
+		case 'ALL':
+			@areamodedisplay = 'Items'
+		case 'BREWING':
+			@areamodedisplay = 'Brewing Stand'
+		case 'GROUP_CHEST':
+		case 'CHESTS':
+			@areamodedisplay = 'Chests'
+		case 'GROUP_FURNACE':
+		case 'FURNACES':
+			@areamodedisplay = 'Furnaces'
+		default:
+			if(reg_count('_', @areamode) > 0) {
+				@areamodedisplay = to_lower(reg_replace('_', ' ', @areamode))
+			} else {
+				@areamodedisplay = to_lower(@areamode)
+			}
+		}
+
+		# Setup proc to use if random mode is enabled
+		if(@random == true) {
+			@areaprocname = '_reloader_random'
+		} else {
+			@areaprocname = '_reloader_fill'
+		}
+		
+		# It is now time to iterate through the area. Assigned a variable to get stats returned.
+		@filled = _reloader_iterate_cuboid(@areaprocname, @world, @item, @player['name'], @itemqty, @fuel, @verbose)
+		
+		if(@filled['fail'] == true) {die(@filled['failmsg'])}
+		# Enumerate returned array into one output string to message
+		@ftkeys = array_keys(@filled['type'])
+		@filledinfo = ''
+		for(assign(@i, 0), @i < array_size(@filled['type']), @i++) {
+			if(@filled['type'][@ftkeys[@i]] > 0) {
+				if(reg_count('_', @ftkeys[@i]) > 0) {
+					@ftdisplay = _reloader_capitalize(reg_replace('_', ' ', @ftkeys[@i]))
+				} else {
+					@ftdisplay = _reloader_capitalize(@ftkeys[@i])
+				}
+				@color = '7'
+				if(_is_even_number(@i) == true) { @color = '9' }
+				@filledinfo = @filledinfo.color(@color).@ftdisplay.': '.@filled['type'][@ftkeys[@i]].' '
+			}
+		}
+		if(@filled['blocks'] > 1) {
+			@donemsg = @filled['blocks'].' '._reloader_capitalize(@areamodedisplay).' were filled, using a total of '.color('a')._reloader_number_commaize(@filled['items']).' '.@itemids['display'].'!'
+			@dmcolor = 'a'
+		} else {
+			@donemsg = '1 '._reloader_capitalize(@areamodedisplay).' was filled with '.color('a').@filled['items'].' '.@itemids['display'].'!'
+			@dmcolor = 'a'
+		}
+		# Nothing was filled? why?
+		if(@filled['blocks'] == 0) {
+			@dmcolor = '8'
+			if(@filled['found'] > 0) {
+				# Acceptable block entities were found but not touched due to inventory full.
+				@donemsg = 'Any '.@areamodedisplay.'(s) in the area were already full.'
+			} else {
+				# Acceptable block entities were not found.
+				@donemsg = 'There wasn\'t any '.@areamodedisplay.'(s) to fill in the area!'
+			}
+		}
+		msg(color(@dmcolor).'['.color(6).@name.color(@dmcolor).'] '.color(3).@donemsg)
+		if(@verbose == true && @filled['blocks'] > 0) { msg(color(7).@filledinfo) }
+	} else {
+		msg(color('c').'['.color(6).@name.color('c').'] '.color(7).'You do not have permission to fill an area!')
+	}
+	die()
+}
+ 
+### ReLoad tool
+@index = null
+#Find the tool in the players hand. Don't use just a hand, sorry.
+@tool = pinv(@player['name'], @index)
+if(@tool == null || !is_array(@tool)) {
+        die(color('c').'['.color(6).@name.color('c').'] '.color(7).'Your hands aren\'t that magical! Equip a tool and use \'/reloader\' again.')
+}
+if(@dev == true,
+        msg(color(7).'[DEV] Tool to bind: '.color('f').@tool['name'])
+)
+@tooldisplay = _reloader_item_name(@tool['name'])
+@toolcheck = import(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'])
+
+# If existing tool, Disable tool.
+if(is_array(@toolcheck)) {
+	if(array_index_exists(@toolcheck, 'use')) {
+		#this tool has been used before
+		if(@toolcheck['use'] == true) {
+		# Disable tool.
+			@toolcheck['use'] = false
+			export(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'], @toolcheck)
+			die(color(7).'['.color(6).@name.color(7).'] '.color(3).'Tool unbound from your '.color('a').@tooldisplay['display'].'.')
+		}
+	}
+}
+# else, continue to enable tool.
+@tooldata = array('use': true, 'fuel': false, 'qty': @itemqty, 'item': @item)
+### Tool fuel: Fill furnace fuel, not the top of it.
+if(@action == 'fuel') {
+	@fuel = true
+	@tooldata['fuel'] = true
+}
+#done
+export(@name.'.player.'.@player['id'].'.tool.id.'.@tool['name'], @tooldata)
+@fuelmsg = ''
+if(@fuel == true) {
+		@fuelmsg = 'Furnace'
+} else {
+		@fuelmsg = 'Chest, Dispenser, or Furnace'
+}
+msg(color(7).'['.color(6).@name.color(7).'] '.color(3).'Tool bound to '.@tooldisplay['display'].'. Left-click a '.@fuelmsg.' to fill it with '.@itemids['display'].'.')
+<<<

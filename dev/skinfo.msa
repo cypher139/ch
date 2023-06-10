@@ -1,0 +1,86 @@
+<!
+	strict: on;
+	name: skinfo.msa;
+	author: cypher139;
+	created: 2016-03-14;
+	description: Provides info about various player interactions with WorldEdit WorldGuard plugins.;
+	requiredExtensions: Core, SKCompat;
+>
+
+
+everyone:/regionat [$player] [$option1] [$option2] [$] = >>>
+#what is the name of this script?
+assign(@name, 'regionat')
+
+#dynamic vars, dont edit
+assign(@you, player())
+assign(@option1, $option1)
+assign(@option2, $option2)
+assign(@player, $player)
+
+if(@player == '', @player = player())
+#Command help file
+proc _ch_help() { 
+	msg(color(6).'Find what WorldGuard regions a player is in:')
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color('a').'/regionat <action> [option1] [option2]')
+	msg(color(6).'Actions:')
+	msg(color(7).'/regionat [player]'.color(4).' - '.color('f').'Returns what WG region(s) the specified player is currently in. Player defaults to you if not specified.')
+}
+
+if(@player == 'help',
+	_ch_help()
+	die()
+)
+
+if(@player == '~console',
+	die(color('c').'['.color(7).@name.color('c').'] '.color(7).'The console cannot be in a WorldGuard region!')
+)
+@here = ''
+if(array_contains_ic(all_players(), @player), 
+	assign(@here, ploc(@player)),
+	die(color(7).'['.color('gold').@name.color(7).'] '.color('a').'You need to specify a player!')
+)
+assign(@r, sk_regions_at(@here))
+msg(color(7).'['.color('gold').@name.color(7).'] '.color(6).'WG Regions at: '.color(7).@player.' ('.@here.')')
+msg(color(7).@r)
+<<<
+
+
+
+everyone:/cpos [$] = >>>
+@name = 'CurrentPos'
+
+@you = player()
+@player = ''
+if(array_index_exists(@args, 0)) {
+	@player = @args[0]
+} 
+
+#Command help file
+proc _ch_help() {
+	msg(color(6).'Find what WorldEdit selection a player has made!')
+	msg(color('a').'Command usage: <required> [optional]')
+	msg(color(7).'/cpos [player]'.color(4).' - '.color('f').'Returns what WE selection the specified player has made. Defaults to you if a player isn\'t specified.')
+
+}
+
+if(@player == 'help',
+	_ch_help()
+	die()
+)
+
+if(@player == '~console',
+	die(color('c').'['.color(7).@name.color('c').'] '.color(7).'The console cannot use WorldEdit!')
+)
+@youmsg = ''
+if(@you == @player,
+	@youmsg = color(6).'Your'
+,
+	@youmsg = color(3).@player.'\'s'
+)
+msg(color(7).'['.color('gold').@name.color(7).'] '.@youmsg.color(6).' Worldedit selection: ')
+msg(color('d').'Position #1: '.sk_pos1(@player)['x'].','.sk_pos1(@player)['y'].','.sk_pos1(@player)['z'])
+msg(color('d').'Position #2: '.sk_pos2(@player)['x'].','.sk_pos2(@player)['y'].','.sk_pos2(@player)['z'])
+
+<<<

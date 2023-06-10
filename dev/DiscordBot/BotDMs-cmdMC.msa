@@ -1,0 +1,102 @@
+#version 1.0-tmc
+admin:/discorddm [$id] [$] = >>>
+@name = 'Discord'
+@recentDMs = get_value('DiscordBot.DMs.recent')
+@id = ''
+if(!is_array(@recentDMs)) { @recentDMs = array() }
+if(!array_index_exists(@recentDMs, 0)) { die(color('c').'There are no saved recent DMs present!') }
+/*
+reading:
+
+get recent
+get userdm based on userid (value), check userdms for matching time (index)
+*/
+
+switch($id) {
+	case '':
+	case null:
+		die(color('c').'You must specify a user ID to send a DM to!')
+	case 'count':
+		msg('Current DMs stored: '.array_size(@recentDMs))
+		die()
+	case 'read':
+	case 'view':
+	case 'open':
+		if(!has_permission(player(), 'commandhelper.alias.Discord.DM.read')) { die(color('c').'You do not have permission to read DMs!?') }
+		
+		if($ == '') { die(color('c').'You must specify a message to read!') }
+		@msgid = parse_args($)[0]
+		if(!is_numeric(@msgid)) { die(color('c').'You must specify the recent history number of the DM to read.') }
+		@msgid--
+		if(@msgid < 0) { @msgid = 0 }
+	
+		if(array_index_exists(@recentDMs, @msgid)) {
+			@userDMs = get_value('DiscordBot.DMs.log.'.array_implode(@recentDMs[@msgid]))
+			if(!is_array(@userDMs)) { die(color('c').'Error: This user does not have saved DM data.') }
+			@readDM = ''
+			foreach(@i: @dm in @userDMs) {
+				if(@dm['time'] == array_implode(array_keys(@recentDMs[@msgid]))) {
+					@readDM = @dm
+					break()
+				}
+			}			
+			if(array_index_exists(@readDM, 'message')) {
+				@sendmsg = @readDM['message']
+				if(array_index_exists(@readDM, 'attachments', 0, 'filename')) {
+					if(@sendmsg == '') {			
+						@sendmsg = '<Sent a file> '
+					} else {
+						@sendmsg = @sendmsg.'\n <Also attached file:> '
+					}
+					foreach(@num: @attach in @readDM['attachments']) {
+						@filenum = 'File: '
+						if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
+						@sendmsg = @sendmsg.@filenum.@attach['filename']
+					}
+				}
+				msg(color(7).'Recent DM #'.(@msgid + 1))
+				msg(color(9).'DM from ['.color(7).@readDM['username'].color(9).'] Received: '.simple_date('MM/dd/yyyy HH:mm:ss', @readDM['time']).'. Message:\n'.color(7).@sendmsg)
+
+				if(array_index_exists(@readDM, 'attachments', 0, 'filename')) {
+					foreach(@num: @attach in @readDM['attachments']) {
+						msg(color(8).'URL #'.(@num + 1).': '.@attach['url'])
+					#file and url version	msg(color(8).'File #'.(@num + 1).': '.@attach['filename'].'   URL :'.@attach['url'])
+					}
+				}
+			} 
+			die()	
+		} else {
+			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, there is no message at Recent DM #'.@msgid.'!')
+		}
+	case 'r':
+	case 'reply':
+	case 're':
+		@id = array_implode(@recentDMs[0])
+	default:
+		@id = $id
+}
+#if(!is_numeric($id)) {die(color('c').'You must specify a user ID numerically! Right click the user profile and select Copy ID.') } Not needed, username without tag accepted
+msg(color(4).'With Great Power comes Great Responsibility.'.color(3).' Please ensure the messages you send are family-friendly and do not harrass others.')
+
+if($ == '') { die(color('c').'You must specify a message to send!') }
+@sendmsg = strip_colors($)
+
+try {
+	#Send Message
+	discord_private_message(@id, '`['.player().']` '.@sendmsg)
+	msg(color(6).'Message Sent')
+} catch(Exception @ex) {
+	msg(color('c').'Message Not Sent')
+	msg(color('7').@ex['message'])
+	die()
+}
+#Save recent DMs for future reference if needed
+@DMs = get_value('DiscordBot.DMs.sent')
+if(!is_array(@DMs)) { @DMs = array(array('message': 'Start Of Message List')) }
+array_insert(@DMs, array('sender': player(), 'message': @sendmsg, 'time': time(), 'recipient': @id), 0)
+if(array_index_exists(@DMs, 20)) {
+	_write_file(import('DiscordBot.logs.dir').'/Discord-DMs-Sent.txt', '\n'.@DMs[20], 'append')
+	array_remove(@DMs, 20)
+}
+store_value('DiscordBot.DMs.sent', @DMs)
+<<<

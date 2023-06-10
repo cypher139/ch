@@ -1,0 +1,37 @@
+# x  = set_pwalkspeed(1.0) if sprinting player_toggle_sprint
+# h = set_ponfire(200) and restore health set_phealth
+# b = set_peffect(player, INVISIBILITY, 1, 500, false)
+/*# s = set_pflight()	void	[player], flight	PlayerOfflineException	Sets whether or not this player is allowed to fly.	Yes
+set_pflying()	void	[player], flying	PlayerOfflineException
+IllegalArgumentException	Sets the flying state for the player.Requires player to have the ability to fly, which is set with set_pflight().	Yes
+set_pflyspeed()	void	[player], speed	PlayerOfflineException
+RangeException
+CastException	Sets a player's fly speed. The speed must be between -1.0 and 1.0. The default player fly speed is 0.1.
+
+
+#rocket, setpvelocity(player, location x/z, y is magnitude < 10)
+#f = blocks break in 1 hit
+*/
+
+admin:/x [$] = >>>
+@args = parse_args($)
+
+foreach(@k: @arg in @args) {
+
+switch(@arg) {
+case 'b':
+	set_pwalkspeed(0.2)
+	set_pflyspeed(0.1)
+	set_psaturation(0.0)
+case 'x':
+	set_pwalkspeed(1.0)
+case 'h':
+	set_pheld_slot(0)
+	set_pinv(player(), 0, array('meta': null, 'name': 'FIRE_CHARGE', 'qty': 1))
+	set_phealth(20)
+	set_ponfire(300)
+	set_phunger(20)
+	set_psaturation(2.0)
+}
+}
+<<<
