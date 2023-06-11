@@ -5,6 +5,7 @@ Log_Invites_Message: "**%User%**  [%UserID%] joined with invite **%InviteCode%**
 Log_Channel: bot-logs
 Server_Log_Channel: bot-logs
 Showcase_Channel: 123235346
+DM_Notify: true
 #
 #
 # Mentions
@@ -113,6 +114,7 @@ Welcome_Text_Channel_Name: general
 # Voice Chat text Channel ID. (Right click channel, Copy ID)
 Welcome_Text_Channel_ID: 123456789
 # What roles, if any, do new joins need to be equipped with?
+# Only role IDs are supported.
 Welcome_Roles_Award: false
 Welcome_Roles:
 - 123

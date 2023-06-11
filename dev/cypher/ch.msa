@@ -230,7 +230,10 @@ case 'props':
 	msg(@prefix.color(6).'Server.properties:')
 	msg(ini_decode(read(file_resolve(sys_properties()['user.dir'].'/server.properties'))))
 case 'isproc':
-	msg(@prefix.color(6).'is proc "'.@args[0].'? '.color('d').is_proc(@args[0]))
+	@ret = is_proc(@args[0])
+	@color = 'c'
+	if(@ret == true) { @color = 'a' }
+	msg(@prefix.color(6).'is proc: '.color(9).@args[0].' '.color(@color).@ret)
 case 'cap':
 	msg(_capitalize(@args[2..], @args[0], @args[1]))
 

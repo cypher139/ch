@@ -209,6 +209,7 @@ return(null)
 
 proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
+	@prefixErrorMsg = color(6).'['.color(9).'DiscordBot'.color(6).'] '.color(7).'A message queued to send had a problem: '
 	@botconfig = import('DiscordBot.config.Discord')
 	if(@guild == '' || @guild == null) {
 		#primary guild
@@ -385,9 +386,18 @@ proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option)
 			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': ' <:leave:1066426677481197618> Left: ', 'description': @sendmsg))))
 			return(true)
 		}
+	} catch(InsufficientPermissionException @ex) {
+		@msg = @ex['message']
+		if(string_ends_with(@ex['message'], 'VIEW_CHANNEL')) {
+			@msg = color('c').'Bot cannot view channel: '.@channel
+		}
+		_db_msg_Admins(@prefixErrorMsg.@msg, '[DiscordBot] ['.@guild.'] '.@msg)
+		return(false)
+	} catch(NotFoundException @ex) {
+		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.@ex['message'])
+		return(false)
 	} catch(Exception @ex) {
-	#			msg(@ex)
-		_db_msg_Admins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'A message queued to Discord was not sent: '.@ex['message'])
+		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.color('c').@ex['classType'].' '.color(7).@ex['message'])
 		return(false)
 	}
 }
