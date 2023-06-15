@@ -15,6 +15,7 @@ foreach(@arg in @args) {
 		break()
 	}
 }
+@config = import('DiscordBot.config.'.@guild)
 msg('Using Server ID: '.@guild)
 switch(@action) {
 case 'backup':
@@ -142,9 +143,19 @@ case 'getroles':
 
 case 'vcstats':
 case 'vc':
+	@channel = array_keys(@config['VC_Options'])[0]
+	foreach(@arg in @args) {
+		if(array_contains(array_keys(@config['VC_Options']), @arg)) {
+			@channel = @arg
+			array_remove_values(@args, @arg)
+			break()
+		}
+	}
 	@id = null
+	@a = ''
+	if(array_index_exists(@args, 1)) { @a = '.alone' }
 	if(!array_index_exists(@args, 0)) { @args = array('None') }
-	@stats = get_value('DiscordBot.'.@guild.'.last.VC')
+	@stats = get_value('DiscordBot.'.@guild.'.VC.'.@channel.@a)
 	if(!is_array(@stats)) { die('['.@name.'] There are no stats saved.') }	
 	if(is_numeric(@args[0])) {
 		@id = $id - 1
@@ -159,6 +170,7 @@ case 'vc':
 				msg('User that triggered VC Role ping: '.@stats[@id]['pinguser']);
 			}
 		} else { msg('['.@name.'] Voice Chat ID was not found.') }
+	case 'all':
 	case null:
 		msg('['.@name.'] Last Voice Chat stats:')
 		foreach(@i: @stat in @stats) {
