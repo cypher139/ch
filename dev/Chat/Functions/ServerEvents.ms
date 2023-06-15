@@ -81,47 +81,59 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 
 #Ignored IP pings notification
 set_cron('59 23 * * *', closure(){ 
+	@count = 0
 	@serverConfig = import('Chat.config.Server')
-	@iplog = import('Server.log.ignore.IP', array())
-	foreach(@ipnum: @data in @iplog) {
-		@s = ''
-		if(@data['times'] > 1) { @s = 's' }
-		@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' Received '.color(12).@data['times'].color(7).' ping'.@s.' from ignored IP %format%'.color(9).@data['ip'].color(7).'%format%'
+	@iplog = get_value('Server.pings.log.ignore.IP')
+	if(!is_array(@iplog)) { die(); }
+	if(array_size(@iplog) == 0) { die(); }
+	@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' Ignored IP ping report: \n'
+	foreach(@ipnum: @times in @iplog) {
+		@count = 0
+		if(@ipnum == 'ip') { continue(); }
+		foreach(@data in @times) {
+			if((time() - 86400000) > @data) { continue(); }
+			@count++			
+		}
+		if(@count > 0) {
+			@s = ''
+			if(@count > 1) { @s = 's' }
+			@Message = @Message.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s.'\n'
+		}
+	}
+	if(@count > 0) {
 		if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
 			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), 'none', '', 'admin') }
 		}
 		if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
 	}
-	export('Server.log.ignore.IP', array())
- });
+});
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
+	@time = time();
 	@serverConfig = import('Chat.config.Server')
 	@pinglevel = @serverConfig['Ping_Message_Level']
 	# Repeated pings get special message
 	@ipnumbers = reg_replace('\\.*:*', '', @ping['ip'])
-	@iplastping = import('Chat.ping.IP.'.@ipnumbers, (time() - 10000))
-	if(time() < (@iplastping + 7000)) {
-		modify_event('motd', @serverConfig['Repeated_Ping_Message'])
-		export('Chat.ping.IP.'.@ipnumbers, time())
-		die()
+	@iplastping = import('Chat.ping.IP.'.@ipnumbers, (@time - 10000))
+	if(@time < (@iplastping + 7000)) {
+		modify_event('motd', @serverConfig['Repeated_Ping_Message']);
+		export('Chat.ping.IP.'.@ipnumbers, @time);
+		die();
 	}
-	export('Chat.ping.IP.'.@ipnumbers, time())
+	export('Chat.ping.IP.'.@ipnumbers, @time)
 	# Colorize MOTD
 	if(@serverConfig['MOTD_Rainbow'] == true) {
-		modify_event('motd', _rainbow(@ping['motd'], @serverConfig['MOTD_Rainbow_Type']))
+		modify_event('motd', _rainbow(@ping['motd'], @serverConfig['MOTD_Rainbow_Type']));
 	}
 	# Get player name(s) from IP database
-	@ipdata = import('primus.database.IP')
+	@ipdata = import('primus.database.IP');
 	@msgdisplay = ''
 	if(is_array(@ipdata)) {
 		if(array_index_exists(@ipdata, @ipnumbers)) {
 		# Do not display ping message to admins immediately after player quit
 			foreach(@acc in @ipdata[@ipnumbers]) {
-				@checktime = import('Server.player.'._getplayerID(@acc)['id'].'.last.quit', (time() - 20000))
-				if(time() < (@checktime + 10000)) {
-					die()
-				}
+				@checktime = import('Server.player.'._getplayerID(@acc)['id'].'.last.quit', (@time - 20000))
+				if(@time < (@checktime + 10000)) { die(); }
 			}
 			@players = array_implode(@ipdata[@ipnumbers], ', ')
 			@msgdisplay = ' ('.color(3).@players.color(7).')'
@@ -130,15 +142,12 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 # Ignored IP: Log internally, don't (immediately) message.
 	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { 
 		@ignoredIPPings = get_value('Server.pings.log.ignore.IP')
-		@iplog = import('Server.log.ignore.IP', array())
 		if(!is_array(@ignoredIPPings)) { @ignoredIPPings = array() }
 		if(!array_index_exists(@ignoredIPPings, @ipnumbers)) { array_set(@ignoredIPPings, @ipnumbers, array()) }
-		array_push(@ignoredIPPings[@ipnumbers], time())
-		store_value('Server.pings.log.ignore.IP', @ignoredIPPings)
-		
-		if(!array_index_exists(@iplog, @ipnumbers)) { array_set(@iplog, @ipnumbers, array('ip': @ping['ip'], 'times': 0)) }
-		@iplog[@ipnumbers]['times']++
-		export('Server.log.ignore.IP', @iplog)	
+		array_push(@ignoredIPPings[@ipnumbers], @time);
+		array_set(@ignoredIPPings['ip'], @ipnumbers, @ping['ip']);
+		# array_sort(@ignoredIPPings[@ipnumbers], 'NUMERIC')
+		store_value('Server.pings.log.ignore.IP', @ignoredIPPings);
 		@pinglevel = 0 
 	}
 # Admin Ping Messages:
