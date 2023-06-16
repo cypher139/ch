@@ -533,9 +533,6 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 		console('[DiscordBot] No data given to Leaderboard system, exiting', false)
 		return(false)
 	}
-	# if(@noXP == '' || @noXP == null) {
-		# @noXP = false
-	# }
 	@userID = @discord['userid']
 	@xpType = 2
 	# Event consumed
@@ -664,7 +661,8 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 			}
 		}
 		@userRoles = array_normalize(@userRoles)
-		@saveoldroles = import('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo', get_value('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo'))
+		@saveoldroles = import('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo')
+		if(!is_array(@saveoldroles)) { @saveoldroles = get_value('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo') }
 		if(!is_array(@saveoldroles)) { @saveoldroles = array() }
 		array_set(@saveoldroles, @discord['userid'], @userRoles)
 		export('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo', @saveoldroles)
@@ -761,6 +759,7 @@ proc _discordBot_backup_members(@args) {
 
 proc _discordBot_update_members(@args) {
 	@guilds = import('DiscordBot.Guilds', array());
+	@startTime = time();
 	if(array_size(@guilds) == 0) { return(false) }
 	foreach(@guild in @guilds) {
 		@debugstats = array('size': array(), 'nf': 0, 'af': 0, 'fails': 0);
@@ -782,6 +781,7 @@ proc _discordBot_update_members(@args) {
 		@config = import('DiscordBot.config.'.@guild);
 		@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard');
 		@invites = get_value('DiscordBot.'.@guild.'.Invites');
+		@rrUpdates = 0
 		@sortWR = array(123,456);
 		if(@config['Welcome_Roles_Award'] == true) {
 			@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC');
@@ -800,14 +800,15 @@ proc _discordBot_update_members(@args) {
 			} catch(InsufficientPermissionException @ex) {
 				if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
 					array_set(@config, 'NoInvites', true)
-					console('[DiscordBot] ['.@guild.'] Invite Logging is Enabled, but bot does not have permission to view invites!', false)
+					console('[DiscordBot] ['.@config['Server_Nickname'].'] Invite Logging is Enabled, but bot does not have permission to view invites!', false)
 				} else {
-					console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
+					console('[DiscordBot] ['.@config['Server_Nickname'].'] '.@ex['message'], false)
 				}
 			} catch(Exception @ex) {
-				console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
+				console('[DiscordBot] ['.@config['Server_Nickname'].'] '.@ex['message'], false)
 			}
-		}	
+		}
+# Process each User ID
 		foreach(@index: @id in @membersID) {
 	# Member Info (avatar, isBot, Username, etc)
 			@idInfo = ''
@@ -860,16 +861,28 @@ proc _discordBot_update_members(@args) {
 				@sortUR = array_sort(array_normalize(@idRoles), 'NUMERIC')
 				foreach(@key: @roleid in @sortWR) {
 					if(@roleid == @sortUR[@key]) {
-						array_push(@results, true)
+						@results[] = true;
 					} else {
-						array_push(@results, false)
+						@results[] = false;
 					}
 				}
-				if(array_every(@results, closure(@value) { return(@value) }) == true) {
-					array_push(@membersWR, @id)
+				if(!array_contains(@results, false)) {
+					@membersWR[] = @id;
 					continue()
 				}
 				@results = array()
+			}
+		# Check Roles Ranks
+			if(@config['Use_Role_Ranks'] == true) {
+				@rrStats = _discordBot_process_role_ranks(array('serverid': @guild, 'userid': @id, 'username': @idInfo['username']), @idRoles, true)
+				if(is_array(@rrStats)) {
+					if(@rrStats['setRoles'] == true) { 
+						@rrUpdates++
+						console('['.@config['Server_Nickname'].'] ('.@index.')['.@idInfo['username'].'] '.@rrStats['rrMsg'], false);
+					}
+				} else {
+					console('['.@config['Server_Nickname'].'] ('.@index.')['.@idInfo['username'].'] '.@rrStats, false);
+				}
 			}
 		}
 	# Roles Members
@@ -887,6 +900,7 @@ proc _discordBot_update_members(@args) {
 		if(@config['LB_Enable'] == true && is_array(@leaderboard)) {
 			export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
 		}
+		array_set(@debugstats['size'], 'rrUp', @rrUpdates)
 		store_value('DiscordBot.'.@guild.'.members.ID', @membersID)
 		export('DiscordBot.'.@guild.'.members.ID', @membersID)
 		array_set(@debugstats['size'], 'ID', array_size(@membersID))
@@ -910,6 +924,8 @@ proc _discordBot_update_members(@args) {
 		array_set(@alldebugstats, @guild, @debugstats)
 		export('DiscordBot.debug.stats.last.updatemembers', @alldebugstats)
 	}
+	@timeElapsed = time() - @startTime;
+	console('[DiscordBot] Update: 'color(3).@timeElapsed.'ms', false)
 	return(true);
 }
 
@@ -982,8 +998,154 @@ proc _discordBot_lb_levelXP(@guild = 'default', @args = 1) {
 	return(@levelxp)
 }
 
+
+proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloop = false) {
+#SINGLE user only, call via a foreach if all is desired
+	if(!is_array(@discord)) { return('No data') }
+	if(!array_index_exists(@discord, 'userid')) { return('No user') }
+	if(!array_index_exists(@discord, 'serverid')) { return('server?') }
+	@config = import('DiscordBot.config.'.@discord['serverid'])
+	if(!is_array(@config['Role_Ranks'])) { return('no rank data') }
+	@ranknums = array_sort(array_keys(@config['Role_Ranks']), 'NUMERIC')
+	if(is_array(@config['Role_Ranks_IgnoreUser'])) {
+		if(array_contains(@config['Role_Ranks_IgnoreUser'], @discord['userid'])) {
+			return('ignored User');
+		}
+	}
+# Get current rank
+	if(array_size(@userRoles) == 0) { @userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid']) }
+	@userRoles = array_sort(array_normalize(@userRoles), 'NUMERIC')
+	if(is_array(@config['Role_Ranks_IgnoreRole'])) {
+		foreach(@irole in @config['Role_Ranks_IgnoreRole']) {
+			if(array_contains(@userRoles, @irole)) {
+				return('ignored Role');
+			}
+		}
+	}
+	@currentRank = 0
+	@rRoles = 0
+	foreach(@rank: @data in @config['Role_Ranks']) {
+		if(array_contains(@userRoles, @data['RoleID'])) {
+			@currentRank = @rank
+			@rRoles++
+		}
+	}
+# Count qualifying roles
+	@qRoles = 0
+	foreach(@role in @config['Role_Ranks_Qualifying_Roles']) {
+		if(array_contains(@userRoles, @role)) {
+			@qRoles++
+		}
+	}
+# Find which rank matches counted roles
+	@newRank = 0
+	@newRankMsg = 'level 0'
+	foreach(@i: @rank in @ranknums) {
+		@lastrank = 0
+	# console(@i)
+		if(@i != 0) {
+			@lastrank = @ranknums[(@i - 1)]
+		}
+		if(@qRoles == @rank) {
+			@newRank = @rank
+			@newRankMsg = @qRoles.' = '.@newRank
+			break()
+		}
+		#In Between two ranks
+		if(@qRoles < @rank && @qRoles > @lastrank) {
+			#No level ups yet
+			if(@lastrank == 0) { 
+				@newRankMsg = '   0'
+				break()
+			} else {
+				@newRank = @lastrank
+				@newRankMsg = @qRoles.' not at '.@rank.' yet'
+				break()
+			}
+		}
+		#Has highest rank
+		if(array_size(@ranknums) - 1 == @i && @qRoles > @rank) {
+			@newRank = @rank
+			@newRankMsg = @qRoles.' > max: '.@newRank
+			break()
+		}
+	}
+# New roles setup	
+	@stats = array('status': @newRankMsg, 'setRoles': false, 'qR': @qRoles, 'rR': @rRoles, 'currentrank': @currentRank, 'newrank': @newRank)
+	@newRoles = array_deep_clone(@userRoles)
+	foreach(@roledata in @config['Role_Ranks']) {
+		array_remove_values(@newRoles, @roledata['RoleID'])
+	}
+# Setup Messages
+	@logmsg = 'Role Ranks: 0 roles'
+	if(@newRank != 0) {
+		@newRoles[] = @config['Role_Ranks'][@newRank]['RoleID'];
+		@logmsg = 'Awarded Role Rank "'.@config['Role_Ranks'][@newRank]['RoleName'].'"'
+	}
+	if(@newRank < @currentRank) {
+		@logmsg = 'Role Ranks: Derank! ('.@newRank.' < '.@currentRank.')'
+		array_set(@stats, 'derank', true)
+	}
+	if(@newRank == @currentRank && @rRoles > 1) {
+		@logmsg = 'Role Ranks: Removing multiple roles ('.@rRoles.')'
+	}
+	array_set(@stats, 'logmsg', @logmsg)
+# Array compare. sort both role arrays	
+	array_sort(@newRoles, 'NUMERIC')
+	@results = array()
+	#check both old and new role arrays that each key's values matches. if not, save roles
+	if(array_size(@userRoles) == array_size(@newRoles)) {
+		foreach(@k: @v in @newRoles) {
+			if(@v == @userRoles[@k]) {
+				@results[] = true;
+			} else {
+				@results[] = false;
+			}
+		}
+	} else {
+		@results[] = false;
+	}
+# If a role change detected, set roles
+	if(array_contains(@results, false)) {
+		@saveoldroles = get_value('DiscordBot.'.@discord['serverid'].'.debug.roles.rank.undo')	
+		if(!is_array(@saveoldroles)) { @saveoldroles = array() }
+		array_set(@saveoldroles, @discord['userid'], @userRoles)
+		store_value('DiscordBot.'.@discord['serverid'].'.debug.roles.rank.undo', @saveoldroles)
+		try { 
+			@stats['setRoles'] = true;
+			discord_member_set_roles(@discord['serverid'], @discord['userid'], @newRoles, @logmsg)
+		} catch(Exception @ex) {
+			console(@ex)
+			@stats['setRoles'] = @ex['classType'];
+		}
+	} else {
+		array_remove(@stats, 'logmsg')
+	}
+	@rrMsg = ''
+	if(@stats['setRoles'] == true) {
+		# console('['.@discord['username'].'] '.@stats, false)
+		@rrMsgPrefix = '['.@config['Server_Nickname'].'] ['.@discord['username'].'] '
+		if(@isloop == true) { @rrMsgPrefix = '' }
+		@rrMsgType = color(10).' < '
+		if(array_index_exists(@stats, 'derank')) { @rrMsgType = color(14).' > ' }
+		@rrMsg = @rrMsgPrefix.@currentRank.@rrMsgType.color('r').@newRank.color(8).' ('.@qRoles.')'
+		if(@currentRank == @newRank && @rRoles > 1) {
+			@rrMsg = @rrMsgPrefix.color(11).'Multiple Rank Roles: '.@rRoles
+		}
+		if(@isloop == false) {
+			console(@rrMsg, false)
+		}
+	}
+	@allstats = get_value('DiscordBot.debug.'.@discord['serverid'].'.rank.stats')	
+	if(!is_array(@allstats)) { @allstats = array() }
+	array_set(@allstats, @discord['username'], @stats)
+	store_value('DiscordBot.debug.'.@discord['serverid'].'.rank.stats', @allstats)
+	if(@stats['setRoles'] == true && @isloop == true) {	array_set(@stats, 'rrMsg', @rrMsg) }
+	return(@stats);
+}
+
+
 #Handle commands from Discord Users
-# discord: userid, username, nickname, channel, message, id, attachments {{url, filename, description}}
 proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 	@config = import('DiscordBot.config.Discord')	
 	@options = parse_args(@lines[0])

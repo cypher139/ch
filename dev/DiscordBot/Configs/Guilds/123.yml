@@ -177,3 +177,27 @@ LB_Options:
   NoXP_RoleID:
   - 123
   - 456
+Use_Role_Ranks: false
+Role_Ranks:
+  1:
+    RoleID: 123
+    RoleName: "rank 1"
+  2:
+    RoleID: 234
+    RoleName: "rank 2"
+  4:
+    RoleID: 345
+    RoleName: "rank 4"
+  9:
+    RoleID: 999
+    RoleName: "rank 9"
+Role_Ranks_Qualifying_Roles:
+- 123456
+- 452255
+- 825431
+- 712202
+- 452070
+Role_Ranks_IgnoreUser:
+- 98765432
+Role_Ranks_IgnoreRole:
+- 98765432
