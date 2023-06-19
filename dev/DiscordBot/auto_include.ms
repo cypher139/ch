@@ -604,7 +604,7 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 
 #maxlevel
 	if(!array_index_exists(@levelxp, (@leaderboard['members'][@userID]['level'] + 1))) {
-		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> is at the maximum level '.@leaderboard['members'][@userID]['level'].'!', false)
+		console('['.@config['Server_Nickname'].'] Level Up: '.@discord['username'].' <@'.@userID.'> is at the maximum level '.@leaderboard['members'][@userID]['level'].'!', false)
 		export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 		return(false)
 	}
@@ -696,7 +696,7 @@ console(@levelxp[@leaderboard['members'][@userID]['level'] + 1])
 		} else {
 			@discordMsg = reg_replace('%Level%', @newrankname.'!  ('.@leaderboard['members'][@userID]['level'].')', @discordMsg)
 		}
-		console('[Discord] Level Up: '.@discord['username'].' <@'.@userID.'> '.color(3).@oldlevel.color('r').' -> '.color(10).@leaderboard['members'][@userID]['level'].' '.color(6).@newrankname, false)
+		console('['.@config['Server_Nickname'].'] Level Up: '.@discord['username'].' <@'.@userID.'> '.color(3).@oldlevel.color('r').' -> '.color(10).@leaderboard['members'][@userID]['level'].' '.color(6).@newrankname, false)
 		@sendMsg = true
 		@sendMsgtoLog = false
 		if(@config['LB_Options']['Level_Up_Announce_OnlyReward'] == true) {
@@ -815,11 +815,11 @@ proc _discordBot_update_members(@args) {
 			try {
 				@idInfo = discord_member_info(@guild, @id)
 			} catch(NotFoundException @ex) {
-				console('[DiscordBot] Update Roles: Not found: '.@id)
+				console('['.@config['Server_Nickname'].'] Update Roles: Not found: '.@id)
 				@debugstats['nf']++
 				continue()		
 			} catch(Exception @ex) {
-				console('[DiscordBot] error on id: '.@id.'\n'.@ex['message'])		
+				console('['.@config['Server_Nickname'].'] error on id: '.@id.'\n'.@ex['message'])		
 				@debugstats['fails']++
 				continue()
 			}
@@ -1168,11 +1168,11 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 	if(@dm == '') { @dm = 'broadcast' }
 	if(is_array(@discord)) {
 		if(!array_index_exists(@discord, 'userid')) {
-			console('[Discord] Required data array not given to Command Handler!', false)
+			console('[DiscordBot] Required data array not given to Command Handler!', false)
 			return(false)
 		}
 	} else {
-		console('[Discord] Required data array not given to Command Handler!', false)
+		console('[DiscordBot] Required data array not given to Command Handler!', false)
 		return(false)
 	}
 	@return = ''
@@ -1234,7 +1234,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@botconfig = import('DiscordBot.config.Discord')
 	if(is_array(@discord)) {
 		if(!array_index_exists(@discord, 'userid')) {
-			console('[Discord] Required data array not given to Command Handler!', false)
+			console('[DiscordBot] Required data array not given to Command Handler!', false)
 			return(false)
 		} else {
 			if(!array_index_exists(@discord, 'time')) {
@@ -1245,7 +1245,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			}
 		}
 	} else {
-		console('[Discord] Required data array not given to Command Handler!', false)
+		console('[DiscordBot] Required data array not given to Command Handler!', false)
 		return(false)
 	}
 	@config = import('DiscordBot.config.'.@discord['serverid'])
@@ -1347,7 +1347,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	
 # Deny Admin commands	
 	if(array_contains_ic(@admincommandlist, @command[0]) && @userType != 'Admin') {
-		console('[Discord] '.@discord['username'].' tried to use an admin command'.@cmdfrom.': '.color(3).@command[0].'  '.color('r').@commanddismc, false)
+		console('['.@config['Server_Nickname'].'] '.@discord['username'].' tried to use an admin command'.@cmdfrom.': '.color(3).@command[0].'  '.color('r').@commanddismc, false)
 		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfrom.': `'.@command[0].'`  '.strip_colors(@commanddisdc), 'admin', '', '', @discord['serverid'])
 		return('NotAdmin')
 	}
@@ -1365,7 +1365,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		array_insert(@lastmsgs, @fail, 0)
 		if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
 		store_value('DiscordBot.last.cmd.not.found', @lastmsgs)
-		console('[Discord] '.@discord['username'].' tried to use non-existent command'.@cmdfrom.': '.color('e').@command[0].'  '.color('r').@commanddismc, false)
+		console('['.@config['Server_Nickname'].'] '.@discord['username'].' tried to use non-existent command'.@cmdfrom.': '.color('e').@command[0].'  '.color('r').@commanddismc, false)
 		return('NotACmd')
 	}
 
@@ -1423,7 +1423,7 @@ console('retis: '.is_string(@return))
 	@colorret = ''
 	@retdisplay = ''
 	if(@return == true) { @colorret = 3 @retdisplay = '' } else { @colorret = 'c' @retdisplay = ' (Failed)' }
-	console('[Discord] '.@discord['username'].' used command'.@cmdfrom.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, false)
+	console('['.@config['Server_Nickname'].'] '.@discord['username'].' used command'.@cmdfrom.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, false)
 	_discordBot_send_message(@discord['username'].' used command'.@cmdfrom.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, 'admin', '', '', @discord['serverid'])
 	return(@return)
 }
@@ -1445,7 +1445,7 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 		try {
 			@memberroles = discord_member_get_roles(@discord['serverid'], @target)
 		} catch (NotFoundException @ex) {
-			console('[Chat - Discord] User ID given not found on server: '.@target.'!', false)
+			console('['.@config['Server_Nickname'].'] User ID given not found on server: '.@target.'!', false)
 			return('notfound')
 		}
 		return(@target)
@@ -1461,14 +1461,14 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 		if(equals_ic(@target, @discord['username']) || equals_ic(@target, @discord['nickname'])) {
 			return('self')
 		}	
-		console('[Chat - Discord] finduserID debug: match: '.@targetmatches)
+		console('['.@config['Server_Nickname'].'] finduserID debug: match: '.@targetmatches)
 		
 		if(!array_index_exists(@targetmatches, 0)) {
-			console('[Chat - Discord] Could not find user ID for '.@target.'!', false)
+			console('['.@config['Server_Nickname'].'] Could not find user ID for '.@target.'!', false)
 			return('notfound')
 		} else if(array_index_exists(@targetmatches, 1)) {
 			discord_private_message(@discord['userid'], 'I found multiple users; I\'m not sure which one you meant to apply this command to. Users Matched: \n'.array_implode(@targetmatches, ', '))
-			console('[Chat - Discord] finduserID: Found multiple users, Users Matched: \n'.array_implode(@targetmatches, ', '), false)
+			console('['.@config['Server_Nickname'].'] finduserID: Found multiple users, Users Matched: \n'.array_implode(@targetmatches, ', '), false)
 			return('multiple')
 		} else {
 			return(@membernames[array_implode(@targetmatches, '')])

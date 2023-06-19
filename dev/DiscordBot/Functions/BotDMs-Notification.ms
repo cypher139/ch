@@ -120,7 +120,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			try {
 				discord_private_message(@discord['userid'], array('embeds': array(@urlembed)))
 			} catch(Exception @ex) {
-				console('[Discord] URL Readback: '.color(12).@ex['classType'].': '.@ex['message'])
+				console('[DiscordBot] URL Readback: '.color(12).@ex['classType'].': '.@ex['message'])
 			}
 		}
 	}
