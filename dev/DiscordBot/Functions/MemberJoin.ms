@@ -175,31 +175,43 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		@wm = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
 		@inv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())
 		@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
-		# add to array, remove imports
 		if(!is_array(@joininfo)) { @joininfo = array() }
-		foreach(@user: @data in @inv) {
-		if(!array_index_exists(@joininfo, @user)) { array_set(@joininfo, @user, array()) }
-			array_set(@joininfo[@user], 'time', @time);
-			array_set(@joininfo[@user], 'user', @discord['username']);
-			foreach(@k: @v in @data) {
-				array_set(@joininfo[@user], @k, @v);
-				# array('time': @time, 'wmid': @ex, 'user': @discord['username'], 'invite': @inv['code'], 'inviter': @inv['inviter'], 'inviterid': @inv['inviterid']))
+		@isMember = true
+		try {
+			@test = discord_member_info(@discord['serverid'], @discord['userid'])
+		} catch(Exception @ex) {
+			@isMember = false
+			console('['.@config['Server_Nickname'].'] ['.@discord['userid'].'] '.@discord['username'].' joined and just left, how!??', false)
+		}
+		if(!array_index_exists(@joininfo, @discord['userid']) && @isMember == true) { 
+			array_set(@joininfo, @discord['userid'], array())
+			array_set(@joininfo[@discord['userid']], 'time', @time);
+			array_set(@joininfo[@discord['userid']], 'user', @discord['username']);
+		}
+		if(array_index_exists(@inv, @discord['userid'])) { 
+			if(@isMember == true) {
+				foreach(@k: @v in @inv[@discord['userid']]) {
+					array_set(@joininfo[@discord['userid']], @k, @v);
+				}
 			}
+			array_remove(@inv, @discord['userid'])
 		}
-		foreach(@user: @data in @wm) {
-		if(!array_index_exists(@joininfo, @user)) { array_set(@joininfo, @user, array()) }
-			array_set(@joininfo[@user], 'time', @time);
-			array_set(@joininfo[@user], 'user', @discord['username']);
-			array_set(@joininfo[@user], 'wmid', @data);
+		if(array_index_exists(@wm, @discord['userid'])) { 
+			if(@isMember == true) {
+				array_set(@joininfo[@discord['userid']], 'wmid', @wm[@discord['userid']]);
+			}
+			array_remove(@wm, @discord['userid'])
 		}
-		export('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
-		export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())
-		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)
-		# @jointimes = get_value('DiscordBot.'.@discord['serverid'].'.Join.times')
-		# if(!is_array(@jointimes)) { @jointimes = array() }
-		# array_set(@jointimes, @time, array('userid': @discord['userid'], 'user': @discord['username']))
-		# store_value('DiscordBot.'.@discord['serverid'].'.Join.times', @jointimes)
-		_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')
+		if(@isMember == true) {
+			store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)
+			# @jointimes = get_value('DiscordBot.'.@discord['serverid'].'.Join.times')
+			# if(!is_array(@jointimes)) { @jointimes = array() }
+			# array_set(@jointimes, @time, array('userid': @discord['userid'], 'user': @discord['username']))
+			# store_value('DiscordBot.'.@discord['serverid'].'.Join.times', @jointimes)
+			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')
+		}
+		export('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', @wm);
+		export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', @inv);
 	});
 }
 
@@ -255,7 +267,24 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	@joininfoFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former')
 	if(!is_array(@joininfo)) { @joininfo = array() }
 	if(!is_array(@joininfoFR)) { @joininfoFR = array() }
-	@invmsgSuffix = ', but I didn\'t figure out how they had joined it.'
+	if(!array_index_exists(@joininfo, @discord['userid'])) {
+		@wm = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
+		@inv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())	
+		if(array_index_exists(@inv, @discord['userid']) || array_index_exists(@wm, @discord['userid'])) {
+			array_set(@joininfo, @discord['userid'], array())
+			array_set(@joininfo[@discord['userid']], 'time', time());
+			array_set(@joininfo[@discord['userid']], 'code', '');
+			array_set(@joininfo[@discord['userid']], 'user', @discord['username']);
+		}
+		if(array_index_exists(@inv, @discord['userid'])) { 
+			foreach(@k: @v in @inv[@discord['userid']]) {
+				array_set(@joininfo[@discord['userid']], @k, @v);
+			}
+		}
+		if(array_index_exists(@wm, @discord['userid'])) { array_set(@joininfo[@discord['userid']], 'wmid', @wm[@discord['userid']]) }
+	}
+	# @invmsgSuffix = ', but I didn\'t figure out how they had joined it.'
+	@invmsgSuffix = '.'
 	if(array_contains(array_keys(@joininfo), @discord['userid'])) {
 	# Add leave stats to invite used
 		if(!is_array(@joininfo[@discord['userid']]['code']) && @joininfo[@discord['userid']]['code'] != '') {
