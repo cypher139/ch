@@ -136,8 +136,9 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			@usedefaults = true;
 		}
 		if(array_index_exists(@userinfo, 'avatar')) {
-			array_set(@msgembed[0], 'author', array('icon_url': @userinfo['avatar'].'?size=48', 'name': @discord['username']))
-			array_remove(@msgembed[0], 'title')
+			array_set(@msgembed[0], 'author', array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])));
+			array_set(@msgembed[0], 'thumbnail', @userinfo['avatar'].'?size=48');
+			array_remove(@msgembed[0], 'title');
 		}		
 		if(array_index_exists(@userinfo, 'color')) {
 			if(@userinfo['color'] != null) {
