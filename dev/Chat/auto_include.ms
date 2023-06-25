@@ -537,9 +537,38 @@ proc _wish_granter(@action, @target, @player, @option1) {
 	return(array('success': true, 'message': @returnmsg))
 }
 
-
-
+proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore') {
+	@time = time();
+	if(array_size(@ping) == 0) { die('no data') }
+	@serverConfig = import('Chat.config.Server')
+	@ipNumbers = reg_replace('\\.*:*', '', @ping['ip']);
+	@ignoredIPPings = get_value('Server.pings.log.'.@type.'.IP')
+	if(!is_array(@ignoredIPPings)) { @ignoredIPPings = array() }
+	if(!array_index_exists(@ignoredIPPings, @ipNumbers)) { array_set(@ignoredIPPings, @ipNumbers, array()) }
+	array_push(@ignoredIPPings[@ipNumbers], @time);
+	array_set(@ignoredIPPings['ip'], @ipNumbers, @ping['ip']);
+	# array_sort(@ignoredIPPings[@ipNumbers], 'NUMERIC')
+	store_value('Server.pings.log.'.@type.'.IP', @ignoredIPPings);
+	_write_file(import('Chat.logs.dir').'/Ping-Log-'.@type.'-IPs.csv', simple_date('MM-dd-yy HH:mm:ss', @time).','.@ping['ip'].'\n', 'append');
+	#Optional: publish IP block list to server HTML
+	if(@type == 'blacklist') {
+		@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array()));
+		@ipList = array_merge(@blacklistIP['IP_Blacklist'], @ignoredIPPings['ip']);
+		@ipList = array_sort(@ipList, 'REGULAR');
+		# @ipList = array_unique(@ipList, false);
+		@previp = ''
+		foreach(@k: @v in @ipList) {
+			if(@v == @previp) {
+				array_remove(@ipList, @k)
+			} else {
+				@previp = @v
+			}
+		}	
+		_write_file('/var/www/html/block.txt', array_implode(@ipList, '\n'), 'overwrite');
+	}
+}
 
 ####
 # Load configs
 _chat_load_config('Server');
+_chat_load_config('IPBlacklist');

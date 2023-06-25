@@ -109,23 +109,45 @@ set_cron('59 23 * * *', closure(){
 });
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
+	@consoleBlacklistMsg = false
+	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 	@time = time();
 	@serverConfig = import('Chat.config.Server')
 	@pinglevel = @serverConfig['Ping_Message_Level']
 	# Repeated pings get special message
 	@ipnumbers = reg_replace('\\.*:*', '', @ping['ip'])
 	@iplastping = import('Chat.ping.IP.'.@ipnumbers, (@time - 10000))
+
+# Blacklisted IPs: do not send any data about the server if possible, and don't send any ping messages.
+	if(array_contains(@blacklistIP['IP_Blacklist'], @ping['ip'])) {
+		super_cancel();
+		# ^ only affects server listings.
+		_chat_pings_write_log(@ping, 'blacklist');
+		if(@consoleBlacklistMsg == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist IP: '.@ping['ip'], false) }
+		die();
+	}
+	foreach(@block in @blacklistIP['IP_Block_Blacklist']) {
+		@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
+		if(string_starts_with(string(@ping['ip']), @startBlock)) {
+			super_cancel();
+			# ^ only affects server listings.
+			_chat_pings_write_log(@ping, 'blacklist');
+			if(@consoleBlacklistMsg == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist '.color(5).'Block'.color(8).' IP: '.@ping['ip'], false) }
+			die();
+		}
+	}
+# Repeated pings (i.e. quick refreshes)? Yea, don't bother displaying those!
 	if(@time < (@iplastping + 7000)) {
 		modify_event('motd', @serverConfig['Repeated_Ping_Message']);
 		export('Chat.ping.IP.'.@ipnumbers, @time);
 		die();
 	}
 	export('Chat.ping.IP.'.@ipnumbers, @time)
-	# Colorize MOTD
+# Colorize MOTD
 	if(@serverConfig['MOTD_Rainbow'] == true) {
 		modify_event('motd', _rainbow(@ping['motd'], @serverConfig['MOTD_Rainbow_Type']));
 	}
-	# Get player name(s) from IP database
+# Get player name(s) from IP database
 	@ipdata = import('primus.database.IP');
 	@msgdisplay = ''
 	if(is_array(@ipdata)) {
@@ -141,13 +163,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	}
 # Ignored IP: Log internally, don't (immediately) message.
 	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { 
-		@ignoredIPPings = get_value('Server.pings.log.ignore.IP')
-		if(!is_array(@ignoredIPPings)) { @ignoredIPPings = array() }
-		if(!array_index_exists(@ignoredIPPings, @ipnumbers)) { array_set(@ignoredIPPings, @ipnumbers, array()) }
-		array_push(@ignoredIPPings[@ipnumbers], @time);
-		array_set(@ignoredIPPings['ip'], @ipnumbers, @ping['ip']);
-		# array_sort(@ignoredIPPings[@ipnumbers], 'NUMERIC')
-		store_value('Server.pings.log.ignore.IP', @ignoredIPPings);
+		_chat_pings_write_log(@ping, 'ignore');
 		@pinglevel = 0 
 	}
 # Admin Ping Messages:
