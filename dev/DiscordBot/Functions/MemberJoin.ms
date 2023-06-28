@@ -26,10 +26,10 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			@currentroles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
 		} catch (NotFoundException @ex) {
 	#Assume user was insta-kick (such as account age does not meet server req.)
-			console('['.@config['Server_Nickname'].'] New Join '.@discord['username'].' <@'.@discord['userid'].'> was not found on server. Were they insta-kicked??', false)
+			_db_msg_Console('New Join '.@discord['username'].' <@'.@discord['userid'].'> was not found on server. Were they insta-kicked??', @discord['serverid'])
 			die()
 		} catch (Exception @ex) {
-			console(@ex)
+			_db_msg_Console(@ex, @discord['serverid'], 'debug')
 			die()
 		}
 #Setup list of server members for reference in mentions
@@ -40,7 +40,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			try {
 				discord_private_message(@discord['userid'], @welcomeDMMsg)
 			} catch(Exception @ex) {
-				console('['.@config['Server_Nickname'].'] Cannot message '.@discord['username'].' <@'.@discord['userid'].'>, are they a bot?', false)
+				_db_msg_Console('Cannot message '.@discord['username'].' <@'.@discord['userid'].'>, are they a bot?', @discord['serverid'])
 			}
 		}
 # If new member: Add Delineator roles, or roles new users need to have to access server
@@ -50,7 +50,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		if(array_index_exists(@membersFR, @discord['userid']) && @config['Welcome_Roles_Restore'] == true) {
 			array_push_all(@currentroles, @membersFR[@discord['userid']]['data'])
 			discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Previous Member Roles Restored')
-			console('['.@config['Server_Nickname'].']'.color(2).'Previous roles restored.', false)
+			_db_msg_Console(color(2).'Previous roles restored.', @discord['serverid'])
 		} else {
 			if(is_array(@config['Welcome_Roles']) && @config['Welcome_Roles_Award'] == true) {
 				array_push_all(@currentroles, @config['Welcome_Roles'])
@@ -61,7 +61,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					foreach(@word in parse_args(@ex['message'])) {
 						if(string_starts_with(@word, '"')) { @id = replace(@word, '"', '') }
 					}
-					console('['.@config['Server_Nickname'].'  '.@discord['serverid'].'] Welcome role ID '.color('c').@id.color('r').' does not exist!', false)
+					_db_msg_Console('  '.@discord['serverid'].'] Welcome role ID '.color('c').@id.color('r').' does not exist!', @discord['serverid'])
 				}
 			}
 		}
@@ -109,21 +109,21 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 						if(array_index_exists(@previnv, @data['code'])) {
 							if(@data['uses'] > @previnv[@data['code']]['uses']) {
 								array_push(@matches, @code)
-								console('['.@config['Server_Nickname'].'] ['.@discord['username'].'] Invite: '.color(3).@data['code'].color('r').' <'.color('a').@data['uses'].color('r').' > '.color(9).@previnv[@data['code']]['uses'].color('r').'>', false)
+								_db_msg_Console('['.@discord['username'].'] Invite: '.color(3).@data['code'].color('r').' <'.color('a').@data['uses'].color('r').' > '.color(9).@previnv[@data['code']]['uses'].color('r').'>', @discord['serverid'])
 							}
 						} else if(@data['uses'] == 1) {
 							array_push(@matches, @code)
-							console('['.@config['Server_Nickname'].'] ['.@discord['username'].'] Invite: '.@data['code'].' <New invite>', false)
+							_db_msg_Console('['.@discord['username'].'] Invite: '.@data['code'].' <New invite>', @discord['serverid'])
 						}
 					}
 					
 					if(array_size(@matches) == 0) {
 						@invMessage = 'I could not figure out how **%User%** [%UserID%] joined!'
-						console('['.@config['Server_Nickname'].'] ['.@discord['username'].'] No invite code match found!', false)				
+						_db_msg_Console('['.@discord['username'].'] No invite code match found!', @discord['serverid'])				
 					}
 					if(array_size(@matches) > 1) {
 						@invMessage = '**%User%** [%UserID%] joined! I found multiple possible invites: \n `%InviteCode%`'
-						console('['.@config['Server_Nickname'].'] ['.@discord['username'].'] Multiple invite codes matched!! \n'.@matches, false)
+						_db_msg_Console('['.@discord['username'].'] Multiple invite codes matched!! \n'.@matches, @discord['serverid'])
 						array_set(@results, 'code', @matches)
 					}
 					if(array_size(@matches) == 1) {
@@ -150,14 +150,14 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				});
 			} catch(InsufficientPermissionException @ex) {
 				if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
-					@msg = 'Invite Logging is Enabled, however bot does not have permission to view invites!'
-					console('['.@config['Server_Nickname'].'] ['.@guild.'] '.@msg, false)
+					@msg = 'Invite Logging is Enabled, however I do not have permission to view invites!'
+					_db_msg_Console('['.@guild.'] '.@msg, @discord['serverid'])
 					_discordBot_send_message(@msg, 'log', '', '', @discord['serverid'])
 				} else {
-					console('['.@config['Server_Nickname'].'] ['.@guild.'] '.@ex['message'], false)
+					_db_msg_Console('['.@guild.'] '.@ex['message'], @discord['serverid'])
 				}
 			} catch(Exception @ex) {
-				console('['.@config['Server_Nickname'].'] ['.@guild.'] '.@ex['message'], false)
+				_db_msg_Console('['.@guild.'] '.@ex['message'], @discord['serverid'])
 			}
 		}
 		
@@ -168,7 +168,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		} else {
 			@userDisplay = @discord['nickname'].' ('.@discord['username'].') <@'.@discord['userid'].'>'
 		}
-		console('['.@config['Server_Nickname'].'] Member '.color(10).'joined: '.color(9).@userDisplay, false)
+		_db_msg_Console('Member '.color(10).'joined: '.color(9).@userDisplay, @discord['serverid'])
 	});
 # Get data from closures, save
 	set_timeout(10000, closure(){
@@ -181,7 +181,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			@test = discord_member_info(@discord['serverid'], @discord['userid'])
 		} catch(Exception @ex) {
 			@isMember = false
-			console('['.@config['Server_Nickname'].'] ['.@discord['userid'].'] '.@discord['username'].' joined and just left, how!??', false)
+			_db_msg_Console('['.@discord['userid'].'] '.@discord['username'].' joined and just left, how!??', @discord['serverid'])
 		}
 		if(!array_index_exists(@joininfo, @discord['userid']) && @isMember == true) { 
 			array_set(@joininfo, @discord['userid'], array())
@@ -226,7 +226,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	} else {
 		@userDisplay = @discord['nickname'].' ('.@discord['username'].') <@'.@discord['userid'].'>'
 	}
-	console('['.@config['Server_Nickname'].'] Member '.color(12).'left: '.color(9).@userDisplay, false)
+	_db_msg_Console('Member '.color(12).'left: '.color(9).@userDisplay, @discord['serverid'])
 
 # Remove user entry from internal storages
 	@membersRoles = get_value('DiscordBot.'.@discord['serverid'].'.members.roles')
@@ -313,9 +313,9 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			# Remove Welcome message
 			try { 
 				discord_delete_message(@discord['serverid'], @config['Welcome_Text_Channel_Name'], @joininfo[@discord['userid']]['wmid'])
-				console('['.@config['Server_Nickname'].'] New joiner! Welcome message removed.', false)
+				_db_msg_Console('New joiner! Welcome message removed.', @discord['serverid'])
 			} catch(Exception @ex) {
-				console('['.@config['Server_Nickname'].'] Unable to remove Welcome Message! '.color('c').@ex['classType'].': '.@ex['message'], false)
+				_db_msg_Console('Unable to remove Welcome Message! '.color('c').@ex['classType'].': '.@ex['message'], @discord['serverid'])
 			}	
 		} else {
 			#Also, only write former roles if not a new member

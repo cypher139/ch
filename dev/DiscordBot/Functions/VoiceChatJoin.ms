@@ -146,7 +146,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 				try {
 					@UserRole = discord_member_get_roles(@discord['serverid'], @userid)
 				} catch(NotFoundException @ex) {
-					console('['.@config['Server_Nickname'].'] User '.@username.' <@'.@userid.'> was recently in Voice Chat, but now is not found on the server. Did they chat and leave?', false)
+					_db_msg_Console('User '.@username.' <@'.@userid.'> was recently in Voice Chat, but now is not found on the server. Did they chat and leave?', @discord['serverid'])
 					continue()
 				}
 				@otherVCUsers = array_shallow_clone(@totalVCUsers)
@@ -174,7 +174,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 				discord_private_message(@userid, @dmMsg);
 			}
 		}
-		console('['.@config['Server_Nickname'].'] Call Completed in the '.@discord['channel'].' channel! Users who joined: '.color(3).array_implode(@totalVCUsers, ', '), false)
+		_db_msg_Console('Call Completed in the '.@discord['channel'].' channel! Users who joined: '.color(3).array_implode(@totalVCUsers, ', '), @discord['serverid'])
 		#Save Stats
 		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.current');
 		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.total');

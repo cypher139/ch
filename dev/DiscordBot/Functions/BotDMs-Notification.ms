@@ -97,7 +97,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	if(@userConfig[@discord['userid']]['NotifyContent'] == true) {
 		_db_mc_broadcast(color(9).'[Discord Bot] New DM from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@mcMsg, 'players');
 	}
-	console('[Discord] '.color(9).'New DM from '.color('r').'['.@discord['username'].' ('.@discord['userid'].') ] '.color(9).'Message: \n'.color('r').@mcMsg, false);
+	_db_msg_Console(color(9).'New DM from '.color('r').'['.@discord['username'].' ('.@discord['userid'].') ] '.color(9).'Message: \n'.color('r').@mcMsg, 'bot');
 	
 #Setup message URLs to embed and console
 	@urlembed = array()
@@ -120,7 +120,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			try {
 				discord_private_message(@discord['userid'], array('embeds': array(@urlembed)))
 			} catch(Exception @ex) {
-				console('[DiscordBot] URL Readback: '.color(12).@ex['classType'].': '.@ex['message'])
+				_db_msg_Console('[DiscordBot] URL Readback: '.color(12).@ex['classType'].': '.@ex['message'])
 			}
 		}
 	}
@@ -171,9 +171,9 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			if(string_ends_with(@ex['message'], 'VIEW_CHANNEL')) {
 				@msg = 'Bot cannot view Log Channel! ('.@guildcfgChannel[@guild].')'
 			}
-			console('[DiscordBot] ['.@guild.'] '.@msg, false)
+			_db_msg_Console('['.@guild.'] '.@msg, 'bot')
 		} catch(Exception @ex) {
-			console('[DiscordBot] ['.@guild.'] '.@ex['message'], false)
+			_db_msg_Console('['.@guild.'] '.@ex['message'], 'bot')
 		}
 	}
 }

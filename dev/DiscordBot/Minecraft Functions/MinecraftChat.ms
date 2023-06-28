@@ -9,10 +9,12 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 	
 	# Automatically chat on last channel a message was received on.
 	@lastmsg = import('DiscordBot.'.@botconfig['Primary_Guild'].'.last.message')
-	if(is_array(@lastmsg)) {
-		if(array_index_exists(@lastmsg, 0, 'channel')) {
-			if(time() < (@lastmsg[0]['time'] + 234567)) {
-				@channel = @lastmsg[0]['channel']
+	if(!is_array(@lastmsg)) { @lastmsg = array() }
+	foreach(@message in @lastmsg) {
+		if(array_index_exists(@message, 'channel')) {
+			if(!array_contains(@config['Channels_Send'], @message['channel'])) { continue() }
+			if(time() < (@message['time'] + 234567)) {
+				@channel = @message['channel']
 			}	
 		}
 	}

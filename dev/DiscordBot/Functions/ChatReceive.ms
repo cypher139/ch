@@ -69,7 +69,7 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 					continue()
 				}
 				@usernamecolor = @config['Role_Colors'][@role]
-#dev				console('chose role: '.@role)
+#dev				_db_msg_Console('chose role: '.@role, @discord['serverid'], 'debug')
 				#Only go with first role found
 				break()
 			}
@@ -80,11 +80,11 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 			@sendmsg = color(@usernamecolor).'[Bot]'.@sendmsg
 		}
 		@sendto = 'players'
-		if(@config['Console_Receive_Msgs'] == true) { @sendto = '' }
-		_db_mc_broadcast(@sendmsg, @sendto, @config['Console_Receive_Msgs'])
+		if(@config['Console_Messages_Chat'] == true) { @sendto = '' }
+		_db_mc_broadcast(@sendmsg, @sendto, @config['Console_Messages_Chat'])
 		if(array_index_exists(@discord, 'attachments', 0, 'filename') && @config['URL_Broadcast'] == true) {
 			foreach(@num: @attach in @discord['attachments']) {
-				_db_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], @sendto, @config['Console_Receive_Msgs'])
+				_db_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], @sendto, @config['Console_Messages_Chat'])
 			}
 		}
 	}

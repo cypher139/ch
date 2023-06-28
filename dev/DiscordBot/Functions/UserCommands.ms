@@ -38,7 +38,7 @@ bind('discord_message_received', array('id': 'DiscordBot.cmd', 'priority': 'HIGH
 								@return = _discordBot_process_batchfile(@commands, @discord, @ChannelType)
 							}
 						} else {
-							console('[Chat - Discord] Processing Batch file failed: '.@data)
+							_db_msg_Console('Processing Batch file failed: '.@data, @discord['serverid'])
 						}
 					}));
 
@@ -63,7 +63,7 @@ bind('discord_message_received', array('id': 'DiscordBot.cmd', 'priority': 'HIGH
 			try { 
 				discord_delete_message(@discord['serverid'], @discord['channel'], @discord['id'])
 			} catch(Exception @ex) {
-				console('Another bot running?')
+				_db_msg_Console('Could not delete command message, Another bot running?', @discord['serverid'])
 			}
 		# Action command, all message output is handled from there.
 		/*	

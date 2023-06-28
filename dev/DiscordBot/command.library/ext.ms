@@ -92,7 +92,7 @@ proc _discordBot_cmd_codegen_pl(@discord, @args) {
 				foreach(@k: @v in @results) {
 					@results[@k] = _codegen(rand(6, 21), rand(0, 5), rand(0, 5))
 				}
-				console(@results)
+				_db_msg_Console(@results, @discord['serverid'], 'debug')
 				@service = array_get_rand(array('your mom', '<redacted>', 'FTP'))
 				_discordBot_send_message('Passwords for '.@service.': '.array_implode(@results, '\n --: '), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
 			});	
