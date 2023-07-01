@@ -268,7 +268,7 @@ return(null)
 
 # new error message: :dp: +
 
-proc _discordBot_send_message(@message, @from, @channel, @type, @guild, @option) {
+proc _discordBot_send_message(@message, @guild, @from, @channel, @type, @option) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
 	@prefixErrorMsg = color(6).'['.color(9).'DiscordBot'.color(6).'] '.color(7).'A message queued to send had a problem: '
 	@botconfig = import('DiscordBot.config.Discord')
@@ -782,7 +782,7 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 				@sendchannel = @discord['userid']
 			}
 			if(@sendMsgtoLog == true) { @sendchannel = @config['Log_Channel'] @type = 'broadcast' }
-			_discordBot_send_message(@discordMsg, 'confirm', @sendchannel, @type, @discord['serverid'])
+			_discordBot_send_message(@discordMsg, @discord['serverid'], 'confirm', @sendchannel, @type)
 		}
 	}
 #Save edits
@@ -1376,7 +1376,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@command = parse_args(reg_replace(@config['CMD_Command_Prefix'], '', @discord['message']))
 # No Command Given
 	if(!array_index_exists(@command, 0)) {
-		_discordBot_send_message(array('embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))), 'none', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])	
+		_discordBot_send_message(array('embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))), @discord['serverid'], 'none', @discord['SendChannel'], @discord['UseDM'])	
 		return('NoCmdGiven')
 	}
 #No mentions
@@ -1414,7 +1414,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 # Deny Admin commands	
 	if(array_contains_ic(@admincommandlist, @command[0]) && @userType != 'Admin') {
 		_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfrom.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
-		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfrom.': `'.@command[0].'`  '.strip_colors(@commanddisdc), 'admin', '', '', @discord['serverid'])
+		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfrom.': `'.@command[0].'`  '.strip_colors(@commanddisdc), @discord['serverid'], 'admin')
 		return('NotAdmin')
 	}
 	array_set(@discord, 'admin', @isAdmin)
@@ -1424,7 +1424,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	if(array_index_exists(@actions, @command[0])) {
 		@return = @actions[@command[0]](@discord, @args);
 	} else {
-		_discordBot_send_message('I have no idea what that command was about, try help.', 'command', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+		_discordBot_send_message('I have no idea what that command was about, try help.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
 		@lastmsgs = get_value('DiscordBot.last.cmd.not.found')
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		@fail = array('time': time(), 'user': @discord['username'], 'command': @command[0], 'args': @args)
@@ -1438,9 +1438,9 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 /*
 should get array closure return. chat procs need to return to closure
 auto includes messages final message, unless true/false. multiple messages need to be handled by action
-ex.:	_discordBot_send_message(return, 'discord', @discord['SendChannel'], @discord['UseDM'])
+ex.:	_discordBot_send_message(return, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 return may be an array or string too
-nocmd return: 		_discordBot_send_message('A required command module is not installed.', 'command', @discord['SendChannel'], @discord['UseDM']) returnfalse
+nocmd return: 		_discordBot_send_message('A required command module is not installed.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) returnfalse
 */
 _db_msg_Console('ret: '.@return, @discord['serverid'], 'debug')
 _db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
@@ -1460,28 +1460,28 @@ _db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
 #Send Messages
 	if(is_string(@return)) {
 		if(@return == 'NoCmd') {
-			_discordBot_send_message('A required command module is not installed.', 'command', @discord['SendChannel'], @discord['UseDM'], @discord['serverid']) 
+			_discordBot_send_message('A required command module is not installed.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) 
 			@return = false
 		} else if(@return == 'NotAdmin') {
-			_discordBot_send_message(':no_entry: This command is restricted to use by Admin only.', 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid']) 
+			_discordBot_send_message(':no_entry: This command is restricted to use by Admin only.', @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM']) 
 			@return = false
 		} else if(@return == 'NoUserFound') {
-			_discordBot_send_message(':question: User ID given not found on server.', 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid']) 
+			_discordBot_send_message(':question: User ID given not found on server.', @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM']) 
 			@return = false
 		} else if(@return == 'pong') {
 			@timeElapsed = (time() - @discord['time'])
-			_discordBot_send_message('Pong! ('.(@timeElapsed / 1000).')', 'command', @discord['SendChannel'], @discord['UseDM'], @discord['serverid']) 
+			_discordBot_send_message('Pong! ('.(@timeElapsed / 1000).')', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) 
 			@return = true
 		} else {
-			_discordBot_send_message(@return, 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+			_discordBot_send_message(@return, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 			@return = true
 		}
 	} else if(is_array(@return)) {
 		if(array_index_exists(@return, 'content') || array_index_exists(@return, 'embeds')) {
-			_discordBot_send_message(@return, 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+			_discordBot_send_message(@return, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 			@return = true
 		} else {
-			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@return, 'admin', '', '', @discord['serverid'])
+			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@return, @discord['serverid'], 'admin')
 			@return = false
 		}
 	}
@@ -1490,7 +1490,7 @@ _db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
 	@retdisplay = ''
 	if(@return == true) { @colorret = 3 @retdisplay = '' } else { @colorret = 'c' @retdisplay = ' (Failed)' }
 	_db_msg_Console(@discord['username'].' used command'.@cmdfrom.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
-	_discordBot_send_message(@discord['username'].' used command'.@cmdfrom.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, 'admin', '', '', @discord['serverid'])
+	_discordBot_send_message(@discord['username'].' used command'.@cmdfrom.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
 	return(@return)
 }
 

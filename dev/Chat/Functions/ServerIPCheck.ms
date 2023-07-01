@@ -28,7 +28,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 			@players = '%f'.array_implode(@otherplayers, ', ').'%f'
 			@adminPingMessage = @msgPrefix.color(7).'`'.@login['player'].'` tried to connect with IP '.@login['ip'].'; however '.@serverConfig['Concurrent_Accs_IP'].' accounts are already connected using the same IP address: '.@players
 			if(@serverConfig['Ping_Message_Discord'] == true) { 
-				if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%f', '`'), 'none', '', 'admin') }
+				if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%f', '`'), '', 'none', '', 'admin') }
 			}
 			if(@serverConfig['Ping_Message_Console'] == true) { console(replace(@adminPingMessage, '%f', ''), false) }
 			die();
@@ -42,7 +42,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 					modify_event('result', 'KICK_OTHER');
 					@adminPingMessage = @msgPrefix.color(7).'IP '.@login['ip'].' tried to connect; this server does not allow more than '.@serverConfig['Allowed_Account_Amount'].' accounts using the same IP address. '.@playersMsg
 					if(@serverConfig['Ping_Message_Discord'] == true) { 
-						if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%f', '`'), 'none', '', 'admin') }
+						if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%f', '`'), '', 'none', '', 'admin') }
 					}
 					if(@serverConfig['Ping_Message_Console'] == true) { console(replace(@adminPingMessage, '%f', ''), false) }
 				}
@@ -57,7 +57,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 		modify_event('result', 'KICK_OTHER');
 		@adminPingMessage = @msgPrefix.color(7).'IP '.@login['ip'].' tried to connect using a Blacklisted IP address. '.@playersMsg
 		if(@serverConfig['Ping_Message_Discord'] == true) { 
-			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%f', '`'), 'none', '', 'admin') }
+			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%f', '`'), '', 'none', '', 'admin') }
 		}
 		if(@serverConfig['Ping_Message_Console'] == true) { console(replace(@adminPingMessage, '%f', ''), false) }
 	}
@@ -69,7 +69,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 			modify_event('result', 'KICK_OTHER')
 			@adminPingMessage = @msgPrefix.color(7).'IP '.@login['ip'].' tried to connect using an IP address that is part of a Blacklisted IP Block. '.@playersMsg
 			if(@serverConfig['Ping_Message_Discord'] == true) { 
-				if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%f', '`'), 'none', '', 'admin') }
+				if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%f', '`'), '', 'none', '', 'admin') }
 			}
 			if(@serverConfig['Ping_Message_Console'] == true) { console(replace(@adminPingMessage, '%f', ''), false) }
 		}

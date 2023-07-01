@@ -63,15 +63,15 @@ proc _discordBot_cmd_help(@discord) {
 	@embeds = array(array('fields': @fields, 'color': array('r': 255, 'g': 204, 'b': 0), 'description': 'Command List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/925074738437570600.webp?size=32', 'text': 'the cool bot.')))
 	@aliasembed = array('fields': array(array('name': 'Aliases', 'value': '`'.array_implode(array_unique(@aliaseslist), '` `').'`', 'inline': false)), 'color': array('r': 170, 'g': 221, 'b': 0))
 	if(@discord['admin'] == true) { array_push(@embeds, @aliasembed) }
-	_discordBot_send_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds), 'discord', @discord['userid'], 'dm', @discord['serverid'])
+	_discordBot_send_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds), @discord['serverid'], 'discord', @discord['userid'], 'dm')
 	return(true)
 }
 
 proc _discordBot_cmd_cypher(@discord) {
 	if(@discord['username'] != 'Cypher') {
-		_discordBot_send_message('Cypher no Cyphing!', 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+		_discordBot_send_message('Cypher no Cyphing!', 'discord', @discord['serverid'], @discord['SendChannel'], @discord['UseDM'])
 	} else {
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'Cypher was here'), 'image': 'https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'Cypher was here'), 'image': 'https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 	}
 	return(true)
 }
@@ -178,17 +178,17 @@ proc _discordBot_cmd_dm(@discord, @cmdargs) {
 
 proc _discordBot_cmd_say(@discord, @cmdargs) {
 	if(!array_index_exists(@cmdargs, 0)) {
-		_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/Ks8QMnG25nMAAAAC/kevin-hart-say-what.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+		_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/Ks8QMnG25nMAAAAC/kevin-hart-say-what.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 		die()
 	}
 	switch(rand(1,6)) {
 	case 2:
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 	case 4:
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 	default:
 		@sayicons = array('https://media.tenor.com/qJUcFWzUWlIAAAAd/xtina-christina-aguilera.gif', 'https://media.tenor.com/nMkuF8c3DV0AAAAC/zootopia-fox.gif', 'https://media.tenor.com/EJieOpbWHS8AAAAi/i-have-nothing-to-say-real-housewives-of-beverly-hills.gif')
-		_discordBot_send_message(array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username'])))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+		_discordBot_send_message(array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username'])))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 	}
 	return(true)
 }

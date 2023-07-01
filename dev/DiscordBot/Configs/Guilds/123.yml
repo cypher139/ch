@@ -9,6 +9,8 @@ Log_Channel: bot-logs
 Server_Log_Channel: bot-logs
 Showcase_Channel: 123235346
 DM_Notify: true
+Minecraft_Messages: true
+Minecraft_Messages_Admin: true
 #
 #
 # Mentions

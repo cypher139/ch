@@ -43,7 +43,7 @@ proc _discordBot_cmd_codegen(@discord, @args) {
 					@prefix = 'Randomly Generated code: \n'
 					@channel = @discord['userid']
 				}
-				_discordBot_send_message(@prefix.@code, 'discord', @channel, @dmCode, @discord['serverid'])
+				_discordBot_send_message(@prefix.@code, @discord['serverid'], 'discord', @channel, @dmCode)
 			});
 			return(true)
 		} else { return('NoCmd') }
@@ -70,7 +70,7 @@ proc _discordBot_cmd_wrf(@discord, @cmdargs) {
 			} else {
 				discord_private_message(@discord['userid'], '```List of IDs:``` \n'.@IDs)
 			}
-			# _discordBot_send_message(@return['amount'].' '.@return['msg'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+			# _discordBot_send_message(@return['amount'].' '.@return['msg'], @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 			return(array('embeds': array(array('title': 'Welcome Roles Finder', 'description': @return['amount'].' '.@return['msg'], 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': ' requested by @'.@discord['username'])))))
 			
 		} else {
@@ -94,15 +94,15 @@ proc _discordBot_cmd_codegen_pl(@discord, @args) {
 				}
 				_db_msg_Console(@results, @discord['serverid'], 'debug')
 				@service = array_get_rand(array('your mom', '<redacted>', 'FTP'))
-				_discordBot_send_message('Passwords for '.@service.': '.array_implode(@results, '\n --: '), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+				_discordBot_send_message('Passwords for '.@service.': '.array_implode(@results, '\n --: '), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 			});	
 		} else {
 			return('NoCmd')
 		}
 		case 3:
-			_discordBot_send_message(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+			_discordBot_send_message(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 		default:
-			_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))), 'discord', @discord['SendChannel'], @discord['UseDM'], @discord['serverid'])
+			_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 	}
 }
 

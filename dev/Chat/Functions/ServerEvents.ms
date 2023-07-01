@@ -18,7 +18,7 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 		case null:
 		case '':
 			modify_event('join_message', null)
-			# if(is_proc('_discordBot_send_message')) { _discordBot_send_message('Admin '.@playerID['name'].' stealthily joined server', 'admin', '', 'join') }
+			# if(is_proc('_discordBot_send_message')) { _discordBot_send_message('Admin '.@playerID['name'].' stealthily joined server', '', 'admin', '', 'join') }
 			die()
 		case 'example':
 		case 'test':
@@ -37,7 +37,7 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 # Send Message	
 	modify_event('join_message', @joinmsg)
 # Send Join message to Discord as well (if enabled)
-	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], 'none', '', 'join') }
+	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], '', 'none', '', 'join') }
 }
 
 bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
@@ -62,7 +62,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 		case null:
 		case '':
 			modify_event('message', null)
-			# if(is_proc('_discordBot_send_message')) { _discordBot_send_message('Admin '.@playerID['name'].' stealthily left server', 'admin', '', 'leave') }
+			# if(is_proc('_discordBot_send_message')) { _discordBot_send_message('Admin '.@playerID['name'].' stealthily left server', '', 'admin', '', 'leave') }
 			die()
 		case 'example':
 		case 'test':
@@ -75,7 +75,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	modify_event('message', @quitmsg)
 	export('Server.player.'.@playerID['id'].'.last.quit', time())
 # Send Quit message to Discord as well (if enabled)
-	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], 'none', '', 'leave') }
+	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], '', 'none', '', 'leave') }
 }
 
 
@@ -102,7 +102,7 @@ set_cron('59 23 * * *', closure(){
 	}
 	if(@count > 0) {
 		if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
-			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), 'none', '', 'admin') }
+			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), '', 'none', '', 'admin') }
 		}
 		if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
 	}
@@ -169,7 +169,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 # Admin Ping Messages:
 	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from %format%'.@ping['ip'].@msgdisplay.'%format%'
 	if(@serverConfig['Ping_Message_Discord'] == true && @pinglevel > 1) {
-		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), 'none', '', 'admin') }
+		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), '', 'none', '', 'admin') }
 	}
 	if(@serverConfig['Ping_Message_Console'] == true && @pinglevel > 0) { console(replace(@adminPingMessage, '%format%', ''), false) }
 }
