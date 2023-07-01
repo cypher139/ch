@@ -25,7 +25,7 @@ proc _db_msg_Admins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 			if(has_permission(@p, 'commandhelper.alias.admin.message') && @p != @hideplayer) { tmsg(@p, @msg) }
 		}
 	}
-	_write_file(import('DiscordBot.logs.dir').'/Log-Admin-Messages.txt', simple_date('MM-dd-yy HH:mm:ss', @time).': '.@consolemsg.'\n', 'Append')
+	_write_file(import('DiscordBot.logs.dir').'/Log-Admin-Messages.txt', simple_date('MM-dd-yy HH:mm:ss', time()).': '.@consolemsg.'\n', 'Append')
 }
 
 proc _db_msg_Console(@message, @guild, string @type = 'prefix') {

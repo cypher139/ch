@@ -74,6 +74,8 @@ CMD_Channels_Send:
 CMD_Default_Channel: botspam
 Fake_Admin_Role: 123456
 Fake_Admin_Rolename: "Super Admin"
+Whitelist_Role: 123456
+Whitelist_Allowed_Uses: 5
 #
 #
 #Voice Chat
