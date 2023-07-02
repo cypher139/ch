@@ -1299,19 +1299,18 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@botconfig = import('DiscordBot.config.Discord')
 	if(is_array(@discord)) {
+		if(!array_index_exists(@discord, 'time')) {
+			array_set(@discord, 'time', time())
+		}
+		if(!array_index_exists(@discord, 'serverid')) {
+			array_set(@discord, 'serverid', @botconfig['Primary_Guild'])
+		}
 		if(!array_index_exists(@discord, 'userid')) {
-			_db_msg_Console('Required data array not given to Command Handler!', @discord['serverid'], 'debug')
+			_db_msg_Console('User Data not given to Command Handler!', @discord['serverid'], 'debug')
 			return(false)
-		} else {
-			if(!array_index_exists(@discord, 'time')) {
-				array_set(@discord, 'time', time())
-			}
-			if(!array_index_exists(@discord, 'serverid')) {
-				array_set(@discord, 'serverid', @botconfig['Primary_Guild'])
-			}
 		}
 	} else {
-		_db_msg_Console('Required data array not given to Command Handler!', @discord['serverid'], 'debug')
+		_db_msg_Console('Required Discord data not given to Command Handler!', 'debug')
 		return(false)
 	}
 	@config = import('DiscordBot.config.'.@discord['serverid'])
@@ -1403,8 +1402,10 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		if(array_index_exists(@rmargs, 0)) {
 			@rmargs = array_implode(array_unique(@rmargs), ', ')
 			_db_msg_Admins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Removed "'.@rmargs.'" from '.@discord['username'].'\'s command arguments.')
-			discord_broadcast(@discord['serverid'], @config['Log_Channel'], 'Removed `'.@rmargs.'` from '.@discord['username'].'\'s command arguments.')	
-			if(@config['Message_On_Mention'] == true) { discord_private_message(@discord['userid'], 'Mention(s) `'.@rmargs.'` are not allowed on the server.') }
+			if(array_index_exists(@config, 'Log_Channel')) {
+				discord_broadcast(@discord['serverid'], @config['Log_Channel'], 'Removed `'.@rmargs.'` from '.@discord['username'].'\'s command arguments.')
+			}
+			if(@botconfig['Message_On_Mention'] == true) { discord_private_message(@discord['userid'], 'Mention(s) `'.@rmargs.'` are not allowed on the server.') }
 		}
 		@commanddismc = 'Args: '.color(9).array_implode(@args, ', ')
 		@commanddisdc = 'Args: `'.array_implode(@args, '`  `').'`' 
@@ -1527,7 +1528,7 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 		if(equals_ic(@target, @discord['username']) || equals_ic(@target, @discord['nickname'])) {
 			return('self')
 		}	
-		_db_msg_Console('finduserID debug: match: '.@targetmatches, @discord['serverid'])
+		_db_msg_Console('finduserID: matches: '.@targetmatches, @discord['serverid'], 'debug')
 		
 		if(!array_index_exists(@targetmatches, 0)) {
 			_db_msg_Console('Could not find user ID for '.@target.'!', @discord['serverid'])

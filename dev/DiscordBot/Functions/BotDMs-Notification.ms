@@ -32,6 +32,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	@guildcfgChannel = array()
 	@guildcfgURL = array()
 	@userserver = 0
+	@userServers = array()
 	@avatar = 'https://cdn.discordapp.com/embed/avatars/0.png'
 	@gf = 0
 	foreach(@guild in import('DiscordBot.Guilds')) {
@@ -41,23 +42,41 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		array_set(@guildcfgChannel, @guild, @cfg['Log_Channel']);
 		array_set(@guildcfgURL, @guild, @cfg['URL_Broadcast']);
 		if(array_contains(discord_get_members(@guild), @discord['userid'])) {
+			@userServers[] = @guild
 			@gf++
+			@userserver = @guild
 			if(@gf < 2) {
-				@userserver = @guild
 				@avatar = discord_member_info(@guild, @discord['userid'])['avatar']
-				array_set(@discord, 'serverid', @guild)
 			}
 		}
 	}
 
 #Command check
+	@isCmd = false
+	# Check for each server's Command prefix
 	foreach(@serverid: @cmdprefix in @guildcfgCmd) {
-		if(reg_count(@cmdprefix, @discord['message']) > 0) {
-			array_set(@discord, 'channel', @discord['userid']);
-			array_set(@discord, 'serverid', @serverid);
-			@return = _discordBot_handlecommand(@discord, 'dm', 'dm')
-			return(@return)
+		if(reg_count(@cmdprefix, @discord['message']) > 0 && array_contains(@userServers, @serverid)) {
+			@isCmd = true
+			@userserver = @serverid
+			break()
 		} 
+	}
+	# Prefix not found, check for first word matches a command name
+	if(@isCmd == false) {
+		@cmdList = import('DiscordBot.Command.List')
+		@check = parse_args(@discord['message'])
+		if(is_array(@cmdList) && array_size(@check) > 0) {
+			if(array_index_exists(@cmdList, to_lower(@check[0]))) {
+				@isCmd = true
+			}
+		}
+	}
+	if(@isCmd == true) {
+		array_set(@discord, 'channel', @discord['userid']);
+		array_set(@discord, 'serverid', @userserver);
+		array_set(@discord, 'nickname', @discord['displayname']);
+		@return = _discordBot_handlecommand(@discord, 'dm', 'dm')
+		return(@return)
 	}
 
 #Else: not a command
@@ -97,7 +116,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	if(@userConfig[@discord['userid']]['NotifyContent'] == true) {
 		_db_mc_broadcast(color(9).'[Discord Bot] New DM from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@mcMsg, 'players');
 	}
-	_db_msg_Console(color(9).'New DM from '.color('r').'['.@discord['username'].' ('.@discord['userid'].') ] '.color(9).'Message: \n'.color('r').@mcMsg, 'bot');
+	_db_msg_Console(color(9).'DM from '.color(11).@discord['username'].color('r').' <@'.@discord['userid'].'> '.color(9).'Message: \n'.color('r').@mcMsg, 'bot');
 	
 #Setup message URLs to embed and console
 	@urlembed = array()

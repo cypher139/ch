@@ -33,6 +33,12 @@ if(in_cmdline_mode()) {
 
 # Startup Discord Functions
 if(function_exists('discord_connect')) {
+# Version Check
+	@version = reg_replace('[^0-9]+', '', extension_info()['CHDiscord']['version'])
+	if(@version < 290) {
+		console(color(12).'[DiscordBot] Installed CHDiscord version is too low, please update!', false);
+		die();
+	}
 # Load DiscordBot Configs
 	@return8762 = _db_load_config('Discord');
 	if(!is_array(@return8762)) { die() }

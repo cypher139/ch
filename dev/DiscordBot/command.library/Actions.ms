@@ -203,15 +203,14 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs) {
 	@test = ''
 	#DM support: Redirect to "bot <action> DM'er"
 	if(@discord['UseDM'] == 'dm') {
-		@fromuser = @config['Bot_ID']
+		@fromuser = @botconfig['Bot_ID']
 		@target = @discord['userid']
 	}
-
 	# Degrade if no arguments given
 	if(!array_index_exists(@cmdargs, 0)) {
 		@target = @discord['userid']
 	} else {
-		if(_array_string_contains(@config['Banned_Mentions'], @cmdargs[0])) { return('yea no I don\'t do that to *everyone*, you\'re crazy!') }
+		if(_array_string_contains(array('@everyone', '@here'), @cmdargs[0])) { return('yea no I don\'t do that to *everyone*, you\'re crazy!') }
 		@target = reg_replace('[<>@\\\\]+', '', @cmdargs[0])
 		switch(@cmdargs[0]) {
 		case 'me':
@@ -220,90 +219,54 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs) {
 			@target = @discord['userid']
 		}
 	}
-	@membernames = get_value('DiscordBot.'.@discord['serverid'].'.members.names')
-	if(!is_array(@membernames)) { 
-		@membernames = array()
-		array_set(@membernames, @discord['username'], @discord['userid']) 
-	}
 	#compute Target
-	if(is_numeric(@target)) {
-		array_remove_values(@cmdargs, @target)
-		if(@discord['UseDM'] != 'dm' && @target != @config['Bot_ID']) {
-			try {
-				@test = discord_member_get_roles(@discord['serverid'], @target)
-			} catch (NotFoundException @ex) {
-				discord_private_message(@discord['userid'], 'Fake Ban: Typo detected in user ID, using yourself instead :P')
-				console('[DiscordBot] Fake Ban: Typo detected in user ID: '.@target.'!', false)
-				@target = @discord['userid']
-			}
-		}
-	} else if(reg_count('^[@]?'.@config['Bot_Name'].'[#]?[0-9]{0,4}?$', @target) > 0) {
-		foreach(@j: @arg2 in @cmdargs) {
-			if(string_contains_ic(@arg2, @config['Bot_Name'])) {
-				array_remove(@cmdargs, @j)
-			}
-		}
-		@target = @config['Bot_ID']
-	} else {
-		@targetmatches = _array_string_match(array_keys(@membernames), @target)
-		if(reg_count('[#][0-9]{4}$', @target) > 0 && !array_index_exists(@targetmatches, 0)) {
-			@target = reg_replace('[#][0-9]{4}$', '', @target)
-			@targetmatches = _array_string_match(array_keys(@membernames), @target)
-		}
-		console('[DiscordBot] Fake ban: debug: match: '.@targetmatches, false)
-		if(!array_index_exists(@targetmatches, 0)) {
-			discord_private_message(@discord['userid'], 'Fake Ban: Could not find User ID, using yourself instead :P')
-			console('[DiscordBot] Fake Ban: Could not find user ID for '.@target.'!', false)
+	@targettype = _discordBot_cmd_proc_finduserID(@target, @discord)
+	switch(string(@targettype)) {
+	case 'bot':
+		@target = @botconfig['Bot_ID']
+	case 'self':
+		@target = @discord['userid']
+	case 'notfound':
+		discord_private_message(@discord['userid'], 'Typo detected in user ID, using yourself instead :P')
+		@target = @discord['userid']
+	case 'multiple':
+		return(false)
+	default:
+		@target = @targettype
+		if(!is_numeric(@targettype)) {
 			@target = @discord['userid']
-			array_remove(@cmdargs, 0)
-		} else if(array_index_exists(@targetmatches, 1)) {
-			discord_private_message(@discord['userid'], 'I found multiple users, not sure which one you meant to fake ban. Users Matched: \n'.array_implode(@targetmatches, ', '))
-			console('[DiscordBot] Fake Ban: Found multiple users, not sure which one was meant to fake ban. Users Matched: \n'.array_implode(@targetmatches, ', '), false)
-			return(false)
-		} else {
-			@target = @membernames[array_implode(@targetmatches, '')]
-			@cmdargs[0] = reg_replace('[<>@\\\\]+', '', @cmdargs[0])
-			foreach(@match in parse_args(array_implode(@targetmatches, ' '))) {
-			console(@match)
-				foreach(@j: @arg2 in @cmdargs) {
-				console(@arg2)
-					if(string_contains_ic(@match, @arg2)) {
-						array_remove(@cmdargs, @j)
-					}
-				}
-			}					
-		}		
+		}
+	}
+	if(array_index_exists(@cmdargs, 0)) {
+		array_remove(@cmdargs, 0)
 	}
 	if(!is_numeric(@target)) {
-		console('[DiscordBot] Fake Ban: non-numeric target! '.@target, false)
+		_db_msg_Console('Fake Ban: non-numeric target! '.@target, @discord['serverid'], 'debug')
 		@target = @discord['userid']
 	}
 	#Select Word
 	@test2 = ''
-	if(array_index_exists(@cmdargs, 1)) { 
-		@test2 = @cmdargs[1] 
-	} else if(array_index_exists(@cmdargs, 0)) {
-		if(!is_numeric(@cmdargs[0])) { @test2 = @cmdargs[0] }
+	if(!array_index_exists(@cmdargs, 0)) {
+		array_push(@cmdargs, @word)
+		# if(!is_numeric(@cmdargs[0])) { @test2 = @cmdargs[0] }
 	}
-	if(is_numeric(@test2)) {
+	if(is_numeric(@cmdargs[0])) {
 		@word = 'crunches'
-	} else if(@test2 == '') {
-		@test2 = '""'
 	} else {
-		@word = reg_replace('^@', '', @test2)
-		if(_array_string_contains(@config['Banned_Mentions'], @word)) { @word = 'ban' }
+		@word = reg_replace('^@', '', @cmdargs[0])
+		if(_array_string_contains(@botconfig['Banned_Mentions'], @word)) { @word = 'ban' }
 	}
 	# Add plural if not present
 	@words = reg_replace('(?<!s)$', 's', @word)
 	#Target checks: bot or self
-	if(@target == @config['Bot_ID']) {
+	if(@target == @botconfig['Bot_ID']) {
 		return(array('embeds': array(array('footer': array('text': 'I identify as a different bot named '.@word),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
 	}
 	if(@target == @discord['userid']) {
 		return(array('content': 'You were really going to '.@word.' yourself?', 'embeds': array(array('image': 'https://media.tenor.com/6dPcTAmTgPUAAAAi/elmo-shrug.gif'))))
 	}	
 
-	console('[Discord - Cmd] <@'.@fromuser.'> '.@words.' <@'.@target.'>', false)
+	_db_msg_Console('<@'.@fromuser.'> '.@words.' <@'.@target.'>', @discord['serverid'])
 # If person has been pinged recently, timeout another ban	
 	@lastping = import('DiscordBot.last.ping.'.@target)
 	if(time() < (@lastping + 234567)) {

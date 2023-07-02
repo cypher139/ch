@@ -1,6 +1,4 @@
 #version 1.2-tmc
-# Requires CHDiscord build #85 or higher 
-# - 70 - message callback, 81 - set role reason, 84 - invites, 85 - multiple guilds
 
 #Welcome DM and Message for new Discord Server Members
 bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discord) {
