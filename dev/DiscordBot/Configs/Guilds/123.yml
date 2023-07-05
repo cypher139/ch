@@ -184,6 +184,8 @@ LB_Options:
   NoXP_RoleID:
   - 123
   - 456
+  Use_Active_User_Role: false
+  Active_User_Role: 070
 Use_Role_Ranks: false
 Role_Ranks:
   1:

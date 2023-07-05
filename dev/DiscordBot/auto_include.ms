@@ -178,6 +178,16 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 		if(@loadcfg['Welcome_Text_Channel_Name'] == 'default') {
 			_db_msg_Admins(color(14).'['.@prefix.'] Member Config is still using defaults. Please configure it in order to use the Welcome Message feature.') 
 		}
+		if(@loadcfg['LB_Options']['Use_Active_User_Role'] == true) {
+			try {
+				@gmr = discord_get_members_with_role(@cfgtype, @loadcfg['LB_Options']['Active_User_Role'])
+			} catch(NotFoundException @ex) {
+				array_set(@loadcfg['LB_Options'], 'Active_User_Role_Not_Found', true)
+				@loadcfg['LB_Options']['Use_Active_User_Role'] = false
+			} catch(Exception @ex) {
+				@nc = 1
+			}
+		}
 		if(array_size(@prevcfg) == 0) {
 			# Databases Startup
 			export('DiscordBot.'.@cfgtype.'.members.ID', get_value('DiscordBot.'.@cfgtype.'.members.ID'))
@@ -640,6 +650,8 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 			}
 		}
 	}
+# Add user to Active role
+	@addactiveuser = _discordBot_process_activeuserrole(@discord, 'add', @userRoles);
 # Increment Message count and XP
 	@leaderboard['members'][@userID]['msg_count'] = @leaderboard['members'][@userID]['msg_count'] + 1
 	@leaderboard['members'][@userID]['last_msg'] = time()
@@ -792,6 +804,75 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 	return(true)
 }
 
+proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array()) {
+	if(!is_array(@discord)) { return('No data') }
+	if(!array_index_exists(@discord, 'userid')) { return('No user') }
+	if(!array_index_exists(@discord, 'serverid')) { return('server?') }
+	if(@discord['bot'] == true) { return('bot') }
+	@config = import('DiscordBot.config.'.@discord['serverid']);
+	if(array_index_exists(@config, 'LB_Options', 'Active_User_Role_Not_Found')) { 
+		if(import('DiscordBot.debug.au.roleexist.msg') != true) {
+			_db_msg_Console('['.@discord['serverid'].'] Active user role '.@config['LB_Options']['Active_User_Role'].' does not exist!', @discord['serverid'], 'debug')
+			export('DiscordBot.debug.au.roleexist.msg', true)
+		}
+		return('Role Not Found');
+	}
+	if(@config['LB_Options']['Use_Active_User_Role'] != true) { return('disabled') }
+	if(array_size(@userRoles) == 0) {
+		try { 
+			@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
+		} catch(Exception @ex) {
+			return('Not a member')
+		}
+	}
+# Check if user has the Active User role.
+	@hasActiveRole = false
+	@roleMsg = ''
+	@index = ''
+	@ret = 'No Change'
+	if(array_contains_ic(array_keys(@userRoles), @config['LB_Options']['Active_User_Role']) || array_contains(@userRoles, @config['LB_Options']['Active_User_Role'])) {
+		@hasActiveRole = true
+		if(is_numeric(@config['LB_Options']['Active_User_Role'])) {
+			@index = array_index(@userRoles, @config['LB_Options']['Active_User_Role'])
+		} else {
+			@index = @config['LB_Options']['Active_User_Role']
+		}
+	}
+# Add / Remove role
+	switch(string(@type)) {
+	case '+':
+	case 'add':
+	case 'true':
+	# Add user to Active role
+		if(@hasActiveRole == false) {
+			array_push(@userRoles, @config['LB_Options']['Active_User_Role'])
+			@roleMsg = 'Awarded Active User role'
+			@ret = 'Added'
+		}
+	case '-':
+	case 'remove':
+	case 'false':
+		if(@hasActiveRole == true) {
+			array_remove(@userRoles, @index)
+			@roleMsg = 'Inactivity: Removed Active User role'
+			@ret = 'Removed'
+		}
+	default:
+		return('Neutral')
+	}	
+#Set New roles
+	if(@roleMsg != '') {	
+		try { 
+			discord_member_set_roles(@discord['serverid'], @discord['userid'], @userRoles, @roleMsg)
+		} catch(Exception @ex) {
+			_db_msg_Console('['.@discord['username'].'] Active user role: '.@ex['classType'].' '.@ex['message'], @discord['serverid'], 'debug')
+			@ret = 'Failed'
+		}
+	}
+	return(@ret)
+}
+
+
 proc _discordBot_backup_members(@args) {
 	@config = import('DiscordBot.config.Discord')
 	@guilds = import('DiscordBot.Guilds', array())
@@ -807,7 +888,8 @@ proc _discordBot_backup_members(@args) {
 		'rolesTotal': get_value('DiscordBot.'.@guild.'.roles.total'),
 		'rolesMembers': get_value('DiscordBot.'.@guild.'.roles.members'),
 		'Leaderboard': import('DiscordBot.'.@guild.'.Leaderboard'),
-		'Invites': get_value('DiscordBot.'.@guild.'.Invites')
+		'Invites': get_value('DiscordBot.'.@guild.'.Invites'),
+		'JoinInfo': get_value('DiscordBot.'.@guild.'.Join.info')
 		)
 		@time = time();
 		foreach(@k: @v in @data) {
@@ -839,6 +921,7 @@ proc _discordBot_update_members(@args) {
 		@membersNoRoles = array();
 		@totalroles = array();
 		@rolesMembers = array();
+		@activeUsers = array();
 		@config = import('DiscordBot.config.'.@guild);
 		@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard');
 		@invites = get_value('DiscordBot.'.@guild.'.Invites');
@@ -869,12 +952,15 @@ proc _discordBot_update_members(@args) {
 				_db_msg_Console(@ex['message'], @guild)
 			}
 		}
-		@rankstats = get_value('DiscordBot.debug.'.@guild.'.rank.stats')	
+		@rankstats = get_value('DiscordBot.debug.'.@guild.'.rank.stats')
+		@activeuserstats = get_value('DiscordBot.debug.'.@guild.'.activeuser.stats')
 		if(!is_array(@rankstats)) { @rankstats = array() }
+		if(!is_array(@activeuserstats)) { @activeuserstats = array() }
 # Process each User ID
 		foreach(@index: @id in @membersID) {
 	# Member Info (avatar, isBot, Username, etc)
 			@idInfo = ''
+			@idLastMsg = 0
 			try {
 				@idInfo = discord_member_info(@guild, @id)
 			} catch(NotFoundException @ex) {
@@ -886,8 +972,11 @@ proc _discordBot_update_members(@args) {
 				@debugstats['fails']++
 				continue()
 			}
+			
 			array_set(@membersInfo, @id, @idInfo)
 			array_set(@membersNames, @idInfo['username'], @id)
+		# pseudo array for functions that expect event array
+			@discord = array('bot': @idInfo['bot'], 'serverid': @guild, 'userid': @id, 'username': @idInfo['username'])
 		# Leaderboard: Avatars, usernames, role color
 			if(@config['LB_Enable'] == true && is_array(@leaderboard) && @idInfo['bot'] == false) {
 				if(array_index_exists(@leaderboard, 'members', @id)) {
@@ -897,6 +986,9 @@ proc _discordBot_update_members(@args) {
 					if(array_index_exists(@newavatar, 1)) { array_set(@leaderboard['members'][@id], 'avatar', @newavatar[1]) }
 					array_set(@leaderboard['members'][@id], 'color', @newcolor)
 					array_set(@leaderboard['members'][@id], 'username', @idInfo['username'])
+					if(array_index_exists(@leaderboard, 'members', @id, 'last_msg')) {	
+						@idLastMsg = @leaderboard['members'][@id]['last_msg']
+					}
 				}
 			}
 		# Roles: Check for No Roles
@@ -905,20 +997,45 @@ proc _discordBot_update_members(@args) {
 				@debugstats['af']++
 				continue()
 			}
-			# if(@idInfo['color'] == null) { _db_msg_Console(@id.' i '.@idInfo, @guild, 'debug') }
 			if(array_size(@idRoles) == 0) {
-				array_push(@membersNoRoles, @id)
+				@membersNoRoles[] = @id;
 				continue()
-			}	
-			array_set(@membersRoles, @id, @idRoles)	
+			}
+			@idRoles2 = array_normalize(@idRoles)			
+		# Add/Remove user to Active role (bots excluded)
+			if(@config['LB_Enable'] == true && is_array(@leaderboard) && @idInfo['bot'] == false) {
+				if(@config['LB_Options']['Use_Active_User_Role'] == true) {
+					@auType = ''
+					# if last message was less than 60 days ago, add to active
+					if(@idLastMsg > (@startTime - 5184000000)) {
+						@auType = 'add'
+						@activeUsers[] = @id
+					} else {
+						@auType = 'remove'
+					}
+					@auStats = _discordBot_process_activeuserrole(@discord, @auType, @idRoles);	
+					array_set(@activeuserstats, @idInfo['username'], @auStats);
+				}
+			}
 		# Add discovered roles to Total roles ( id: name )
 			foreach(@k: @v in @idRoles) {
 				if(!array_contains(array_keys(@totalroles), @v)) {
 					array_set(@totalroles, @v, @k)
 				}
 			}
+		# Save User's roles to main cache
+			array_set(@membersRoles, @id, @idRoles)
+			
+		# --- Next few items don't count if just Active user role
+			if(array_contains(@idRoles2, @config['LB_Options']['Active_User_Role'])) { array_remove_values(@idRoles2, @config['LB_Options']['Active_User_Role']) }	
+			# if(@idInfo['color'] == null) { _db_msg_Console(@id.' i '.@idInfo, @guild, 'debug') }
+		# Check no roles again, count users who just have active role
+			if(array_size(@idRoles2) == 0) {
+				@membersNoRoles[] = @id;
+				continue()
+			}	
 		# If Just welcome roles, add member to WR
-			if(array_size(@idRoles) == array_size(@sortWR)) {
+			if(array_size(@idRoles2) == array_size(@sortWR)) {
 				@results = array()
 				#sort arrays so roles are in same key order
 				@sortUR = array_sort(array_normalize(@idRoles), 'NUMERIC')
@@ -937,7 +1054,7 @@ proc _discordBot_update_members(@args) {
 			}
 		# Check Roles Ranks
 			if(@config['Use_Role_Ranks'] == true) {
-				@rrStats = _discordBot_process_role_ranks(array('serverid': @guild, 'userid': @id, 'username': @idInfo['username']), @idRoles, true)
+				@rrStats = _discordBot_process_role_ranks(@discord, @idRoles, true)
 				if(is_array(@rrStats)) {
 					if(@rrStats['setRoles'] == true) { 
 						@rrUpdates++
@@ -956,14 +1073,12 @@ proc _discordBot_update_members(@args) {
 		foreach(@memberid: @mr in @membersRoles) {
 		# server member roles array: id: {role: 123, role2: 4235}
 			foreach(@roleName: @roleID in @mr) { 
-				array_push(@rolesMembers[@roleID], @memberid)
+				@rolesMembers[@roleID][] = @memberid
 			}
 		}
 	# Save data
 		@alldebugstats = import('DiscordBot.debug.stats.last.updatemembers', array())
-		if(@config['LB_Enable'] == true && is_array(@leaderboard)) {
-			export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
-		}
+		if(@config['LB_Enable'] == true && is_array(@leaderboard)) { export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard) }
 		array_set(@debugstats['size'], 'rrUp', @rrUpdates)
 		store_value('DiscordBot.'.@guild.'.members.ID', @membersID)
 		export('DiscordBot.'.@guild.'.members.ID', @membersID)
@@ -984,10 +1099,16 @@ proc _discordBot_update_members(@args) {
 		store_value('DiscordBot.'.@guild.'.members.info', @membersInfo)
 		export('DiscordBot.'.@guild.'.members.info', @membersInfo)
 		array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
-		array_set(@debugstats['size'], 'inv', array_size(@membersInfo))
+		array_set(@debugstats['size'], 'inv', array_size(@invites))
+		array_set(@debugstats['size'], 'au', array_size(@activeUsers))
 		array_set(@alldebugstats, @guild, @debugstats)
 		export('DiscordBot.debug.stats.last.updatemembers', @alldebugstats)
 		store_value('DiscordBot.debug.'.@guild.'.rank.stats', @rankstats)
+		store_value('DiscordBot.debug.'.@guild.'.activeuser.stats', @activeuserstats)
+		foreach(@k: @v in @activeuserstats) {
+			if(@v == 'No Change') { continue() }
+			_db_msg_Console('['.@k.'] active: '.@v, @guild)
+		}
 	}
 	@timeElapsed = time() - @startTime;
 	_db_msg_Console('Update: 'color(3).@timeElapsed.'ms', 'none', 'bot')
