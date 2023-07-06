@@ -1111,7 +1111,7 @@ proc _discordBot_update_members(@args) {
 		}
 	}
 	@timeElapsed = time() - @startTime;
-	_db_msg_Console('Update: 'color(3).@timeElapsed.'ms', 'none', 'bot')
+	_db_msg_Console('Update:  '.color(3).@timeElapsed.'ms', 'none', 'bot')
 	return(true);
 }
 
@@ -1255,24 +1255,42 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 			break()
 		}
 	}
-# New roles setup	
+# New roles setup
 	@stats = array('status': @newRankMsg, 'setRoles': false, 'qR': @qRoles, 'rR': @rRoles, 'currentrank': @currentRank, 'newrank': @newRank)
 	@newRoles = array_deep_clone(@userRoles)
 	foreach(@roledata in @config['Role_Ranks']) {
 		array_remove_values(@newRoles, @roledata['RoleID'])
 	}
+# Set up Role Separators
+	@rsMsg = ''
+	@rsType = ''
+	if(@config['Use_Role_Ranks_Separators'] == true) {
+		foreach(@roledata in @config['Role_Ranks_Separators']) {
+			if(@newRank > 0) {
+				if(!array_contains(@newRoles, @roledata)) {
+					@newRoles[] = @roledata
+					@rsMsg = ', Added Separator roles'
+					@rsType = '[A]'
+				}
+			} else if(array_contains(@newRoles, @roledata)) {
+				array_remove_values(@newRoles, @roledata)
+				@rsMsg = ', Removed Separator roles'
+				@rsType = '[R]'
+			}
+		}
+	}
 # Setup Messages
-	@logmsg = 'Role Ranks: 0 roles'
+	@logmsg = 'Role Ranks: 0 roles'.@rsMsg
 	if(@newRank != 0) {
 		@newRoles[] = @config['Role_Ranks'][@newRank]['RoleID'];
-		@logmsg = 'Awarded Role Rank "'.@config['Role_Ranks'][@newRank]['RoleName'].'"'
+		@logmsg = 'Awarded Role Rank "'.@config['Role_Ranks'][@newRank]['RoleName'].'"'.@rsMsg
 	}
 	if(@newRank < @currentRank) {
-		@logmsg = 'Role Ranks: Derank! ('.@newRank.' < '.@currentRank.')'
+		@logmsg = 'Role Ranks: Derank! ('.@newRank.' < '.@currentRank.')'.@rsMsg
 		array_set(@stats, 'derank', true)
 	}
 	if(@newRank == @currentRank && @rRoles > 1) {
-		@logmsg = 'Role Ranks: Removing multiple roles ('.@rRoles.')'
+		@logmsg = 'Role Ranks: Removing '.(@rRoles - 1).' of Multiple Rank Roles'.@rsMsg
 	}
 	array_set(@stats, 'logmsg', @logmsg)
 # Array compare. sort both role arrays	
@@ -1309,16 +1327,16 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 	@rrMsg = ''
 	if(@stats['setRoles'] == true) {
 		# _db_msg_Console('['.@discord['username'].'] '.@stats, @discord['serverid'], 'debug')
-		@rrMsgPrefix = '['.@config['Server_Nickname'].'] ['.@discord['username'].'] '
+		@rrMsgPrefix = '['.@discord['username'].'] '
 		if(@isloop == true) { @rrMsgPrefix = '' }
 		@rrMsgType = color(10).' < '
 		if(array_index_exists(@stats, 'derank')) { @rrMsgType = color(14).' > ' }
-		@rrMsg = @rrMsgPrefix.@currentRank.@rrMsgType.color('r').@newRank.color(8).' ('.@qRoles.')'
+		@rrMsg = @currentRank.@rrMsgType.color('r').@newRank.color(8).' ('.@qRoles.')'.@rsType
 		if(@currentRank == @newRank && @rRoles > 1) {
-			@rrMsg = @rrMsgPrefix.color(11).'Multiple Rank Roles: '.@rRoles
+			@rrMsg = @rrMsgPrefix.color(11).'Multiple Rank Roles: '.@rRoles.@rsType
 		}
 		if(@isloop == false) {
-			_db_msg_Console(@rrMsg, @discord['serverid'])
+			_db_msg_Console(@rrMsgPrefix.@rrMsg, @discord['serverid'])
 		}
 	}
 	if(@isloop == false) {

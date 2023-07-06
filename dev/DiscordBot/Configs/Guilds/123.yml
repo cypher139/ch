@@ -187,6 +187,7 @@ LB_Options:
   Use_Active_User_Role: false
   Active_User_Role: 070
 Use_Role_Ranks: false
+Use_Role_Ranks_Separators: false
 Role_Ranks:
   1:
     RoleID: 123
@@ -206,6 +207,10 @@ Role_Ranks_Qualifying_Roles:
 - 825431
 - 712202
 - 452070
+Role_Ranks_Separators:
+# Awarded if user has at least rank 1
+- 822679
+- 822679
 Role_Ranks_IgnoreUser:
 - 98765432
 Role_Ranks_IgnoreRole:
