@@ -16,6 +16,8 @@ IP_Blacklist:
 ### IPs seen on connection attempts on own or friend's servers:
 # similar block to pfcloud
 - 45.128.232.101
+# pfcloud, did a ddos
+- 84.54.51.121
 # Bunger
 - 3.77.238.21
 - 3.73.52.141
