@@ -282,13 +282,13 @@ proc _discordBot_send_message(@message, @guild, @from, @channel, @type, @option)
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
 	@prefixErrorMsg = color(6).'['.color(9).'DiscordBot'.color(6).'] '.color(7).'A message queued to send had a problem: '
 	@botconfig = import('DiscordBot.config.Discord')
-	if(@guild == '' || @guild == null) {
+	if(@guild == '' || @guild == null || @guild == 'bot') {
 		#primary guild
 		@guild = @botconfig['Primary_Guild']
 	}
 	@config = import('DiscordBot.config.'.@guild)
 	if(!is_array(@config)) {
-		_db_msg_Admins(color(7).'Message not sent to Discord: Guild given was not recognized')
+		_db_msg_Admins(color(7).'Message not sent to Discord: Guild "'.@guild.'" was not recognized')
 		return(false)
 	}
 	@normalmessage = 0

@@ -6,7 +6,6 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@channel = @config['Default_Channel']
 	@sendmsg = @chat['message']
-	
 	# Automatically chat on last channel a message was received on.
 	@lastmsg = import('DiscordBot.'.@botconfig['Primary_Guild'].'.last.message')
 	if(!is_array(@lastmsg)) { @lastmsg = array() }
@@ -32,6 +31,8 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 }
 
 bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), null, @death) {
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@counter = get_value('DeathCount.players.death.counter')[puuid(@death['player'], 'dashless')] + 1
 	switch(@counter) {
 		case '':
@@ -71,9 +72,9 @@ bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), 
 			)
 			@pvpmsg = array_get_rand(@pvpmsg)
 		}
-		_discordBot_send_message(@dc.'\n'.':put_litter_in_its_place: '.@pvpmsg, 'death')
+		_discordBot_send_message(@dc.'\n'.':put_litter_in_its_place: '.@pvpmsg, @botconfig['Primary_Guild'], 'death')
 	} else {
-		_discordBot_send_message(@dc.@death['death_message'], 'death')
+		_discordBot_send_message(@dc.@death['death_message'], @botconfig['Primary_Guild'], 'death')
 	}
 }
 # :people_wrestling: :put_litter_in_its_place: 

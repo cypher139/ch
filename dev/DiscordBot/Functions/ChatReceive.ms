@@ -11,6 +11,10 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@noXP = false
 	if(@discord['bot'] == true || is_consumed() == true) { @noXP = true }
+	@userDisplay = @discord['username']
+	if(nequals_ic(@discord['username'], @discord['nickname'])) {
+		@userDisplay = @discord['nickname']
+	}
 	
 #Message Formatting
 	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
@@ -43,10 +47,11 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	}	
 	
 #Send data to leaderboard
-		_discordBot_lb_process_message(@discord, @noXP)
+	_discordBot_lb_process_message(@discord, @noXP);
 	
-#Send message to Minecraft players and/or console
-	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true) {	
+
+#Send message to Minecraft players and/or console, if event not consumed
+	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true && is_consumed() == false) {	
 		@userRoles = discord_member_get_roles(@discord['serverid'], @discord['username'])
 	#check roles ranks
 		_discordBot_process_role_ranks(@discord, @userRoles);
@@ -75,7 +80,7 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 			}
 		}
 	#Send
-		@sendmsg = color('#'.@usernamecolor).'['.@discord['username'].'] '.color(7).@discord['message']
+		@sendmsg = color('#'.@usernamecolor).'['.@userDisplay.'] '.color(7).@discord['message']
 		if(@discord['bot'] == true) {
 			@sendmsg = color(@usernamecolor).'[Bot]'.@sendmsg
 		}

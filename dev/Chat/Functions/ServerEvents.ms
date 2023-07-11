@@ -86,7 +86,7 @@ set_cron('59 23 * * *', closure(){
 	@iplog = get_value('Server.pings.log.ignore.IP')
 	if(!is_array(@iplog)) { die(); }
 	if(array_size(@iplog) == 0) { die(); }
-	@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' Ignored IP ping report: \n'
+	@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' Ignored IP ping report:'
 	foreach(@ipnum: @times in @iplog) {
 		@count = 0
 		if(@ipnum == 'ip') { continue(); }
@@ -97,12 +97,12 @@ set_cron('59 23 * * *', closure(){
 		if(@count > 0) {
 			@s = ''
 			if(@count > 1) { @s = 's' }
-			@Message = @Message.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s.'\n'
+			@Message = @Message.'\n'.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s
 		}
 	}
 	if(@count > 0) {
 		if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
-			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), '', 'none', '', 'admin') }
+			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), '', 'admin') }
 		}
 		if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
 	}
@@ -169,7 +169,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 # Admin Ping Messages:
 	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from %format%'.@ping['ip'].@msgdisplay.'%format%'
 	if(@serverConfig['Ping_Message_Discord'] == true && @pinglevel > 1) {
-		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), '', 'none', '', 'admin') }
+		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), '', 'admin') }
 	}
 	if(@serverConfig['Ping_Message_Console'] == true && @pinglevel > 0) { console(replace(@adminPingMessage, '%format%', ''), false) }
 }
