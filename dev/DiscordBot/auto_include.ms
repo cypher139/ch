@@ -607,7 +607,11 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	@userID = @discord['userid']
 	@xpType = 2
 	# Event consumed
-	if(@noXP == true) { @xpType = 0 }
+	if(@noXP == true) { 
+		@xpType = 0
+		#If new user: Presuming antispam action
+		if(import('DiscordBot.'.@discord['serverid'].'.new.user.'.@userID) == true) { return(false) }
+	}
 	@levelxp = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.levelXP')
 	if(@levelxp == null) { 
 		@levelxp = _discordBot_lb_levelXP(@discord['serverid'], @config['LB_Options']['XP_Type']);

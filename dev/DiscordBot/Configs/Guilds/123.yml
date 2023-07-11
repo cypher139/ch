@@ -11,6 +11,8 @@ Showcase_Channel: 123235346
 DM_Notify: true
 Minecraft_Messages: true
 Minecraft_Messages_Admin: true
+AS_New_User_Time: 600000
+AS_New_User_Channel_Limit: 7
 #
 #
 # Mentions

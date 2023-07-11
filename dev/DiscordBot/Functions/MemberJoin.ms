@@ -13,7 +13,9 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		@userDisplaydc = @discord['nickname'].'  ` '.@discord['username'].' ` '
 	}
 	@consolejoinMsg = 'Member '.color(10).'joined: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>'.color('r')
-#Log Invite Code Usage
+# Set New User for other checks
+	export('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], true);
+# Log Invite Code Usage
 	if(@config['Log_Invites'] == true) {
 		@membersInfo = get_value('DiscordBot.'.@discord['serverid'].'.members.info')
 		try {
@@ -113,7 +115,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			_db_msg_Console('['.@guild.'] '.@ex['message'], @discord['serverid'])
 		}
 	}		
-#Wait a few milliseconds to see if another bot insta-kicks first.
+# Wait a few milliseconds to see if another bot insta-kicks first.
 	set_timeout(1000, closure(){ 
 		@currentroles = array()
 		try {
@@ -137,9 +139,9 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 		}
 	}
-#Setup list of server members for reference in mentions
+# Setup list of server members for reference in mentions
 		_discordBot_dc_add_member(@discord);
-#Welcome User DM
+# Welcome User DM
 		if(@config['Welcome_Send_DM'] == true) {
 			@welcomeDMMsg = reg_replace('%WelcomeChannel%', '<#'.@config['Welcome_Text_Channel_ID'].'>', @config['Welcome_DM_Message'])
 			try {
@@ -170,7 +172,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				}
 			}
 		}
-#Welcome User Messages
+# Welcome User Messages
 		if(@config['Welcome_Send_Message'] == true) {
 			@welcomeMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @config['Welcome_Message'])
 			discord_broadcast(@discord['serverid'], @config['Welcome_Text_Channel_Name'], @welcomeMsg, closure(@ex){
@@ -180,8 +182,12 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				export('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', @msgids)
 			});	
 		}
-#Console Log
+# Console Log
 		if(@config['Log_Invites'] == false) { _db_msg_Console(@consolejoinMsg, @discord['serverid']) }
+	});
+# Unset New User for other checks
+	set_timeout(@config['AS_New_User_Time'], closure(){
+		export('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
 	});
 # Get data from closures, save
 	set_timeout(10000, closure(){
@@ -194,7 +200,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			@test = discord_member_info(@discord['serverid'], @discord['userid'])
 		} catch(Exception @ex) {
 			@isMember = false
-			_db_msg_Console('['.@discord['userid'].'] '.@discord['username'].' joined and just left, how!??', @discord['serverid'])
+			_db_msg_Console('['.@discord['userid'].'] '.@discord['username'].' joined ... and left!??', @discord['serverid'])
 		}
 		if(!array_index_exists(@joininfo, @discord['userid']) && @isMember == true) { 
 			array_set(@joininfo, @discord['userid'], array())
@@ -222,6 +228,8 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			# array_set(@jointimes, @time, array('userid': @discord['userid'], 'user': @discord['username']))
 			# store_value('DiscordBot.'.@discord['serverid'].'.Join.times', @jointimes)
 			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')
+		} else {
+			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join_Left-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')
 		}
 		export('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', @wm);
 		export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', @inv);
