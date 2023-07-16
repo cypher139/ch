@@ -48,8 +48,8 @@ bind('player_command', array('id': 'cmdrepeat.cmd', 'priority': 'HIGH'), null, @
 	@cmddisplay = array_implode(@cmd, ' ')
 	if(@dev == true) { msg('o: '.@cmdevent['command'].'    n:'.@cmddisplay) }
 	
-
 	#List cmd used, with CH aliases showing as a different color.
+	@cmdcolor = 7
 	if(is_alias(@cmd[0])) { @cmdcolor = 3 } else { @cmdcolor = 6 }
 	
 	#Show command to the console if permitted to do so.
@@ -70,7 +70,6 @@ bind('player_command', array('id': 'cmdrepeat.cmd', 'priority': 'HIGH'), null, @
 		if(is_numeric(@cmd[1]) && @cmd[1] < 10 && @cmd[1] > 0) { @cmd[1] = @cmd[1] - 1 }
 	}
 	# Is this a new command or repeat command?
-	@cmdcolor = ''
 	switch(@cmd[0]){
 		case '/.':
 		case '/repeat':

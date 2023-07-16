@@ -25,7 +25,7 @@ proc _sign_help() {
 if(@player['name'] == '~console') {
 	@here = array(x: '0', y: '0', z: '0', world: 'world')
 } else {
-	@here = pcursor(@player['player'])
+	@here = pcursor(@player['name'])
 }
 
 switch(@action){
@@ -77,29 +77,17 @@ switch(@action){
 		try(msg(@text[2]))
 		try(msg(@text[3]))
 	case 'set':
-		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).@here)
-		if(is_sign_at(@here) == 'true') {
+		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).@here['x'].', '.@here['y'].', '.@here['z'].', '.@here['world'])
+		if(is_sign_at(@here) == true) {
 			@oldsigntext = get_sign_text(@here)
-			@oldread = reg_split(', ', @oldsigntext)
 			store_value('sign.player.'.@player['id'].'.savedsign.undo', @oldsigntext)
 			store_value('sign.player.'.@player['id'].'.savedsign.undo.loc', @here)	
-			msg(@oldread)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'This sign used to say:')
-			if(@oldread[0] == ', , , ', @oldread[0] = color(7).'This sign didnt say anything!!',
-				try(msg(@oldread[0]))
-				try(msg(@oldread[1]))
-				try(msg(@oldread[2]))
-				try(msg(@oldread[3]))		
-			)
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'This sign used to say:\n'.color('r').array_implode(@oldsigntext, '\n'))
 			@savedsign = get_value('sign.player.'.@player['id'].'.savedsign')
-			@newread = reg_split(', ', @savedsign)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign!')
+			if(!is_array(@savedsign)) { @savedsign = reg_split(', ', @savedsign) }
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign text!')
 			set_sign_text(@here, @savedsign)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Saved sign! This sign now says:')
-			try(msg(@newread[0]))
-			try(msg(@newread[1]))
-			try(msg(@newread[2]))
-			try(msg(@newread[3]))
+			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Saved sign! This sign now says:\n'.color('r').array_implode(@savedsign, '\n'))
 			} else {
 			msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Look at a sign!')
 		}
