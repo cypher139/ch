@@ -4,8 +4,13 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 	@playerID = _getplayerID(player())
 	@ip = pinfo(player())[3]
 	@ipnumbers = reg_replace('\\.*:*', '', @ip)
+	@consolemsg = color(3).player().color('r').' connected with'.color(7).' IP: '.color('a').@ip.color(7).' hostname: '.pinfo(player())[10]
+	@jointime = time()
+	export('Server.player.'.@playerID['id'].'.last.join', @jointime)
+	@sendMsg = true
+	@type = 'none'
 # Console info
- 	set_timeout(2000, closure(console(color(3).player().color('r').' connected with'.color(7).' IP: '.color('a').pinfo(player())[3].color(7).' hostname: '.pinfo(player())[10], false)))
+ 	console(@consolemsg, false)
 
 # Setup Join Message
 	@joinmsg = ''
@@ -13,13 +18,18 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 		case 'default':
 		case 'Default':
 			@joinmsg = @login['join_message']
+		case 'admin':
+			@sendMsg = false
+			if(array_contains(pgroup(@playerID['name']), 'admin')) { 
+				@type = 'admin'
+				@joinmsg = 'Admin '.@playerID['name'].' joined server'
+				_chat_msg_Admins(@joinmsg)
+			}
 		case 'none':
 		case false:
 		case null:
 		case '':
-			modify_event('join_message', null)
-			# if(is_proc('_discordBot_send_message')) { _discordBot_send_message('Admin '.@playerID['name'].' stealthily joined server', '', 'admin', '', 'join') }
-			die()
+			@sendMsg = false
 		case 'example':
 		case 'test':
 			@joinmsg = color('a').'+ join'.color(7).': '.@playerID['display']
@@ -34,17 +44,26 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 # IP Check: record number of concurrent players connected	
 	export('Server.IP.'.@ipnumbers.'.concurrent', import('Server.IP.'.@ipnumbers.'.concurrent') + 1)
 
-# Send Message	
-	modify_event('join_message', @joinmsg)
-# Send Join message to Discord as well (if enabled)
-	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], '', 'none', '', 'join') }
+# Send Join Message to Minecraft
+	if(@sendMsg == true) { modify_event('join_message', @joinmsg) } else { modify_event('join_message', null) }
+# Send Join message to Discord (if enabled)
+ 	if(is_proc('_discordBot_send_message')) { 
+		if(@sendMsg == true || @type == 'admin') {
+			set_timeout(2000, closure(
+				if(array_contains(all_players(), @playerID['name'])) { _discordBot_send_message(@playerID['name'], '', @type, '', 'join') }
+			));
+		}
+	}
 }
 
 bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
+	@time = time()
 	@serverConfig = import('Chat.config.Server')
 	@playerID = _getplayerID(player())
 	@ip = pinfo(player())[3]
 	@ipnumbers = reg_replace('\\.*:*', '', @ip)
+	@sendMsg = true
+	@type = 'none'
 	
 # IP Check: record number of concurrent players connected
 	@ipcon = import('Server.IP.'.@ipnumbers.'.concurrent')
@@ -57,13 +76,18 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 		case 'default':
 		case 'Default':
 			@quitmsg = @quit['message']
+		case 'admin':
+			@sendMsg = false
+			if(array_contains(pgroup(@playerID['name']), 'admin')) { 
+				@type = 'admin'
+				@quitmsg = 'Admin '.@playerID['name'].' left server'
+				_chat_msg_Admins(@quitmsg)
+			}
 		case 'none':
 		case false:
 		case null:
 		case '':
-			modify_event('message', null)
-			# if(is_proc('_discordBot_send_message')) { _discordBot_send_message('Admin '.@playerID['name'].' stealthily left server', '', 'admin', '', 'leave') }
-			die()
+			@sendMsg = false
 		case 'example':
 		case 'test':
 			@quitmsg = color('c').'- part'.color(7).': '.@playerID['display']
@@ -72,10 +96,19 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 			@quitmsg = reg_replace('\\%nick\\%', @playerID['display'], @quitmsg)
 	}
 
-	modify_event('message', @quitmsg)
-	export('Server.player.'.@playerID['id'].'.last.quit', time())
+# Immediate logout check, don't send message if so
+	@jointime = import('Server.player.'.@playerID['id'].'.last.join', 3000)
+	if(@jointime > (@time - 2000)) { console(1) @sendMsg = false }
+
+# Send Quit message to Minecraft
+	if(@sendMsg == true) { modify_event('message', @quitmsg) } else { modify_event('message', null) }
+	export('Server.player.'.@playerID['id'].'.last.quit', @time)
 # Send Quit message to Discord as well (if enabled)
-	if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@playerID['name'], '', 'none', '', 'leave') }
+	if(is_proc('_discordBot_send_message')) { 
+		if(@sendMsg == true || @type == 'admin') {
+			_discordBot_send_message(@playerID['name'], '', @type, '', 'leave')
+		}
+	}
 }
 
 
@@ -84,23 +117,26 @@ set_cron('59 23 * * *', closure(){
 	@count = 0
 	@serverConfig = import('Chat.config.Server')
 	@iplog = get_value('Server.pings.log.ignore.IP')
+	@useMsg = false
 	if(!is_array(@iplog)) { die(); }
 	if(array_size(@iplog) == 0) { die(); }
 	@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' Ignored IP ping report:'
+	@checktime = (time() - 86400000)
 	foreach(@ipnum: @times in @iplog) {
-		@count = 0
 		if(@ipnum == 'ip') { continue(); }
+		@count = 0
 		foreach(@data in @times) {
-			if((time() - 86400000) > @data) { continue(); }
+			if(@checktime > @data) { continue(); }
 			@count++			
 		}
 		if(@count > 0) {
+			@useMsg = true
 			@s = ''
 			if(@count > 1) { @s = 's' }
 			@Message = @Message.'\n'.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s
 		}
 	}
-	if(@count > 0) {
+	if(@useMsg == true) {
 		if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
 			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), '', 'admin') }
 		}
