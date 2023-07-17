@@ -350,3 +350,62 @@ proc _getplayerName(@findID) {
 		return('Running in Command Line')
 	}
 }
+
+proc _primus_database_add(@player, @type, @data, @option) {
+	if(@player == "" || @player == null) { return('No Player Given') }
+	@update = false
+	switch(@type) {
+	case 'uuid':
+	# Setup Player UUID Database
+		if(@data == '' || @data == null) { @data = puuid(@player, 'dashless') }
+		@uuiddata = import('primus.database.UUID')
+		#entry found	
+		if(array_index_exists(@uuiddata, @data)) {
+								#Name, World location, Nickname
+			@uuiddata[@data] = array(pinfo(@player)[0], pinfo(@player)[1], pinfo(@player)[4])
+		} else {
+		#entry not found
+			#if array key not set, @array[key] does not work
+			array_set(@uuiddata, @data, array(pinfo(@player)[0], pinfo(@player)[1], pinfo(@player)[4]))
+			broadcast(color(7).'Welcome '.color('a').player().color(7).' to the server! It\'s their first time here!')
+		}
+		@update = true
+		if(@update == true) {
+			store_value('primus.database.UUID', @uuiddata)
+			export('primus.database.UUID', @uuiddata)
+		}
+	case 'ip':		
+	# Setup Player IP Database
+		@ipdata = import('primus.database.IP')
+		if(!array_index_exists(@ipdata, '_ip')) { array_set(@ipdata, '_ip', array()) }
+		if(!array_index_exists(@ipdata, '_hostname')) { array_set(@ipdata, '_hostname', array()) }
+		#entry found
+		if(@data == '' || @data == null) { @data = pinfo(@player)[3] }
+		if(@option == '' || @option == null) { @option = pinfo(@player)[10] }
+		@ipnumbers = reg_replace('\\.*:*', '', @data)
+		if(array_index_exists(@ipdata, @ipnumbers)) {
+			#IP entry found
+			if(array_contains(@ipdata[@ipnumbers], @player)) {
+				#both IP and player found
+				tmsg(@player, color('a').'Welcome back'.color(7).' to the server, glad you are here!')
+			} else {
+				#IP entry found, but player not found
+				array_push(@ipdata[@ipnumbers], @player)
+				@update = true
+			}
+		} else {
+			#IP entry not found
+			array_set(@ipdata, @ipnumbers, array(@player))
+			@update = true
+		}
+		if(@update == true) {
+			array_set(@ipdata['_ip'], @ipnumbers, @data)
+			array_set(@ipdata['_hostname'], @ipnumbers, @option)
+			store_value('primus.database.IP', @ipdata)
+			export('primus.database.IP', @ipdata)
+		}
+	default:
+		return('Unsupported Action')
+	}
+	return(true)
+}
