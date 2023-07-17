@@ -605,33 +605,40 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 		return(false)
 	}
 	@userID = @discord['userid']
+	@userRoles = array()
+# New Joiner Timeout, default is 10 seconds before MemberJoin handles these arrays. During this time typically Discord's default join message occurs, *which is sent under the user's userid* and not as system.
+	@checkwm = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
+	@checkinv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())
+	if(array_index_exists(@checkinv, @discord['userid']) || array_index_exists(@checkwm, @discord['userid'])) { return(false) }
+# Setup No XP earning	
 	@xpType = 2
+	if(@noXP == true) {
 	# Event consumed
-	if(@noXP == true) { 
 		@xpType = 0
-		#If new user: Presuming antispam action
+		# If new user: Presuming antispam action
 		if(import('DiscordBot.'.@discord['serverid'].'.new.user.'.@userID) == true) { return(false) }
 	}
+	# Do not count XP on messages from 1) Channels marked as no XP earning 2) Command spam channel
+	if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel']) || @discord['channel'] == @config['CMD_Default_Channel']) {
+		@noXP = true 
+		@xpType = 0 
+	}
+# Setup Level XP
 	@levelxp = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.levelXP')
 	if(@levelxp == null) { 
 		@levelxp = _discordBot_lb_levelXP(@discord['serverid'], @config['LB_Options']['XP_Type']);
 		array_set(@leaderboard['options'], 'levelXP', @levelxp)
 		array_set(@leaderboard, 'Guild_Name', @config['LB_Options']['Guild_Name'])
-		}
-	# Do not count messages from Command spam channel or Channels marked as no XP earning.
-	if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel'])) { @noXP = true @xpType = 0 }
-	if(@discord['channel'] == @config['CMD_Default_Channel']) { @noXP = true @xpType = 0 }
-	@xptimer = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.xptimer', array('test': 123))
-	if(!array_index_exists(@xptimer, @userID)) {
-		array_set(@xptimer, @userID, (time() - 70000))
 	}
-	
+# Setup Array entries	
 	if(!array_index_exists(@leaderboard, 'members', @userID)) {
-	#all_xp: {xp from bot spams, xp from messages in same minute, total XP}
 		array_set(@leaderboard['members'], @userID, array('all_xp': array(0, 0, 0), 'last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'msg_count': 0))
 	}
 	if(!array_index_exists(@leaderboard, 'members', @userID, 'all_xp', 2)) { array_set(@leaderboard['members'][@userID], 'all_xp', array(0, 0, @leaderboard['members'][@userID]['xp'])) }
-	@userRoles = ''
+	@xptimer = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.xptimer', array('123': 456))
+	if(!array_index_exists(@xptimer, @userID)) {
+		array_set(@xptimer, @userID, (time() - 70000))
+	}
 # If user has last chatted in last rolling minute, do not award XP. (continues to count message)
 	if((@xptimer[@userID] + 60000) > time()) {
 		#If already true, presume botspam
@@ -641,10 +648,18 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 		}
 	} else {
 # Check if user has a no XP earning role.
-		try { 
-			@userRoles = discord_member_get_roles(@discord['serverid'], @userID)
-		} catch(Exception @ex) {
-			return(false)
+		# Adds user to Active User role, Gets new saved roles from check, if available
+		@userRoles = _discordBot_process_activeuserrole(@discord, 'add', array(), true);
+		if(!is_array(@userRoles)) {	
+			try {
+				@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
+			} catch(Exception @ex) {
+				if(@discord['bot'] == false) {
+					return(false)
+				} else {
+					@xpType = 0
+				}
+			}
 		}
 		foreach(@role in @userRoles) {
 			if(array_contains(@config['LB_Options']['NoXP_RoleID'], @role)) {
@@ -654,8 +669,6 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 			}
 		}
 	}
-# Add user to Active role
-	@addactiveuser = _discordBot_process_activeuserrole(@discord, 'add', @userRoles);
 # Increment Message count and XP
 	@leaderboard['members'][@userID]['msg_count'] = @leaderboard['members'][@userID]['msg_count'] + 1
 	@leaderboard['members'][@userID]['last_msg'] = time()
@@ -679,14 +692,14 @@ _db_msg_Console('max lvlxp for level '.@leaderboard['members'][@userID]['level']
 _db_msg_Console('max lvlxp for next level '.(@leaderboard['members'][@userID]['level'] + 1).': '.@levelxp[(@leaderboard['members'][@userID]['level'] + 1)], @discord['serverid'], 'debug')
 _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discord['serverid'], 'debug')
 */
-
-#maxlevel
+###############################################################################################################################
+# Max level
 	if(!array_index_exists(@levelxp, (@leaderboard['members'][@userID]['level'] + 1))) {
 		_db_msg_Console('Level Up: '.@discord['username'].' <@'.@userID.'> is at the maximum level '.@leaderboard['members'][@userID]['level'].'!', @discord['serverid'])
 		export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 		return(false)
 	}
-#Level UP
+# Level UP
 	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level'] + 1] && @noXP == false) {
 		@newrankname = ''
 		@currentrank = ''
@@ -764,7 +777,7 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 /*
 		_db_msg_Console(@currentrank, @discord['serverid'], 'debug')
 		_db_msg_Console(@oldroles, @discord['serverid'], 'debug')
-		_db_msg_Console(@userRoles, @discord['serverid'], 'debug')		
+		_db_msg_Console(@userRoles, @discord['serverid'], 'debug')
 */		
 # Message out
 		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Options']['Level_Up_Message'])
@@ -801,14 +814,14 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 			_discordBot_send_message(@discordMsg, @discord['serverid'], 'confirm', @sendchannel, @type)
 		}
 	}
-#Save edits
+# Save Edits
 	@leaderboard['lastedit'] = time()
 	export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 	export('DiscordBot.'.@discord['serverid'].'.Leaderboard.xptimer', @xptimer)
 	return(true)
 }
 
-proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array()) {
+proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array(), @retRoles = false) {
 	if(!is_array(@discord)) { return('No data') }
 	if(!array_index_exists(@discord, 'userid')) { return('No user') }
 	if(!array_index_exists(@discord, 'serverid')) { return('server?') }
@@ -819,14 +832,20 @@ proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array()) {
 			_db_msg_Console('['.@discord['serverid'].'] Active user role '.@config['LB_Options']['Active_User_Role'].' does not exist!', @discord['serverid'], 'debug')
 			export('DiscordBot.debug.au.roleexist.msg', true)
 		}
-		return('Role Not Found');
+		@config['LB_Options']['Use_Active_User_Role'] = false
 	}
-	if(@config['LB_Options']['Use_Active_User_Role'] != true) { return('disabled') }
 	if(array_size(@userRoles) == 0) {
 		try { 
 			@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
 		} catch(Exception @ex) {
 			return('Not a member')
+		}
+	}
+	if(@config['LB_Options']['Use_Active_User_Role'] != true) {
+		if(@retRoles == true) {
+			return(@userRoles)
+		} else {
+			return('disabled')
 		}
 	}
 # Check if user has the Active User role.
@@ -862,9 +881,9 @@ proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array()) {
 			@ret = 'Removed'
 		}
 	default:
-		return('Neutral')
+		@ret = 'Neutral'
 	}	
-#Set New roles
+# Set New roles
 	if(@roleMsg != '') {	
 		try { 
 			discord_member_set_roles(@discord['serverid'], @discord['userid'], @userRoles, @roleMsg)
@@ -873,6 +892,8 @@ proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array()) {
 			@ret = 'Failed'
 		}
 	}
+# Return Role array if requested, else return status
+	if(@retRoles == true) { return(@userRoles) }
 	return(@ret)
 }
 
@@ -1333,9 +1354,10 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 		# _db_msg_Console('['.@discord['username'].'] '.@stats, @discord['serverid'], 'debug')
 		@rrMsgPrefix = '['.@discord['username'].'] '
 		if(@isloop == true) { @rrMsgPrefix = '' }
-		@rrMsgType = color(10).' < '
-		if(array_index_exists(@stats, 'derank')) { @rrMsgType = color(14).' > ' }
-		@rrMsg = @currentRank.@rrMsgType.color('r').@newRank.color(8).' ('.@qRoles.')'.@rsType
+		@rrMsgType = color(7).'='
+		if(array_index_exists(@stats, 'derank')) { @rrMsgType = color(14).'>' }
+		if(@currentRank < @newRank) { @rrMsgType = color(10).'<' }
+		@rrMsg = @currentRank.' '.@rrMsgType.' '.color('r').@newRank.color(8).' ('.@qRoles.')'.@rsType
 		if(@currentRank == @newRank && @rRoles > 1) {
 			@rrMsg = @rrMsgPrefix.color(11).'Multiple Rank Roles: '.@rRoles.@rsType
 		}
