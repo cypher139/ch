@@ -259,7 +259,7 @@ proc _is_even_number(@number, @round) {
 
 #Find player UUID when given a player NAME.
 #returns array of name, displayname, nickname, and UUID
-proc _getplayerID(@findID) {
+proc _getplayerID(@findID, @retType = 'array', @dashType = 'dashless') {
 	if(function_exists('player')) {
 		@pid = array()
 		@uuiddata = import('primus.database.UUID')
@@ -308,7 +308,17 @@ proc _getplayerID(@findID) {
 		if(reg_count('^[\\.].*', @pid['name']) == 1) {
 			@pid['display'] = reg_replace('^[\\.]', '', @pid['name'])
 		}
-		return(@pid)
+		switch(string(@retType)) {
+		case 'true':
+		case 'false':
+		case 'boolean':
+			if(@pid['id'] == null) { return(false) } else { return(true) }
+		case 'string':
+		case 'id':
+			return(@pid['id'])
+		case 'array':
+			return(@pid)
+		}
 	} else {
 		return('Running in Command Line')
 	}

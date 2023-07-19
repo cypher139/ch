@@ -33,17 +33,13 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), null, @death) {
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
-	@counter = get_value('DeathCount.players.death.counter')[puuid(@death['player'], 'dashless')] + 1
-	switch(@counter) {
-		case '':
-		case null:
-			@dc = ''
-			msg(color('e').'['.color(6).'DeathCount'.color('e').'] '.color(7).'The Reaper\'s memory loss has been cured!')
-		case 0:
-			@dc = ''
-		default:
-			@dc = '[#'.@counter.'] '
-	}
+	@counter = 0
+	@dc = get_value('DeathCount.players.death.counter')
+	if(!is_array(@dc)) { @dc = array() }
+	@uuid = _getplayerID(@death['player'], 'id')
+	if(array_index_exists(@dc, @uuid)) { @counter = @dc[@uuid] }
+	@counter++
+	@countDisplay = '[#'.@counter.'] '
 	
 	if(has_bind('Chat.msg.Death')) {
 		@death['death_message'] = strip_colors(@death['death_message'])
@@ -72,9 +68,9 @@ bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), 
 			)
 			@pvpmsg = array_get_rand(@pvpmsg)
 		}
-		_discordBot_send_message(@dc.'\n'.':put_litter_in_its_place: '.@pvpmsg, @botconfig['Primary_Guild'], 'death')
+		_discordBot_send_message(@countDisplay.'\n'.':put_litter_in_its_place: '.@pvpmsg, @botconfig['Primary_Guild'], 'death')
 	} else {
-		_discordBot_send_message(@dc.@death['death_message'], @botconfig['Primary_Guild'], 'death')
+		_discordBot_send_message(@countDisplay.@death['death_message'], @botconfig['Primary_Guild'], 'death')
 	}
 }
 # :people_wrestling: :put_litter_in_its_place: 

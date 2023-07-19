@@ -4,14 +4,18 @@
 	if(!is_array(@return8239)) { die() }
 
 bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, @death) {
-	@uuid = puuid(@death['player'], 'dashless')
-	@dev = import('ch.player.'.@uuid.'.dev.scripts.test')
-	if(@dev == true) { msg('p: '.@death['player'].'   c: '.@death['cause'].'   k:'.@death['killer']) }
-	@counter = get_value('DeathCount.players.death.counter')
+	@uuid = _getplayerID(@death['player'], 'id')
 	@displaycount = true
 	@entitytype = ''
 	@dcdisplay = ''
-	if(array_index_exists(@counter, @uuid) && @displaycount == true) { @dcdisplay = color(8).'[#'.(@counter[@uuid] + 1).'] '.color('r') }
+	@dev = import('ch.player.'.@uuid.'.dev.scripts.test')
+	if(@dev == true) { msg('p: '.@death['player'].'   c: '.@death['cause'].'   k:'.@death['killer']) }
+	@counter = 0
+	@dc = get_value('DeathCount.players.death.counter')
+	if(!is_array(@dc)) { @dc = array() }
+	if(array_index_exists(@dc, @uuid)) { @counter = @dc[@uuid] }
+	@counter++
+	if(@displaycount == true) { @dcdisplay = color(8).'[#'.(@counter).'] '.color('r') }
 	@weapon = null
 	if(@death['killer'] != null) {
 		@entitytype = 'PVP'
