@@ -352,7 +352,7 @@ proc _getplayerName(@findID) {
 }
 
 proc _primus_database_add(@player, @type, @data, @option) {
-	if(@player == "" || @player == null) { return('No Player Given') }
+	if(@player == '' || @player == null) { return('No Player Given') }
 	@update = false
 	switch(@type) {
 	case 'uuid':

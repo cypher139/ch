@@ -38,7 +38,7 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 # Load master custom messages list
 	@newmsg = import('Chat.config.Death_Messages')
 	if(!is_array(@newmsg)) { 
-		_chat_msg_Admins('Death Messages List file is not properly formatted.') 
+		_chat_msg_Admins('[Chat] Death Messages List file is not properly formatted.') 
 		die()
 	}
 # Unload non-matching array IDs
@@ -49,14 +49,14 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 		@newmsg = @newmsg[@death['cause']['cause']][@entitytype]
 		} else {
 		@newmsg = @newmsg[@death['cause']['cause']]['GENERIC']
-		console('Death Messages does not contain any messages for Entity: '.@entitytype)
+		console(color(12).'[Chat] Death Messages does not contain any messages for Entity: '.color(14).@entitytype)
 		}
 	default:
 		if(array_index_exists(@newmsg, @death['cause']['cause'])) {
 			@newmsg = @newmsg[@death['cause']['cause']]
 		} else {
 			@newmsg = @newmsg['CUSTOM']
-			console('Death Messages does not contain any messages for Death Type: '.@death['cause']['cause'])
+			console(color(12).'[Chat] Death Messages does not contain any messages for Death Type: '.color(14).@death['cause']['cause'])
 		}
 	}
 #Choose and Display the message
@@ -73,7 +73,7 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 	@lastd = get_value('server.debug.stats.last.death')
 	if(!is_array(@lastd)) { @lastd = array(@death) }
 	array_insert(@lastd, @death, 0)
-	if(array_index_exists(@lastd, 10)) { array_remove(@lastd, 10) }
+	if(array_index_exists(@lastd, 20)) { array_remove(@lastd, 20) }
 	store_value('server.debug.stats.last.death', @lastd)
 	
 	modify_event('death_message', @dcdisplay.@selectedmsg)

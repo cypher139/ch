@@ -124,6 +124,7 @@ set_cron('59 23 * * *', closure(){
 	@checktime = (time() - 86400000)
 	foreach(@ipnum: @times in @iplog) {
 		if(@ipnum == 'ip') { continue(); }
+		if(array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @iplog['ip'][@ipnum])) { continue(); }
 		@count = 0
 		foreach(@data in @times) {
 			if(@checktime > @data) { continue(); }
@@ -145,7 +146,6 @@ set_cron('59 23 * * *', closure(){
 });
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
-	@consoleBlacklistMsg = false
 	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 	@time = time();
 	@serverConfig = import('Chat.config.Server')
@@ -153,13 +153,16 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	# Repeated pings get special message
 	@ipnumbers = reg_replace('\\.*:*', '', @ping['ip'])
 	@iplastping = import('Chat.ping.IP.'.@ipnumbers, (@time - 10000))
+	@ignore = false
+	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip']) || array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @ping['ip'])) { @ignore = true }
+	@superignore = array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @ping['ip'])
 
 # Blacklisted IPs: do not send any data about the server if possible, and don't send any ping messages.
 	if(array_contains(@blacklistIP['IP_Blacklist'], @ping['ip'])) {
 		super_cancel();
 		# ^ only affects server listings.
 		_chat_pings_write_log(@ping, 'blacklist');
-		if(@consoleBlacklistMsg == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist IP: '.@ping['ip'], false) }
+		if(@serverConfig['Ping_Blacklist_Console'] == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist IP: '.@ping['ip'], false) }
 		die();
 	}
 	foreach(@block in @blacklistIP['IP_Block_Blacklist']) {
@@ -168,7 +171,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			super_cancel();
 			# ^ only affects server listings.
 			_chat_pings_write_log(@ping, 'blacklist');
-			if(@consoleBlacklistMsg == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist '.color(5).'Block'.color(8).' IP: '.@ping['ip'], false) }
+			if(@serverConfig['Ping_Blacklist_Console'] == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist '.color(5).'Block'.color(8).' IP: '.@ping['ip'], false) }
 			die();
 		}
 	}
@@ -198,8 +201,8 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 		}
 	}
 # Ignored IP: Log internally, don't (immediately) message.
-	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip'])) { 
-		_chat_pings_write_log(@ping, 'ignore');
+	if(@ignore == true) { 
+		_chat_pings_write_log(@ping, 'ignore', @superignore);
 		@pinglevel = 0 
 	}
 # Admin Ping Messages:

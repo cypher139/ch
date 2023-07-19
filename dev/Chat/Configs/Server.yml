@@ -27,10 +27,17 @@ Ping_Message_Discord: true
 Ping_Message_Level: 2
 # This MOTD is given if the last ping was up to 7 seconds ago.
 Repeated_Ping_Message: "Stop pinging me, and start playing on this server!"
-# These IPs should bypass ping message, example localhost.
+# These IPs should bypass message on every ping, example localhost.
 Ping_Message_Ignore_IP:
 - "192.168.1.1"
 - "127.0.0.1"
+# These IPs should bypass all ping messages and ping recording.
+Ping_Message_Super_Ignore_IP:
+- "127.0.0.1"
+Write_Blacklist_IP_File: true
+Write_Blacklist_IP_File_Path: "/var/www/html/block.txt"
+# Message console on each attmetped ping from a Blacklisted IP?
+Ping_Blacklist_Console: false
 # Should we take action on multiple accounts using the same IP address?
 Check_Multiple_Accs_IP: true
 # How many accounts can be connected with the same IP address at any given time?

@@ -65,7 +65,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 		consume();
 		modify_event('kickmsg', @kickMsg);
 		modify_event('result', 'KICK_OTHER');
-		if(is_proc('_primus_database_add')) { _primus_database_add(@player, 'ip', @login['ip'], @login['hostname']) }
+		if(is_proc('_primus_database_add')) { _primus_database_add(@login['player'], 'ip', @login['ip'], @login['hostname']) }
 		if(@serverConfig['Ping_Message_Discord'] == true) { 
 			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@msgPrefix.'['.@kickType.'] '.replace(@adminMsg, '%f', '`'), 'bot', 'admin') }
 		}
