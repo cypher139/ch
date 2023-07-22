@@ -188,6 +188,7 @@ LB_Options:
   - 456
   Use_Active_User_Role: false
   Active_User_Role: 070
+  Active_User_Role_Min_Level: 1
 Use_Role_Ranks: false
 Use_Role_Ranks_Separators: false
 Role_Ranks:

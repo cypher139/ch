@@ -1,7 +1,6 @@
 #version 1.1-tmc
-#requires CHDiscord build #76 or newer
-#Voice Chat monitor:
 /*
+Voice Chat monitor:
 If:
  -- User has joined the monitored Voice Channel
  -- User has the specified "Voice Chat" ping role
