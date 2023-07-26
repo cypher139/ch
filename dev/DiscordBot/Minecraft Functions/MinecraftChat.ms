@@ -6,6 +6,13 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@channel = @config['Default_Channel']
 	@sendmsg = @chat['message']
+	@playerID = _getplayerID(player(), 'id')
+	#[Anti Spam] Do not send chat to Discord if player just logged on, avoids insta spam and disconnect bots.
+	@jointime = import('Server.player.'.@playerID.'.last.join', 13000)
+	if(@jointime > (time() - 10000)) { 
+		_db_msg_Console(player().' sent a message before the message timeout passed.', 'bot') 
+		die()
+	}
 	# Automatically chat on last channel a message was received on.
 	@lastmsg = import('DiscordBot.'.@botconfig['Primary_Guild'].'.last.message')
 	if(!is_array(@lastmsg)) { @lastmsg = array() }

@@ -5,6 +5,8 @@ bind('player_join', array('id': 'cypher139.login'), null, @login) {
 #Event playername may sometimes return null? more testing needed
 	@player = player()
 	@puuid = puuid(@player, 'dashless')
+	@jointime = time()
+	export('Server.player.'.@puuid.'.last.join', @jointime)
 
 # Are you a dev for Cypher's scripts on this server?
 # Enables dev message settings.

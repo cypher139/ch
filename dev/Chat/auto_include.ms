@@ -62,6 +62,32 @@ proc _chat_load_config(@cfgtype) {
 			_chat_msg_Admins(color(12).'[Chat] To interact with Discord server install the DiscordBot script!')
 			return(false)
 		}
+	case 'IPBlacklist':
+		@serverConfig = import('Chat.config.Server', array('Write_Blacklist_IP_File': false))
+		#Optional: publish Chat's blacklisted IP list to a file for use by your firewall.
+		if(@serverConfig['Write_Blacklist_IP_File'] == true) {
+			@ipFileList = array()
+			try {
+				@ipFileList = parse_args(replace(read(@serverConfig['Write_Blacklist_IP_File_Path']), '\n', ' '))
+			} catch(Exception @ex) {
+				console('[Chat] Blacklist IP file: '.@ex['classType'].' '.@ex['message'], false)
+			}
+			if(array_size(@loadcfg['IP_Blacklist']) != array_size(@ipFileList)) {
+				@previp = ''
+				foreach(@k: @v in @loadcfg['IP_Blacklist']) {
+					if(!array_contains(@ipFileList, @v)) {
+						array_push(@ipFileList, @v)
+					}
+					if(@v == @previp) {
+						array_remove(@ipFileList, @k)
+					} else {
+						@previp = @v
+					}
+				}
+				@ipFileList = array_sort(@ipFileList, 'REGULAR')
+				if(function_exists('write_file')) { write_file(@serverConfig['Write_Blacklist_IP_File_Path'], array_implode(@ipFileList, '\n'), 'OVERWRITE') }
+			}
+		}
 	case 'Experimental':
 	case 'ex':
 		@servercfg = import('Chat.config.Server')
