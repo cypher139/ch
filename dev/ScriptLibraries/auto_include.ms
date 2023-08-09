@@ -16,11 +16,14 @@ proc _write_file(@path, @content, @mode, @option) {
 	if(@path == '' || @content == '') { return(false) }
 	@pf = '/'
 	@notpf = '\\\\'
+	@pathdrive = '/'
 	#backslash escapes on regex: must add extra backslash
-	if(get_os() == 'WINDOWS') { @pf = '\\\\' @notpf = '/' }
+	if(get_os() == 'WINDOWS') { @pf = '\\\\' @notpf = '/' @pathdrive = @path[0..1].'\\' }
 	@path = reg_replace('['.@notpf.']', @pf, @path)
 	@pathparent = reg_replace('[^'.@pf.']+$', '', @path)
 	@pathlayout = reg_match('(.+)(['.@pf.'].+)(['.@pf.'].+)$', @path)
+	@pathsplit = reg_split(@pf, @path)
+	array_remove(@pathsplit, 0)
 	# console(@pathlayout)
 	# 1 = root path, 2 = /parent, 3 = /filename or current dir
 	if(@mode == '') { @mode = 'default' }
@@ -38,15 +41,26 @@ proc _write_file(@path, @content, @mode, @option) {
 		@mode = 'OVERWRITE'
 	}
 	if(extension_exists('CHFiles')) {
-		try {
-			if(!is_dir(@pathlayout[1].@pathlayout[2])) {
-				create_dir(@pathlayout[1].@pathlayout[2])
+		#Create Parent folder(s)
+		@pathbuild = @pathdrive
+		for(@i = 0, @i < array_size(@pathsplit), @i++) {
+			try {
+				if(!is_dir(@pathbuild)) {
+					create_dir(@pathbuild)
+				}
+			} catch(IOException @ex) {
+				# You do not have permission to view folder. -- Most likely checking early in path in unprivileged directories outside of CH's base-dir
+				if((@i + 1) == array_size(@pathsplit)) {
+					# Entire path was unavailable to CH, stop here.
+					console('Create Parent Folder: '.@ex)
+					return(false)
+				}
 			}
+			@pathbuild = @pathbuild.@pf.@pathsplit[@i]
 		}
-		catch(Exception @ex) {
-			console('Create Parent Folder: '.@ex)
-			return(false)
-		}
+		# File check: 
+		#	Append: if file does not exist make an empty file 
+		#	Create mode: stop if file exists
 		try {
 			if(file_exists(@path)) {
 				if(@create == true) {
