@@ -780,11 +780,13 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 		_db_msg_Console(@userRoles, @discord['serverid'], 'debug')
 */		
 # Message out
-		@discordMsg = reg_replace('%UserID%', '<@'.@userID.'>', @config['LB_Options']['Level_Up_Message'])
+		@discordMsg = replace(@config['LB_Options']['Level_Up_Message'], '%UserID%', '<@'.@userID.'>')
+		@discordMsg = replace(@discordMsg, '%Level%', @leaderboard['members'][@userID]['level'])
+		@discordMsg = replace(@discordMsg, '%MsgCount%', @leaderboard['members'][@userID]['msg_count'])
 		if(@newrankname == '') {
-			@discordMsg = reg_replace('%Level%', 'Level '.@leaderboard['members'][@userID]['level'].'!', @discordMsg)
+			@discordMsg = replace(@discordMsg, '%LevelDisplay%', 'Level '.@leaderboard['members'][@userID]['level'].'!')
 		} else {
-			@discordMsg = reg_replace('%Level%', @newrankname.'!  ('.@leaderboard['members'][@userID]['level'].')', @discordMsg)
+			@discordMsg = replace(@discordMsg, '%LevelDisplay%', @newrankname.'!  ('.@leaderboard['members'][@userID]['level'].')')
 		}
 		_db_msg_Console('Level Up: '.@discord['username'].' <@'.@userID.'> '.color(3).@oldlevel.color('r').' -> '.color(10).@leaderboard['members'][@userID]['level'].' '.color(6).@newrankname, @discord['serverid'])
 		@sendMsg = true
@@ -981,16 +983,19 @@ proc _discordBot_update_members(@args) {
 					_db_msg_Console(@ex['message'], @guild)
 				}
 			}
-			@rankstats = get_value('DiscordBot.debug.'.@guild.'.rank.stats')
-			@activeuserstats = get_value('DiscordBot.debug.'.@guild.'.activeuser.stats')
-			if(!is_array(@rankstats)) { @rankstats = array() }
-			if(!is_array(@activeuserstats)) { @activeuserstats = array() }
+			# @rankstats = get_value('DiscordBot.debug.'.@guild.'.rank.stats')
+			# @activeuserstats = get_value('DiscordBot.debug.'.@guild.'.activeuser.stats')
+			# if(!is_array(@rankstats)) { @rankstats = array() }
+			# if(!is_array(@activeuserstats)) { @activeuserstats = array() }	
+			@rankstats = array()
+			@activeuserstats = array()
 	# Process each User ID
 			foreach(@index: @id in @membersID) {
 		# Member Info (avatar, isBot, Username, etc)
 				@idInfo = ''
 				@idLastMsg = 0
 				@idLevel = 0
+				@consoleMsg = ''
 				try {
 					@idInfo = discord_member_info(@guild, @id)
 				} catch(NotFoundException @ex) {
@@ -1045,7 +1050,9 @@ proc _discordBot_update_members(@args) {
 							@auType = 'remove'
 						}
 						@auStats = _discordBot_process_activeuserrole(@discord, @auType, @idRoles, false, @idLevel);	
-						array_set(@activeuserstats, @idInfo['username'], @auStats);
+						if(@auStats == 'Added') { @consoleMsg = @consoleMsg.color(10).'<active>'.color('r') }
+						if(@auStats == 'Removed') { @consoleMsg = @consoleMsg.color(14).'<inactive>'.color('r') }
+						if(@auStats != 'No Change') { array_set(@activeuserstats, @idInfo['username'], @auStats); }
 					}
 				}
 			# Add discovered roles to Total roles ( id: name )
@@ -1089,12 +1096,16 @@ proc _discordBot_update_members(@args) {
 					if(is_array(@rrStats)) {
 						if(@rrStats['setRoles'] == true) { 
 							@rrUpdates++
-							_db_msg_Console('('.@index.')['.@idInfo['username'].'] '.@rrStats['rrMsg'], @guild);
+							@consoleMsg = @consoleMsg.@rrStats['rrMsg'].color('r')
 						}
 					} else {
-						_db_msg_Console('('.@index.')['.@idInfo['username'].'] '.@rrStats, @guild);
+						@consoleMsg = @consoleMsg.color(7).@rrStats.color('r')
 					}
 					array_set(@rankstats, @idInfo['username'], @rrStats)
+				}
+			# Console Messages
+				if(@consoleMsg != '') {
+					_db_msg_Console(color(9).'('.@index.')'.color('r').'['.@idInfo['username'].'] '.@consoleMsg, @guild);
 				}
 			}
 		# Roles Members
@@ -1136,10 +1147,10 @@ proc _discordBot_update_members(@args) {
 			export('DiscordBot.debug.stats.last.updatemembers', @alldebugstats)
 			store_value('DiscordBot.debug.'.@guild.'.rank.stats', @rankstats)
 			store_value('DiscordBot.debug.'.@guild.'.activeuser.stats', @activeuserstats)
-			foreach(@k: @v in @activeuserstats) {
+/* 			foreach(@k: @v in @activeuserstats) {
 				if(@v == 'No Change') { continue() }
 				_db_msg_Console('['.@k.'] active: '.@v, @guild)
-			}
+			} */
 		}
 		@timeElapsed = time() - @startTime;
 		_db_msg_Console('Update:  '.color(3).@timeElapsed.'ms', 'none', 'bot')

@@ -34,8 +34,8 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 		case 'test':
 			@joinmsg = color('a').'+ join'.color(7).': '.@playerID['display']
 		default:
-			@joinmsg = reg_replace('\\%player\\%', @playerID['name'], @serverConfig['Join_Message'])
-			@joinmsg = reg_replace('\\%nick\\%', @playerID['display'], @joinmsg)
+			@joinmsg = replace(@serverConfig['Join_Message'], '%player%', @playerID['name'])
+			@joinmsg = replace(@joinmsg, '%nick%', @playerID['display'])
 	}
 	
 # Minimap: Enable radar for everything, and cavemapping. (Codes set for Rei's Minimap)
@@ -92,13 +92,13 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 		case 'test':
 			@quitmsg = color('c').'- part'.color(7).': '.@playerID['display']
 		default:
-			@quitmsg = reg_replace('\\%player\\%', @playerID['name'], @serverConfig['Leave_Message'])
-			@quitmsg = reg_replace('\\%nick\\%', @playerID['display'], @quitmsg)
+			@quitmsg = replace(@serverConfig['Leave_Message'], '%player%', @playerID['name'])
+			@quitmsg = replace(@quitmsg, '%nick%', @playerID['display'])
 	}
 
 # Immediate logout check, don't send message if so
 	@jointime = import('Server.player.'.@playerID['id'].'.last.join', 3000)
-	if(@jointime > (@time - 2000)) { console(1) @sendMsg = false }
+	if(@jointime > (@time - 2000)) { @sendMsg = false }
 
 # Send Quit message to Minecraft
 	if(@sendMsg == true) { modify_event('message', @quitmsg) } else { modify_event('message', null) }

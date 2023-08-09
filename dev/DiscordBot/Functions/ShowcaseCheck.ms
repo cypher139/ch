@@ -74,7 +74,15 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 			if(@isAllowed == false) {
 				consume();
 				discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
-				discord_broadcast(@discord['serverid'], @discord['channelid'], @reaction);
+				discord_broadcast(@discord['serverid'], @discord['channelid'], @reaction, closure(@reactionID){
+					set_timeout(3600000, closure(){
+						try {
+							discord_delete_message(@discord['serverid'], @discord['channelid'], @reactionID);
+						} catch(Exception @ex) {
+							_db_msg_Console('  ['.@discord['serverid'].'] [Showcase] Cannot remove message "'.@reactionID.'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
+						}
+					});
+				});	
 			}
 		} else {
 		# Allow new person to post with their project

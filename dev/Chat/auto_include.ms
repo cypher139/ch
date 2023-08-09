@@ -313,13 +313,13 @@ proc _chat_death_msg_format(@player, @msg, @opponent, @weapon) {
 	#Color of weapon used in a PvP battle
 	@colorweapon = '&3'	
 #Format %Variables% found in message
-	@return = reg_replace('\\%dm_weapon\\%', @weapon, @msg)
-	@return = reg_replace('\\%dm_opponent\\%', @opponent, @return)
-	@return = reg_replace('\\%dm_player\\%', @player, @return)
-	@return = reg_replace('\\%dm_color_alt\\%', @coloralt, @return)
-	@return = reg_replace('\\%dm_color_msg\\%', @colormsg, @return)
-	@return = reg_replace('\\%dm_color_player\\%', @colorplayer, @return)
-	@return = reg_replace('\\%dm_color_weapon\\%', @colorweapon, @return)
+	@return = replace(@msg, '%dm_weapon%', @weapon)
+	@return = replace(@return, '%dm_opponent%', @opponent)
+	@return = replace(@return, '%dm_player%', @player)
+	@return = replace(@return, '%dm_color_alt%', @coloralt)
+	@return = replace(@return, '%dm_color_msg%', @colormsg)
+	@return = replace(@return, '%dm_color_player%', @colorplayer)
+	@return = replace(@return, '%dm_color_weapon%', @colorweapon)
 
 	return(@return)
 }

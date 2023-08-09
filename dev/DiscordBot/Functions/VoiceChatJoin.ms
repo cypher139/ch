@@ -48,11 +48,11 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 		if(@lastping == '' || @lastping == null) { @lastping = 1230768000000 }
 		if(import('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress') == true) { die() } else {
 			@timeout = 60000
-			@discordMsg = reg_replace('%RoleID%', '<@&'.@vc['VC_Role_ID'].'>', @vc['VC_Ping_Message'])
-			@discordMsg = reg_replace('%UserID%', '<@'.@discord['userid'].'>', @discordMsg)
-			@discordMsg = reg_replace('%Channel%', @discord['channel'], @discordMsg)
-			@mcMsg = reg_replace('%User%', @discord['username'], @vc['VC_Ping_Message_MC'])
-			@mcMsg = reg_replace('%Channel%', @discord['channel'], @mcMsg)
+			@discordMsg = replace(@vc['VC_Ping_Message'], '%RoleID%', '<@&'.@vc['VC_Role_ID'].'>')
+			@discordMsg = replace(@discordMsg, '%UserID%', '<@'.@discord['userid'].'>')
+			@discordMsg = replace(@discordMsg, '%Channel%', @discord['channel'])
+			@mcMsg = replace(@vc['VC_Ping_Message_MC'], '%User%', @discord['username'])
+			@mcMsg = replace(@mcMsg, '%Channel%', @discord['channel'])
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping + @vc['VC_Ping_Timeout'])) {
 				export('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress', true)
@@ -163,13 +163,13 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 					}
 				}				
 				if(@isAdmin == true) { continue() }
-				@dmMsg = reg_replace('%User%', @username, @vc['VC_DM_Thanks_Message'])
+				@dmMsg = replace(@vc['VC_DM_Thanks_Message'], '%User%', @username)
 				if(array_size(@otherVCUsers) < 2) {
-					@dmMsg = reg_replace('%OtherUsers%', array_implode(@otherVCUsers, ''), @dmMsg)
+					@dmMsg = replace(@dmMsg, '%OtherUsers%', array_implode(@otherVCUsers, ''))
 				} else {
-					@dmMsg = reg_replace('%OtherUsers%', array_implode(@otherVCUsers[..-2], ',').' and '.@otherVCUsers[..-1], @dmMsg)
+					@dmMsg = replace(@dmMsg, '%OtherUsers%', array_implode(@otherVCUsers[..-2], ',').' and '.@otherVCUsers[..-1])
 				}
-				# @dmMsg = reg_replace('%TotalUsers%', array_implode(@totalVCUsers, ' and '), @dmMsg)
+				# @dmMsg = replace(@dmMsg, '%TotalUsers%', array_implode(@totalVCUsers, ' and '))
 				discord_private_message(@userid, @dmMsg);
 			}
 		}

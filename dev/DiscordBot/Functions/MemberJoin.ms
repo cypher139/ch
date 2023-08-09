@@ -89,12 +89,17 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					}
 					@results = array('code': @inv[@selectedCode]['code'], 'inviter': @invitername, 'inviterid': @inv[@selectedCode]['userid'], 'use': @inv[@selectedCode]['uses'])
 				}
-				@invMessage = reg_replace('%User%', @userDisplaydc, @invMessage)
-				@invMessage = reg_replace('%UserID%', @discord['userid'], @invMessage)
-				@invMessage = reg_replace('%InviteCode%', @results['code'], @invMessage)
-				@invMessage = reg_replace('%Uses%', @results['use'], @invMessage)
-				@invMessage = reg_replace('%Inviter%', @results['inviter'], @invMessage)
-				@invMessage = reg_replace('%InviterID%', @results['inviterid'], @invMessage)
+				@invMessage = replace(@invMessage, '%User%', @userDisplaydc)
+				@invMessage = replace(@invMessage, '%UserID%', @discord['userid'])
+				@invMessage = replace(@invMessage, '%InviteCode%', @results['code'])
+				@invMessage = replace(@invMessage, '%Uses%', @results['use'])
+				@invMessage = replace(@invMessage, '%Inviter%', @results['inviter'])
+				@invMessage = replace(@invMessage, '%InviterID%', @results['inviterid'])
+				if(@results['use'] < 2) { 
+					@invMessage = replace(@invMessage, '%InviterID1%', @results['inviterid'])
+				} else {
+					@invMessage = replace(@invMessage, '%InviterID1%', '')
+				}
 				array_set(@saveinv, @discord['userid'], @results)
 				export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', @saveinv)
 				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
@@ -331,12 +336,14 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 				if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { @lbremove = 2 }
 			}
 			# Remove Welcome message
-			try { 
-				discord_delete_message(@discord['serverid'], @config['Welcome_Text_Channel_Name'], @joininfo[@discord['userid']]['wmid'])
-				@wmres = '\nNew join: Welcome Message removed.'
-			} catch(Exception @ex) {
-				@wmres = '\nUnable to remove Welcome Message! '.color('c').@ex['classType'].': '.@ex['message']
-			}	
+			if(array_index_exists(@joininfo, @discord['userid'], 'wmid')) {
+				try { 
+					discord_delete_message(@discord['serverid'], @config['Welcome_Text_Channel_Name'], @joininfo[@discord['userid']]['wmid'])
+					@wmres = color(8).' <New join>'
+				} catch(Exception @ex) {
+					@wmres = ' Unable to remove Welcome Message!\n'.color('c').@ex['classType'].': '.@ex['message']
+				}
+			}
 		} else {
 			#Also, only write former roles if not a new member
 			store_value('DiscordBot.'.@discord['serverid'].'.members.former.roles', @membersFR)
