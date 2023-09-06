@@ -922,10 +922,12 @@ proc _discordBot_backup_members(@args) {
 		'JoinInfo': get_value('DiscordBot.'.@guild.'.Join.info')
 		)
 		@time = time();
+		@writes = 0
 		foreach(@k: @v in @data) {
 			if(@v == '' || @v == null) { continue() }
 			if(is_array(@v) && array_size(@v) == 0) { continue() }
-			_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/'.@guild.'_'.simple_date('MM-dd-yy_HHmm_', @time).@k.'.json', json_encode(@v), 'CREATE')
+			_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/'.simple_date('MMyy', @time).'/'.@guild.'_'.simple_date('MM-dd-yy_HHmm_', @time).@k.'.json', json_encode(@v), 'CREATE')
+			@writes++
 		}
 	}
 }

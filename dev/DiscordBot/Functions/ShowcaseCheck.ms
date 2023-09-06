@@ -5,6 +5,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 	array_set(@discord, 'time', time());
 	@botconfig = import('DiscordBot.config.Discord');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
+	@ytregex = '^https:[/]{2}[w]{0,3}[.]?youtu[.]?be[./](?:com[/]watch[?]v=)?[A-z0-9]{11}(?:[?]?si=[A-z0-9-]{16})?$'
 	
 	if(@discord['channelid'] == @config['Showcase_Channel']) {
 		@lastmsgs = get_value('DiscordBot.'.@discord['serverid'].'.last.message.showcase')
@@ -25,7 +26,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 						continue()
 					}
 					#If last message was beyond timeout, continue
-					if(time() > (@msg['time'] + 345600000)) {
+					if(time() > (@msg['time'] + 259200000)) {
 						array_remove(@lastmsgs, @i)
 						continue()
 					}				
@@ -36,18 +37,25 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 				export('DiscordBot.'.@discord['serverid'].'.debug.showcase.checkmsg', array(@checkIndex, @checkMsg));
 				if(array_index_exists(@checkMsg, 'time')) {
 				#reference: id,message,userid,username
-					#same user commenting
+					# --- Same user commenting ---
 					if(@checkMsg['userid'] == @discord['userid']) {
 						# previous message was the showcase
 						if(array_index_exists(@checkMsg, 'attachments', 0, 'filename')) {
+							@isAllowed = true
+						} else if(reg_count(@ytregex, @discord['message']) > 0) {
+						# previous message was the showcase	- shown via yt link
+						# Allowed in case of new project post / multiple videos needed
 							@isAllowed = true
 						} else {
 						#previous message already is a comment
 							@isAllowed = false
 							@reaction = 'To include more details about your project please edit the additional info into your post above.'
 						}
+					# --- Different user commenting ---
+					} else if(reg_count(@ytregex, @discord['message']) > 0) {
+						# Presumin new project post, if user is replying via a yt gif style video: shame
+						@isAllowed = true
 					} else {
-					#different user just commenting
 						@isAllowed = false
 						@reaction = 'Thanks for your comment! To avoid chat in the showcases, **add a reaction** to the original post and **talk in <#'.@config['Welcome_Text_Channel_ID'].'>** about the showcased project!'
 					}
