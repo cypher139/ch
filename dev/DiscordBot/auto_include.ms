@@ -1498,6 +1498,8 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 
 proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@botconfig = import('DiscordBot.config.Discord')
+	@botinfo = import('DiscordBot.Bot.Info')
+	@cmdfromdis = ''
 	if(is_array(@discord)) {
 		if(!array_index_exists(@discord, 'time')) {
 			array_set(@discord, 'time', time())
@@ -1524,22 +1526,19 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	case 'message':
 		@dm = 'dm'
 		array_set(@discord, 'SendChannel', @discord['userid'])
+		@cmdfromdis = ' in DM'
 	case '':
 	default:
 		@dm = 'broadcast'
 		array_set(@discord, 'SendChannel', @discord['channel'])
 	}
-	array_set(@discord, 'UseDM', @dm)
-	
 	switch(@cmdfrom) {
-	case 'dm':
-		@cmdfrom = ' in DM'
 	case 'batch':
-		@cmdfrom = ' (via Batch file)'
+		@cmdfromdis = ' (via Batch file)'
 	default:
-		@cmdfrom = ''
+		if(@dm == 'dm') { @cmdfromdis = ' in DM' }
 	}
-	
+	array_set(@discord, 'UseDM', @dm)
 /*	
 	# Find if this is a wish or normal chat.
 */	
@@ -1572,7 +1571,12 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	_db_msg_Console(@commandlist, @discord['serverid'], 'debug')
 */
 # Extract Command
-	@command = parse_args(reg_replace(@config['CMD_Command_Prefix'], '', @discord['message']))
+	@msgcheck = reg_replace(@config['CMD_Command_Prefix'], '', @discord['message'])
+	if(@dm == 'dm' || @cmdfrom == 'mention') {
+		@msgcheck = reg_replace('^[@]'.@botconfig['Bot_Name'].'\\s', '', @msgcheck)
+		@msgcheck = reg_replace('^[@]'.@botinfo['displayname'].'\\s', '', @msgcheck)
+	}
+	@command = parse_args(@msgcheck)
 # No Command Given
 	if(!array_index_exists(@command, 0)) {
 		_discordBot_send_message(array('embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))), @discord['serverid'], 'none', @discord['SendChannel'], @discord['UseDM'])	
@@ -1614,8 +1618,8 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	
 # Deny Admin commands	
 	if(array_contains_ic(@admincommandlist, @command[0]) && @userType != 'Admin') {
-		_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfrom.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
-		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfrom.': `'.@command[0].'`  '.strip_colors(@commanddisdc), @discord['serverid'], 'admin')
+		_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfromdis.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
+		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfromdis.': `'.@command[0].'`  '.strip_colors(@commanddisdc), @discord['serverid'], 'admin')
 		return('NotAdmin')
 	}
 	array_set(@discord, 'admin', @isAdmin)
@@ -1625,14 +1629,16 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	if(array_index_exists(@actions, @command[0])) {
 		@return = @actions[@command[0]](@discord, @args);
 	} else {
-		_discordBot_send_message('I have no idea what that command was about, try help.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
+		if(@cmdfrom != 'mention') {
+			_discordBot_send_message('I have no idea what that command was about, try help.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
+		}
 		@lastmsgs = get_value('DiscordBot.last.cmd.not.found')
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		@fail = array('time': time(), 'user': @discord['username'], 'command': @command[0], 'args': @args)
 		array_insert(@lastmsgs, @fail, 0)
 		if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
 		store_value('DiscordBot.last.cmd.not.found', @lastmsgs)
-		_db_msg_Console(@discord['username'].' tried to use non-existent command'.@cmdfrom.': '.color('e').@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
+		_db_msg_Console(@discord['username'].' tried to use non-existent command'.@cmdfromdis.': '.color('e').@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
 		return('NotACmd')
 	}
 
@@ -1690,8 +1696,8 @@ _db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
 	@colorret = ''
 	@retdisplay = ''
 	if(@return == true) { @colorret = 3 @retdisplay = '' } else { @colorret = 'c' @retdisplay = ' (Failed)' }
-	_db_msg_Console(@discord['username'].' used command'.@cmdfrom.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
-	_discordBot_send_message(@discord['username'].' used command'.@cmdfrom.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
+	_db_msg_Console(@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
+	_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
 	return(@return)
 }
 
