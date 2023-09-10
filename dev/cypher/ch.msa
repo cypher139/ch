@@ -442,6 +442,28 @@ case 'ci':
 	}
 	msg(@prefix.color(6).'Clear Index: '.color(3).@args[1].color('r').' from '.color('d').@args[0])
 	msg(@msg)
+
+case 'exportvalue':
+case 'ex':
+	@time = time()
+	if(array_size(@args) == 0) { array_push(@args, player()) }
+	@v = get_value(@args[0])
+	@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
+	if(!array_index_exists(@args, 1)) { array_push(@args, 'yml') }
+	@fileext = ''
+	switch(string(@args[1])) {
+	case 'json':
+	case 'j':
+		@fileext = 'json'
+		@v = json_encode(@v)
+	case 'yml':
+	case 'y':
+	default:
+		@fileext = 'yml'
+		@v = yml_encode(@v, true)
+	}
+	_write_file('Export_'.@args[0].'_'simple_date('MM-dd-yy_HHmm_', @time).'.'.@fileext, @v, 'Overwrite')
+		msg(@prefix.color(6).'Value '.color('d').@args[0].color(7).' was exported!')
 	
 
 case 'hasvalue':
@@ -478,6 +500,21 @@ case 'sv':
 	msg(@prefix.color(6).'Previous: '.color(7).@old)
 	export('ch.sv.undo', array(@args[0], @old))
 	switch(@args[1]) {
+	case 'aa':
+	case 'aarray':
+	case 'associative':
+		if(array_index_exists(@args, 2)) {
+			if((array_size(@args) - 2) % 2 == 0) {
+				@new = array()
+				#is Even
+				foreach(@index: @v in @args) {
+					if(@index % 2 == 1 || @index < 2) { continue() }
+					array_set(@new, @v, @args[(@index + 1)])
+				}
+			} else {
+				die(@prefix.color('c').'Not enough array arguments provided.')	
+			}
+		}
 	case 'array':
 		if(array_index_exists(@args, 2)) {
 			@new = @args[2..]

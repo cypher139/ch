@@ -168,7 +168,7 @@ proc _reloader_item_name(@item) {
 		}
 	}
 	if(reg_count('[a-zA-Z]+_[a-zA-Z]+', @name) == 1) {
-		@display = to_lower(reg_replace('_', ' ', @name))
+		@display = to_lower(replace(@name, '_', ' '))
 	}
 	# Check: Is this air?
 	if(@name == '0' || string_contains_ic(@name, 'air')) { @name = null }
@@ -215,7 +215,7 @@ proc _reloader_capitalize(@string, @lower, @u) {
 	@newstring = @l1.@string[cslice(1, @length)]
 	if(@u == '' || @u == null) {
 		if(reg_count('[_]', @newstring) > 0) {
-			@newstring = reg_replace('_', ' ', @newstring)
+			@newstring = replace(@newstring, '_', ' ')
 		}
 	}
 	return(@newstring)

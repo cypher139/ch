@@ -582,7 +582,7 @@ case '-a':
 			@areamodedisplay = 'Furnaces'
 		default:
 			if(reg_count('_', @areamode) > 0) {
-				@areamodedisplay = to_lower(reg_replace('_', ' ', @areamode))
+				@areamodedisplay = to_lower(replace(@areamode, '_', ' '))
 			} else {
 				@areamodedisplay = to_lower(@areamode)
 			}
@@ -605,7 +605,7 @@ case '-a':
 		for(assign(@i, 0), @i < array_size(@filled['type']), @i++) {
 			if(@filled['type'][@ftkeys[@i]] > 0) {
 				if(reg_count('_', @ftkeys[@i]) > 0) {
-					@ftdisplay = _reloader_capitalize(reg_replace('_', ' ', @ftkeys[@i]))
+					@ftdisplay = _reloader_capitalize(replace(@ftkeys[@i], '_', ' '))
 				} else {
 					@ftdisplay = _reloader_capitalize(@ftkeys[@i])
 				}

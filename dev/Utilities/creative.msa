@@ -159,7 +159,7 @@ if(has_permission(@player, 'commandhelper.alias.creative.see.id')) {
 }
 @display = to_lower(@id)
 if(reg_count('_', @id) > 0) {
-	@display = to_lower(reg_replace('_', ' ', @id))
+	@display = to_lower(replace(@id, '_', ' '))
 }
 msg(color(6).'Giving '.color(3).@amount.color(6).' of '.color('a').@display.@msgid)
 <<<
