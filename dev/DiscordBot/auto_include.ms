@@ -1517,9 +1517,13 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	}
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@return = ''
-	
-	# Include Commands Actions
-	include_dir('command.library')
+	# Setup And Load Command Actions
+	if(is_proc('_discordBot_cmd_help') != true) {
+		include_dir('command.library')
+		_discordBot_init_cmd_list()
+	}
+	@actions = import('DiscordBot.Command.List', array())
+	@commandList = import('DiscordBot.Command.List.Name', array())
 	switch(@dm) {
 	case 'dm':
 	case 'pm':
@@ -1557,19 +1561,10 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			}
 		}
 	)
-#Compute cmd list
-	@aliaseslist = array()
-	@admincommandlist = array()
-# List of Admin Only commands:
-	@admincommandlist = import('DiscordBot.Command.List.Admin', array())
-	@aliaseslist = import('DiscordBot.Command.List.Alias', array())
-	@actions = import('DiscordBot.Command.List', array())
-	@commandlist = array_keys(@actions)
-/*
-	_db_msg_Console(@admincommandlist, @discord['serverid'], 'debug')
-	_db_msg_Console(@aliaseslist, @discord['serverid'], 'debug')
-	_db_msg_Console(@commandlist, @discord['serverid'], 'debug')
-*/
+###############
+	# _db_msg_Console(@actions, @discord['serverid'], 'debug')
+	# _db_msg_Console(@commandList, @discord['serverid'], 'debug')
+###############
 # Extract Command
 	@msgcheck = reg_replace(@config['CMD_Command_Prefix'], '', @discord['message'])
 	if(@dm == 'dm' || @cmdfrom == 'mention') {
@@ -1617,17 +1612,16 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	}
 	
 # Deny Admin commands	
-	if(array_contains_ic(@admincommandlist, @command[0]) && @userType != 'Admin') {
+	if(@actions[@commandList[@command[0]]]['admin'] == true && @userType != 'Admin') {
 		_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfromdis.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
 		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfromdis.': `'.@command[0].'`  '.strip_colors(@commanddisdc), @discord['serverid'], 'admin')
 		return('NotAdmin')
 	}
 	array_set(@discord, 'admin', @isAdmin)
-# make 1 letter aliases
 
 # Execute command action 
-	if(array_index_exists(@actions, @command[0])) {
-		@return = @actions[@command[0]](@discord, @args);
+	if(array_index_exists(@commandList, @command[0])) {
+		@return = @actions[@commandList[@command[0]]]['cmd'](@discord, @args);
 	} else {
 		if(@cmdfrom != 'mention') {
 			_discordBot_send_message('I have no idea what that command was about, try help.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
@@ -1642,15 +1636,8 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		return('NotACmd')
 	}
 
-/*
-should get array closure return. chat procs need to return to closure
-auto includes messages final message, unless true/false. multiple messages need to be handled by action
-ex.:	_discordBot_send_message(return, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
-return may be an array or string too
-nocmd return: 		_discordBot_send_message('A required command module is not installed.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) returnfalse
-*/
-_db_msg_Console('ret: '.@return, @discord['serverid'], 'debug')
-_db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
+# _db_msg_Console('ret: '.@return, @discord['serverid'], 'debug')
+# _db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
 #Save Recent Messages and Returns for reference	
 	array_set(@discord, 'return', @return)
 	@lastmsgs = import('DiscordBot.last.cmd.message')
@@ -1665,6 +1652,7 @@ _db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
 	if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
 	export('DiscordBot.last.cmd.message.return', @lastmsgs)	
 #Send Messages
+#return messages final message, unless true/false. multiple messages need to be handled by action
 	if(is_string(@return)) {
 		if(@return == 'NoCmd') {
 			_discordBot_send_message('A required command module is not installed.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) 
@@ -1699,6 +1687,31 @@ _db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
 	_db_msg_Console(@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
 	_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
 	return(@return)
+}
+
+
+proc _discordBot_init_cmd_list(@test) {
+	@commandList = import('DiscordBot.Command.List')
+	if(!is_array(@commandList)) { _db_msg_Console('Command list not initialized', 'debug') return(false) }
+	@cmdListName = array()
+	@cmdListAlias = array()
+	@cmdListCat = array()
+	
+	foreach(@cmd: @data in @commandList) {
+		@lCmd = to_lower(@cmd)
+		array_set(@cmdListName, @lCmd, @cmd)
+		if(is_array(@data['alias'])) {
+			foreach(@alias in @data['alias']) {
+				array_set(@cmdListName, to_lower(@alias), @cmd)
+				array_push(@cmdListAlias, @alias)
+			}
+		}
+		if(!array_index_exists(@cmdListCat, @data['category'])) { array_set(@cmdListCat, @data['category'], array()) }
+		array_push(@cmdListCat[@data['category']], @lCmd)
+	}
+	export('DiscordBot.Command.List.Name', @cmdListName)
+	export('DiscordBot.Command.List.Alias', @cmdListAlias)
+	export('DiscordBot.Command.List.Categories', @cmdListCat)
 }
 
 

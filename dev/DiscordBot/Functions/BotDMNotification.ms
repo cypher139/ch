@@ -51,7 +51,8 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		}
 	}
 
-#Command check
+# Command check
+# Redundant when UserCommands.ms is in use.
 	@isCmd = false
 	# Check for each server's Command prefix
 	foreach(@serverid: @cmdprefix in @guildcfgCmd) {
@@ -63,7 +64,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	}
 	# Prefix not found, check for first word matches a command name
 	if(@isCmd == false) {
-		@cmdList = import('DiscordBot.Command.List')
+		@cmdList = import('DiscordBot.Command.List.Name')
 		@check = parse_args(@discord['message'])
 		if(is_array(@cmdList) && array_size(@check) > 0) {
 			if(array_index_exists(@cmdList, to_lower(@check[0]))) {
@@ -71,13 +72,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			}
 		}
 	}
-	if(@isCmd == true) {
-		array_set(@discord, 'channel', @discord['userid']);
-		array_set(@discord, 'serverid', @userserver);
-		array_set(@discord, 'nickname', @discord['displayname']);
-		@return = _discordBot_handlecommand(@discord, 'dm', 'dm')
-		return(@return)
-	}
+	if(@isCmd == true) { die() }
 
 #Else: not a command
 	# User settings

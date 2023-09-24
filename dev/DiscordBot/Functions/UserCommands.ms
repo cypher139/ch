@@ -1,7 +1,11 @@
 #version 1.1-tmc
-#Handle commands from Discord Users
-# Data: userid, username, nickname, channel, message, id, attachments {{url, filename, description}}
-bind('discord_message_received', array('id': 'DiscordBot.cmd', 'priority': 'HIGH'), null, @discord) {
+# Handle commands from Discord Users
+
+# Precompile command actions, made available for only these binds:
+include_dir('../command.library')
+_discordBot_init_cmd_list()
+# Servers commands
+bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority': 'HIGH'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
@@ -94,5 +98,63 @@ bind('discord_message_received', array('id': 'DiscordBot.cmd', 'priority': 'HIGH
 				_db_msg_Console('Could not delete command message, Another bot running?', @discord['serverid'])
 			}
 		}
+	}
+}
+# DM commands
+bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'priority': 'HIGH'), null, @discord) {
+	array_set(@discord, 'time', time())
+	@botconfig = import('DiscordBot.config.Discord')
+	@saveDM = array_deep_clone(@discord)
+	@guildcfgNotify = array()
+	@guildcfgCmd = array()
+	@guildcfgChannel = array()
+	@guildcfgURL = array()
+	@userserver = 0
+	@userServers = array()
+	@avatar = 'https://cdn.discordapp.com/embed/avatars/0.png'
+	@gf = 0
+	foreach(@guild in import('DiscordBot.Guilds')) {
+		@cfg = import('DiscordBot.config.'.@guild)
+		if(@cfg['DM_Notify'] == true) {	array_push(@guildcfgNotify, @guild) }
+		array_set(@guildcfgCmd, @guild, @cfg['CMD_Command_Prefix']);
+		array_set(@guildcfgChannel, @guild, @cfg['Log_Channel']);
+		array_set(@guildcfgURL, @guild, @cfg['URL_Broadcast']);
+		if(array_contains(discord_get_members(@guild), @discord['userid'])) {
+			@userServers[] = @guild
+			@gf++
+			@userserver = @guild
+			if(@gf < 2) {
+				@avatar = discord_member_info(@guild, @discord['userid'])['avatar']
+			}
+		}
+	}
+
+#Command check
+	@isCmd = false
+	# Check for each server's Command prefix
+	foreach(@serverid: @cmdprefix in @guildcfgCmd) {
+		if(reg_count(@cmdprefix, @discord['message']) > 0 && array_contains(@userServers, @serverid)) {
+			@isCmd = true
+			@userserver = @serverid
+			break()
+		} 
+	}
+	# Prefix not found, check for first word matches a command name
+	if(@isCmd == false) {
+		@cmdList = import('DiscordBot.Command.List.Name')
+		@check = parse_args(@discord['message'])
+		if(is_array(@cmdList) && array_size(@check) > 0) {
+			if(array_index_exists(@cmdList, to_lower(@check[0]))) {
+				@isCmd = true
+			}
+		}
+	}
+	if(@isCmd == true) {
+		consume();
+		array_set(@discord, 'channel', @discord['userid']);
+		array_set(@discord, 'serverid', @userserver);
+		array_set(@discord, 'nickname', @discord['displayname']);
+		@return = _discordBot_handlecommand(@discord, 'dm', 'dm')
+		return(@return)
 	}
 }
