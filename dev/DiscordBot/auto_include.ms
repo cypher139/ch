@@ -994,6 +994,7 @@ proc _discordBot_update_members(@args) {
 	# Process each User ID
 			foreach(@index: @id in @membersID) {
 		# Member Info (avatar, isBot, Username, etc)
+				@idisNewUser = import('DiscordBot.'.@guild.'.new.user.'.@id, false);
 				@idInfo = ''
 				@idLastMsg = 0
 				@idLevel = 0
@@ -1012,6 +1013,12 @@ proc _discordBot_update_members(@args) {
 				
 				array_set(@membersInfo, @id, @idInfo)
 				array_set(@membersNames, @idInfo['username'], @id)
+			# Clear memory:
+				if(@idisNewUser == false) {
+					if(is_array(import('DiscordBot.'.@guild.'.last.message.new.'.@id))) {
+						export('DiscordBot.'.@guild.'.last.message.new.'.@id, null)
+					}
+				}
 			# pseudo array for functions that expect event array
 				@discord = array('bot': @idInfo['bot'], 'serverid': @guild, 'userid': @id, 'username': @idInfo['username'])
 			# Leaderboard: Avatars, usernames, role color

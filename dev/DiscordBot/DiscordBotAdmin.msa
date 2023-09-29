@@ -18,6 +18,35 @@ foreach(@arg in @args) {
 @config = import('DiscordBot.config.'.@guild)
 msg('Using Server ID: '.@guild)
 switch(@action) {
+case 'asremove':
+	# Remove user from triggered state
+	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to remove anti spam restrictions!') }
+	if(!is_numeric(@args[0])) {
+		die(color('c').'Discord Usernames are not supported in this command.')
+	}
+	@userid = @args[0]
+	@asmembers = import('DiscordBot.'.@guild.'.antispam.members');
+	if(!is_array(@asmembers)) { 
+		@asmembers = get_value('DiscordBot.'.@guild.'.antispam.members')
+	}
+	if(!is_array(@asmembers)) { die(color('c').'No Antispam user data exists for this server.') }
+	if(!array_index_exists(@asmembers, @userid)) { die(color('c').'Invalid User ID.') }
+		
+	@asmembersR = get_value('DiscordBot.'.@guild.'.antispam.members')
+	if(!is_array(@asmembersR)) { @asmembersR = array() }
+
+	@username = @asmembers[@userid]['username']
+
+	array_set(@asmembers[@userid], 'removed', time())
+	array_set(@asmembers[@userid], 'removeuser', player())
+	array_set(@asmembersR, @userid, @asmembers[@userid])
+	array_remove(@asmembers, @userid)
+	store_value('DiscordBot.'.@guild.'.antispam.members.removed', @asmembersR)
+	store_value('DiscordBot.'.@guild.'.antispam.members', @asmembers)
+	export('DiscordBot.'.@guild.'.antispam.members', @asmembers)
+	export('DiscordBot.'.@guild.'.'.@userid.'.antispam.trigger', null)
+	msg('Removed "'.@userid.' ('.@username.') from Anti-Spam restrictions.')
+
 case 'backup':
 	_discordBot_backup_members();
 case 'update':

@@ -1,4 +1,15 @@
 #version 1.0-tmc
+
+proc _db_as_dm(@discord) {
+	try {
+		discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
+		return(true)
+	} catch(Exception @ex) {
+		_db_msg_Console('  ['.@discord['serverid'].'] [AntiSpam] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
+		return(false)
+	}
+}		
+
 #Check
 bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'priority': 'HIGHEST'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
@@ -13,10 +24,13 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		if(!is_array(@asmembers)) { @asmembers = array() }
 		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	}
-	@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message.new.'.@discord['userid'])
-	if(!is_array(@lastmsgs)) { @lastmsgs = array() }
+	@newLastMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message.new.'.@discord['userid'], array())
+	if(!is_array(@newLastMsgs)) { @newLastMsgs = array() }
 	@newuser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
 	@adduser = false
+	@triggerReason = ''
+	@triggerReasonalt = ''
+	@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message.user.'.@discord['userid'], array())
 	
 # Record channels user has talked on recently
 	@userchannels = import('DiscordBot.'.@discord['serverid'].'.user.chat.channels')
@@ -32,15 +46,45 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	}
 
 #Checks
+
+# Duplicate messages (More than 3-4 is typically indicative of spam)
+	# Do not count if previous data not available, or message is blank
+	if(array_index_exists(@lastUserMsgs, 2) && @discord['message'] != '') {
+		@dcount = import('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', 0)
+		# Last message is the same as current:
+		if(@lastUserMsgs[0]['message'] == @discord['message']) {
+			## Add extra count: Current message is same yet posted on different channel. Can be indicative of spam same message on all available channels. 
+			if(@lastUserMsgs[0]['channelid'] != @discord['channelid']) { @dcount++ }
+			# Last 2 messages is ... also the same as current:
+			if(@lastUserMsgs[1]['message'] == @discord['message']) {
+				# Previous 2 messages match, highly likely spam event. Increment counter.
+				@dcount++
+				## Add extra count x2: Current message posted on channel that isn't either of the previous 2 channels. Highly likely spam event! (or someone legitly replying "lol" to everything)
+				if(@lastUserMsgs[0]['channelid'] != @discord['channelid'] && @lastUserMsgs[1]['channelid'] != @discord['channelid'] && @lastUserMsgs[0]['channelid'] != @lastUserMsgs[1]['channelid']) { @dcount++ @triggerReasonalt = ' across 3 or more channels' }
+			}
+		}
+		if(@dcount > 0) {
+			export('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', @dcount)
+			set_timeout(12345, closure(){
+				export('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', null)
+			});
+		}
+	### If the counter reaches 5, trigger anti spam
+		if(@dcount > 5) {
+			@adduser = true
+			@triggerReason = 'Duplicated messages'.@triggerReasonalt
+		}
+	}	
 # Checks for New Users:
 	if(@newuser == true) {
 	# New user has talked on most channels - unlikely unless spamming. **Set limit to around number of channels @everyone can talk on.**
 		if(array_size(@userchannels[@discord['userid']]) >= @config['AS_New_User_Channel_Limit']) {
 			@adduser = true
+			@triggerReason = '*New* user talked on over '.@config['AS_New_User_Channel_Limit'].' different channels.'
 		}
 	}
 
-# Add user to triggered state
+# Add user to Triggered state:
 	if(@adduser == true) {
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
 			array_set(@asmembers, @discord['userid'], array('time': @time, 'username': @discord['username']))
@@ -49,36 +93,34 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		}
 	}
 	
-# User is in Triggered state
+# !!! User is in Triggered state: !!!
 	if(array_index_exists(@asmembers, @discord['userid'])) {
 		consume();
 		@count = import('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.trigger', 0)
 		@count++
 		export('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.trigger', @count)
 		if(@count < 2) {
-			# If first run: Delete all messages listed from last.message.new.userid & message Admins and user.
-			foreach(@message in @lastmsgs) {
-				try {
-					discord_delete_message(@message['serverid'], @message['channelid'], @message['id']);
-				} catch(Exception @ex) {
-					_db_msg_Console('  ['.@discord['serverid'].'] [AntiSpam] Cannot remove message "'.@message['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
+		# If first run: Delete all messages recorded in the user's last message storage & message Admins and user.
+			if(@newuser == true) {
+				foreach(@message in @newLastMsgs) {
+					_db_as_dm(@message);
+				}
+			} else {
+				foreach(@message in @lastUserMsgs) {
+					_db_as_dm(@message);
 				}
 			}
-				# _discordBot_send_message(@message, @guild, @from, @channel, @type, @option) {
 		# Message Admins, and DM user.
-			_discordBot_send_message('I\'ve triggered Anti Spam actions upon user: `'.@discord['username'].'`  '.@discord['userid'].', and have deleted this user\'s recent messages. You may want to review further actions such as kick or ban.', @discord['serverid'], 'admin');
+			_discordBot_send_message('I\'ve triggered Anti Spam actions upon user: `'.@discord['username'].'`  '.@discord['userid'].', and have deleted their recent messages.\n Reason: '.@triggerReason, @discord['serverid'], 'admin');
 			_discordBot_send_message('You have triggered this server\'s Anti Spam protection. You will need to message the moderators of this server to reinstate access.', @discord['serverid'], 'death', @discord['userid'], 'dm')
 		}
-		try {
-			discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
-		} catch(Exception @ex) {
-			_db_msg_Console('  ['.@discord['serverid'].'] [AntiSpam] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
-		}
+		_db_as_dm(@discord);
 	} else {
-#User OK, record last message if a new user
+	#User OK 
+		#If a New User: record messages in special key
 		if(@newuser == true) {
-			array_insert(@lastmsgs, @discord, 0)
-			export('DiscordBot.'.@discord['serverid'].'.last.message.new.'.@discord['userid'], @lastmsgs)
+			array_insert(@newLastMsgs, @discord, 0)
+			export('DiscordBot.'.@discord['serverid'].'.last.message.new.'.@discord['userid'], @newLastMsgs)
 		}
 	}
 }

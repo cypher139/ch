@@ -36,15 +36,28 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 #Save Recent Messages for reference	
 	if(is_consumed() == false) {
 		@loadBot = ''
-		if(@discord['bot'] == true) {
-			@loadBot = '.bot'
+		if(array_index_exists(@discord, 'channeltype')) {
+			if(@discord['channeltype'] == 'TEXT') {
+				array_remove(@discord, 'channeltype')
+			}
 		}
+		# Server's last 50 messages
+		if(@discord['bot'] == true) { @loadBot = '.bot' }
 		@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
 		if(array_index_exists(@lastmsgs, 50)) { array_remove(@lastmsgs, 50) }
 		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastmsgs)
-	}	
+		# User's last 15 messages
+		if(@discord['bot'] == false) { @loadBot = '.user' }
+		@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'])
+		@isNewUser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
+		if(!is_array(@lastUserMsgs)) { @lastUserMsgs = array() }
+		array_set(@discord, 'newuser', @isNewUser)
+		array_insert(@lastUserMsgs, @discord, 0)
+		if(array_index_exists(@lastUserMsgs, 15)) { array_remove(@lastUserMsgs, 15) }
+		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'], @lastUserMsgs)
+	}
 	
 #Send data to leaderboard
 	_discordBot_lb_process_message(@discord, @noXP);
