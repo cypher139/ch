@@ -932,10 +932,13 @@ proc _discordBot_backup_members(@args) {
 	}
 }
 
-proc _discordBot_update_members(@args) {
+proc _discordBot_update_members(@useguild = 0) {
 	x_new_thread('DiscordBotUpdate', closure(){
-		@guilds = import('DiscordBot.Guilds', array());
 		@startTime = time();
+		@guilds = import('DiscordBot.Guilds', array());
+		if(@useguild != 0 && is_numeric(@useguild)) {
+			@guilds = array(@useguild)
+		}
 		if(array_size(@guilds) == 0) { return(false) }
 		foreach(@guild in @guilds) {
 			@debugstats = array('size': array(), 'nf': 0, 'af': 0, 'fails': 0);
@@ -1512,7 +1515,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			array_set(@discord, 'time', time())
 		}
 		if(!array_index_exists(@discord, 'serverid')) {
-			array_set(@discord, 'serverid', @botconfig['Primary_Guild'])
+			array_set(@discord, 'serverid', 0)
 		}
 		if(!array_index_exists(@discord, 'userid')) {
 			_db_msg_Console('User Data not given to Command Handler!', @discord['serverid'], 'debug')
@@ -1521,6 +1524,19 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	} else {
 		_db_msg_Console('Required Discord data not given to Command Handler!', 'debug')
 		return(false)
+	}
+	#Check for specified server, if not given already
+	if(@discord['serverid'] == 0) {
+		@guilds = import('DiscordBot.Guilds')
+		foreach(@i: @v in parse_args(@discord['message'])) {
+			if(array_contains(@guilds, @v)) {
+				@discord['serverid'] = @v
+				@discord['message'] = replace(@discord['message'], @v, '')
+			}
+		}
+	}
+	if(@discord['serverid'] == 0) {
+		@discord['serverid'] = @botconfig['Primary_Guild']
 	}
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@return = ''
@@ -1619,10 +1635,12 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	}
 	
 # Deny Admin commands	
-	if(@actions[@commandList[@command[0]]]['admin'] == true && @userType != 'Admin') {
-		_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfromdis.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
-		_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfromdis.': `'.@command[0].'`  '.strip_colors(@commanddisdc), @discord['serverid'], 'admin')
-		return('NotAdmin')
+	if(array_index_exists(@commandList, @command[0])) {
+		if(@actions[@commandList[@command[0]]]['admin'] == true && @userType != 'Admin') {
+			_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfromdis.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
+			_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfromdis.': `'.@command[0].'`  '.strip_colors(@commanddisdc), @discord['serverid'], 'admin')
+			return('NotAdmin')
+		}
 	}
 	array_set(@discord, 'admin', @isAdmin)
 
@@ -1670,6 +1688,9 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		} else if(@return == 'NoUserFound') {
 			_discordBot_send_message(':question: User ID given not found on server.', @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM']) 
 			@return = false
+		} else if(@return == 'NoPerms') {
+			_discordBot_send_message(':question: I did not have permission to finish this command!', @discord['serverid'], 'discord', 'admin') 
+			@return = false
 		} else if(@return == 'pong') {
 			@timeElapsed = (time() - @discord['time'])
 			_discordBot_send_message('Pong! ('.(@timeElapsed / 1000).')', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) 
@@ -1680,6 +1701,15 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		}
 	} else if(is_array(@return)) {
 		if(array_index_exists(@return, 'content') || array_index_exists(@return, 'embeds')) {
+			if(array_index_exists(@return, 'console')) {
+				_db_msg_Console(@return['console'], @discord['serverid'])
+				array_remove(@return, 'console')
+			}
+			if(array_index_exists(@return, 'MC')) {
+				_db_mc_broadcast(@return['MC'], @return['players'])
+				array_remove(@return, 'MC')
+				array_remove(@return, 'players')
+			}
 			_discordBot_send_message(@return, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 			@return = true
 		} else {

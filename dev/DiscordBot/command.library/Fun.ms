@@ -124,7 +124,41 @@ proc _discordBot_cmd_poo(@discord, @args) {
 	@poo = array('https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif', 'https://media.tenor.com/hCl_7woCXdcAAAAC/good-job-pooping.gif', 'https://media.tenor.com/qe2PONg34GQAAAAC/rhino-poop.gif', 'https://media.tenor.com/GQQCv59WJzAAAAAC/white-chicks.gif', 'https://media.tenor.com/n7DjU3bi514AAAAC/poop.gif')
 	return(array('embeds': array(array('image': array_get_rand(@poo)))))
 	}
-		
+	
+proc _discordBot_cmd_cointoss(@discord, @args) {
+	@count = 1
+	@numbers = array()
+	@msg = ''
+	@heads = 0
+	@tails = 0
+	if(array_index_exists(@args, 0)) {
+		if(is_numeric(@args[0])) {
+			@count = @args[0]
+		}
+	}
+	if(@count < 0) { @count = 0 }
+	if(@count > 50000) { @count == 123 }
+	for(@i = 0, @i < @count, @i++) {
+		@rand = rand(1,100)
+		@numbers[] = @rand
+		if(@rand % 2 == 1) { @heads++ } else { @tails++ }
+	}
+	if(@count == 0) {
+		@msg = array('embeds': array(array('footer': array('text': '0000000000000'), 'image': 'https://media.tenor.com/VLkOCkFolbQAAAAC/toss-coin-flip.gif')))
+	} else if(@count == 1) {
+		if(@heads == 1) { @msg = '**Heads**' }
+		if(@tails == 1) { @msg = '**Tails**' }
+	} else {
+		@msg = '**'.@count.'** tosses yielded'
+		if(@heads > 0) { @msg = @msg.'  **'.@heads.'** Heads' }
+		if(@tails > 0) { @msg = @msg.'  **'.@tails.'** Tails' }
+	}
+	if(!is_array(@msg)) {
+		return(array('content': ':cd: '.@msg, 'console': @numbers))
+	}
+	return(@msg)
+}
+
 proc _discordBot_cmd_fakeadmin(@discord) {	
 	@msg = false
 	@config = import('DiscordBot.config.'.@discord['serverid'])	
@@ -158,6 +192,7 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 	'cypher': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_cypher(@discord)); }),
 	'say': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_say(@discord, @args)); }),
 	'poo': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_poo(@discord, @args)); }),
+	'cointoss': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_cointoss(@discord, @args)); }),
 	'fakeadmin': array('alias': array('sudo', 'makemeadmin'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_fakeadmin(@discord)); }),
 	'fakeban': array('alias': array('fban', 'fb'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_fakeban(@discord, @args)); })
 );

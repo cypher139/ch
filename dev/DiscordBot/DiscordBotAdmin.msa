@@ -15,38 +15,31 @@ foreach(@arg in @args) {
 		break()
 	}
 }
+# Command actions for Discord commands side required here
+include_dir('command.library');
+#pseudo array for actions that require event array
+@discord = array('bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
+
 @config = import('DiscordBot.config.'.@guild)
 msg('Using Server ID: '.@guild)
+
 switch(@action) {
+case 'cointoss':
+	@return = _discordBot_cmd_cointoss(@discord, @args)
+	if(is_array(@return)) {
+		msg(@return['content'])
+		msg(@return['console'])
+	} else {
+		msg(@return)
+	}
 case 'asremove':
-	# Remove user from triggered state
-	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to remove anti spam restrictions!') }
-	if(!is_numeric(@args[0])) {
-		die(color('c').'Discord Usernames are not supported in this command.')
+	@return = _discordBot_cmd_asremove(@discord, @args)
+	if(is_array(@return)) {
+		msg(@return['content'])
+		msg(@return['console'])
+	} else {
+		msg(@return)
 	}
-	@userid = @args[0]
-	@asmembers = import('DiscordBot.'.@guild.'.antispam.members');
-	if(!is_array(@asmembers)) { 
-		@asmembers = get_value('DiscordBot.'.@guild.'.antispam.members')
-	}
-	if(!is_array(@asmembers)) { die(color('c').'No Antispam user data exists for this server.') }
-	if(!array_index_exists(@asmembers, @userid)) { die(color('c').'Invalid User ID.') }
-		
-	@asmembersR = get_value('DiscordBot.'.@guild.'.antispam.members')
-	if(!is_array(@asmembersR)) { @asmembersR = array() }
-
-	@username = @asmembers[@userid]['username']
-
-	array_set(@asmembers[@userid], 'removed', time())
-	array_set(@asmembers[@userid], 'removeuser', player())
-	array_set(@asmembersR, @userid, @asmembers[@userid])
-	array_remove(@asmembers, @userid)
-	store_value('DiscordBot.'.@guild.'.antispam.members.removed', @asmembersR)
-	store_value('DiscordBot.'.@guild.'.antispam.members', @asmembers)
-	export('DiscordBot.'.@guild.'.antispam.members', @asmembers)
-	export('DiscordBot.'.@guild.'.'.@userid.'.antispam.trigger', null)
-	msg('Removed "'.@userid.' ('.@username.') from Anti-Spam restrictions.')
-
 case 'backup':
 	_discordBot_backup_members();
 case 'update':
@@ -77,67 +70,13 @@ case 'viewinvites':
 		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
 	});
 case 'transferroles':
-	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to copy from!') }
-	if(!array_index_exists(@args, 1)) { die(color('c').'Specify the Discord user ID to copy to!') }
-	if(!array_index_exists(@args, 2)) { @args[] = 'none' }
-	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
-		die(color('c').'Discord Usernames are not supported in this command.')
-	}
-
-	@roles = get_value('DiscordBot.'.@guild.'.members.roles')
-	if(!is_array(@roles)) { 
-		_discordBot_update_members();
-		@roles = get_value('DiscordBot.'.@guild.'.members.roles')
-	}
-	@rolesFR = get_value('DiscordBot.'.@guild.'.members.former.roles')
-	if(!is_array(@rolesFR)) { @rolesFR = array() }
-	@fromroles = ''
-	@toroles = ''
-	@saveoldroles = get_value('DiscordBot.'.@guild.'.debug.roles.Transfer.undo')
-	if(!is_array(@saveoldroles)) { @saveoldroles = array() }
-
-	# From User check
-	try {
-		@fromroles = discord_member_get_roles(@guild, @args[0])
-	} catch(Exception @ex) {
-		if(is_array(@roles)) {
-			if(array_index_exists(@roles, @args[0])) {
-				@fromroles = @roles[@args[0]]
-				msg(color('e').'From ID: Not Found on Server, using internal cache.')
-			} else if(array_index_exists(@rolesFR, @args[0])) {
-				@fromroles = @rolesFR[@args[0]]
-				msg(color('e').'From ID: Not Found on Server, using internal storage.')
-			} else {
-				die(color('c').'From ID was Not Found on Server or internal cache!')
-			}
-		} else { die(color('c').'From ID was Not Found on Server; internal storage not initialized!') }
-	}
-	# To User check
-	try {
-		@toroles = discord_member_get_roles(@guild, @args[1])
-	} catch(Exception @ex) {
-		die(color('c').'To ID Not Found on Server: '.@ex['message'])
-	}
-	if(@args[2] == 'undo') {
-	#does not add from roles.
-		# @toroles = get_value('Chat.debug.Discord.User.'.@args[1].'.old.roles')
-		if(array_index_exists(@saveoldroles, @args[1])) {
-			@toroles = @saveoldroles[@args[1]]
-		} else {
-			die(color('c').'That user has nothing to undo!')
-		}
+	@return = _discordBot_cmd_transferroles(@discord, @args)
+	if(is_array(@return)) {
+		msg(@return['content'])
+		msg(@return['console'])
 	} else {
-	# adds from roles, not sets to!
-		array_set(@saveoldroles, @args[1], @toroles)
-		store_value('DiscordBot.'.@guild.'.debug.roles.Transfer.undo', @saveoldroles)
-		@toroles = array_merge(@toroles, @fromroles)
+		msg(@return)
 	}
-	# console(@toroles, false)
-	# console(@fromroles)
-		
-	discord_member_set_roles(@guild, @args[1], @toroles)
-	msg(color('a').'Discord User '.color(3).@args[1].color('a').' had their Roles set to:\n'.color('r').array_keys(@toroles))
-
 case 'getroles':
 	if(!array_index_exists(@args, 0)) { die(@prefix.color('c').'Specify the Discord user ID!') }
 	if(!array_index_exists(@args, 1)) { @args[] = 0 }

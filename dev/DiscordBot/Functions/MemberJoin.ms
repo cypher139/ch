@@ -330,7 +330,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			@consoleMsgSuffix = ' Invites: '.@matches
 		}
 	# New Members:
-		if(time() < (@joininfo[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) { 
+		if(time() < (@joininfo[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) {
 			# Remove leaderboard entry, but don't record in former entry
 			if(is_array(@leaderboard)) {
 				if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { @lbremove = 2 }

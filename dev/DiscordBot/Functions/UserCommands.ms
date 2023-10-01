@@ -104,7 +104,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'priority': 'HIGH'), null, @discord) {
 	array_set(@discord, 'time', time())
 	@botconfig = import('DiscordBot.config.Discord')
-	@saveDM = array_deep_clone(@discord)
+	@guilds = import('DiscordBot.Guilds')
 	@guildcfgNotify = array()
 	@guildcfgCmd = array()
 	@guildcfgChannel = array()
@@ -113,7 +113,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'prio
 	@userServers = array()
 	@avatar = 'https://cdn.discordapp.com/embed/avatars/0.png'
 	@gf = 0
-	foreach(@guild in import('DiscordBot.Guilds')) {
+	foreach(@guild in @guilds) {
 		@cfg = import('DiscordBot.config.'.@guild)
 		if(@cfg['DM_Notify'] == true) {	array_push(@guildcfgNotify, @guild) }
 		array_set(@guildcfgCmd, @guild, @cfg['CMD_Command_Prefix']);
@@ -123,9 +123,6 @@ bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'prio
 			@userServers[] = @guild
 			@gf++
 			@userserver = @guild
-			if(@gf < 2) {
-				@avatar = discord_member_info(@guild, @discord['userid'])['avatar']
-			}
 		}
 	}
 
@@ -151,6 +148,12 @@ bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'prio
 	}
 	if(@isCmd == true) {
 		consume();
+		foreach(@i: @v in parse_args(@discord['message'])) {
+			if(array_contains(@guilds, @v)) {
+				@userserver = @v
+				@discord['message'] = replace(@discord['message'], @v, '')
+			}
+		}
 		array_set(@discord, 'channel', @discord['userid']);
 		array_set(@discord, 'serverid', @userserver);
 		array_set(@discord, 'nickname', @discord['displayname']);
