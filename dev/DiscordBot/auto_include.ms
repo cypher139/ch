@@ -234,46 +234,75 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 	return(@loadcfg)
 }
 
-proc _db_message_check_ban_mentions(@message, @from, @option) {
-	@config = import('DiscordBot.config.Discord')
-	if(@config == '' || @config == null) { _db_load_config('Discord') }
-# Check if player said banned Discord mention
-	@msga = parse_args(@message)
-	@msgban = ''
-	if(in_cmdline_mode() == false) { @from = _getplayerID(@from) }
-	@prefix = color(6).'['.color(9).'Server'.color(6).'] '
-	foreach(@entry in @config['Banned_Mentions']) {
-		if(_array_string_contains(@msga, @entry)) {
-			if(function_exists('player')) {
-				@prevmentions = get_value('server.player.'.@from['id'].'all.ping.mention')
-				store_value('server.player.'.@from['id'].'.all.ping.mention', @prevmentions + 1)
-				if(array_contains(get_offline_players(), @from['name'])) { 
-					if(@config['Message_On_Mention'] == true) { tmsg(@from['name'], color('c').'[Chat] Do not mention "'.@entry.'".') }
-					if(@config['Kick_On_Mention'] == true) { 
-						pkick(@from['name'], '[Chat] Do not mention "'.@entry.'".')
-						@msgbantype = 'kicked'
-						if(@prevmentions > @config['Ban_On_Mention_Number'] && @config['Ban_On_Repeat_Mention'] == true) {
-							set_pbanned(@from['name'], true, '[Chat] You have used disallowed mentions several times.')
-							@msgbantype = 'banned'
-						}
-						@msgban = '  Offending player `'.@from['name'].'` was '.@msgbantype.'.'
-					}
+proc _db_sanitize_message(@message, @caller, @guild, @from) {
+	if(@message == null || @message == '') { return(null); }
+	if(@caller == null) { @caller = 'Discord' }
+	@caller = to_lower(@caller)
+	@botconfig = import('DiscordBot.config.Discord')
+	if(@guild == '' || @guild == null || @guild == 'bot') { @guild = @botconfig['Primary_Guild'] }
+	@config = import('DiscordBot.config.'.@guild)
+	@sanitizeMarkdown = false
+	@sanitizeRoles = false
+	@sanitizeEH = false
+	switch(@caller) {
+	case 'bot':
+		@sanitizeMarkdown = false
+		@sanitizeRoles = false
+		@sanitizeEH = true
+	case 'discord':
+		@sanitizeMarkdown = false
+		@sanitizeRoles = false
+		@sanitizeEH = true
+		try (
+			foreach(@role in array_keys(discord_member_get_roles(@guild, @from))) {
+				if(array_contains_ic(@config['Role_Admins'], @role)) {
+					@sanitizeMarkdown = false
+					@sanitizeRoles = false
+					@sanitizeEH = false
+					break()
 				}
-				_db_msg_Admins(@prefix.color(7).'Message from '.@from['display'].' contained a mention of "'.@entry.'".'.@msgban)
-			} else {
-				if(@config['Message_On_Mention'] == true) { 
-					try {
-						discord_private_message(@from, '[Chat] Do not mention "'.@entry.'".')
-					} catch(Exception @ex) {
-						_db_msg_Console(@prefix.'Could not DM user: '. @ex, false)
-					}
+			}
+		)
+	case 'minecraft':
+		@sanitizeMarkdown = true
+		@sanitizeRoles = true
+		@sanitizeEH = true
+		if(function_exists('has_permission')) {
+			if(player() != '~console') {
+				if(has_permission(@from, 'commandhelper.discord.markdown')) {
+					@sanitizeMarkdown = false
 				}
-				_db_msg_Admins(@prefix.color(7).'Message from '.@from.' contained a mention of "'.@entry.'".')
-			}		
-			return(array('mention': @entry, 'kickmsg': @msgban))
+				if(has_permission(@from, 'commandhelper.discord.ping')) {
+					@sanitizeEH = false
+				}
+			}
+		}
+	case 'server':
+	default:
+	# Minecraft Player chat
+		@sendmsg = '`['.@from.']` '.@sendmsg
+	}
+
+	if(@sanitizeMarkdown == true) {
+		@message = replace(@message, '*', '\\*')
+		@message = replace(@message, '~', '\\~')
+		@message = replace(@message, '_', '\\_')
+		@message = replace(@message, '`', '\\`')
+		@message = replace(@message, '>', '\\>')
+		@message = replace(@message, '|', '\\|')
+    }
+	
+	if(@sanitizeEH == true) {
+		@message = replace(@message, '@everyone', '')
+		@message = replace(@message, '@here', '')
+	}
+	if(array_index_exists(@config, 'Sanitize_Mentions')) {
+		foreach(@mention: @replacement in @config['Sanitize_Mentions']) {
+			@message = replace(@message, @mention, @replacement)
 		}
 	}
-return(null)
+	@message = replace(@message, '§', '');
+	return(@message);
 }
 
 # new error message: :dp: +
@@ -291,17 +320,19 @@ proc _discordBot_send_message(@message, @guild, @from, @channel, @type, @option)
 		_db_msg_Admins(color(7).'Message not sent to Discord: Guild "'.@guild.'" was not recognized')
 		return(false)
 	}
-	@normalmessage = 0
 	@count = 0
+	@caller = 'Discord'
 	if(@message == '') { return(false) }
 	if(@from == '' || is_array(@from)) { 
 		if(function_exists('player')) { 
 			@from = player()
+			@caller = 'Minecraft'
 		} else {
-			@from = 'none'
+			@from = 'Discord'
 		}
 	}
 	if(@channel == '') { @channel = @config['Default_Channel'] }
+	if(@channel == 'admin') { @channel = @config['Log_Channel'] }
 	if(@type == '') { @type = 'broadcast' }
 	if(is_array(@message)) {
 		if(array_index_exists(@message, 'content')) {
@@ -315,41 +346,66 @@ proc _discordBot_send_message(@message, @guild, @from, @channel, @type, @option)
 	@split = array()
 	@checkmention = null
 	@sendmsg = ''
-	# Check if player said banned mention	
+	# Check if message to send is an array of data
 	if(is_array(@message)) {
-	_db_msg_Console('msg: array', @guild, 'debug')
+		# Remove unused array datas & format variables
+		@msg3 = 'msg: array: '
+		foreach(@k: @v in @message) {
+			if(@k == 'content' || @k == 'embeds') {
+				@msg3 = @msg3.@k.' '
+				if(@k == 'embeds') { 
+					if(!array_index_exists(@v, 1)) {
+						@msg3 = reg_replace('s$', '', @msg3)
+					}
+				}		
+				continue()
+			}
+			array_remove(@message, @i)
+		}
 		if(array_index_exists(@message, 'content')) {
-			_db_msg_Console('msg: content', @guild, 'debug')
-			@checkmention = _db_message_check_ban_mentions(@message['content'], @from)
 			@sendmsg = @message['content']
 		} else if(array_index_exists(@message, 'embeds')) {
-			_db_msg_Console('msg: embed only', @guild, 'debug')
-				@sendmsg == ''
+			@sendmsg = ''
 		} else {
-			_db_msg_Console('msg: unsupported array', @guild, 'debug')
+			@msg3 = 'unsupported'
 			@type = 'admin'
 			@sendmsg = 'A message queued to Discord was not sent: Array Content or Embeds was not given.'
 		}
+		_db_msg_Console(@msg3, @guild, 'debug')
 	} else { 
-		@checkmention = _db_message_check_ban_mentions(@message, @from)
 		@sendmsg = @message
 	}
-	if(@checkmention != null && @type != 'admin') {
-		@type = 'admin'
-		@sendmsg = 'A message queued to Discord was not sent: Message contained a mention of "`'.@checkmention['mention'].'`". '.@checkmention['kickmsg']
+# Assign Message Origination:
+	switch(to_lower(@from)) {	
+	case 'admin':
+	case 'log':
+	case 'bot':
+	case 'none':
+	case 'command':
+	case 'confirm':
+		@caller = 'Bot'
+	case 'cross':
+	case 'discord':
+		@caller = 'Discord'
+	case 'server':
+	case 'console':
+		@caller = 'Minecraft'
+	default:
+	# Minecraft Player chat
+		@caller = 'Minecraft'
 	}
+	
+# Sanitize mentions, etc.
+	if(@sendmsg != '') {
+		@sendmsg = _db_sanitize_message(@sendmsg, @caller, @guild, @from)
+	}
+	
+# Extra Message Formatting:
 	switch(to_lower(@from)) {
 	case 'admin':
 		@channel = @config['Log_Channel']
 	case 'log':
 		@channel = @config['Server_Log_Channel']
-	case 'none':
-	case 'cross':
-	case 'discord':
-		@normalmessage = 1
-	case 'server':
-	case 'console':
-		@sendmsg = '['.@from.'] '.@sendmsg
 	case 'death':
 		@sendmsg = ':skull_crossbones: '.@sendmsg
 	case 'command':
@@ -357,8 +413,10 @@ proc _discordBot_send_message(@message, @guild, @from, @channel, @type, @option)
 	case 'confirm':
 		@sendmsg = ':white_check_mark: '.@sendmsg
 	default:
-	# Minecraft Player chat
-		@sendmsg = '`['.@from.']` '.@sendmsg
+		if(@caller == 'Minecraft') {
+		# Minecraft Player chat
+			@sendmsg = '`['.@from.']` '.@sendmsg
+		}
 	}
 # Split messages longer than 2000 chars
 	if(reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @sendmsg) > 1 && !is_array(@message)) {
@@ -367,7 +425,9 @@ proc _discordBot_send_message(@message, @guild, @from, @channel, @type, @option)
 			array_push(@split, @match)
 			@sendmsg = @sendmsg[cslice(length(@match), (length(@sendmsg) - 1))]
 		}
-	}	
+	}
+	
+# Select Channel:
 	switch(@type){
 	case 'admin':
 		@channel = @config['Log_Channel']
@@ -376,7 +436,9 @@ proc _discordBot_send_message(@message, @guild, @from, @channel, @type, @option)
 		_db_msg_Console('[Send Message] '.@sendmsg, @guild)
 	case 'log':
 		@channel = @config['Server_Log_Channel']
-	}	
+	}
+	
+# Message Building:
 	try {	
 		switch(@type){
 		case 'admin':

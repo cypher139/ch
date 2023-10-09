@@ -14,13 +14,15 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 
 # Setup Join Message
 	@joinmsg = ''
+	@dcChannel = ''
+	if(has_permission(@playerID['name'], 'essentials.silentjoin')) { @dcChannel = 'admin' }
 	switch(@serverConfig['Join_Message']) {
 		case 'default':
 		case 'Default':
 			@joinmsg = @login['join_message']
 		case 'admin':
 			@sendMsg = false
-			if(array_contains(pgroup(@playerID['name']), 'admin')) { 
+			if(array_contains(pgroup(@playerID['name']), 'admin') || @dcChannel == 'admin') { 
 				@type = 'admin'
 				@joinmsg = 'Admin '.@playerID['name'].' joined server'
 				_chat_msg_Admins(@joinmsg)
@@ -48,9 +50,10 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 	if(@sendMsg == true) { modify_event('join_message', @joinmsg) } else { modify_event('join_message', null) }
 # Send Join message to Discord (if enabled)
  	if(is_proc('_discordBot_send_message')) { 
-		if(@sendMsg == true || @type == 'admin') {
+		if(@sendMsg == true || @serverConfig['Join_Message'] == 'admin') {
 			set_timeout(2000, closure(
-				if(array_contains(all_players(), @playerID['name'])) { _discordBot_send_message(@playerID['name'], '', @type, '', 'join') }
+				if(array_contains(all_players(), @playerID['name'])) {
+					_discordBot_send_message(@playerID['name'], '', 'none', @dcChannel, 'join') }
 			));
 		}
 	}
@@ -72,13 +75,15 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	
 # Setup Quit Message
 	@quitmsg = ''
+	@dcChannel = ''
+	if(has_permission(@playerID['name'], 'essentials.silentquit')) { @dcChannel = 'admin' }
 	switch(@serverConfig['Leave_Message']) {
 		case 'default':
 		case 'Default':
 			@quitmsg = @quit['message']
 		case 'admin':
 			@sendMsg = false
-			if(array_contains(pgroup(@playerID['name']), 'admin')) { 
+			if(array_contains(pgroup(@playerID['name']), 'admin') || @dcChannel == 'admin') { 
 				@type = 'admin'
 				@quitmsg = 'Admin '.@playerID['name'].' left server'
 				_chat_msg_Admins(@quitmsg)
@@ -106,7 +111,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 # Send Quit message to Discord as well (if enabled)
 	if(is_proc('_discordBot_send_message')) { 
 		if(@sendMsg == true || @type == 'admin') {
-			_discordBot_send_message(@playerID['name'], '', @type, '', 'leave')
+			_discordBot_send_message(@playerID['name'], '', 'none', @dcChannel, 'leave')
 		}
 	}
 }

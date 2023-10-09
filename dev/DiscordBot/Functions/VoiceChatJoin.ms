@@ -167,7 +167,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 				if(array_size(@otherVCUsers) < 2) {
 					@dmMsg = replace(@dmMsg, '%OtherUsers%', array_implode(@otherVCUsers, ''))
 				} else {
-					@dmMsg = replace(@dmMsg, '%OtherUsers%', array_implode(@otherVCUsers[..-2], ',').' and '.@otherVCUsers[..-1])
+					@dmMsg = replace(@dmMsg, '%OtherUsers%', array_implode(array_normalize(@otherVCUsers)[..-2], ',').' and '.array_normalize(@otherVCUsers)[..-1])
 				}
 				# @dmMsg = replace(@dmMsg, '%TotalUsers%', array_implode(@totalVCUsers, ' and '))
 				discord_private_message(@userid, @dmMsg);

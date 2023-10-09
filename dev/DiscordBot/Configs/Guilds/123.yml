@@ -4,25 +4,22 @@ Console_Messages: true
 Console_Messages_Chat: false
 Console_Debug: false
 Log_Invites: true
-Log_Invites_Message: "**%User%**  [%UserID%] joined with invite **%InviteCode%** *(use #: %Uses%)* \n `Invite from: %Inviter% [ID: %InviterID%]`"
+Log_Invites_Message: "**%User%**  [%UserID%] joined using invite **%InviteCode%**\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
 Log_Channel: bot-logs
 Server_Log_Channel: bot-logs
 Showcase_Channel: 123235346
 DM_Notify: true
 Minecraft_Messages: true
 Minecraft_Messages_Admin: true
+Use_Cross_Server: false
 AS_New_User_Time: 600000
 AS_New_User_Channel_Limit: 7
 #
 #
 # Mentions
-Banned_Mentions:
-- "@everyone"
-- "@here"
-Message_On_Mention: true
-Kick_On_Mention: true
-Ban_On_Repeat_Mention: true
-Ban_On_Mention_Number: 4
+Sanitize_Mentions:
+# Replaces subject with a replacement
+  hey: "Hey"
 #
 #
 #Chat
