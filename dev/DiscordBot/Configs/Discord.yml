@@ -12,6 +12,10 @@ Activity_Message: Minecraft
 #
 #
 # Mentions
+Allowed_Mentions:
+# Select from: USER, ROLE, EVERYONE
+- "USER"
+- "ROLE"
 Banned_Mentions:
 - "@everyone"
 - "@here"

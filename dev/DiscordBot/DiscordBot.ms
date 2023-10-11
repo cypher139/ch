@@ -31,14 +31,21 @@ if(in_cmdline_mode()) {
 	}
 }
 
-# Startup Discord Functions
-if(function_exists('discord_connect')) {
 # Version Check
-	@version = reg_replace('[^0-9]+', '', extension_info()['CHDiscord']['version'])
-	if(@version < 290) {
-		console(color(12).'[DiscordBot] Installed CHDiscord version is too low, please update!', false);
-		die();
+@requiredVersion = array(2, 10, 0)
+if(extension_exists('CHDiscord')) {
+	@version = reg_replace('[^0-9.]+', '', extension_info()['CHDiscord']['version'])
+		foreach(@place: @num in split('.', @version)) {
+		if(@num < @requiredVersion[@place]) {
+			console(color(12).'[DiscordBot] Installed CHDiscord version is too low. Update to '.array_implode(@requiredVersion, '.'), false);
+			die();
+		}
 	}
+}
+
+#build 81, 86, 95
+# Startup Discord Functions
+if(function_exists('discord_connect') && function_exists('discord_member_info') && function_exists('discord_get_servers') && function_exists('discord_set_allowed_mentions')) {
 # Load DiscordBot Configs
 	@return8762 = _db_load_config('Discord');
 	if(!is_array(@return8762)) { die() }
@@ -57,6 +64,17 @@ if(function_exists('discord_connect')) {
 				export('DiscordBot.Bot.Info', @ret8902)
 				_write_file(import('DiscordBot.logs.dir').'/Bot-Started.txt', simple_date('MM-dd-yy_HHmm', time()).'\n', 'append');
 				_discordBot_set_activity();
+				foreach(@k: @v in @return8762['Allowed_Mentions']) {
+					@w = to_upper(@v)
+					if(array_contains(array('USER', 'ROLE', 'EVERYONE'), @w)) {
+						@return8762['Allowed_Mentions'][@k] = @w
+					} else {
+						array_remove(@return8762['Allowed_Mentions'], @k)
+					}
+				}
+				if(array_index_exists(@return8762['Allowed_Mentions'], 0)) {
+					discord_set_allowed_mentions(@return8762['Allowed_Mentions']);
+				}
 				_db_mc_broadcast(@connectmsg, '', true);
 			} else {
 				discord_disconnect();
