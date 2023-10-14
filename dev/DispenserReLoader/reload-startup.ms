@@ -18,7 +18,7 @@ include('modules.library/Core.ms')
 #Load server defaults into RAM
 _reloader_get_server_defaults('startup')
 
-#Startup extension check.
+#Startup extension checks.
 #Area mode: uses WordlEdit selection data.
 	#SKCompat available in multiple versions; best to check for functionality instead.
 if(!function_exists('sk_pos1')) {
@@ -32,6 +32,14 @@ if(!function_exists('acc_add')) {
 	msg(color(3).'Download the CHVault extension from the downloads link below and save it to <server root>/plugins/CommandHelper/extensions.')
 	msg('\n'.moo(color(2).'https://letsbuild.net/jenkins/job/CHVault/'.color('r')))
 }
+#Cypher libraries, check for required libraries
+if(!is_proc('_getplayerID')) {
+	msg(color('c').'['.color(7).import('dispenserreloader.name').color('c').'] '.color('c').import('dispenserreloader.name').' is missing access to player Names and UUIDs!'.color(7).' All script functions will be unable to function!!')
+	msg(color(3).'Download the ScriptLibraries folder from the GitHub and save it to <server root>/plugins/CommandHelper/LocalPackages.')
+	msg('\n'.moo(color(2).'https://github.com/cypher139/ch/tree/release/dev/ScriptLibraries/'.color('r')))
+	die();
+}
+
 
 #export usable fuel items array
 export('dispenserreloader.fuel.items', _reloader_get_fuel_items())

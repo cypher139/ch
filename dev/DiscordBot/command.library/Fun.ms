@@ -128,7 +128,7 @@ proc _discordBot_cmd_quote(@discord, @args) {
 	# why is this?
 		@image = array_get_rand(array('https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif', 'https://media.tenor.com/hCl_7woCXdcAAAAC/good-job-pooping.gif', 'https://media.tenor.com/qe2PONg34GQAAAAC/rhino-poop.gif', 'https://media.tenor.com/GQQCv59WJzAAAAAC/white-chicks.gif', 'https://media.tenor.com/n7DjU3bi514AAAAC/poop.gif'))
 	case 'stoned':
-		@quote = 'Bruh you just deleted a long ass comment I was posting because it was in the wrong channel (which I get) but dam that’s a b*tch and I wish it would maybe dm me a copy of what I said or something that could not make me have to type it all out again.'
+		@quote = 'Bruh you just deleted a long a*s comment I was posting because it was in the wrong channel (which I get) but dam that’s a b*tch and I wish it would maybe dm me a copy of what I said or something that could not make me have to type it all out again.'
 	case 'tatsu':
 		@image = 'https://cdn.discordapp.com/attachments/499672534812196874/676498575244394516/ol.PNG'
 	default:

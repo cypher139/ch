@@ -2,7 +2,7 @@
 
 # Every 10 minutes store changes to leaderboard in RAM to the database
 # Also publishes json to logs. A webserver can pull from this for a online leaderboard display. (sold separately sry)
-set_interval(600000, 100000, closure(){ _discordBot_lb_update_database() });
+# set_interval(600000, 100000, closure(){ _discordBot_lb_update_database() });
 
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
 	array_set(@discord, 'time', time());
@@ -53,15 +53,22 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'])
 		@isNewUser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
 		if(!is_array(@lastUserMsgs)) { @lastUserMsgs = array() }
-		array_set(@discord, 'newuser', @isNewUser)
-		array_insert(@lastUserMsgs, @discord, 0)
-		if(array_index_exists(@lastUserMsgs, 15)) { array_remove(@lastUserMsgs, 15) }
+		@userDiscord = array_deep_clone(@discord)
+		array_set(@userDiscord, 'newuser', @isNewUser)
+		array_insert(@lastUserMsgs, @userDiscord, 0)
+		if(array_index_exists(@lastUserMsgs, 45)) { array_remove(@lastUserMsgs, 45) }
 		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'], @lastUserMsgs)
 	}
 	
 #Send data to leaderboard
 	_discordBot_lb_process_message(@discord, @noXP);
 	
+#Send data to cross-server chat
+	# if(array_index_exists(@config, 'Cross_Server_Channel')) {
+		# if(@config['Cross_Server_Channel'] == @discord['channelid'] || @config['Cross_Server_Channel'] == @discord['channel']) {
+			# _discordBot_cs_process_message(@discord);
+		# }
+	# }
 
 #Send message to Minecraft players and/or console, if event not consumed
 	if(array_contains(@config['Channels_Receive'], @discord['channel']) == true && is_consumed() == false) {	

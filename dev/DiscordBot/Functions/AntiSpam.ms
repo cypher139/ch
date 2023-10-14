@@ -87,7 +87,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # Add user to Triggered state:
 	if(@adduser == true) {
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
-			array_set(@asmembers, @discord['userid'], array('time': @time, 'username': @discord['username']))
+			array_set(@asmembers, @discord['userid'], array('time': @time, 'username': @discord['username'], 'reason': @triggerReason))
 			export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 			store_value('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 		}

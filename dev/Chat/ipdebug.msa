@@ -1,0 +1,25 @@
+admin:/chatipdebug [$] = >>>
+	@count = 0
+	@serverConfig = import('Chat.config.Server')
+	@iplog = get_value('Server.pings.log.ignore.IP')
+	if(!is_array(@iplog)) { die(); }
+	if(array_size(@iplog) == 0) { die(); }
+	@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' Ignored IP ping report:'
+	foreach(@ipnum: @times in @iplog) {
+		@count = 0
+		if(@ipnum == 'ip') { continue(); }
+		@checktime = (time() - 86400000)
+		foreach(@i: @data in @times) {
+			msg(@i)
+			if(@checktime > @data) { continue(); }
+			@count++			
+		}
+		if(@count > 0) {
+			@s = ''
+			if(@count > 1) { @s = 's' }
+			@Message = @Message.'\n'.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s
+		}
+	}
+	msg(@count)
+	msg(@Message)
+<<<

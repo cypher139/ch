@@ -21,6 +21,15 @@ bind('entity_death', array(id: 'EXPBank.Reaper.entity'), null, @death) {
 	}
 	store_value('expbank.accounts.reaper', @new)
 	if(@death['xp'] > 0) {
-		console('entity died: '.@death['type'].' dropping XP:'.@death['xp'])
+		@msg = 'A '.to_lower(@death['type']).' died and dropped '.@death['xp'].' XP.'
+		@fileprefix = ''
+		if(@death['type'] == 'PLAYER') {
+			@fileprefix = 'player'
+		} else {
+			@fileprefix = 'entity'
+			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@msg, '', 'death') }
+		}
+		console(@msg)
+		if(is_proc('_write_file')) { _write_file(simple_date('MM-dd-yy_', time()).'entity_death_drop.txt', '\n'.@event, 'append') }
 	}
 }
