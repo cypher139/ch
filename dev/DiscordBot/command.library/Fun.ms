@@ -119,12 +119,58 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs) {
 	}
 }
 
-proc _discordBot_cmd_poo(@discord, @args) {
+proc _discordBot_cmd_quote(@discord, @args) {
+	if(!array_index_exists(@args, 0)) { @args = array('none') }
+	@quote = ''
+	@image = ''
+	switch(@args[0]) {
+	case 'poo':
 	# why is this?
-	@poo = array('https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif', 'https://media.tenor.com/hCl_7woCXdcAAAAC/good-job-pooping.gif', 'https://media.tenor.com/qe2PONg34GQAAAAC/rhino-poop.gif', 'https://media.tenor.com/GQQCv59WJzAAAAAC/white-chicks.gif', 'https://media.tenor.com/n7DjU3bi514AAAAC/poop.gif')
-	return(array('embeds': array(array('image': array_get_rand(@poo)))))
+		@image = array_get_rand(array('https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif', 'https://media.tenor.com/hCl_7woCXdcAAAAC/good-job-pooping.gif', 'https://media.tenor.com/qe2PONg34GQAAAAC/rhino-poop.gif', 'https://media.tenor.com/GQQCv59WJzAAAAAC/white-chicks.gif', 'https://media.tenor.com/n7DjU3bi514AAAAC/poop.gif'))
+	case 'stoned':
+		@quote = 'Bruh you just deleted a long ass comment I was posting because it was in the wrong channel (which I get) but dam that’s a b*tch and I wish it would maybe dm me a copy of what I said or something that could not make me have to type it all out again.'
+	case 'tatsu':
+		@image = 'https://cdn.discordapp.com/attachments/499672534812196874/676498575244394516/ol.PNG'
+	default:
+		@quote = 'Cypher can cypher but not decypher\nCypher no decyphering'
 	}
-	
+	@return = array()
+	if(@quote != '') { array_set(@return, 'content', @quote) }
+	if(@image != '') { array_set(@return, 'embeds', array(array('image': @image))) }
+	return(@return)
+}
+
+
+proc _discordBot_cmd_1to100(@discord, @args) {
+	@number = split('', rand(1,100))
+	@msg = ''
+	foreach(@i in @number) {
+		switch(@i) {
+		case 0:
+			@msg = @msg.':zero: '
+		case 1:
+			@msg = @msg.':one: '
+		case 2:
+			@msg = @msg.':two: '
+		case 3:
+			@msg = @msg.':three: '
+		case 4:
+			@msg = @msg.':four: '
+		case 5:
+			@msg = @msg.':five: '
+		case 6:
+			@msg = @msg.':six: '			
+		case 7:
+			@msg = @msg.':seven: '			
+		case 8:
+			@msg = @msg.':eight: '			
+		case 9:
+			@msg = @msg.':nine: '
+		}
+	}
+	return(@msg)
+}
+
 proc _discordBot_cmd_cointoss(@discord, @args) {
 	@count = 1
 	@numbers = array()
@@ -191,8 +237,10 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 	'ping': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_ping(@discord, @args)); }),
 	'cypher': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_cypher(@discord)); }),
 	'say': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_say(@discord, @args)); }),
-	'poo': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_poo(@discord, @args)); }),
+	'poo': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_quote(@discord, array('poo'))); }),
+	'quote': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_quote(@discord, @args)); }),
 	'cointoss': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_cointoss(@discord, @args)); }),
+	'1to100': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_1to100(@discord, @args)); }),
 	'fakeadmin': array('alias': array('sudo', 'makemeadmin'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_fakeadmin(@discord)); }),
 	'fakeban': array('alias': array('fban', 'fb'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_fakeban(@discord, @args)); })
 );

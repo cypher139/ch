@@ -18,12 +18,21 @@ foreach(@arg in @args) {
 # Command actions for Discord commands side required here
 include_dir('command.library');
 #pseudo array for actions that require event array
+# 777378696782657084 = ASCII: MINECRAFT
 @discord = array('bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
 
 @config = import('DiscordBot.config.'.@guild)
 msg('Using Server ID: '.@guild)
 
 switch(@action) {
+case '1to100':
+	@return = _discordBot_cmd_1to100(@discord, @args)
+	if(is_array(@return)) {
+		msg(@return['content'])
+		msg(@return['console'])
+	} else {
+		msg(@return)
+	}
 case 'cointoss':
 	@return = _discordBot_cmd_cointoss(@discord, @args)
 	if(is_array(@return)) {

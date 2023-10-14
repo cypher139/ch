@@ -368,6 +368,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	}
 	@count = 0
 	@caller = 'Discord'
+	@splitRegEx = '[\\s\\S]{1,1999}(?:\\s|\\S|$)'
 	if(@channel == '') { @channel = @config['Default_Channel'] }
 	if(@channel == 'admin') { @channel = @config['Log_Channel'] }
 	if(@type == '') { @type = 'broadcast' }
@@ -386,7 +387,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		# Remove unused array datas & format variables
 		@msg3 = 'msg: array: '
 		foreach(@k: @v in @raw) {
-			if(@k == 'content' || string_starts_with(@k, 'embed') || @k == 'allowed_mentions') {
+			if(@k == 'content' || string_starts_with(@k, 'embed') || @k == 'allowed_mentions' || @k == 'custom_split') {
 				@msg3 = @msg3.@k.' '
 				if(@k == 'embeds') { 
 					if(!array_index_exists(@v, 1)) {
@@ -401,6 +402,10 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 						export('DiscordBot.debug.sm.embed', @raw)
 						die()
 					}
+				}
+				if(@k == 'custom_split') {
+					@splitRegEx = @v
+					array_remove(@raw, @k)
 				}
 				continue()
 			}
@@ -429,7 +434,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	@split = array()
 	if(array_index_exists(@message, 'content')) {
 		@message['content'] = strip_colors(@message['content'])
-		@count = reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @message['content'])
+		@count = reg_count(@splitRegEx, @message['content'])
 	}
 
 # Assign Message Origination:
@@ -486,9 +491,9 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 			}
 		}
 # Split messages longer than 2000 chars
-		if(reg_count('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @message['content']) > 1) {
+		if(reg_count(@splitRegEx, @message['content']) > 1) {
 			for(@i = 1, @i <= @count, @i++) {
-				@match = reg_match('[\\s\\S]{1,1999}(?:\\s|\\S|$)', @message['content'])[0]
+				@match = reg_match(@splitRegEx, @message['content'])[0]
 				array_push(@split, @match)
 				@message['content'] = @message['content'][cslice(length(@match), (length(@message['content']) - 1))]
 			}
@@ -588,7 +593,11 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.@ex['message'])
 		return(false)
 	} catch(Exception @ex) {
-		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.color('c').@ex['classType'].' '.color(7).@ex['message'])
+		@traceDisplay = ''
+		foreach(@st in @ex['stackTrace']) {
+			@traceDisplay = @traceDisplay.'\n'.@st['id'].'  '.@st['line'].'.'.@st['col']
+		}
+		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.color('c').@ex['classType'].' '.color(7).@ex['message'].@traceDisplay)
 		return(false)
 	}
 }
@@ -642,7 +651,7 @@ proc _db_mc_broadcast(@msg, @args, @cr = false) {
 
 #### Command Functions
 
-proc _discordBot_WelcomeRolesFinder(@type, @guild) {
+proc _discordBot_WelcomeRolesFinder(@type = 'none', @guild) {
 ### REWRITE
 	@botconfig = import('DiscordBot.config.Discord')
 	if(@guild == '' || @guild == null) {
@@ -650,20 +659,20 @@ proc _discordBot_WelcomeRolesFinder(@type, @guild) {
 		@guild = @botconfig['Primary_Guild']
 	}
 	@config = import('DiscordBot.config.'.@guild, '???')
-	if(@config = '???') {
-		_db_msg_Admins(@prefix.color(7).'Guild given was not recognized')
+	if(@config == '???') {
+		_db_msg_Console(color(7).'Guild "'.@guild.'" given was not recognized', 'debug')
 		return(false)
 	}
-@name = 'Discord'
+	@name = 'Discord'
 	@return = array('msg': 'Invalid Option', 'amount': '', 'list': array())
 	#View Welcome or No roles.
-	if(reg_count('^[WwNn0]', @option) > 0) {
+	if(reg_count('^[WwNn0]', @type) > 0) {
 		@suffix = ''
-		if(reg_count('^[Ww]', @option) > 0) {
+		if(reg_count('^[Ww]', @type) > 0) {
 			@suffix = 'welcomeroles'
 			@return['msg'] = 'members were detected as having only the Welcome Roles.'
 		}
-		if(reg_count('^[Nn0]', @option) > 0) {	
+		if(reg_count('^[Nn0]', @type) > 0) {	
 			@suffix = 'none'
 			@return['msg'] = 'members were detected as having 0 roles.'
 		}
@@ -1810,6 +1819,9 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			@return = false
 		} else if(@return == 'NoPerms') {
 			_discordBot_send_message(':question: I did not have permission to finish this command!', @discord['serverid'], 'discord', 'admin') 
+			@return = false
+		} else if(@return == 'Error') {
+			_discordBot_send_message(':x: An error occured in the command, see logs.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) 
 			@return = false
 		} else if(@return == 'pong') {
 			@timeElapsed = (time() - @discord['time'])
