@@ -72,10 +72,8 @@ bind('discord_message_received', array('id': 'DiscordBot.Cross-Server'), null, @
 		}
 	#Send
 	# Remove mention of all user pings entirely
-	foreach(@entry in @config['Banned_Mentions']) {
-		@discord['message'] = reg_replace(@entry, '', @discord['message'])
-	}
-		@sendarray = array('content': @discord['message'], 'embeds': array(array('color': _hex_to_rgb(@usernamecolor), 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'Chat from '.@discord['username']))))
+	@allowedMentions = array('USER')
+		@sendarray = array('content': @discord['message'], 'embeds': array(array('color': _hex_to_rgb(@usernamecolor), 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'Chat from '.@discord['username']))), 'allowed_mentions': @allowedMentions)
  # array('content': @discord['message'], 'embeds': array(array('color': _hex_to_rgb(@usernamecolor), 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @discord['username']))))
 #send file links
 		if(array_index_exists(@discord, 'attachments', 0, 'filename') && @config['CS_URL_Broadcast'] == true) {

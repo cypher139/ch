@@ -1743,24 +1743,16 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@commanddisdc = ''
 	if(array_index_exists(@args, 0)) { 
 # Remove mention in arguments 
-		@rmargs = array()
-		foreach(@i: @entry in @args) {
-			if(_array_string_contains(@botconfig['Banned_Mentions'], @entry)) {
-				array_push(@rmargs, @entry)
-				array_remove(@args, @i)
+		if(array_index_exists(@config, 'Sanitize_CMD_Arguments')) {
+			foreach(@mention: @replacement in @config['Sanitize_CMD_Arguments']) {
+				foreach(@k: @arg in @args) {
+					@args[@k] = replace(@args[@k], @mention, @replacement)
+				}
 			}
-		}
-		if(array_index_exists(@rmargs, 0)) {
-			@rmargs = array_implode(array_unique(@rmargs), ', ')
-			_db_msg_Admins(color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Removed "'.@rmargs.'" from '.@discord['username'].'\'s command arguments.')
-			if(array_index_exists(@config, 'Log_Channel')) {
-				discord_broadcast(@discord['serverid'], @config['Log_Channel'], 'Removed `'.@rmargs.'` from '.@discord['username'].'\'s command arguments.')
-			}
-			if(@botconfig['Message_On_Mention'] == true) { discord_private_message(@discord['userid'], 'Mention(s) `'.@rmargs.'` are not allowed on the server.') }
 		}
 		@commanddismc = 'Args: '.color(9).array_implode(@args, ', ')
 		@commanddisdc = 'Args: `'.array_implode(@args, '`  `').'`' 
-		if(!array_index_exists(@args, 0)) { @commanddisdc = '' }	
+		if(!array_index_exists(@args, 0)) { @commanddisdc = '' }
 	}
 	
 # Deny Admin commands	

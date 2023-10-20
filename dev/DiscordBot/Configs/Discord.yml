@@ -4,7 +4,6 @@ Bot_ID: 1000000
 Bot_Name: bot
 Log_Channel: bot-logs
 Primary_Guild: 2313
-Showcase_Channel: 123235346
 URL_Broadcast: true
 # Accepted types: PLAYING, STREAMING, LISTENING, WATCHING, CUSTOM_STATUS, or COMPETING
 Activity_Type: PLAYING
@@ -16,10 +15,3 @@ Allowed_Mentions:
 # Select from: USER, ROLE, EVERYONE
 - "USER"
 - "ROLE"
-Banned_Mentions:
-- "@everyone"
-- "@here"
-Message_On_Mention: true
-Kick_On_Mention: true
-Ban_On_Repeat_Mention: true
-Ban_On_Mention_Number: 4
