@@ -1900,10 +1900,10 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 		if(reg_count('^[@]?'.@config['Bot_Name'].'[#]?[0-9]{0,4}?$', @target) > 0) {
 			return('bot')
 		}
-		@targetmatches = _array_string_match(array_keys(@membernames), @target)
+		@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array')
 		if(reg_count('[#][0-9]{4}$', @target) > 0 && !array_index_exists(@targetmatches, 0)) {
 			@target = reg_replace('[#][0-9]{4}$', '', @target)
-			@targetmatches = _array_string_match(array_keys(@membernames), @target)
+			@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array')
 		}
 		if(equals_ic(@target, @discord['username']) || equals_ic(@target, @discord['nickname'])) {
 			return('self')

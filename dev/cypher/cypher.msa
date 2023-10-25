@@ -82,7 +82,7 @@ case 'pls':
 	@search = $option1
 #	@asc = _array_string_contains(@serverplugins, @search)
 #	if(@asc) {
-		@asp = _array_string_match(@serverplugins, @search)
+		@asp = _array_string_contains(@serverplugins, @search, '', 'array')
 		if(array_index_exists(@asp, 1)) {
 			@return = 'I\'m not sure which option you meant to select: \n'.array_implode(@asp, ', ')
 		} else if(array_index_exists(@asp, 0)) {

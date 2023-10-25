@@ -177,33 +177,54 @@ proc _rgb_to_hex(@R, @G, @B, @prefix = '') {
 	return(@results)
 }
 
-proc _array_string_contains(@array, @string, @doKeys) {
-	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
-	if(array_size(@array) == 0) { return(false) }
-	if(@string == '') { return(false) }
-	if(@doKeys != '') {
-		@array = array_keys(@array)
+proc _register_sign_command(string @name, string @proc, array @options = array()) {
+	if(@name == '' || @name == null) { return(false) }
+	if(@proc == '' || @proc == null) { return(false) }
+	@signCmds = import('cypher139.sign.Commands')
+	@name = to_lower(@name)
+	if(!is_array(@signCmds)) { @signCmds = array() } 
+	if(is_associative(@options)) { @options = array_normalize(@options) }
+	if(!array_index_exists(@options, 0)) { @options = array('event', 'sign') }
+	if(array_index_exists(@signCmds, @name)) {
+		console(color('c').'[Signs] A command named '.@name.' was already registered!')
 	}
-	@return = false
-	foreach(@var in @array) {
-		 if(string_contains_ic(@var, @string)) {
-			@return = true
-#			msg('i think '.@var.' is an option at: '.string_position(to_lower(@var), to_lower(@string)))
-		}
-	}
-	return(@return)
+	#Register command
+	array_set(@signCmds, @name, array('proc': @proc, 'options': @options))
+	export('cypher139.sign.Commands', @signCmds)
 }
 
-proc _array_string_match(@array, @string) {
+
+proc _array_string_contains(array @array, string @needle, string @matchType = 'default', @returnType = 'boolean', @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
-	@return = array()
-	foreach(@var in @array) {
-		 if(string_contains_ic(@var, @string)) {
-			@return[] = @var
-#			msg('i think '.@var.' is an option at: '.string_position(to_lower(@var), to_lower(@string)))
+	if(array_size(@array) == 0) { return(false) }
+	if(@needle == '') { return(false) }
+	if(@doKeys != '') {	@array = array_keys(@array) }
+	@return = false
+	@returnArray = array()
+	foreach(@haystack in @array) {
+		switch(@matchType) {
+		case 'min':
+		# Minimum matching: If needle string size is less than haystring string size continue, as otherwise in this case it's 99% false positive.
+		# i.e. ("everyone", "on") techincally it does contain 'on', but we were looking for the word "everyone" not words that can be made from it.
+			if(length(@haystack) > length(@needle)) { continue() }
+		case 'exact':
+			if(length(@haystack) != length(@needle)) { continue() }
+		}
+		if(string_contains_ic(@haystack, @needle)) {
+			@return = true
+			@returnArray[] = @haystack
+#			msg('i think '.@haystack.' is an option at: '.string_position(to_lower(@haystack), to_lower(@needle)))
 		}
 	}
-	return(@return)
+	switch(string(@returnType)) {
+	case 'array':
+		return(@returnArray)
+	case 'boolean':
+	case 'true':
+	case 'false':
+	default:
+		return(@return)
+	}
 }
 
 # String Capitalization or underscore removal features

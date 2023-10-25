@@ -25,3 +25,29 @@ bind('player_join', array('id': 'cypher139.login'), null, @login) {
 # Setup Player IP Database
 	_primus_database_add(@player, 'ip');
 }
+
+# Listen for custom sign commands
+bind('player_interact', array('id': 'cypher139.sign.cmd'), null, @event) {
+	if(@event['action'] != 'right_click_block' && @event['action'] != 'left_click_block') { return() }
+
+#Check for Clicking on a sign
+	# Pre 1.13 if(reg_count('(63|68)(:[0-9]*)?', @event['block']) > 0) {
+	if(string_ends_with(@event['block'], '_SIGN')) {
+		@signCmds = import('cypher139.sign.Commands')
+		if(!is_array(@signCmds)) { return() } 
+		@signtext = get_sign_text(@event['location'])
+		@command = reg_replace('\\[\\]', '', to_lower(@signtext[0]))
+		if(array_index_exists(@signCmds, @command)) {
+			@options = array_deep_clone(@signCmds[@command]['options'])
+			foreach(@index: @option in @options) {
+				if(@option == 'event') { @options[@index] = @event }
+				if(@option == 'player') { @options[@index] = player() }
+				if(@option == 'sign') { @options[@index] = @signtext }
+				if(@option == 'sign1') { @options[@index] = @signtext[1] }
+				if(@option == 'sign2') { @options[@index] = @signtext[2] }
+				if(@option == 'sign3') { @options[@index] = @signtext[3] }
+			}
+			call_proc_array(@signCmds[@command]['proc'], @options)
+		}
+	}
+}

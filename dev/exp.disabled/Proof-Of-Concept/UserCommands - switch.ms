@@ -177,10 +177,10 @@ if(!array_index_exists(@actions, @command)) {
 			discord_broadcast(@discord['channel'], array('embeds': array(array('footer': array('text': 'I identify as a different bot'),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
 			die()
 		}
-		@fbanmatches = _array_string_match(array_keys(@membernames), @fbanned)
+		@fbanmatches = _array_string_contains(array_keys(@membernames), @fbanned, '', 'array')
 		if(reg_count('[#][0-9]{4}$', @fbanned) > 0 && !array_index_exists(@fbanmatches, 0)) {
 			@fbanned = reg_replace('[#][0-9]{4}$', '', @fbanned)
-			@fbanmatches = _array_string_match(array_keys(@membernames), @fbanned)
+			@fbanmatches = _array_string_contains(array_keys(@membernames), @fbanned, '', 'array')
 		}
 		if(equals_ic(@fbanned, @discord['username']) || equals_ic(@fbanned, @discord['nickname'])) {
 			discord_broadcast(@discord['channel'], array('content': 'You really gonna ban yourself?', 'embeds': array(array('image': 'https://media.tenor.com/6dPcTAmTgPUAAAAi/elmo-shrug.gif'))))
