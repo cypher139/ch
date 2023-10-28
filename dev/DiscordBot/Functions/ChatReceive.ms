@@ -41,14 +41,14 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 				array_remove(@discord, 'channeltype')
 			}
 		}
-		# Server's last 50 messages
+	# Server's last 50 messages
 		if(@discord['bot'] == true) { @loadBot = '.bot' }
 		@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
 		if(array_index_exists(@lastmsgs, 50)) { array_remove(@lastmsgs, 50) }
 		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastmsgs)
-		# User's last 15 messages
+	# User's last 15 messages
 		if(@discord['bot'] == false) { @loadBot = '.user' }
 		@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'])
 		@isNewUser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);

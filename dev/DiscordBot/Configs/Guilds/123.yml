@@ -1,19 +1,40 @@
+# discordBot Guild Configuration
 # General admin
 Server_Nickname: "Your Server"
-Console_Messages: true
-Console_Messages_Chat: false
-Console_Debug: false
-Log_Invites: true
-Log_Invites_Message: "**%User%**  [%UserID%] joined using invite **%InviteCode%**\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
+#
+# Logs:
+# Log channel for misc. messages, such as Discord command usage, LB level updates, MC server silent admin joins, Bot DM messages, etc.
 Log_Channel: bot-logs
+# Your server's main logs channel. Member join  / invite used messages are sent here.
 Server_Log_Channel: bot-logs
-Showcase_Channel: 123235346
+# Send message to Console: Includes logs such as Member joins, voice chat joins, Bot DM notifications, and Discord Command usage.
+Console_Messages: true
+# Send Chat messages to Console:
+Console_Messages_Chat: false
+# Send Bot debug messages for events that occur regarding this server?
+Console_Debug: false
+# Send a message to log on Member join with the invite used?
+Log_Invites: true
+# Customize Member join log message sent: 
+# Variables: %User%  %UserID%  %InviteCode%  %Uses%  %Inviter%  %InviterID%  %InviterID1%
+# %InviterID1% shows the inviter's ID if first time using invite.
+Log_Invites_Message: "**%User%**  [%UserID%] joined using invite **%InviteCode%**\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
+# Show Bot DM Notifications:
 DM_Notify: true
 Minecraft_Messages: true
 Minecraft_Messages_Admin: true
 Use_Cross_Server: false
+#
+#
+# Anti Spam
+# When a member joins, how much time elapses before Anti spam no longer considers them a new join? (in millseconds)
 AS_New_User_Time: 600000
+# How many different channels can a new user post on, before Anti Spam considers them to be a spammer?
 AS_New_User_Channel_Limit: 7
+# Showcase channel
+# Intended as a place to show your server community's art projects and ward off chats to another channel.
+# To enable the Showcase channel chat protection feature place the channel's ID below:
+Showcase_Channel: 123235346
 #
 #
 # Mentions
@@ -23,11 +44,15 @@ Sanitize_Mentions:
 #
 #
 #Chat
+# If a URL is sent in the message should Minecraft players see the full URL? Applies to Discord message attachments.
 URL_Broadcast: false
+# All roles to be considered as an Admin on your server place here:
 Role_Admins:
 - Owner
 - Co-Owner
 - "Server Admin"
+#customizes the name color sent for messages to the Minecraft server, for users with a matching role.
+# Role Name: hexadecimal color code
 Role_Colors:
   Active Level 1: f1c40f
   Active Level 2: f1c40f
@@ -38,6 +63,7 @@ Role_Colors:
   Most Active: f1c40f
   Owner: fbff00
   Server Admin: ba3e39
+# Which channels are allowed to send messages to the Minecraft server?
 Channels_Receive:
 - general
 - default
@@ -45,6 +71,7 @@ Channels_Receive:
 - minecraft
 - voice-chat
 - other
+# Which channels are allowed to receive messages from Minecraft players?
 Channels_Send:
 - general
 - minecraft
@@ -52,13 +79,22 @@ Channels_Send:
 - voice-chat
 - other
 - botspam
+# Default Minecraft server channel. All Minecraft player messages, death messages, join/leave messages are sent here.
 Default_Channel: minecraft
 #
 #
-#Commands
+# Commands
+# Allow the bot to listen to commands issued from your server?
+# -- Slash commands not supported, only prefix.
 CMD_Enable: true
-#php CMD_Command_Prefix: "^([?!@#%*/.$,=]+)?[Cc][Hh](?(1)(?:(?1)|[\\s]?)|(?1)+)"
-CMD_Command_Prefix: ^(?:[?!#%/.$,=]+[Cc][Hh](?!$)[?!#%/.$,=]*|[Cc][Hh][?!#%/.$,=]+)
+# What prefix should trigger the bot commands? (Uses RegEx)
+# Example prefixes:
+# -- Prefix 2 letters with ! at start or end. also supports no space between command and prefix
+#                    "^(?:[?!%/.$,=]+[Cc][Hh](?!$)[?!%/.$,=]*|[Cc][Hh][?!%/.$,=]+)"
+# -- Use just a symbol prefix:
+#                    "^\\s*[?!%/.$,=]+\\s*(?!$)"
+CMD_Command_Prefix: "^\\s*[?!%/.$,=]+\\s*(?!$)"
+# Which channels are allowed to receive command messages from Discord users?
 CMD_Channels_Receive:
 - general
 - default
@@ -67,16 +103,25 @@ CMD_Channels_Receive:
 - voice-chat
 - other
 - botspam
+# Which channels are allowed to receive command message replies?
 CMD_Channels_Send:
 - general
 - minecraft
+# Default channel to use bot commands in, usually a "botspam" channel meant to keep spamm away from other channels.
 CMD_Default_Channel: botspam
-#What should the bot do with the originating command message?
+# What should the bot do with the originating command message?
 # "delete" to delete the message, "reply" to reference to message in command reply
 CMD_Message_Action: reply
+#
+# Command Options
+# Command: fakeadmin
+# What role do you use to award as a joke / fake Admin role? (DO NOT give a real admin role here)
 Fake_Admin_Role: 123456
 Fake_Admin_Rolename: "Super Admin"
+# Command: mc-whitelist
+# Which role on your server is allowed to whitelist Minecraft players on the Minecraft server? (uses a Role ID)
 Whitelist_Role: 123456
+# How many whitelists are allowed per player? (If no limit desired set to a high number)
 Whitelist_Allowed_Uses: 5
 #
 #
@@ -143,15 +188,32 @@ Welcome_DM_Message: "Welcome to *our server*! \n\n We would like to get to know 
 #
 #
 # Leaderboards
+# -- This awards 'XP' on each message sent, earn enough XP and a user can rank up to next rank acquiring a new rank role!
+# -- Useful for unlocking server channels after so many messages sent, etc.
+#
+# Use the Leaderboard feature?
 LB_Enable: true
 LB_Options:
   Guild_Name: test123
+  # Remove leaderboard entry on Member leave?
+  Remove_On_Leave: true
+  # XP earn type: Use 0 for Mee6's XP formula, use 1 for Cypher139's reimplementation.
   XP_Type: 1
+  # Each message will earn a random amount of XP between the first and second number below:
   XP_Per_Message:
   - 15
   - 25
+  # XP multiplier
   XP_Gain_Rate: 1
+# Role Rewards: when a user reaches a certain rank number, the corresponding role is given to them. 
+# -- This is typically used to award a "member" status to users who have chatted a lot.
+# -- Useful for unlocking server channels for those who have been on server for a long time, etc.
   Role_Rewards:
+    #Format:
+    #
+    # Rank Number:
+    #   Role ID number:
+    #   Role Name:
     1:
       RoleID: 123
       RoleName: Newbie
@@ -170,28 +232,54 @@ LB_Options:
     5:
       RoleID: 678
       RoleName: Member
+# Allow User's Role Rewards to stack, or only keep the highest rank?
   Stack_Role_Rewards: false
-  Remove_On_Leave: true
+#
+# Level Up Messaging:
+# - Customize message sent upon leveling up to a new rank level number
+# variables: %UserID%  %Level%  %MsgCount%  %LevelDisplay%
+# %LevelDisplay% changes from "Level (level number)" to "Rank Name! (level number)" if a rank is awarded.
   Level_Up_Message: "%UserID% just leveled up to %Level%"
-# Set to true for current channel, false to disable, log to send to log channel, dm to dm user instead
+# - Level up message type: Set to true for current channel, false to disable, log to send to log channel, dm to dm user instead
   Level_Up_Announce: true
-# Start annoucing when level reaches this start threshold
+# - Only Start announcing when level reaches this start threshold
   Level_Up_Announce_Start: 0
   Level_Up_Announce_End: 50
-#Only announce Level up if includes a Role Rewards Rank change
+# - Only announce Level up if includes a Role Rewards Rank change
   Level_Up_Announce_OnlyReward: true
+# If a message is sent in these channels, do NOT count it towards XP earning.
   NoXP_Channels:
   - 'botspam'
   - 'join-log'
+# If a user sends a message while having one of these roles, do NOT count it towards XP earning.(role IDs only)
   NoXP_RoleID:
   - 123
   - 456
+# Active User:
+# Gives a role to users who have sent a message in the last 60 days.
+# -- With proper role display formatting, this is intended to clean up the online users sidebar to those who are active ins erver, rather than those who have higher roles.
   Use_Active_User_Role: false
+  # Type the role ID of the role to give active users:
   Active_User_Role: 070
+  # Only start awariding the Active user role if the user has at least this much rank on the leaderboard.
+  # -- Set to at least 1 to avoid giving the active user role out immediately to new joiners.
   Active_User_Role_Min_Level: 1
+#
+#
+#
+# Role Ranks
+# -- This feature automatically awards a "Rank Role" if a user obtains a certain amount of tracked roles.
+# -- Example: User has "PS1 Game Console" and "PS2 Game Console" roles on your server, both roles are listed, Rank Role "2" is "Multiple Game Consoles": user receives Rank Role "Multiple Game Consoles" for having 2 tracked roles.
+# Use the Role Ranks feature?
 Use_Role_Ranks: false
+# If you use separator roles to group role displays, those separator roles can be given automatically if user obtains at least 1 rank role.
 Use_Role_Ranks_Separators: false
 Role_Ranks:
+    #Format:
+    #
+    # Number of tracked roles User needs:
+    #   Rank Role ID number:
+    #   Rank Role Name:
   1:
     RoleID: 123
     RoleName: "rank 1"
@@ -204,16 +292,23 @@ Role_Ranks:
   9:
     RoleID: 999
     RoleName: "rank 9"
+# Only these roles listed count towards obtaining a ranked role. (Role IDs only)
 Role_Ranks_Qualifying_Roles:
 - 123456
 - 452255
 - 825431
 - 712202
 - 452070
+# If a user does NOT have a listed tracked role below, then check if an additional role is present.
+Role_Ranks_QR_Bonus:
+# Format:
+# Unobtained Role ID: Check this Role ID
+  452070: 573978
+#List your separator roles, used to group roles in role display. (Role IDs only)
 Role_Ranks_Separators:
-# Awarded if user has at least rank 1
 - 822679
-- 822679
+- 822680
+# If needed, list User and Role IDs below that need to be ignored by the rank system.
 Role_Ranks_IgnoreUser:
 - 98765432
 Role_Ranks_IgnoreRole:

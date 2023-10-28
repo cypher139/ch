@@ -5,6 +5,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 	array_set(@discord, 'time', time());
 	@botconfig = import('DiscordBot.config.Discord');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
+	if(!array_index_exists(@config, 'Showcase_Channel')) { die() }
 	@ytregex = '^https:[/]{2}[w]{0,3}[.]?youtu[.]?be[./](?:com[/]watch[?]v=)?[A-z0-9]{11}(?:[?]?si=[A-z0-9-]{16})?$'
 	
 	if(@discord['channelid'] == @config['Showcase_Channel']) {
