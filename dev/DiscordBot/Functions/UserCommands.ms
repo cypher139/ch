@@ -12,7 +12,6 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	@botinfo = import('DiscordBot.Bot.Info')
 	@isCmd = false
 	@isMention = ''
-	@delmsg = true
 
 # If channel is not authorized to send to, output to DM instead.
 	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel'])) { @discord['channel'] = @discord['userid'] @ChannelType = 'dm' } else { @ChannelType = 'broadcast' }
@@ -90,14 +89,6 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 		NotACmd
 		*/
 		@return = _discordBot_handlecommand(@discord, @ChannelType, @isMention)
-			
-		if(@delmsg == true && string(@return) != 'NotACmd') {
-			try { 
-				discord_delete_message(@discord['serverid'], @discord['channel'], @discord['id'])
-			} catch(Exception @ex) {
-				_db_msg_Console('Could not delete command message, Another bot running?', @discord['serverid'])
-			}
-		}
 	}
 }
 # DM commands

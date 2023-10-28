@@ -58,7 +58,7 @@ Default_Channel: minecraft
 #Commands
 CMD_Enable: true
 #php CMD_Command_Prefix: "^([?!@#%*/.$,=]+)?[Cc][Hh](?(1)(?:(?1)|[\\s]?)|(?1)+)"
-CMD_Command_Prefix: ^(?:[?!@#%*/.$,=]+[Cc][Hh](?!$)[?!@#%*/.$,=]*|[Cc][Hh][?!@#%*/.$,=]+)
+CMD_Command_Prefix: ^(?:[?!#%/.$,=]+[Cc][Hh](?!$)[?!#%/.$,=]*|[Cc][Hh][?!#%/.$,=]+)
 CMD_Channels_Receive:
 - general
 - default
@@ -71,6 +71,9 @@ CMD_Channels_Send:
 - general
 - minecraft
 CMD_Default_Channel: botspam
+#What should the bot do with the originating command message?
+# "delete" to delete the message, "reply" to reference to message in command reply
+CMD_Message_Action: reply
 Fake_Admin_Role: 123456
 Fake_Admin_Rolename: "Super Admin"
 Whitelist_Role: 123456

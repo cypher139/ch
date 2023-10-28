@@ -385,7 +385,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		# Remove unused array datas & format variables
 		@msg3 = 'msg: array: '
 		foreach(@k: @v in @raw) {
-			if(@k == 'content' || string_starts_with(@k, 'embed') || @k == 'allowed_mentions' || @k == 'custom_split') {
+			if(@k == 'content' || string_starts_with(@k, 'embed') || @k == 'allowed_mentions' || @k == 'reference_id' || @k == 'custom_split') {
 				@msg3 = @msg3.@k.' '
 				if(@k == 'embeds') { 
 					if(!array_index_exists(@v, 1)) {
@@ -399,6 +399,11 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 						_db_msg_Console('A message queued to Discord used too many embeds for the "embed" array. Use "embeds" for multiple embeds. Message not sent.', @guild, 'debug')
 						export('DiscordBot.debug.sm.embed', @raw)
 						die()
+					}
+				}
+				if(@k == 'reference_id') {
+					if(!is_numeric(@v)) {
+						array_remove(@raw, @k)
 					}
 				}
 				if(@k == 'custom_split') {
@@ -532,6 +537,9 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 					}
 					if(array_index_exists(@message, 'allowed_mentions')) {
 						array_set(@splitmsg, 'allowed_mentions', @message['allowed_mentions'])
+					}						
+					if(array_index_exists(@message, 'reference_id')) {
+						array_set(@splitmsg, 'reference_id', @message['reference_id'])
 					}					
 					discord_broadcast(@guild, @channel, @splitmsg)
 				}
@@ -1634,7 +1642,8 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		@discord['serverid'] = @botconfig['Primary_Guild']
 	}
 	@config = import('DiscordBot.config.'.@discord['serverid'])
-	@return = ''
+	@return = false
+	@CmdReturn = ''
 	# Setup And Load Command Actions
 	if(is_proc('_discordBot_cmd_help') != true) {
 		include_dir('command.library')
@@ -1690,19 +1699,18 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		@msgcheck = reg_replace('^[@]'.@botinfo['displayname'].'\\s', '', @msgcheck)
 	}
 	@command = parse_args(@msgcheck)
-# No Command Given
+	# No Command Given
 	if(!array_index_exists(@command, 0)) {
 		_discordBot_send_message(array('embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))), @discord['serverid'], 'none', @discord['SendChannel'], @discord['UseDM'])	
 		return('NoCmdGiven')
 	}
-#No mentions
+	# No mentions
 	@command[0] = reg_replace('@', '', @command[0])
 # Setup Arguments
 	@args = array()
 	if(array_index_exists(@command, 1)) {
 		@args = @command[cslice(1, array_size(@command) - 1)]
 	}
-#check ************ : @here cmd @here does it remove "@here cmd" due to index shift
 
 	if(is_string(@command[0])) { @command[0] = to_lower(@command[0]) }
 	@commanddismc = ''
@@ -1733,10 +1741,10 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 
 # Execute command action 
 	if(array_index_exists(@commandList, @command[0])) {
-		@return = @actions[@commandList[@command[0]]]['cmd'](@discord, @args);
+		@CmdReturn = @actions[@commandList[@command[0]]]['cmd'](@discord, @args);
 	} else {
 		if(@cmdfrom != 'mention') {
-			_discordBot_send_message('I have no idea what that command was about, try help.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(array('content': 'I have no idea what that command is, try ?help', 'reference_id': @discord['id']), @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
 		}
 		@lastmsgs = get_value('DiscordBot.last.cmd.not.found')
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
@@ -1748,10 +1756,10 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		return('NotACmd')
 	}
 
-# _db_msg_Console('ret: '.@return, @discord['serverid'], 'debug')
-# _db_msg_Console('retis: '.is_string(@return), @discord['serverid'], 'debug')
+# _db_msg_Console('ret: '.@CmdReturn, @discord['serverid'], 'debug')
+# _db_msg_Console('retis: '.is_string(@CmdReturn), @discord['serverid'], 'debug')
 #Save Recent Messages and Returns for reference	
-	array_set(@discord, 'return', @return)
+	array_set(@discord, 'return', @CmdReturn)
 	@lastmsgs = import('DiscordBot.last.cmd.message')
 	if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 	array_insert(@lastmsgs, @discord, 0)
@@ -1760,50 +1768,73 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 
 	@lastmsgs = import('DiscordBot.last.cmd.message.return')
 	if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-	array_insert(@lastmsgs, @return, 0)
+	array_insert(@lastmsgs, @CmdReturn, 0)
 	if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
 	export('DiscordBot.last.cmd.message.return', @lastmsgs)	
 #Send Messages
 #return messages final message, unless true/false. multiple messages need to be handled by action
-	if(is_string(@return)) {
-		if(@return == 'NoCmd') {
-			_discordBot_send_message('A required command module is not installed.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) 
+	@returnMsg = array('content': 'Debug')
+	if(array_index_exists(@config, 'CMD_Message_Action')) {
+		if(to_lower(@config['CMD_Message_Action']) == 'reply') {
+			array_set(@returnMsg, 'reference_id', @discord['id'])
+		}
+	}
+	@messageType = 'command'
+	if(is_string(@CmdReturn)) {
+		switch(@CmdReturn) {
+		case 'NoCmd':
+			@returnMsg['content'] = 'A required command module is not installed.'
 			@return = false
-		} else if(@return == 'NotAdmin') {
-			_discordBot_send_message(':no_entry: This command is restricted to use by Admin only.', @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM']) 
+		case 'NotAdmin':
+			@returnMsg['content'] = ':no_entry: This command is restricted to use by Admin only.'
+			@messageType = 'discord'
 			@return = false
-		} else if(@return == 'NoUserFound') {
-			_discordBot_send_message(':question: User ID given not found on server.', @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM']) 
+		case 'NoUserFound':
+			@returnMsg['content'] = ':question: User ID given not found on server.'
+			@messageType = 'discord'
 			@return = false
-		} else if(@return == 'NoPerms') {
-			_discordBot_send_message(':question: I did not have permission to finish this command!', @discord['serverid'], 'discord', 'admin') 
+		case 'NoPerms':
+			@returnMsg['content'] = ':question: I did not have permission to finish this command!'
+			@messageType = 'discord'
+			@discord['SendChannel'] = 'admin'
 			@return = false
-		} else if(@return == 'Error') {
-			_discordBot_send_message(':x: An error occured in the command, see logs.', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) 
+		case 'NotEnabled':
+			@returnMsg['content'] = ':x: This feature is not enabled on this server.' 
 			@return = false
-		} else if(@return == 'pong') {
+		case 'Error':
+			@returnMsg['content'] = ':x: An error occured in the command, see logs.'
+			@return = false
+		case 'pong':
 			@timeElapsed = (time() - @discord['time'])
-			_discordBot_send_message('Pong! ('.(@timeElapsed / 1000).')', @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM']) 
+			console(@timeElapsed)
+			@returnMsg['content'] = 'Pong! ('.(@timeElapsed / 1000).')'
 			@return = true
-		} else {
-			_discordBot_send_message(@return, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+		default:
+			@returnMsg['content'] = @CmdReturn
+			@messageType = 'discord'
 			@return = true
 		}
-	} else if(is_array(@return)) {
-		if(array_index_exists(@return, 'content') || array_index_exists(@return, 'embeds')) {
-			if(array_index_exists(@return, 'console')) {
-				_db_msg_Console(@return['console'], @discord['serverid'])
-				array_remove(@return, 'console')
+		_discordBot_send_message(@returnMsg, @discord['serverid'], @messageType, @discord['SendChannel'], @discord['UseDM'])
+	} else if(is_array(@CmdReturn)) {
+		if(array_index_exists(@CmdReturn, 'content') || array_index_exists(@CmdReturn, 'embeds')) {
+			if(array_index_exists(@CmdReturn, 'console')) {
+				_db_msg_Console(@CmdReturn['console'], @discord['serverid'])
+				array_remove(@CmdReturn, 'console')
 			}
-			if(array_index_exists(@return, 'MC')) {
-				_db_mc_broadcast(@return['MC'], @return['players'])
-				array_remove(@return, 'MC')
-				array_remove(@return, 'players')
+			if(array_index_exists(@CmdReturn, 'MC')) {
+				_db_mc_broadcast(@CmdReturn['MC'], @CmdReturn['players'])
+				array_remove(@CmdReturn, 'MC')
+				array_remove(@CmdReturn, 'players')
 			}
-			_discordBot_send_message(@return, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+			if(array_index_exists(@config, 'CMD_Message_Action')) {
+				if(to_lower(@config['CMD_Message_Action']) == 'reply') {
+					array_set(@CmdReturn, 'reference_id', @discord['id'])
+				}
+			}
+			_discordBot_send_message(@CmdReturn, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
 			@return = true
 		} else {
-			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@return, @discord['serverid'], 'admin')
+			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@CmdReturn, @discord['serverid'], 'admin')
 			@return = false
 		}
 	}
@@ -1813,6 +1844,15 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	if(@return == true) { @colorret = 3 @retdisplay = '' } else { @colorret = 'c' @retdisplay = ' (Failed)' }
 	_db_msg_Console(@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
 	_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
+	if(array_index_exists(@config, 'CMD_Message_Action')) {
+		if(to_lower(@config['CMD_Message_Action']) == 'delete' && string(@CmdReturn) != 'NotACmd' && @discord['UseDM'] != 'dm') {
+			try {
+				discord_delete_message(@discord['serverid'], @discord['channel'], @discord['id'])
+			} catch(Exception @ex) {
+				_db_msg_Console('Could not delete command message, Another bot running?', @discord['serverid'])
+			}
+		}
+	}
 	return(@return)
 }
 
@@ -1937,3 +1977,13 @@ proc _discordBot_WelcomeRolesFinder(@type = 'none', @guild) {
 	return(@return)	
 }
 
+/*
+proc _discordBot_link_mc_account(@from = '', @type = 'create', @user = '', @id = '', @code = '', @options) {
+	if(@from == '') { die() }
+	if(@user == '') { die() }
+	if(@id == '') { die() }
+	if(@code == '') { die() }
+	if(@from == '') { die() }
+	
+	
+*/
