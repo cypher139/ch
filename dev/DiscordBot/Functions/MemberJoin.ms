@@ -27,7 +27,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				if(!is_array(@previnv)) {
 					@previnv = array()
 					foreach(@i: @invite in @raw) { array_set(@previnv, @invite['code'], @invite) }
-					store_value('DiscordBot.'.@discord['serverid'].'.Invites', @previnv) 
+					store_value('DiscordBot.'.@discord['serverid'].'.Invites', @previnv)
 				}
 				@inv = array_deep_clone(@previnv)
 				foreach(@i: @invite in @raw) {
@@ -246,6 +246,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@lbremove = 0
+	@invmsgSuffix = ''
+	@consoleMsgSuffix = ''
 	@userDisplay = @discord['username']
 	@userDisplaydc = @discord['username']
 	if(nequals_ic(@discord['username'], @discord['nickname'])) {
@@ -281,6 +283,10 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard')
 	if(is_array(@leaderboard)) {
 		if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { 
+			if(@leaderboard['members'][@discord['userid']]['level'] > 0) {
+				@invmsgSuffix = '-Level: '.@leaderboard['members'][@discord['userid']]['level']
+				@consoleMsgSuffix = 'Level: '.@leaderboard['members'][@discord['userid']]['level']
+			}
 			if(@config['LB_Options']['Remove_On_Leave'] == true) { @lbremove = 1 }
 			if(@leaderboard['members'][@discord['userid']]['level'] < 6) { @lbremove = 1 }		
 		}
@@ -307,8 +313,6 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		if(array_index_exists(@wm, @discord['userid'])) { array_set(@joininfo[@discord['userid']], 'wmid', @wm[@discord['userid']]) }
 	}
 	# @invmsgSuffix = ', but I didn\'t figure out how they had joined it.'
-	@invmsgSuffix = '.'
-	@consoleMsgSuffix = ''
 	@wmres = ''
 	if(array_contains(array_keys(@joininfo), @discord['userid'])) {
 	# Add leave stats to invite used
@@ -316,8 +320,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			@inv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
 			if(!is_array(@inv)) { @inv = array() }
 			if(array_index_exists(@inv, @joininfo[@discord['userid']]['code'])) {
-				@invmsgSuffix = ', they were invited by *'.@joininfo[@discord['userid']]['inviter'].'*'
-				@consoleMsgSuffix = ' Invite: '.@joininfo[@discord['userid']]['code']
+				@invmsgSuffix = @invmsgSuffix.' -Inviter: '.@joininfo[@discord['userid']]['inviter']
+				@consoleMsgSuffix = @consoleMsgSuffix.' Invite: '.@joininfo[@discord['userid']]['code']
 				if(!array_index_exists(@inv, @joininfo[@discord['userid']]['code'], 'leaves')) { array_set(@inv[@joininfo[@discord['userid']]['code']], 'leaves', 0) }
 				@inv[@joininfo[@discord['userid']]['code']]['leaves']++
 				# @inv[@joininfo[@discord['userid']]['code']]['uses']--
@@ -356,9 +360,9 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	}
 #Send Logs
 	if(@config['Log_Invites'] == true) {
-		_discordBot_send_message('**'.@userDisplaydc.'** left the server'.@invmsgSuffix, @discord['serverid'], 'log')
+		_discordBot_send_message('**'.@userDisplaydc.'** left the server. `'.@invmsgSuffix.'`', @discord['serverid'], 'log')
 	}
-	_db_msg_Console('Member '.color(12).'left: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>'.@consoleMsgSuffix.color('r').@wmres, @discord['serverid'])
+	_db_msg_Console('Member '.color(12).'left: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'> '.@consoleMsgSuffix.color('r').@wmres, @discord['serverid'])
 #Remove Leaderboard entry, save entry if not a new member
 	if(@lbremove != 0) { 
 		if(@lbremove != 2) {
