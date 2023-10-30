@@ -41,6 +41,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		array_set(@guildcfgCmd, @guild, @cfg['CMD_Command_Prefix']);
 		array_set(@guildcfgChannel, @guild, @cfg['Log_Channel']);
 		array_set(@guildcfgURL, @guild, @cfg['URL_Broadcast']);
+		if(array_index_exists(@cfg, 'DM_Notify_NonMember')) { array_set(@guildcfgNM, @guild, @cfg['DM_Notify_NonMember']) } else { array_set(@guildcfgNM, @guild, false) }
 		if(array_contains(discord_get_members(@guild), @discord['userid'])) {
 			@userServers[] = @guild
 			@gf++
@@ -140,15 +141,17 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	}
 # Send DM notification to each Discord server logs (if enabled)	
 	foreach(@guild in @guildcfgNotify) {
+	#Check: If user not a member of guild
+		if(!array_contains(@userServers, @guild)) {
+			if(@guildcfgNM[@guild] == false) {
+				continue()
+			}
+		}
 		@dcMsg = _db_format_msg_attach(@discord, @guildcfgURL[@guild]);
 		@msgembed = array(array('title': @discord['username'], 'color': array('r': 109, 'g': 109, 'b': 109), 'description': @dcMsg))
 	#Get Avatar and embed color info
 		@userinfo = array('avatar': @avatar)
-		try {
-			@userinfo = discord_member_info(@guild, @discord['userid']);
-		} catch(NotFoundException @ex) {
-			@usedefaults = true;
-		}
+		@userinfo = discord_member_info(@guild, @discord['userid']);
 		if(array_index_exists(@userinfo, 'avatar')) {
 			array_set(@msgembed[0], 'author', array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])));
 			array_set(@msgembed[0], 'thumbnail', @userinfo['avatar'].'?size=48');

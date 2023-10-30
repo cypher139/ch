@@ -5,7 +5,7 @@ Server_Nickname: "Your Server"
 # Logs:
 # Log channel for misc. messages, such as Discord command usage, LB level updates, MC server silent admin joins, Bot DM messages, etc.
 Log_Channel: bot-logs
-# Your server's main logs channel. Member join  / invite used messages are sent here.
+# Your server's main logs channel. Member join / invite used messages are sent here.
 Server_Log_Channel: bot-logs
 # Send message to Console: Includes logs such as Member joins, voice chat joins, Bot DM notifications, and Discord Command usage.
 Console_Messages: true
@@ -21,6 +21,10 @@ Log_Invites: true
 Log_Invites_Message: "**%User%**  [%UserID%] joined using invite **%InviteCode%**\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
 # Show Bot DM Notifications:
 DM_Notify: true
+# Show Bot DM notification if the user is *not* a server member?
+DM_Notify_NonMember: false
+
+#todo
 Minecraft_Messages: true
 Minecraft_Messages_Admin: true
 Use_Cross_Server: false
@@ -151,8 +155,10 @@ VC_Options:
     VC_Ping_Min_Member: 2
 # Ping Message
 # What should we say to the Discord members?
-    VC_Ping_Message: "What's up fellow %RoleID%? Come join %UserID% in the %Channel% channel!"
+# Variables: %Channel%  %UserID%  %RoleID%
+    VC_Ping_Message: "We are Live in %Channel% with %UserID%, come join! %RoleID%"
 # What should we say to the Minecraft server players?
+# Variables: %User% %Channel%
     VC_Ping_Message_MC: "%User% is ready to voice chat on the Discord!!"
 # What should we say to thank all the users who chatted in completed VC call??
     VC_DM_Thanks: false
