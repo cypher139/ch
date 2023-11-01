@@ -30,6 +30,6 @@ bind('entity_death', array(id: 'EXPBank.Reaper.entity'), null, @death) {
 			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@msg, '', 'death') }
 		}
 		console(@msg)
-		if(is_proc('_write_file')) { _write_file(simple_date('MM-dd-yy_', time()).'entity_death_drop.txt', '\n'.@death, 'append') }
+		if(is_proc('_write_file')) { _write_file(simple_date('MM-dd-yy_', time()).'entity_death_drop.txt', '\n'.@event, 'append') }
 	}
 }
