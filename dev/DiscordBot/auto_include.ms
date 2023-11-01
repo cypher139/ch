@@ -196,6 +196,8 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 					export('DiscordBot.'.@cfgtype.'.Leaderboard', array('lastedit': time(), 'members': array()))
 				}
 			}
+			# Setup Server Info
+			_discordBot_get_server_info(@cfgtype)
 		}
 	} else {
 		switch(string(@cfgtype)) {
@@ -227,6 +229,19 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 	export(@prefix.'.config.'.@cfgtype, @loadcfg)
 	return(@loadcfg)
 }
+
+proc _discordBot_get_server_info(@guild) {
+	if(@guild == null || @guild == '') { die() }
+	if(!is_numeric(@guild)) { die() }
+	discord_request('GET', 'guilds/'.@guild.'/preview', null, closure(@data){ 
+		# console(@data)
+		array_set(@data, 'retrieved', time())
+		export('DiscordBot.Guilds.Info.'.@guild, @data)
+	}, closure(@data){ 
+		_db_msg_Console(color('c').'Cannot retrieve Guild info for guild "'.@guild.'". \n'.color(7).@data, @guild)
+	});
+}
+
 
 ##########################################
 ### Send A Message
@@ -347,6 +362,48 @@ proc _db_sanitize_message(@message, @caller, @guild, @from, @dm) {
 		}
 	}
 	return(@return);
+}
+
+proc _discordBot_find_emoji(string @findEmoji, @originationGuild, @skipGuild) {
+	@botconfig = import('DiscordBot.config.Discord')
+	@checkGuilds = array()
+	@findEmoji = replace(@findEmoji, ':', '')
+	@r2 = false
+	# If given, Search origin guild first
+	if(is_numeric(@originationGuild) && length(@originationGuild) > 15) {
+		@checkGuilds = array(@originationGuild)
+	} else if(@originationGuild == null || @originationGuild == '') {
+		@checkGuilds = discord_get_servers()
+		@r2 = true
+	} else { 
+		_db_msg_Console('Emoji: guild must be numeric', 'debug')
+		die()
+	}
+	@results = array('NotFound': 'Not Found')
+	foreach(@guild in @checkGuilds) {
+		if(@guild == @skipGuild) { continue() }
+		@serverInfo = import('DiscordBot.Guilds.Info.'.@guild)
+		if(@serverInfo == null) { 
+			# Loading info if not present in previous config setup, as we can use their emoji even if bot doesn't participate in that guild
+			_discordBot_get_server_info(@guild)
+			@serverInfo = import('DiscordBot.Guilds.Info.'.@guild, array())
+		}
+		if(!array_index_exists(@serverInfo, 'emojis')) { continue() }
+		foreach(@index: @emoji in @serverInfo['emojis']) {
+			# msg(@findEmoji.' -- '.@emoji['name'])
+			if(@findEmoji == @emoji['name']) {
+				@results = @emoji
+				array_set(@results, 'guild', @guild) 
+				break()
+			}
+		}
+	}
+	#If single guild checked, redo check for all bot guilds
+	if(array_index_exists(@results, 'NotFound') && array_size(@checkGuilds) < 2 && @r2 == false) { 
+		@return2 = _discordBot_find_emoji(@findEmoji, null, @originationGuild) 
+		return(@return2)
+	}
+	return(@results)
 }
 
 # new error message: :dp: +
@@ -472,6 +529,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		case 'private':
 			@dm = true
 		}
+	# Sanitize Mentions, Check custom mentions, setup allowed mentions
 		if(@caller != 'Bot') {
 			@sanitize = _db_sanitize_message(@message['content'], @caller, @guild, @from, @dm)
 			@message['content'] = @sanitize['message']
@@ -479,7 +537,21 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 				array_set(@message, 'allowed_mentions', array('parse': @sanitize['allowed_mentions']))
 			}
 		}
-# Extra type formats:
+	# Emojify
+		if(@config['Use_Emojis'] == true) {		
+			foreach(@emoji in reg_match_all('[:][^\\s./]+[:]', @message['content'])) {
+				#returns: {{0: :match:}}
+				@emojiID = _discordBot_find_emoji(@emoji[0], @guild)
+				if(array_index_exists(@emojiID, 'NotFound')) { continue() }
+				#Check if emoji belongs to this guild and conversion is allowed:
+				if(@emojiID['guild'] != @guild && @config['Use_Other_Emojis'] == false) { continue() }
+				#Convert emoji :emoji: markdown to bot version:
+				@useAnimation = ''
+				if(@emojiID['animated'] == true) { @useAnimation = 'a' }
+				@message['content'] = replace(@message['content'], @emoji[0], '<'.@useAnimation.':'.@emojiID['name'].':'.@emojiID['id'].'>')
+			}
+		}	
+	# Extra type formats:
 		switch(to_lower(@from)) {
 		case 'death':
 			@message['content'] = ':skull_crossbones: '.@message['content']
@@ -493,7 +565,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 				@message['content'] = '`['.@from.']` '.@message['content']
 			}
 		}
-# Split messages longer than 2000 chars
+	# Split messages longer than 2000 chars
 		if(reg_count(@splitRegEx, @message['content']) > 1) {
 			for(@i = 1, @i <= @count, @i++) {
 				@match = reg_match(@splitRegEx, @message['content'])[0]

@@ -85,6 +85,10 @@ Channels_Send:
 - botspam
 # Default Minecraft server channel. All Minecraft player messages, death messages, join/leave messages are sent here.
 Default_Channel: minecraft
+# Should we Convert emoji markdown into actual emoji?
+Use_Emojis: true
+# Should we only convert emoji if the emoji is from your server?
+Use_Other_Emojis: true
 #
 #
 # Commands

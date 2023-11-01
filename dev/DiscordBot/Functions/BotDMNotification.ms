@@ -31,6 +31,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	@guildcfgCmd = array()
 	@guildcfgChannel = array()
 	@guildcfgURL = array()
+	@guildcfgNM = array()
 	@userserver = 0
 	@userServers = array()
 	@avatar = 'https://cdn.discordapp.com/embed/avatars/0.png'
