@@ -18,6 +18,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	array_set(@discord, 'time', @time);
 	@botconfig = import('DiscordBot.config.Discord');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
+	@guildInfo = import('DiscordBot.Guilds.Info.'.@discord['serverid'], array('name': @config['Server_Nickname']));
 	@asmembers = import('DiscordBot.'.@discord['serverid'].'.antispam.members');
 	if(!is_array(@asmembers)) { 
 		@asmembers = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
@@ -96,25 +97,38 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # !!! User is in Triggered state: !!!
 	if(array_index_exists(@asmembers, @discord['userid'])) {
 		consume();
+		@actiontaken = '\n*Actions taken:*'
 		@count = import('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.trigger', 0)
 		@count++
 		export('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.trigger', @count)
+	#If first trigger:
 		if(@count < 2) {
-		# If first run: Delete all messages recorded in the user's last message storage & message Admins and user.
-			if(@newuser == true) {
-				foreach(@message in @newLastMsgs) {
-					_db_as_dm(@message);
-				}
-			} else {
-				foreach(@message in @lastUserMsgs) {
-					_db_as_dm(@message);
+			@msgcount = 0
+			if(@config['AS_Delete_Messages'] == true) {
+			# Delete all messages recorded in the user's last message storage
+				if(@newuser == true) {
+					foreach(@message in @newLastMsgs) {
+						@return = _db_as_dm(@message);
+						if(@return == true) { @msgcount++ }
+					}
+				} else {
+					foreach(@message in @lastUserMsgs) {
+						@return = _db_as_dm(@message);
+						if(@return == true) { @msgcount++ }
+					}
 				}
 			}
+			if(@msgcount > 0) {
+				@actiontaken = @actiontaken.' Deleted '.@msgcount.' of user\'s recent messages'
+			}
 		# Message Admins, and DM user.
-			_discordBot_send_message('I\'ve triggered Anti Spam actions upon user: `'.@discord['username'].'`  '.@discord['userid'].', and have deleted their recent messages.\n Reason: '.@triggerReason, @discord['serverid'], 'admin');
-			_discordBot_send_message('You have triggered this server\'s Anti Spam protection. You will need to message the moderators of this server to reinstate access.', @discord['serverid'], 'death', @discord['userid'], 'dm')
+			if(@actiontaken == '\n*Actions taken:*') { @actiontaken = '' }
+			_discordBot_send_message('__**Anti Spam alert**__\n User `'.@discord['username'].'`  '.@discord['userid'].' triggered Anti Spam protection!\n *Protection Reason:* '.@triggerReason.@actiontaken, @discord['serverid'], 'admin');
+			_discordBot_send_message('Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.', @discord['serverid'], 'death', @discord['userid'], 'dm')
 		}
-		_db_as_dm(@discord);
+		if(@config['AS_Delete_Messages'] == true) {
+			_db_as_dm(@discord);
+		}
 	} else {
 	#User OK 
 		#If a New User: record messages in special key
