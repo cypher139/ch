@@ -1787,7 +1787,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	if(is_string(@command[0])) { @command[0] = to_lower(@command[0]) }
 	@commanddismc = ''
 	@commanddisdc = ''
-	if(array_index_exists(@args, 0)) { 
+	if(array_index_exists(@args, 0)) {
 # Remove mention in arguments 
 		if(array_index_exists(@config, 'Sanitize_CMD_Arguments')) {
 			foreach(@mention: @replacement in @config['Sanitize_CMD_Arguments']) {
@@ -1796,8 +1796,11 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 				}
 			}
 		}
-		@commanddismc = 'Args: '.color(9).array_implode(@args, ', ')
-		@commanddisdc = 'Args: `'.array_implode(@args, '`  `').'`' 
+		@arglimit = array_size(@args)
+		@argcontinues = ''
+		if(@arglimit >= @config['CMD_Args_Display_Limit']) { @arglimit = @config['CMD_Args_Display_Limit'] @argcontinues = ' ...' }
+		@commanddismc = 'Args: '.color(9).array_implode(@args[cslice(0, @arglimit - 1)], ', ').@argcontinues
+		@commanddisdc = 'Args: `'.array_implode(@args[cslice(0, @arglimit - 1)], '`  `').'`'.@argcontinues 
 		if(!array_index_exists(@args, 0)) { @commanddisdc = '' }
 	}
 	
@@ -1878,7 +1881,6 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			@return = false
 		case 'pong':
 			@timeElapsed = (time() - @discord['time'])
-			console(@timeElapsed)
 			@returnMsg['content'] = 'Pong! ('.(@timeElapsed / 1000).')'
 			@return = true
 		default:
@@ -1909,11 +1911,13 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@CmdReturn, @discord['serverid'], 'admin')
 			@return = false
 		}
+	} else if(is_boolean(@CmdReturn)) {
+		@return = @CmdReturn
 	}
 # Send Log Messages and End.
-	@colorret = ''
+	@colorret = 3
 	@retdisplay = ''
-	if(@return == true) { @colorret = 3 @retdisplay = '' } else { @colorret = 'c' @retdisplay = ' (Failed)' }
+	if(@return == false) { @colorret = 12 @retdisplay = ' (Failed)' }
 	_db_msg_Console(@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
 	_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
 	if(array_index_exists(@config, 'CMD_Message_Action')) {

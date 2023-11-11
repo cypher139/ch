@@ -122,6 +122,8 @@ CMD_Default_Channel: botspam
 # What should the bot do with the originating command message?
 # "delete" to delete the message, "reply" to reference to message in command reply
 CMD_Message_Action: reply
+# How many arguments should we display in log messages? (Full args list can be viewed via internal ram logs)
+CMD_Args_Display_Limit: 5
 #
 # Command Options
 # Command: fakeadmin
