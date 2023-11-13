@@ -49,11 +49,11 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 # Send Join Message to Minecraft
 	if(@sendMsg == true) { modify_event('join_message', @joinmsg) } else { modify_event('join_message', null) }
 # Send Join message to Discord (if enabled)
- 	if(is_proc('_discordBot_send_message')) { 
+ 	if(is_proc('_discordBot_send_mc_chat')) { 
 		if(@sendMsg == true || @serverConfig['Join_Message'] == 'admin') {
 			set_timeout(2000, closure(
 				if(array_contains(all_players(), @playerID['name'])) {
-					_discordBot_send_message(@playerID['name'], '', 'none', @dcChannel, 'join') }
+					_discordBot_send_mc_chat(@playerID['name'], 'none', @dcChannel, 'join') }
 			));
 		}
 	}
@@ -109,9 +109,9 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	if(@sendMsg == true) { modify_event('message', @quitmsg) } else { modify_event('message', null) }
 	export('Server.player.'.@playerID['id'].'.last.quit', @time)
 # Send Quit message to Discord as well (if enabled)
-	if(is_proc('_discordBot_send_message')) { 
+	if(is_proc('_discordBot_send_mc_chat')) { 
 		if(@sendMsg == true || @type == 'admin') {
-			_discordBot_send_message(@playerID['name'], '', 'none', @dcChannel, 'leave')
+			_discordBot_send_mc_chat(@playerID['name'], 'none', @dcChannel, 'leave')
 		}
 	}
 }

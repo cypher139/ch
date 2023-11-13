@@ -25,9 +25,7 @@ DM_Notify: true
 DM_Notify_NonMember: false
 
 #todo
-Minecraft_Messages: true
 Minecraft_Messages_Admin: true
-Use_Cross_Server: false
 #
 #
 # Anti Spam
@@ -69,7 +67,9 @@ Role_Colors:
   Most Active: f1c40f
   Owner: fbff00
   Server Admin: ba3e39
-# Which channels are allowed to send messages to the Minecraft server?
+# Shall we receive messages from Minecraft players in your server's designated Minecraft channel?
+Minecraft_Messages: true
+# Which channels are allowed to send messages to the Minecraft server? (Applies only if your server is the bot's Primary Guild!)
 Channels_Receive:
 - general
 - default
@@ -86,6 +86,7 @@ Channels_Send:
 - other
 - botspam
 # Default Minecraft server channel. All Minecraft player messages, death messages, join/leave messages are sent here.
+Minecraft_Channel: minecraft
 Default_Channel: minecraft
 # Should we Convert emoji markdown into actual emoji?
 Use_Emojis: true

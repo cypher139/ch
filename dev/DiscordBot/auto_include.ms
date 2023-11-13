@@ -657,7 +657,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 			return(true)
 		case 'leave':
 		case 'quit':
-			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': ' <:leave:1066426677481197618> Left: ', 'description': @message['content']))))
+			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:leave:1066426677481197618> Left: ', 'description': @message['content']))))
 			return(true)
 		}
 	} catch(InsufficientPermissionException @ex) {
@@ -680,14 +680,21 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	}
 }
 
-proc _db_mc_broadcast(@msg, @args, @cr = false) {
+proc _db_mc_broadcast(@msg, @args, @cr = false, @checkPermission = null) {
 	if(function_exists('broadcast')) {
 		if(!is_array(@args) && @args != '' && @args != null) { 
-			if(@args == 'players' || @args == 'player') { 
+			if(@args == 'players' || @args == 'player') {
 				@args = all_players() 
 			} else if(!array_contains(all_players(), @args)) {
 				_db_msg_Console('A Message Broadcast to Minecraft players failed: Players given were not found.', 'bot')
 				return(false)
+			}
+		}
+		if(is_array(@args) && @checkPermission != null && @checkPermission != '') {
+			foreach(@i: @user in @args) {
+				if(!has_permission(@user, @checkPermission)) {
+					array_remove(@args, @i)
+				}
 			}
 		}
 		broadcast(@msg, @args)
@@ -705,6 +712,43 @@ proc _db_mc_broadcast(@msg, @args, @cr = false) {
 		}
 	}
 	return(true)
+}
+
+proc _discordBot_send_mc_chat(@message, @player, @overrideChannel = null, @type = 'b') {
+	if(@message == '' || @message == null) { return(false) }
+	if(@player == '' || @player == null) {
+		if(function_exists('player')) { 
+			@player = player()
+		} else {
+			return(false)
+		}
+	}
+	@botconfig = import('DiscordBot.config.Discord')
+	@guilds = import('DiscordBot.Guilds', array());
+	if(array_size(@guilds) == 0) { return(false) }
+	foreach(@guild in @guilds) {
+		@channel = ''
+		@config = import('DiscordBot.config.'.@guild);
+# Send message to guild's MC channel, if configured
+		if(@config['Minecraft_Messages'] == false) { continue() }
+		if(array_index_exists(@config, 'Minecraft_Channel')) {
+			@channel = @config['Minecraft_Channel']
+		} else {
+			@channel = @config['Default_Channel']
+		}
+		# Primary Guild only: Accept channel overrides, if channel is in approved list
+		if(@guild == @botconfig['Primary_Guild']) {
+			if(@overrideChannel == '' || @overrideChannel == null) { @nc = 1 } else {
+				if(array_contains(@config['Channels_Send'], @overrideChannel)) { 
+					@channel = @overrideChannel
+				}
+			}
+		}
+		#Admin channel override
+		if(@overrideChannel == 'admin') { @channel = @overrideChannel }
+		_discordBot_send_message(@message, @guild, @player, @channel, @type)
+	}
+	return(true);
 }
 
 

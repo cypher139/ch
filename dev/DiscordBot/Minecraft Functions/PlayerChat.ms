@@ -1,10 +1,8 @@
-#version 1.3-tmc
-
 #Send Minecraft Player message to Discord
 bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
-	@channel = @config['Default_Channel']
+	@channel = null
 	@sendmsg = @chat['message']
 	@playerID = _getplayerID(player(), 'id')
 	#[Anti Spam] Do not send chat to Discord if player just logged on, avoids insta spam and disconnect bots.
@@ -13,73 +11,30 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 		_db_msg_Console(player().' sent a message before the message timeout passed.', 'bot') 
 		die()
 	}
-	# Automatically chat on last channel a message was received on.
+	# Automatically chat on last channel a message was received on. [Primary Guild only]
 	@lastmsg = import('DiscordBot.'.@botconfig['Primary_Guild'].'.last.message')
 	if(!is_array(@lastmsg)) { @lastmsg = array() }
 	foreach(@message in @lastmsg) {
 		if(array_index_exists(@message, 'channel')) {
 			if(!array_contains(@config['Channels_Send'], @message['channel'])) { continue() }
-			if(time() < (@message['time'] + 234567)) {
+			if(time() < (@message['time'] + 234567) && has_permission(player(), 'DiscordBot.chat.channel.'.@message['channel'])) {
 				@channel = @message['channel']
 			}	
 		}
 	}
 	# Specify a channel name as first word in chat - Channel override
 	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @chat['message']) == 1) {
-		# remove channel mention from message content	
+		# remove channel mention from message content
 		@sendmsg = reg_split('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1]
 		# returns 'channel' in '#channel message text'
 		@channel = reg_split('[#]', reg_match('^(#+[a-zA-Z0-9-_]{1,})', @chat['message'])[1])[1]
 		modify_event('message', @sendmsg)
 	}
-	# Final Channel check: If not in allowed list, switch channel to default
-	if(!array_contains(@config['Channels_Send'], @channel)) { @channel = @config['Default_Channel'] }
-	_discordBot_send_message(@sendmsg, @botconfig['Primary_Guild'], player(), @channel)
+
+	# _discordBot_send_message(@sendmsg, @botconfig['Primary_Guild'], player(), @channel)
+	_discordBot_send_mc_chat(@sendmsg, player(), @channel)
 }
 
-bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), null, @death) {
-	@botconfig = import('DiscordBot.config.Discord')
-	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
-	@counter = 0
-	@dc = get_value('DeathCount.players.death.counter')
-	if(!is_array(@dc)) { @dc = array() }
-	@uuid = _getplayerID(@death['player'], 'id')
-	if(array_index_exists(@dc, @uuid)) { @counter = @dc[@uuid] }
-	@counter++
-	@countDisplay = '[#'.@counter.'] '
-	
-	if(has_bind('Chat.msg.Death')) {
-		@death['death_message'] = strip_colors(@death['death_message'])
-		@death['death_message'] = reg_replace('^\\[#[0-9]+\\]\\s', '', @death['death_message'])
-	}
-
-	if(@death['killer'] != null) {
-		if(has_bind('Chat.msg.Death')) {
-			@pvpmsg = @death['death_message']
-		} else {
-			@weapon = pinv(@death['killer'], null)
-			if(@weapon == null) { 
-				@weapon = 'Hand' 
-			} else {
-				@weapon = _capitalize(string(@weapon['name']), null, null, 'all')
-			}
-			@pvpmsg = array(
-				@death['killer'].' killed '.@death['player'].' wielding '.@weapon, 
-				@death['killer'].' slays '.@death['player'].' with a '.@weapon, 
-				@death['killer'].' hunts '.@death['player'].' down with a '.@weapon, 
-				@death['player'].' took a leap of faith but landed on '.@death['killer'].'\'s '.@weapon, 
-				'Score '.@death['killer'].' +1 - '.@death['player'].' 0', 
-				@death['player'].' was fragged by '.@death['killer'], 
-				@death['player'].' is now redstone thanks to '.@death['killer'].'\'s '.@weapon, 
-				@death['killer'].' slapped '.@death['player'].' around a bit too hard.'
-			)
-			@pvpmsg = array_get_rand(@pvpmsg)
-		}
-		_discordBot_send_message(@countDisplay.'\n'.':put_litter_in_its_place: '.@pvpmsg, @botconfig['Primary_Guild'], 'death')
-	} else {
-		_discordBot_send_message(@countDisplay.@death['death_message'], @botconfig['Primary_Guild'], 'death')
-	}
-}
 # :people_wrestling: :put_litter_in_its_place: 
 
 bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MONITOR'), array('prefix': 'say', 'type': 'console'), @event) {
@@ -104,5 +59,5 @@ bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MO
 		# remove channel mention from message content	
 		@sendmsg = reg_split('^(#+[a-zA-Z0-9-_]{1,})', @sendmsg)[1]
 	}
-	_discordBot_send_message(@sendmsg, @botconfig['Primary_Guild'], 'Server', @channel)
+	_discordBot_send_mc_chat(@sendmsg, 'Server', @channel)
 }	
