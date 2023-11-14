@@ -1935,6 +1935,20 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		_discordBot_send_message(@returnMsg, @discord['serverid'], @messageType, @discord['SendChannel'], @discord['UseDM'])
 	} else if(is_array(@CmdReturn)) {
 		if(array_index_exists(@CmdReturn, 'content') || array_index_exists(@CmdReturn, 'embeds')) {
+			if(array_index_exists(@CmdReturn, 'dm')) {
+				switch(string(@CmdReturn['dm'])) {
+				case 'true':
+				case 'dm':
+					@discord['UseDM'] = 'dm'
+					@cmdfromdis = ' (DM reply)'
+					@discord['SendChannel'] = @discord['userid']
+				case 'false':
+				case 'broadcast':
+					@discord['UseDM'] = 'broadcast'
+					@discord['SendChannel'] = @discord['channel']
+				}
+				array_remove(@CmdReturn, 'dm')
+			}
 			if(array_index_exists(@CmdReturn, 'console')) {
 				_db_msg_Console(@CmdReturn['console'], @discord['serverid'])
 				array_remove(@CmdReturn, 'console')

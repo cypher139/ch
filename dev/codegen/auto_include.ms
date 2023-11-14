@@ -1,5 +1,5 @@
 #Random Code Generation
-#version 2.4
+#version 2.4.1
 proc _codegen(@codelength, @codetype, @codetype2) {
 #How to use:
 # call _codegen(NUMBER, character type 1, character type 2)
@@ -17,7 +17,8 @@ proc _codegen(@codelength, @codetype, @codetype2) {
 		@codelength = 7
 	}
 	if(@codetype == '') { @codetype = 'full' }
-	if(x_get_current_thread() != '(CommandHelper) CodeGenerator') {
+	# Thread limit: Using main server thread may produce slowdowns for large code numbers.
+	if(x_get_current_thread() == 'Server thread') {
 		if(@codelength > 512) {
 			@codelength = 512
 		}
