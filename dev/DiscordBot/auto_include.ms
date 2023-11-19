@@ -2,13 +2,13 @@
 if(in_cmdline_mode()) {
 	@pf = '/'
 	if(get_os() == 'WINDOWS') { @pf = '\\' }
-	export('DiscordBot.version', '1.0-tmc-cmd')
+	export('DiscordBot.version', '1.0.dev-cmd')
 	export('DiscordBot.config.dir', file_resolve(pwd().@pf.'Configs'))
 	export('DiscordBot.logs.dir', file_resolve(pwd().@pf.'Logs'))
 } else {
 	@pf = '/'
 	if(get_os() == 'WINDOWS') { @pf = '\\' }
-	export('DiscordBot.version', '1.0-tmc')
+	export('DiscordBot.version', '1.0.dev')
 	export('DiscordBot.config.dir', file_resolve(sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot'.@pf.'Configs'))
 	export('DiscordBot.logs.dir', file_resolve(sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot'.@pf.'Logs'))
 }
@@ -573,6 +573,9 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 				@message['content'] = @message['content'][cslice(length(@match), (length(@message['content']) - 1))]
 			}
 		}
+	# Send message data to Leaderboard
+		@event = array('bot': true, 'serverid': @guild, 'username': @config['Bot_Name'], 'userid': @config['Bot_ID'], 'message': @message['content'], 'channel': @config['Log_Channel'])
+		_discordBot_lb_process_message(@event, true)
 	}
 # Select Channel Presets:
 	switch(to_lower(@from)) {
@@ -580,6 +583,9 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		@channel = @config['Log_Channel']
 	case 'log':
 		@channel = @config['Server_Log_Channel']
+	case 'debug':
+		@channel = @config['Log_Channel']
+		@type = 'debug'
 	}
 	switch(@type){
 	case 'admin':
@@ -594,6 +600,9 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 # Message Building:
 	try {	
 		switch(@type){
+		case 'debug':
+			_db_msg_Console(@message, 'debug')
+			return(true);
 		case 'admin':
 		case 'console':
 		case 'broadcast':
@@ -1291,7 +1300,14 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	if(@levelxp == null) { 
 		@levelxp = _discordBot_lb_levelXP(@discord['serverid'], @config['LB_Options']['XP_Type']);
 		array_set(@leaderboard['options'], 'levelXP', @levelxp)
-		array_set(@leaderboard, 'Guild_Name', @config['LB_Options']['Guild_Name'])
+		if(array_index_exists(@config, 'LB_Options', 'Custom_Name')) {
+			array_set(@leaderboard, 'Guild_Name', @config['LB_Options']['Custom_Name'])
+		} else {
+			@serverInfo = import('DiscordBot.Guilds.Info.'.@discord['serverid'], array('name': null))
+			if(@serverInfo['name'] != null) {
+				array_set(@leaderboard, 'Guild_Name', @serverInfo['name'])
+			}
+		}
 	}
 # Setup Array entries	
 	if(!array_index_exists(@leaderboard, 'members', @userID)) {
@@ -1321,6 +1337,7 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 				if(@discord['bot'] == false) {
 					return(false)
 				} else {
+					array_set(@leaderboard['members'][@userID], 'bot', true)
 					@xpType = 0
 				}
 			}
@@ -1726,6 +1743,7 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 
 
 proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
+	@StartTime = time()
 	@botconfig = import('DiscordBot.config.Discord')
 	@botinfo = import('DiscordBot.Bot.Info')
 	@cmdfromdis = ''
@@ -1976,8 +1994,6 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@colorret = 3
 	@retdisplay = ''
 	if(@return == false) { @colorret = 12 @retdisplay = ' (Failed)' }
-	_db_msg_Console(@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
-	_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
 	if(array_index_exists(@config, 'CMD_Message_Action')) {
 		if(to_lower(@config['CMD_Message_Action']) == 'delete' && string(@CmdReturn) != 'NotACmd' && @discord['UseDM'] != 'dm') {
 			try {
@@ -1987,6 +2003,8 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			}
 		}
 	}
+	_db_msg_Console('<'.(time() - @StartTime).'ms> '.@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
+	_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
 	return(@return)
 }
 
@@ -2020,7 +2038,8 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 	@botconfig = import('DiscordBot.config.Discord')
 	if(!array_index_exists(@discord, 'serverid')) { array_set(@discord, 'serverid', @botconfig['Primary_Guild']) }
 	@config = import('DiscordBot.config.'.@discord['serverid'])
-	@membernames = get_value('DiscordBot.'.@discord['serverid']'.members.names')
+	@membernames = get_value('DiscordBot.'.@discord['serverid'].'.members.names')
+	if(!array_index_exists(@discord, 'UseDM')) { array_set(@discord, 'UseDM', 'broadcast') }
 	if(!is_array(@membernames)) { @membernames = array() }
 	if(is_numeric(@target)) {
 		if(@target == @config['Bot_ID']) {
@@ -2037,10 +2056,14 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 		}
 		return(@target)
 	} else {
+		@target = replace(@target, '@', '')
 		if(reg_count('^[@]?'.@config['Bot_Name'].'[#]?[0-9]{0,4}?$', @target) > 0) {
 			return('bot')
 		}
+		if(equals_ic(@botconfig['Bot_Name'], @target)) { return('bot') }
+		if(equals_ic(@config['Bot_Name'], @target)) { return('bot') }
 		@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array')
+		#Recheck with tag, if exists
 		if(reg_count('[#][0-9]{4}$', @target) > 0 && !array_index_exists(@targetmatches, 0)) {
 			@target = reg_replace('[#][0-9]{4}$', '', @target)
 			@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array')
@@ -2054,7 +2077,9 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 			_db_msg_Console('Could not find user ID for '.@target.'!', @discord['serverid'])
 			return('notfound')
 		} else if(array_index_exists(@targetmatches, 1)) {
-			discord_private_message(@discord['userid'], 'I found multiple users; I\'m not sure which one you meant to apply this command to. Users Matched: \n'.array_implode(@targetmatches, ', '))
+			if(array_index_exists(@discord, 'userid')) {
+				discord_private_message(@discord['userid'], 'I found multiple users; I\'m not sure which one you meant to apply this command to. Users Matched: \n'.array_implode(@targetmatches, ', '))
+			}
 			_db_msg_Console('finduserID: Found multiple users, Users Matched: \n'.array_implode(@targetmatches, ', '), @discord['serverid'])
 			return('multiple')
 		} else {
