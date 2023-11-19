@@ -1,5 +1,4 @@
-#version 1.0-tmc
-
+# Anti Spam functions: Check if user is repeating messages, new user chatting on too many channels, etc.
 proc _db_as_dm(@discord) {
 	try {
 		discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
@@ -10,7 +9,6 @@ proc _db_as_dm(@discord) {
 	}
 }		
 
-#Check
 bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'priority': 'HIGHEST'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	if(@discord['bot'] == true) { die() }

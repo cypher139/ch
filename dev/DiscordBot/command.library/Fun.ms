@@ -1,6 +1,3 @@
-#version 1.0-tmc
-
-
 proc _discordBot_cmd_cypher(@discord) {
 	if(@discord['username'] != 'Cypher') {
 		_discordBot_send_message('Cypher no Cyphing!', 'discord', @discord['serverid'], @discord['SendChannel'], @discord['UseDM'])

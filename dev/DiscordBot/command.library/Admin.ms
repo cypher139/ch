@@ -1,5 +1,3 @@
-#version 1.0-tmc
-
 proc _discordBot_cmd_wrf(@discord, @args) {
 	if(is_proc('_discordBot_WelcomeRolesFinder')) {
 		if(!array_index_exists(@args, 0)) { @args = array('welcome') }

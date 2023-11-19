@@ -1,6 +1,4 @@
-#version 1.1-tmc
 # Handle commands from Discord Users
-
 # Precompile command actions, made available for only these binds:
 include_dir('../command.library')
 _discordBot_init_cmd_list()

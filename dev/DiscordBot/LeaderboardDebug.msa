@@ -1,4 +1,3 @@
-#version 1.0-tmc
 admin:/lbdbg [$action] [$id] [$] = >>>
 @botconfig = import('DiscordBot.config.Discord')
 
@@ -9,7 +8,7 @@ admin:/lbdbg [$action] [$id] [$] = >>>
 @levelxp = import('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard.levelXP')
 @args = parse_args($)
 @config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
-	
+
 
 if(!is_numeric(@id)) {
 	die('Invalid User ID given.')

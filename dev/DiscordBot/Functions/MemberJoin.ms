@@ -1,6 +1,4 @@
-#version 1.2-tmc
-
-#Welcome DM and Message for new Discord Server Members
+# Welcome DM and Message for new Discord Server Members, and record invite used.
 bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord')
@@ -360,7 +358,10 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	}
 #Send Logs
 	if(@config['Log_Invites'] == true) {
-		_discordBot_send_message('**'.@userDisplaydc.'** left the server. `'.@invmsgSuffix.'`', @discord['serverid'], 'log')
+		if(@invmsgSuffix != '') {
+			@invmsgSuffix = '`'.@invmsgSuffix.'`'
+		}
+		_discordBot_send_message('**'.@userDisplaydc.'** left the server. '.@invmsgSuffix, @discord['serverid'], 'log')
 	}
 	_db_msg_Console('Member '.color(12).'left: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'> '.@consoleMsgSuffix.color('r').@wmres, @discord['serverid'])
 #Remove Leaderboard entry, save entry if not a new member

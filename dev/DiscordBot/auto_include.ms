@@ -160,8 +160,9 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 # Checks and Startup Init
 	if(is_numeric(@cfgtype)) {
 		@botconfig = import('DiscordBot.config.Discord')
+		@botInfo = discord_member_info(@cfgtype, @botconfig['Bot_ID'])
+		if(@botInfo['nickname'] != '') { array_set(@loadcfg, 'Bot_Name', @botInfo['nickname']) } else { array_set(@loadcfg, 'Bot_Name', @botInfo['displayname']) }
 		array_set(@loadcfg, 'Bot_ID', @botconfig['Bot_ID'])
-		array_set(@loadcfg, 'Bot_Name', @botconfig['Bot_Name'])
 		if(array_contains(@loadcfg['Channels_Receive'], 'default')) {
 			_db_msg_Admins(color(12).'['.@prefix.'] Config file is still using default values. Please configure it in order to use various Discord features.') 
 			return(false)
@@ -790,6 +791,7 @@ proc _discordBot_backup_members(@args) {
 	@config = import('DiscordBot.config.Discord')
 	@guilds = import('DiscordBot.Guilds', array())
 	if(array_size(@guilds) == 0) { return(false) }
+	@writes = 0
 	foreach(@guild in @guilds) {
 		@data = array(
 		'membersID': get_value('DiscordBot.'.@guild.'.members.ID'),
@@ -805,7 +807,6 @@ proc _discordBot_backup_members(@args) {
 		'JoinInfo': get_value('DiscordBot.'.@guild.'.Join.info')
 		)
 		@time = time();
-		@writes = 0
 		foreach(@k: @v in @data) {
 			if(@v == '' || @v == null) { continue() }
 			if(is_array(@v) && array_size(@v) == 0) { continue() }
@@ -813,6 +814,7 @@ proc _discordBot_backup_members(@args) {
 			@writes++
 		}
 	}
+	return(@writes)
 }
 
 proc _discordBot_update_members(@useguild = 0) {
@@ -896,9 +898,14 @@ proc _discordBot_update_members(@useguild = 0) {
 					@debugstats['fails']++
 					continue()
 				}
-				
 				array_set(@membersInfo, @id, @idInfo)
 				array_set(@membersNames, @idInfo['username'], @id)
+				
+			# Config Updates if bot User
+				if(@id == @config['Bot_ID']) {
+					if(@idInfo['nickname'] != '') { @config['Bot_Name'] = @idInfo['nickname'] } else { @config['Bot_Name'] = @idInfo['nickname'] }
+					export('DiscordBot.config.'.@guild, @config);
+				}
 			# Clear memory:
 				if(@idisNewUser == false) {
 					if(is_array(import('DiscordBot.'.@guild.'.last.message.new.'.@id))) {
@@ -1830,7 +1837,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@msgcheck = reg_replace(@config['CMD_Command_Prefix'], '', @discord['message'])
 	if(@dm == 'dm' || @cmdfrom == 'mention') {
 		@msgcheck = reg_replace('^[@]'.@botconfig['Bot_Name'].'\\s', '', @msgcheck)
-		@msgcheck = reg_replace('^[@]'.@botinfo['displayname'].'\\s', '', @msgcheck)
+		@msgcheck = reg_replace('^[@]'.@config['Bot_Name'].'\\s', '', @msgcheck)
 	}
 	@command = parse_args(@msgcheck)
 	# No Command Given

@@ -1,4 +1,3 @@
-#version 1.0-tmc
 proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@membernames = import('DiscordBot.'.@discord['serverid'].'.members.names')

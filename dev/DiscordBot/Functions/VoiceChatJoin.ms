@@ -1,4 +1,4 @@
-#version 1.1-tmc
+#Ping users to join VC when a user joins the channel, and record channel stats.
 /*
 Voice Chat monitor:
 If:
@@ -8,7 +8,6 @@ If:
  -- "Voice Chat" ping role has not been pinged by the bot in over 12 hours
 Then this will send a message to the ping role to come join voice chat
 */
-
 bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord')

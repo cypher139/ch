@@ -1,4 +1,4 @@
-#version 1.2-tmc
+# Notify connected servers of any DMs sent to the Bot.
 export('DiscordBot.DMs.user.settings', get_value('DiscordBot.DMs.user.settings'));
 proc _db_format_msg_attach(@discord, @url = false) {
 	@ret = @discord['message']

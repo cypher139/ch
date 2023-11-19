@@ -1,4 +1,3 @@
-#version 1.0-tmc
 proc _discordBot_cmd_ping(@discord, @args) {
 	return('pong')
 }

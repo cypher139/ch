@@ -1,9 +1,4 @@
-#version 1.3-tmc
-
-# Every 10 minutes store changes to leaderboard in RAM to the database
-# Also publishes json to logs. A webserver can pull from this for a online leaderboard display. (sold separately sry)
-# set_interval(600000, 100000, closure(){ _discordBot_lb_update_database() });
-
+# Receive messages from Discord users, pass data to Leaderboard and Minecraft server, save message for future reference.
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	array_set(@discord, 'time', time());
