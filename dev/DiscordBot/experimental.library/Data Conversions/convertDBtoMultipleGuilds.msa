@@ -1,4 +1,5 @@
-#version 1.0-tmc
+# If you used my Discord bot before support was added for Multiple guilds (commit 4e68b35, 6/2/23) (commit 55c6b0f, 6/6/23):
+# this Converts Database values from the single guild to listed under the config's Primary Guild.
 admin:/discordbotdbconvmg [$clear='false'] [$type=0] [$] = >>>
 	@dbcount = 0
 	@dmcount = 0

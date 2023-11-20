@@ -1,4 +1,5 @@
-#version 1.0-tmc
+# If you used my Discord bot before it was spun off from my Chat script, (commit 1593e88, 3/19/23):
+# this Converts Database values from Chat script to DiscordBot.
 admin:/discordbotdbconv [$clear='false'] [$type=0] [$] = >>>
 	@dbcount = 0
 	@dmcount = 0

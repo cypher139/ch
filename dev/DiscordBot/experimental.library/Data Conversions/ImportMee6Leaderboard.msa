@@ -1,4 +1,4 @@
-#version 1.0-tmc
+# If you use the Mee6 Leaderboard you can import the leaderboard data to cypher139's Discord bot, then discontinue Mee6 usage if desired
 admin:/importmee6lb [$serverid] [$] = >>>
 @name = 'Discord'
 @id = $serverid

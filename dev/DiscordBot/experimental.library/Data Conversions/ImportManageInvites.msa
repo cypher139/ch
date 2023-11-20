@@ -1,4 +1,5 @@
-#version 0.8-tmc
+# This imports the MangaeInvite bot server invite data, for use with a CH based invite log system. Requires manual additions of codes to the import json file.
+# If you are using the ManageInvite bot, you can visit their API, download a json of your current invite data, add the relevant invite codes to each array, and then use this command to finish importing into cypher139's Discord bot
 admin:/importmi [$serverid] [$] = >>>
 @name = 'Discord'
 @id = $serverid
