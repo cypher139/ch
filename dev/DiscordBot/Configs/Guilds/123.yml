@@ -69,6 +69,8 @@ Role_Colors:
   Server Admin: ba3e39
 # Shall we receive messages from Minecraft players in your server's designated Minecraft channel?
 Minecraft_Messages: true
+# Shall we receive messages from other Discord server's Minecraft channels in your server's designated Minecraft channel?
+Cross_Server_Messages: true
 # Which channels are allowed to send messages to the Minecraft server? (Applies only if your server is the bot's Primary Guild!)
 Channels_Receive:
 - general
@@ -92,6 +94,19 @@ Default_Channel: minecraft
 Use_Emojis: true
 # Should we only convert emoji if the emoji is from your server?
 Use_Other_Emojis: true
+#
+# Cross Server Options:
+# Prefix user to the beginning of message, if false prefixes server name instead.
+CS_Prefix_User: true
+# Limit prefix to 1 letter
+CS_Prefix_Limit: true
+# Allow mention of username?
+# Note: Roles and everyone/here won't be mentioned.
+CS_Mention_User: true
+# If the message provides a referenced message, show referenced message in an embed?
+CS_Show_Reference: true
+# Show URL links to attached files?
+CS_URL_Broadcast: true
 #
 #
 # Commands

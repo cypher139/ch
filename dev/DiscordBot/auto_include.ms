@@ -534,7 +534,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		if(@caller != 'Bot') {
 			@sanitize = _db_sanitize_message(@message['content'], @caller, @guild, @from, @dm)
 			@message['content'] = @sanitize['message']
-			if(array_index_exists(@sanitize, 'allowed_mentions')) {
+			if(array_index_exists(@sanitize, 'allowed_mentions') && !array_index_exists(@message, 'allowed_mentions')) {
 				array_set(@message, 'allowed_mentions', array('parse': @sanitize['allowed_mentions']))
 			}
 		}
@@ -737,15 +737,10 @@ proc _discordBot_send_mc_chat(@message, @player, @overrideChannel = null, @type 
 	@guilds = import('DiscordBot.Guilds', array());
 	if(array_size(@guilds) == 0) { return(false) }
 	foreach(@guild in @guilds) {
-		@channel = ''
 		@config = import('DiscordBot.config.'.@guild);
 # Send message to guild's MC channel, if configured
 		if(@config['Minecraft_Messages'] == false) { continue() }
-		if(array_index_exists(@config, 'Minecraft_Channel')) {
-			@channel = @config['Minecraft_Channel']
-		} else {
-			@channel = @config['Default_Channel']
-		}
+		@channel = @config['Minecraft_Channel']
 		# Primary Guild only: Accept channel overrides, if channel is in approved list
 		if(@guild == @botconfig['Primary_Guild']) {
 			if(@overrideChannel == '' || @overrideChannel == null) { @nc = 1 } else {
@@ -757,6 +752,102 @@ proc _discordBot_send_mc_chat(@message, @player, @overrideChannel = null, @type 
 		#Admin channel override
 		if(@overrideChannel == 'admin') { @channel = @overrideChannel }
 		_discordBot_send_message(@message, @guild, @player, @channel, @type)
+	}
+	return(true);
+}
+
+proc _discordBot_send_cs_chat(@discord, @option) {
+	if(!is_array(@discord)) { return(false) }
+	@botconfig = import('DiscordBot.config.Discord')
+	@guilds = import('DiscordBot.Guilds', array());
+	if(array_size(@guilds) == 0) { return(false) }
+	#Message Formatting & File links
+	@urls = array()
+	@suffix = ''
+	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
+		if(@discord['message'] == '') {
+			@suffix = '<Sent a file> '
+		} else {
+			@suffix = @suffix.'\n <Also attached file:> '
+		}
+		foreach(@num: @attach in @discord['attachments']) {
+			array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))
+			@filenum = 'File: '
+			if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
+			@suffix = @suffix.@filenum.@attach['filename']
+		}
+	}
+	#user avatar
+	@userInfo = discord_member_info(@discord['serverid'], @discord['userid'])
+	foreach(@guild in @guilds) {
+		if(@discord['serverid'] == @guild) { continue() }
+		@config = import('DiscordBot.config.'.@guild);
+		if(@config['Cross_Server_Messages'] == false) { continue() }
+		if(!array_index_exists(@config, 'Minecraft_Channel')) { continue() }
+		@channel = @config['Minecraft_Channel']
+		if(array_index_exists(@config, 'CS_Channel')) { @channel = @config['CS_Channel'] }
+		@message = array('content': @discord['message'], 'embeds': array(array()))
+		#Message Formatting
+		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @message['content']) > 0 && @config['CS_URL_Broadcast'] == false) {
+			@message['content'] = '<Sent a GIF>'
+		}
+		@userPrefix = ''
+		@userRefPrefix = '...'
+		@prefixEscape = array('`', '[', ']')
+	# Prefix user to the beginning of message
+		if(@config['CS_Prefix_User'] == true) {
+			# Limit prefix to 1 letter?
+			if(@config['CS_Prefix_Limit'] == false) {
+				@userPrefix = '<@'.@discord['userid'].'>'
+				@prefixEscape = array('', '', '')
+				if(array_index_exists(@discord, 'reference', 'id')) { @userRefPrefix = '<@'.@discord['reference']['userid'].'>' }
+			} else {
+				@userPrefix = @userInfo['displayname']
+				if(array_index_exists(@discord, 'reference', 'id')) { @userRefPrefix = @discord['reference']['username'] }
+			}
+		} else {
+			@userPrefix = @config['Server_Nickname']
+		}
+		if(@config['CS_Prefix_Limit'] == true) {
+			@userPrefix = reg_match('(?<a>[A-Za-z0-9])', @userPrefix)['a']
+			if(@userPrefix == '' || @userPrefix == null) { @userPrefix = '???' }
+			@userPrefix = @userPrefix.'...'
+			if(array_index_exists(@discord, 'reference', 'id')) {
+				@userRefPrefix = reg_match('(?<a>[A-Za-z0-9])', @userRefPrefix)['a']
+				if(@userRefPrefix == '' || @userRefPrefix == null) { @userRefPrefix = '???' }
+				@userRefPrefix = @userRefPrefix.'...'
+			}
+		}
+		if(@discord['bot'] == true) { @userPrefix = @userPrefix.' (Bot)' }
+		@userPrefix = @prefixEscape[0].@prefixEscape[1].@userPrefix.@prefixEscape[2].@prefixEscape[0].': '
+		if(array_index_exists(@discord, 'reference', 'id')) { @userRefPrefix = @prefixEscape[0].@prefixEscape[1].@userRefPrefix.@prefixEscape[2].@prefixEscape[0].': ' }
+
+# Option-add footer of chat from xyz server, thumbnail of user / author
+
+	# Allow mention of username?
+		@au = array()
+		if(@config['CS_Mention_User'] == true) { @au[] = 'USER' }
+		array_set(@message, 'allowed_mentions', array('parse': @au))
+	# If the message provides a referenced message, show referenced message in an embed?
+		if(@config['CS_Show_Reference'] == true) {
+			if(array_index_exists(@discord, 'reference', 'message')) {
+				@msgLength = length(@discord['reference']['message']) - 1
+				@msgl2 = ''
+				if(@msgLength > 240) { @msgLength = 240 @msgl2 = ' ...' }
+				array_set(@message['embeds'][0], 'fields', array(array('name': 'Referenced Message', 'value': @userRefPrefix.'\n'.@discord['reference']['message'][cslice(0, @msgLength)].@msgl2, 'inline': false)))
+			}
+		}
+	# Show URL links to attached files?
+		if(array_index_exists(@urls, 0) && @config['CS_URL_Broadcast'] == true) {
+			if(array_index_exists(@message, 'embeds', 0, 'fields')) {
+				array_push_all(@message['embeds'][0]['fields'], @urls)
+			} else {
+				array_set(@message['embeds'][0], 'fields', @urls)
+			}
+		}
+		if(array_size(@message['embeds'][0]) == 0) { array_remove(@message, 'embeds') }
+		@message['content'] = @userPrefix.@message['content'].@suffix
+		_discordBot_send_message(@message, @guild, 'cross', @channel)
 	}
 	return(true);
 }

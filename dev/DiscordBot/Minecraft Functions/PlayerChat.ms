@@ -42,7 +42,7 @@ bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MO
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
-	@channel = @config['Default_Channel']
+	@channel = @config['Minecraft_Channel']
 	# Automatically chat on last channel a message was received on.
 	@lastmsg = import('DiscordBot.'.@botconfig['Primary_Guild'].'.last.message')
 	if(is_array(@lastmsg)) {

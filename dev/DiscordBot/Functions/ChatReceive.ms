@@ -10,47 +10,55 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	if(nequals_ic(@discord['username'], @discord['nickname'])) {
 		@userDisplay = @discord['nickname']
 	}
-	@isDefaultChannel = false
-	@DefaultChannel = @config['Default_Channel']
-	if(array_index_exists(@config, 'Minecraft_Channel')) {
-		@DefaultChannel = @config['Minecraft_Channel']
+	@sendtoMC = false
+	@sendtoCS = false
+	if(@discord['channel'] == @config['Minecraft_Channel'] || @discord['channelid'] == @config['Minecraft_Channel']) { @sendtoMC = true @sendtoCS = true }
+	if(array_index_exists(@config, 'CS_Channel')) {
+		@sendtoCS = false
+		if(@discord['channel'] == @config['CS_Channel'] || @discord['channelid'] == @config['CS_Channel']) { @sendtoCS = true }
 	}
-	if(@discord['channel'] == @DefaultChannel || @discord['channelid'] == @DefaultChannel) { @isDefaultChannel = true }
-		
+
+#Send data to leaderboard
+	_discordBot_lb_process_message(@discord, @noXP);
 	
-#Message Formatting
-	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
-		@discord['message'] = '<Sent a GIF>'
+#Send data to cross-server chat
+	if(@config['Cross_Server_Messages'] == true && @sendtoCS == true && is_consumed() == false) {
+		_discordBot_send_cs_chat(@discord);
 	}
-	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
-		if(@discord['message'] == '') {	
-			@discord['message'] = '<Sent a file> '
-		} else {
-			@discord['message'] = @discord['message'].'\n <Also attached file:> '
-		}
-		foreach(@num: @attach in @discord['attachments']) {
-			@filenum = 'File: '
-			if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
-			@discord['message'] = @discord['message'].@filenum.@attach['filename']
-		}
-	}
-		
-#Save Recent Messages for reference	
+	
+# Remaining items to only occur if event is not consumed
 	if(is_consumed() == false) {
+	#Message Formatting
+		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
+			@discord['message'] = '<Sent a GIF>'
+		}
+		if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
+			if(@discord['message'] == '') {	
+				@discord['message'] = '<Sent a file> '
+			} else {
+				@discord['message'] = @discord['message'].'\n <Also attached file:> '
+			}
+			foreach(@num: @attach in @discord['attachments']) {
+				@filenum = 'File: '
+				if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
+				@discord['message'] = @discord['message'].@filenum.@attach['filename']
+			}
+		}
+	#Save Recent Messages for reference	
 		@loadBot = ''
 		if(array_index_exists(@discord, 'channeltype')) {
 			if(@discord['channeltype'] == 'TEXT') {
 				array_remove(@discord, 'channeltype')
 			}
 		}
-	# Server's last 50 messages
+		# Server's last 50 messages
 		if(@discord['bot'] == true) { @loadBot = '.bot' }
 		@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
 		if(array_index_exists(@lastmsgs, 50)) { array_remove(@lastmsgs, 50) }
 		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastmsgs)
-	# User's last 30 messages
+		# User's last 30 messages
 		if(@discord['bot'] == false) { @loadBot = '.user' }
 		@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'])
 		@isNewUser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
@@ -59,17 +67,9 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		array_set(@userDiscord, 'newuser', @isNewUser)
 		array_insert(@lastUserMsgs, @userDiscord, 0)
 		if(array_index_exists(@lastUserMsgs, 30)) { array_remove(@lastUserMsgs, 30) }
-		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'], @lastUserMsgs)
-	}
-	
-#Send data to leaderboard
-	_discordBot_lb_process_message(@discord, @noXP);
-
-
-# Remaining items to only occur if event is not consumed
-	if(is_consumed() == false) {
+		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'], @lastUserMsgs)	
 	#Check User Role Ranks
-		if(@config['Use_Role_Ranks'] == true) {
+		if(@config['Use_Role_Ranks'] == true && @discord['bot'] == false) {
 			@rrupdates = import('DiscordBot.'.@discord['serverid'].'.user.update.time.rr')
 			if(@rrupdates == null) { @rrupdates = array() }
 			if(!array_index_exists(@rrupdates, @discord['userid'])) {
@@ -82,21 +82,16 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 				export('DiscordBot.'.@discord['serverid'].'.user.update.time.rr', @rrupdates)
 			}
 		}
-		# }
-
 	#Send message to Minecraft players and/or console
-		@sendtoMC = false
 		@checkPermission = null
+		#Primary Guild: accept multiple channels
 		if(@discord['serverid'] == @botconfig['Primary_Guild']) {
-			@sendtoMC = @isDefaultChannel
 			if(array_contains(@config['Channels_Receive'], @discord['channel']) || array_contains(@config['Channels_Receive'], @discord['channelid'])) { 
 				@sendtoMC = true
 				@checkPermission = 'DiscordBot.chat.channel.'.@discord['channel']
 			}
-		} else {
-			@sendtoMC = @isDefaultChannel
 		}
-		if(@sendtoMC == true && is_consumed() == false) {
+		if(@sendtoMC == true && is_consumed() == false && @config['Minecraft_Messages'] == true) {
 			@userRoles = discord_member_get_roles(@discord['serverid'], @discord['username'])
 		#Set username color based on data previously set from Discord colors
 		# keys system gives roles alphabetically, not server's order
