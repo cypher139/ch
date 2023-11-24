@@ -30,7 +30,7 @@ Minecraft_Messages_Admin: true
 #
 # Anti Spam
 # When a member joins, how much time elapses before Anti spam no longer considers them a new join? (in millseconds)
-AS_New_User_Time: 600000
+AS_New_User_Time: 600000000
 # How many different channels can a new user post on, before Anti Spam considers them to be a spammer?
 AS_New_User_Channel_Limit: 7
 # If a user triggers Anti Spam, delete their most recent messages?

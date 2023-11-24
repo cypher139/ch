@@ -927,6 +927,7 @@ proc _discordBot_update_members(@useguild = 0) {
 				continue();
 			}
 			@membersNames = array();
+			@membersNamesDisplay = array();
 			@membersRoles = array();
 			@membersInfo = array();
 			@membersWR = array();
@@ -991,7 +992,9 @@ proc _discordBot_update_members(@useguild = 0) {
 				}
 				array_set(@membersInfo, @id, @idInfo)
 				array_set(@membersNames, @idInfo['username'], @id)
-				
+				if(@idInfo['displayname'] != null && @idInfo['displayname'] != @idInfo['username']) {
+					array_set(@membersNamesDisplay, @idInfo['displayname'], @id)
+				}
 			# Config Updates if bot User
 				if(@id == @config['Bot_ID']) {
 					if(@idInfo['nickname'] != '') { @config['Bot_Name'] = @idInfo['nickname'] } else { @config['Bot_Name'] = @idInfo['nickname'] }
@@ -1126,6 +1129,8 @@ proc _discordBot_update_members(@useguild = 0) {
 			array_set(@debugstats['size'], 'rt', array_size(@totalroles))
 			store_value('DiscordBot.'.@guild.'.members.names', @membersNames)
 			array_set(@debugstats['size'], 'mn', array_size(@membersNames))
+			store_value('DiscordBot.'.@guild.'.members.names.display', @membersNamesDisplay)
+			array_set(@debugstats['size'], 'mn-d', array_size(@membersNamesDisplay))
 			store_value('DiscordBot.'.@guild.'.members.roles.welcomeroles', @membersWR)
 			array_set(@debugstats['size'], 'wr', array_size(@membersWR))
 			store_value('DiscordBot.'.@guild.'.members.roles.none', @membersNoRoles)
@@ -1434,11 +1439,12 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 			} catch(Exception @ex) {
 				if(@discord['bot'] == false) {
 					return(false)
-				} else {
-					array_set(@leaderboard['members'][@userID], 'bot', true)
-					@xpType = 0
 				}
 			}
+		}
+		if(@discord['bot'] == true) {
+			array_set(@leaderboard['members'][@userID], 'bot', true)
+			@xpType = 0
 		}
 		foreach(@role in @userRoles) {
 			if(array_contains(@config['LB_Options']['NoXP_RoleID'], @role)) {
@@ -2135,8 +2141,11 @@ proc _discordBot_init_cmd_list(@test) {
 proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 	@botconfig = import('DiscordBot.config.Discord')
 	if(!array_index_exists(@discord, 'serverid')) { array_set(@discord, 'serverid', @botconfig['Primary_Guild']) }
+	if(!array_index_exists(@discord, 'userid')) { array_set(@discord, 'userid', null) }
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@membernames = get_value('DiscordBot.'.@discord['serverid'].'.members.names')
+	@membernamesDisplay = get_value('DiscordBot.'.@discord['serverid'].'.members.names.display')
+	@useDisplay = false
 	if(!array_index_exists(@discord, 'UseDM')) { array_set(@discord, 'UseDM', 'broadcast') }
 	if(!is_array(@membernames)) { @membernames = array() }
 	if(is_numeric(@target)) {
@@ -2154,6 +2163,7 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 		}
 		return(@target)
 	} else {
+		if(@target == '' || @target == null) { return('notfound') }
 		@target = replace(@target, '@', '')
 		if(reg_count('^[@]?'.@config['Bot_Name'].'[#]?[0-9]{0,4}?$', @target) > 0) {
 			return('bot')
@@ -2166,23 +2176,32 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 			@target = reg_replace('[#][0-9]{4}$', '', @target)
 			@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array')
 		}
-		if(equals_ic(@target, @discord['username']) || equals_ic(@target, @discord['nickname'])) {
-			return('self')
-		}	
+		#Check Display names if not found in username
+		if(!array_index_exists(@targetmatches, 0)) {
+			@targetmatches = _array_string_contains(array_keys(@membernamesDisplay), @target, '', 'array')
+			@useDisplay = true
+		}
+		if(array_index_exists(@discord, 'username') && array_index_exists(@discord, 'nickname')) {
+			if(equals_ic(@target, @discord['username']) || equals_ic(@target, @discord['nickname'])) {
+				return('self')
+			}
+		}
 		_db_msg_Console('finduserID: matches: '.@targetmatches, @discord['serverid'], 'debug')
 		
 		if(!array_index_exists(@targetmatches, 0)) {
 			_db_msg_Console('Could not find user ID for '.@target.'!', @discord['serverid'])
 			return('notfound')
 		} else if(array_index_exists(@targetmatches, 1)) {
-			if(array_index_exists(@discord, 'userid')) {
+			if(@discord['userid'] != null) {
 				discord_private_message(@discord['userid'], 'I found multiple users; I\'m not sure which one you meant to apply this command to. Users Matched: \n'.array_implode(@targetmatches, ', '))
 			}
 			_db_msg_Console('finduserID: Found multiple users, Users Matched: \n'.array_implode(@targetmatches, ', '), @discord['serverid'])
 			return('multiple')
+		} else if(@useDisplay == true) {
+			return(@membernamesDisplay[array_implode(@targetmatches, '')])
 		} else {
 			return(@membernames[array_implode(@targetmatches, '')])
-		}		
+		}
 	}
 }
 

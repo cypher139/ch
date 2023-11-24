@@ -132,7 +132,6 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 		# https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'guild_icon.'.png'
 		'author': array('icon_url': 'https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'.@serverInfo['icon'].'.'.@serverIconType, 'name': @leaderboard['Guild_Name'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @leaderboard['Guild_Name'])),
 		'title': 'Leaderboard',
-		'url': @lbURL,
 		'color': @userInfo['color'],
 		'thumbnail': @userInfo['avatar'],
 		'description': '<@'.@userID.'> ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎‎‎‎‎Rank #**'.@userRank.'** ‎ ‎ ‎ ‎ ‎ ‎ ‎Level **'.@leaderboard['members'][@userID]['level'].'**',
@@ -162,11 +161,15 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 				}
 			}
 		}
-		#format embed setup, send to return
+		# Format embed setup, send to return
+		if(array_size(@return['embeds']) == 0) {
+		# from Discord: "Embeds are deduplicated by URL. If a message contains multiple embeds with the same URL, only the first is shown."
+			array_set(@embed, 'url', @lbURL)
+		}
 		@return['embeds'][] = @embed
 	}
 	if(!array_index_exists(@return, 'embeds', 0)) { @return = 'Um, yea i didn\'t find a matching Leaderboard entry!' }
-	console(@return)
+	# console(@return)
 	return(@return)
 }
 

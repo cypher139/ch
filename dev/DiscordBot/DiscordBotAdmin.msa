@@ -55,6 +55,7 @@ case 'update':
 	@startTime = time();
 	msg(color('a').'Updating DiscordBot\'s internal cache data for each guild...')
 	_discordBot_update_members();
+	x_thread_join('DiscordBotUpdate', 10000)
 	@stats = import('DiscordBot.debug.stats.last.updatemembers')
 	if(is_array(@stats)) {
 		foreach(@guild: @data in @stats) {

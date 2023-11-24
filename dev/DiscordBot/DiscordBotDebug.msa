@@ -17,19 +17,6 @@ foreach(@arg in @args) {
 }
 msg('Using Server ID: '.@guild)
 switch(@action) {
-case 'lbu':
-	@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard')
-	if(!is_array(@leaderboard)) { die()}
-	foreach(@k: @v in @leaderboard['members']) {
-		if(array_index_exists(@v, 'detailed_xp')) {
-			array_set(@leaderboard['members'][@k], 'mee6_xp', @v['detailed_xp'][2])
-			array_remove(@leaderboard['members'][@k], 'detailed_xp')
-		}
-		if(!array_index_exists(@v, 'all_xp')) {
-			# array_remove(@leaderboard['members'][@k], 'all_xp')
-			array_set(@leaderboard['members'][@k], 'all_xp', array(0,0,@v['xp']))
-		}
-	}
 case 'backup':
 	_discordBot_backup_members();
 case 'update':

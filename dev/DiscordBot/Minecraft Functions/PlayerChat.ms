@@ -31,7 +31,6 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 		modify_event('message', @sendmsg)
 	}
 
-	# _discordBot_send_message(@sendmsg, @botconfig['Primary_Guild'], player(), @channel)
 	_discordBot_send_mc_chat(@sendmsg, player(), @channel)
 }
 
