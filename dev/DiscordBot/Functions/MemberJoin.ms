@@ -4,6 +4,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@time = time();
+	#This event gives display names under "nickname" index
 	@userDisplay = @discord['username']
 	@userDisplaydc = @discord['username']
 	if(nequals_ic(@discord['username'], @discord['nickname'])) {

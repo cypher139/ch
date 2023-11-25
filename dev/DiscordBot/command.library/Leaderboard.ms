@@ -101,9 +101,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 	foreach(@userID in @userIDs) {
 		if(!array_index_exists(@leaderboard['members'], @userID)) { continue() }
 		@userInfo = discord_member_info(@discord['serverid'], @userID);
-		@userDisplay = @userInfo['username']
-		if(nequals_ic(@userInfo['username'], @userInfo['displayname'])) { @userDisplay = @userInfo['displayname'] }
-		if(nequals_ic(@userInfo['username'], @userInfo['nickname']) && @userInfo['nickname'] != '' ) { @userDisplay = @userInfo['nickname'] }
+		@userDisplay = _db_get_user_nick(@discord['serverid'], @userID, @userInfo['username'])
 		@userRank = 0
 		foreach(@index: @data in @lbTop) {
 			if(@data['id'] == @userID) {

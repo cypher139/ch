@@ -6,10 +6,7 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@noXP = false
 	if(@discord['bot'] == true || is_consumed() == true) { @noXP = true }
-	@userDisplay = @discord['username']
-	if(nequals_ic(@discord['username'], @discord['nickname'])) {
-		@userDisplay = @discord['nickname']
-	}
+	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username'])
 	@sendtoMC = false
 	@sendtoCS = false
 	if(@discord['channel'] == @config['Minecraft_Channel'] || @discord['channelid'] == @config['Minecraft_Channel']) { @sendtoMC = true @sendtoCS = true }

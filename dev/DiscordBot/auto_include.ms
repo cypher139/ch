@@ -243,6 +243,27 @@ proc _discordBot_get_server_info(@guild) {
 	});
 }
 
+proc _db_get_user_nick(@userID, @serverID, @username) {
+	@botconfig = import('DiscordBot.config.Discord')
+	if(@userID == null || @userID == '') { throw('ms.lang.CastException', 'User ID not given to nick display') }
+	if(@username == null || @username == '') { throw('ms.lang.CastException', 'User name not given to nick display') }
+	if(@serverID == null || @serverID == '') { @serverID = @botconfig['Primary_Guild'] }
+	if(!is_numeric(@userID)) { return(@username) }
+	if(!is_numeric(@serverID)) { return(@username) }
+	@memberInfo = array()
+	try {
+		@memberInfo = discord_member_info(@serverID, @userID)
+	} catch(NotFoundException @ex) {
+		return(@username)
+	}
+	if(@memberInfo['nickname'] != '') {
+		return(@memberInfo['nickname'])
+	} else if(@memberInfo['displayname'] != '') {
+		return(@memberInfo['displayname']) 
+	} else {
+		return(@memberInfo['username'])
+	}
+}
 
 ##########################################
 ### Send A Message
@@ -1400,7 +1421,7 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	}
 # Setup Level XP
 	@levelxp = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.levelXP')
-	if(@levelxp == null) { 
+	if(@levelxp == null) {
 		@levelxp = _discordBot_lb_levelXP(@discord['serverid'], @config['LB_Options']['XP_Type']);
 		array_set(@leaderboard['options'], 'levelXP', @levelxp)
 		if(array_index_exists(@config, 'LB_Options', 'Custom_Name')) {
@@ -1411,8 +1432,11 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 				array_set(@leaderboard, 'Guild_Name', @serverInfo['name'])
 			}
 		}
+		if(!array_index_exists(@leaderboard, 'averages')) {
+			array_set(@leaderboard, 'averages', array('words': array('msgs': 0, 'count': 0)))
+		}
 	}
-# Setup Array entries	
+# Setup Array entries
 	if(!array_index_exists(@leaderboard, 'members', @userID)) {
 		array_set(@leaderboard['members'], @userID, array('all_xp': array(0, 0, 0), 'last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'msg_count': 0, 'words': 0))
 	}
@@ -1457,6 +1481,8 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 # Increment Message count and XP
 	@leaderboard['members'][@userID]['msg_count'] = @leaderboard['members'][@userID]['msg_count'] + 1
 	@leaderboard['members'][@userID]['words'] = @leaderboard['members'][@userID]['words'] + @newWords
+	@leaderboard['averages']['words']['msgs']++
+	@leaderboard['averages']['words']['count'] = @leaderboard['averages']['words']['count'] + @newWords
 	@leaderboard['members'][@userID]['last_msg'] = time()
 	@newxp = rand(@config['LB_Options']['XP_Per_Message'][0], @config['LB_Options']['XP_Per_Message'][1])
 	#All XP:
@@ -2108,7 +2134,13 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		}
 	}
 	_db_msg_Console('<'.(time() - @StartTime).'ms> '.@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
-	_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
+	@sendLogMsg = true
+	if(array_index_exists(@config, 'CMD_Log_Ignore_Users')) {
+		if(array_contains(@config['CMD_Log_Ignore_Users'], @discord['username']) || array_contains(@config['CMD_Log_Ignore_Users'], @discord['userid'])) { @sendLogMsg = false }
+	}
+	if(@sendLogMsg == true) {
+		_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
+	}
 	return(@return)
 }
 
