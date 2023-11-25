@@ -51,7 +51,9 @@ proc _db_msg_Console(@message, @guild, string @type = 'prefix') {
 	case 'prefix':
 		@prefix = '['.@config['Server_Nickname'].'] '
 	case 'debug':
-		@prefix = '['.@config['Server_Nickname'].'] '.color('e').'<debug> '.color('r')
+		@prefix = '['.@config['Server_Nickname'].'] '.color(14).'<debug> '.color('r')
+	case 'error':
+		@prefix = '['.@config['Server_Nickname'].'] '.color(12).'<error> '.color('r')
 	case 'd':
 	case 'bot':
 		@prefix = '[DiscordBot] '
@@ -71,6 +73,7 @@ proc _db_msg_Console(@message, @guild, string @type = 'prefix') {
 			}
 		}
 	}
+	if(@guild == 'error' || @type == 'error') { @sendConsole = true }
 	if(@sendConsole == true) {
 		console(@message, false)
 	} else {

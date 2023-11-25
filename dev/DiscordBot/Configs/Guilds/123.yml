@@ -8,6 +8,7 @@ Log_Channel: bot-logs
 # Your server's main logs channel. Member join / invite used messages are sent here.
 Server_Log_Channel: bot-logs
 # Send message to Console: Includes logs such as Member joins, voice chat joins, Bot DM notifications, and Discord Command usage.
+# Note: Error messages are always sent.
 Console_Messages: true
 # Send Chat messages to Console:
 Console_Messages_Chat: false
@@ -151,6 +152,19 @@ Fake_Admin_Rolename: "Super Admin"
 Whitelist_Role: 123456
 # How many whitelists are allowed per player? (If no limit desired set to a high number)
 Whitelist_Allowed_Uses: 5
+#
+#
+#Admin
+#Send Message edited logs to server log channel?
+Log_Message_Edit: false
+#Send a reply to the user who edited their message? (only replies to thsoe listed below)
+Reply_Message_Edit: true
+# List of users to reply to and the message to reply with
+Reply_Message_Edit_Users:
+  Username: "Thanks for that message edit!"
+# Apply a random chance of replying, or not replying to message? Higher numbers give a lesser chance.
+# Comment the line out to reply to every message edit.
+# Reply_Message_Edit_Random: 14
 #
 #
 #Voice Chat

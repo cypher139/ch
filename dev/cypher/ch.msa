@@ -255,6 +255,9 @@ case 'date':
 	} else { @time = time(); }
 	msg(simple_date('MM/dd/yyyy HH:mm:ss', @time))
 	msg(simple_date('MM-dd-yy_HH-mm_', @time))
+case 'time':
+	msg(time())
+	msg(substr(time(), 0, 10))
 case '':
 case null:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')
