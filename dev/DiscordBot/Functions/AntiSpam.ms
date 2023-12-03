@@ -86,7 +86,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # Add user to Triggered state:
 	if(@adduser == true) {
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
-			array_set(@asmembers, @discord['userid'], array('time': @time, 'username': @discord['username'], 'reason': @triggerReason))
+			array_set(@asmembers, @discord['userid'], array('time': @time, 'username': @discord['username'], 'reason': @triggerReason, 'triggercount': 0))
 			export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 			store_value('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 		}
@@ -96,9 +96,10 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	if(array_index_exists(@asmembers, @discord['userid'])) {
 		consume();
 		@actiontaken = '\n*Actions taken:*'
-		@count = import('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.trigger', 0)
-		@count++
-		export('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.trigger', @count)
+		@count = import('DiscordBot.'.@discord['serverid'].'.antispam.trigger', array())
+		if(!array_index_exists(@count, @discord['userid'])) { array_set(@count, @discord['userid'], 0) }
+		@count[@discord['userid']]++
+		export('DiscordBot.'.@discord['serverid'].'.antispam.trigger', @count)
 	#If first trigger:
 		if(@count < 2) {
 			@msgcount = 0
@@ -124,6 +125,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			_discordBot_send_message('__**Anti Spam alert**__\n User `'.@discord['username'].'`  '.@discord['userid'].' triggered Anti Spam protection!\n *Protection Reason:* '.@triggerReason.@actiontaken, @discord['serverid'], 'admin');
 			_discordBot_send_message('Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.', @discord['serverid'], 'death', @discord['userid'], 'dm')
 		}
+	#Actions for each trigger:	
 		if(@config['AS_Delete_Messages'] == true) {
 			_db_as_dm(@discord);
 		}

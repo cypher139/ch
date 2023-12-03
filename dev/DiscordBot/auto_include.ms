@@ -995,6 +995,21 @@ proc _discordBot_update_members(@useguild = 0) {
 			# if(!is_array(@activeuserstats)) { @activeuserstats = array() }	
 			@rankstats = array()
 			@activeuserstats = array()
+		#Anti Spam: Record counters
+			@asTriggerCount = import('DiscordBot.'.@guild.'.antispam.trigger', array())
+			@asMembers = get_value('DiscordBot.'.@guild.'.antispam.members')
+			if(is_array(@asMembers)) {
+				foreach(@asmember: @asdata in @asMembers) {
+					if(array_index_exists(@asTriggerCount, @asmember)) { 
+						# add to main
+						if(!array_index_exists(@asMembers, @asmember, 'triggercount')) { array_set(@asMembers[@asmember], 'triggercount', 1) }
+						@asMembers[@asmember]['triggercount'] = @asMembers[@asmember]['triggercount'] + @asTriggerCount[@asmember]
+					}
+				}
+				export('DiscordBot.'.@guild.'.antispam.trigger', null)
+				export('DiscordBot.'.@guild.'.antispam.members', @asMembers)
+				store_value('DiscordBot.'.@guild.'.antispam.members', @asMembers)
+			}
 	# Process each User ID
 			foreach(@index: @id in @membersID) {
 		# Member Info (avatar, isBot, Username, etc)

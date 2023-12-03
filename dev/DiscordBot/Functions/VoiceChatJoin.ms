@@ -12,12 +12,10 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
-# Note: import is auto globally saved (example #2), so use new variables to store edits needed
 	@vc = ''
 	@isAdmin = false
 	@isRole = false
 	@usePing = false
-	# if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
 	@userroles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
 	foreach(@role: @roleid in @userroles) {
 		if(array_contains_ic(@config['Role_Admins'], @role)) {
@@ -49,7 +47,8 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 			@timeout = 60000
 			@discordMsg = replace(@vc['VC_Ping_Message'], '%RoleID%', '<@&'.@vc['VC_Role_ID'].'>')
 			@discordMsg = replace(@discordMsg, '%UserID%', '<@'.@discord['userid'].'>')
-			@discordMsg = replace(@discordMsg, '%Channel%', @discord['channel'])
+			@discordMsg = replace(@discordMsg, '%ChannelName%', @discord['channel'])
+			@discordMsg = replace(@discordMsg, '%Channel%', '<#'.@discord['channelid'].'>')
 			@mcMsg = replace(@vc['VC_Ping_Message_MC'], '%User%', @discord['username'])
 			@mcMsg = replace(@mcMsg, '%Channel%', @discord['channel'])
 	# :angrypingemoji: 1 ping every 12 hours only!
@@ -72,7 +71,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 								}
 							}
 						}					
-						discord_broadcast(@discord['serverid'], @vc['VC_Text_Channel_ID'], @discordMsg)
+						discord_broadcast(@discord['serverid'], @vc['VC_Text_Channel_ID'], array('content': @discordMsg, 'allowed_mentions': array('parse': array('ROLE'))))
 						_db_mc_broadcast(@mcMsg, 'player')
 						store_value('DiscordBot.last.ping.'.@vc['VC_Role_ID'], time())
 						@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.current.stats')
@@ -118,7 +117,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
-	#setup config
+	# Setup config
 	@vc = ''
 	if(array_index_exists(@config, 'VC_Options', @discord['channelid'])) {
 		@vc = @config['VC_Options'][@discord['channelid']]
@@ -127,7 +126,6 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	} else {	
 		@vc = array('VC_DM_Thanks': false)
 	}
-	# if(@config['VC_Channel_ID'] == '' || @config['VC_Role_ID'] == '') { die() }
 	@totalVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.total')
 	if(!is_array(@totalVCUsers)) { die() }
 	@currentVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.current')

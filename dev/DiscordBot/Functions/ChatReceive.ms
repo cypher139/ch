@@ -15,6 +15,13 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		if(@discord['channel'] == @config['CS_Channel'] || @discord['channelid'] == @config['CS_Channel']) { @sendtoCS = true }
 	}
 
+# Console: List bot reference mention
+	if(array_index_exists(@discord, 'reference', 'userid')) {
+		if(@discord['reference']['userid'] == @botconfig['Bot_ID']) {
+			_db_msg_Console(color(11).@userDisplay.'\'s '.color(9).'message referenced me! Their message:\n'.color('r').@discord['message'], @discord['serverid'])
+		}
+	}
+
 #Send data to leaderboard
 	_discordBot_lb_process_message(@discord, @noXP);
 	

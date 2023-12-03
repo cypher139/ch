@@ -28,8 +28,14 @@ proc _discordBot_cmd_asremove(@discord, @args) {
 		@asmembers = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
 	}
 	if(!is_array(@asmembers)) { return(color('c').'No Antispam user data found for this server.') }
-	if(!array_index_exists(@asmembers, @userid)) { return(color('c').'Invalid User ID.') }
-		
+	if(!array_index_exists(@asmembers, @userid)) { return(color('c').'Invalid User ID or User Not Found.') }
+	@asTriggerCount = import('DiscordBot.'.@discord['serverid'].'.antispam.trigger', array())
+	if(array_index_exists(@asTriggerCount, @userid)) { 
+		if(!array_index_exists(@asmembers, @userid, 'triggercount')) { array_set(@asmembers[@userid], 'triggercount', 0) }
+		@asmembers[@userid]['triggercount'] = @asmembers[@userid]['triggercount'] + @asTriggerCount[@userid]
+		array_remove(@asTriggerCount, @userid)
+		export('DiscordBot.'.@discord['serverid'].'.antispam.trigger', @asTriggerCount)
+	}
 	@asmembersR = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
 	if(!is_array(@asmembersR)) { @asmembersR = array() }
 
@@ -42,7 +48,7 @@ proc _discordBot_cmd_asremove(@discord, @args) {
 	store_value('DiscordBot.'.@discord['serverid'].'.antispam.members.removed', @asmembersR)
 	store_value('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
-	export('DiscordBot.'.@discord['serverid'].'.'.@userid.'.antispam.trigger', null)
+	#export('DiscordBot.'.@discord['serverid'].'.'.@userid.'.antispam.trigger', null)
 	return('Removed "'.@userid.' ('.@username.') from Anti-Spam restrictions.')
 }
 
