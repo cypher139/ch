@@ -5,6 +5,16 @@ assign(@you, player())
 
 
 switch(to_lower($action)) {
+case 'number':
+#unexpected results do not rely on
+	msg('integer: '.is_integer(@args[0]))
+	msg('number: '.is_number(@args[0]))
+	msg('integral: '.is_integral(@args[0]))
+	msg('numeric: '.is_numeric(@args[0]))
+	msg(reg_count('(\\.)', @args[0]))
+	msg(reg_split('(\\.)', @args[0]))
+	msg(round(@args[0]))
+
 case 'b64':
 @convert = ''
 @type = ''
