@@ -1,14 +1,127 @@
-admin:/lbdbg [$action] [$id] [$] = >>>
+admin:/lbdbg [$action] [$] = >>>
 @botconfig = import('DiscordBot.config.Discord')
-
-@name = 'Discord'
-@id = $id
-@leaderboard = import('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard', get_value('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard'));
-@lgv = get_value('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard')
-@levelxp = import('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard.levelXP')
+@id = ''
+@guild = @botconfig['Primary_Guild']
+@guilds = import('DiscordBot.Guilds')
 @args = parse_args($)
-@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
+foreach(@i: @arg in @args) {
+	if(is_numeric(@arg) && length(@arg) > 16) {
+		if(array_contains(@guilds, @arg)) { 
+			@guild = @arg
+			array_remove(@args, @i)
+		}
+	}
+}
+@config = import('DiscordBot.config.'.@guild)
+@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard', get_value('DiscordBot.'.@guild.'.Leaderboard'));
+@lgv = get_value('DiscordBot.'.@guild.'.Leaderboard')
+@levelxp = import('DiscordBot.'.@guild.'.Leaderboard.levelXP')
+if(@levelxp == null) { 
+	@levelxp = _discordBot_lb_levelXP(@guild, @config['LB_Options']['XP_Type']);
+}
+msg(@args)
+if(array_index_exists(@args, 0)) { @id = @args[0] }
 
+msg('Server: '.@config['Server_Nickname'])
+
+#Serverwide actions
+switch($action) {
+case 'xp':
+	foreach(@i: @lvl in @levelxp) {
+		msg('Level '.@i.': '.@lvl)
+		if(@i > 100) { break() }
+	}
+	msg('call 66: '.@levelxp[66])
+	msg('call 67: '.@levelxp[67])
+	die()
+case 'top':
+	#calculate top
+	@limit = 10
+	if(array_index_exists(@args, 0)) {
+		if(is_numeric(@args[0]) && @args[0] < 100) { @limit = @args[0] }
+	}
+	@lbTop = array()
+	foreach(@id: @data in @leaderboard['members']) {
+		@lbTop[] = array('username': @data['username'], 'xp': @data['xp'], 'id': @id)
+	}
+	array_sort(@lbTop, closure(@left, @right){
+		return(@left['xp'] < @right['xp']);
+	});
+	@message = @config['Server_Nickname'].' Top '.@limit.' Members:'
+	foreach(@i: @mem in @lbTop) {
+		if(@i > @limit - 1) { break() }
+		@message = @message.'\n#'.(@i + 1).': '.@mem['username'].' ('.@mem['xp'].'xp)'
+	}
+	msg(@message)
+	die()
+case 'serverstats':
+	if(array_size(@guilds) == 0) { die() }
+	foreach(@guild in @guilds) {
+		@debugstats = array('users': 0, 'nolastmsg': 0, 'nolb': 0, 'lastmsg0': 0);
+		@membersID = array();
+		try {
+			@membersID = discord_get_members(@guild);
+		} catch(NotFoundException @ex) {
+			msg('[DiscordBot] Bot is not a member of guild "'.@guild.'"!')
+			continue();
+		}
+		@config = import('DiscordBot.config.'.@guild);
+		@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard')
+		foreach(@i: @id in @membersID) {
+			@debugstats['users']++
+			if(!array_index_exists(@leaderboard, 'members', @id)) {
+				@debugstats['nolb']++
+			} else if(!array_index_exists(@leaderboard, 'members', @id, 'last_msg')) {
+				@debugstats['nolastmsg']++
+			} else if(@leaderboard['members'][@id]['last_msg'] == 0) {
+				@debugstats['lastmsg0']++
+			}
+		}
+		@message = @config['Server_Nickname'].' Leaderboard: User stats:'
+		if(@debugstats['users'] > 0) { @message = @message.'\n'.color(10).'Total members: '.color('r').@debugstats['users'] }
+		if(@debugstats['nolb'] > 0) { @message = @message.'\n'.color(9).'No entry present: '.color('r').@debugstats['nolb'] }
+		if(@debugstats['nolastmsg'] > 0) { @message = @message.'\n'.color(4).'No last message entry: '.color('r').@debugstats['nolastmsg'] }
+		if(@debugstats['lastmsg0'] > 0) { @message = @message.'\n'.color(6).'Last message timestamp is 0: '.color('r').@debugstats['lastmsg0'] }
+		msg(@message)
+	}
+	die()
+case 'lessthan':
+	@count = 0
+	@minmsg = 20
+	@minlevel = 2
+	if(array_index_exists(@args, 0)) { if(is_numeric(@args[0])) { @minmsg = @args[0] }}
+	if(array_index_exists(@args, 1)) { if(is_numeric(@args[1])) { @minlevel = @args[1] }}
+	msg(color(9).@config['Server_Nickname'].' members with Less than '.@minmsg.' messages, or lower than Level '.@minlevel)
+	foreach(@user in @leaderboard['members']) {
+		if(@user['msg_count'] < @minmsg || @user['level'] < @minlevel) {
+			@botprefix = ''
+			if(array_index_exists(@user, 'bot')) {
+				if(@user['bot'] == true) { @botprefix = '[BOT] ' }
+			}
+			msg(@botprefix.@user['username'].color(11).' (lvl: '.@user['level'].') '.color(6).@user['msg_count'].' msg')
+			@count++
+		}
+	}
+	msg(color(11).'Count: '.@count)
+	die()
+}
+
+#User specific actions
+@id = _discordBot_cmd_proc_finduserID(@id, array('serverid': @guild, 'username': null, 'nickname': null, 'userid': null))
+switch(string(@id)) {
+case 'bot':
+	@id = @botconfig['Bot_ID']
+case 'self':
+	die('Unsupported user ID (1)')
+case 'notfound':
+	die('User ID not found on server')
+case 'multiple':
+	die('Multiple Matches, use less broad of a search')
+default:
+	if(!is_numeric(@id)) {
+		die('Unsupported user ID (2)')
+	}
+}
 
 if(!is_numeric(@id)) {
 	die('Invalid User ID given.')
@@ -26,7 +139,7 @@ try {
 	die(color('c').@ex['classType'].': '.@ex['message'])
 }
 
-msg('['.@name.'] ID: '.@id)
+msg('User ID: '.@id)
 switch($action) {
 case 'level':
 case 'l':
@@ -35,7 +148,7 @@ case 'l':
 	if(array_index_exists(@leaderboard, 'members', @id)) {
 		@oldlvl = @leaderboard['members'][@id]['level']
 		@leaderboard['members'][@id]['level'] = @args[0]
-		export('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard', @leaderboard)
+		export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
 		msg('ID level: Was: '.@oldlvl.' Now: '.@args[0])
 	} else {
 		msg('did not find ID')
@@ -51,7 +164,7 @@ case 'clear':
 case 'c':
 	if(array_index_exists(@leaderboard, 'members', @id)) {
 		array_remove(@leaderboard['members'], @id)
-		export('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard', @leaderboard)
+		export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
 		msg('ID removed from leaderboard')
 	} else {
 		msg('did not find ID')
@@ -73,31 +186,23 @@ case 're':
 		die('Did not find restore data for this ID')
 	}
 	@leaderboard['members'][@id] = @restore
-	export('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard', @leaderboard)
+	export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
 	msg('restored this ID')
 	
 case 'default':
 case 'd':
 	array_set(@leaderboard['members'], @id, array('time': (time() - 70000), 'level': 3, 'xp': 412, 'username': 'TESTNAME', 'message_count': 0))
-	export('DiscordBot.'.@botconfig['Primary_Guild'].'.Leaderboard', @leaderboard)
+	export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
 	msg('Saved default for this ID')
 	
-case 'xp':
-	foreach(@i: @lvl in @levelxp) {
-		msg('Level '.@i.': '.@lvl)
-		if(@i > 100) { break() }
-	}
-	msg('call 66: '.@levelxp[66])
-	msg('call 67: '.@levelxp[67])
-
 case 'prune':
-	@oldlb = get_value('DiscordBot.'.@botconfig['Primary_Guild'].'.members.former.leaderboard')
+	@oldlb = get_value('DiscordBot.'.@guild.'.members.former.leaderboard')
 	@count = 0
 	msg('Removing Leaderboard entries from those no longer on server:')
 	if(!is_array(@oldlb)) { @oldlb = array() }
 	foreach(@userid: @user in @leaderboard['members']) {
 		try {
-			@toroles = discord_member_get_roles(@userid)
+			@userinfo = discord_member_info(@guild, @userid)
 		} catch(NotFoundException @ex) {
 			array_set(@oldlb, @userid, @user)
 			array_set(@oldlb[@userid], 'removed', time())
@@ -111,18 +216,7 @@ case 'prune':
 	if(@count > 0) {	
 		@leaderboard['lastedit'] = time()
 		export('DiscordBot.Leaderboard', @leaderboard)
-		store_value('DiscordBot.'.@botconfig['Primary_Guild'].'.members.former.leaderboard', @oldlb)
-	}
-	msg('Count: '.@count)
-
-	
-case 'lessthan':
-	@count = 0
-	foreach(@user in @leaderboard['members']) {
-		if(@user['msg_count'] < 20 || @user['level'] < 2) {
-			msg('Prune: '.@user['username'].' ('.@user['level'].' ,  '.@user['msg_count'].'msg)')
-			@count++
-		}
+		store_value('DiscordBot.'.@guild.'.members.former.leaderboard', @oldlb)
 	}
 	msg('Count: '.@count)
 }
