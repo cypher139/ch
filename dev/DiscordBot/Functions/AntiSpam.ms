@@ -81,6 +81,14 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			@adduser = true
 			@triggerReason = '*New* user talked on over '.@config['AS_New_User_Channel_Limit'].' different channels.'
 		}
+	# New user pinged here or everyone
+		@checkmsg = parse_args(@discord['message'])
+		foreach(@word in @checkmsg) {
+			if(to_lower(@word) == '@here' || to_lower(@word) == '@everyone') {
+				@adduser = true
+				@triggerReason = '*New* user used a global mention: `'.@word.'`'
+			}
+		}
 	}
 
 # Add user to Triggered state:
