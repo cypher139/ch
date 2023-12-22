@@ -141,6 +141,10 @@ CMD_Default_Channel: botspam
 CMD_Message_Action: reply
 # How many arguments should we display in log messages? (Full args list can be viewed via internal ram logs)
 CMD_Args_Display_Limit: 5
+# Message User if the command is not found?
+# "true" to always message, "false" to not message, "repeat" to only message if the command is tried twice.
+CMD_Not_Found_Message_Action: repeat
+
 #
 # Command Options
 # Command: fakeadmin

@@ -1892,6 +1892,7 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 
 proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@StartTime = time()
+	@sendLogMsg = true
 	@botconfig = import('DiscordBot.config.Discord')
 	@botinfo = import('DiscordBot.Bot.Info')
 	@cmdfromdis = ''
@@ -2028,16 +2029,34 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	if(array_index_exists(@commandList, @command[0])) {
 		@CmdReturn = @actions[@commandList[@command[0]]]['cmd'](@discord, @args);
 	} else {
-		if(@cmdfrom != 'mention') {
-			_discordBot_send_message(array('content': 'I have no idea what that command is, try ?help', 'reference_id': @discord['id']), @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
-		}
-		@lastmsgs = get_value('DiscordBot.last.cmd.not.found')
-		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-		@fail = array('time': time(), 'user': @discord['username'], 'command': @command[0], 'args': @args)
-		array_insert(@lastmsgs, @fail, 0)
-		if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
-		store_value('DiscordBot.last.cmd.not.found', @lastmsgs)
+	#Debug: Save unrecognized commands for review
+		@saveData = array('time': time(), 'user': @discord['username'], 'command': @command[0], 'args': @args)
+		@nocmdData = get_value('DiscordBot.debug.cmd.not.found')
+		if(!is_array(@nocmdData)) { @nocmdData = array() }
+		if(!array_index_exists(@nocmdData, 'cmds')) { array_set(@nocmdData, 'cmds', array()) }
+		array_insert(@nocmdData['cmds'], @command[0], 0)
+		if(!array_index_exists(@nocmdData, @discord['userid'])) { array_set(@nocmdData, @discord['userid'], array()) }
+		array_insert(@nocmdData[@discord['userid']], @saveData, 0)
+		if(array_index_exists(@nocmdData[@discord['userid']], 20)) { array_remove(@nocmdData[@discord['userid']], 20) }
+		store_value('DiscordBot.debug.cmd.not.found', @nocmdData)
+		
+		#Send Not Found messages
 		_db_msg_Console(@discord['username'].' tried to use non-existent command'.@cmdfromdis.': '.color('e').@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
+		#Send User Message
+		@sendUserMessage = true
+		if(@cmdfrom == 'mention') { @sendUserMessage = false }
+		# Only message user on repeated not found command?
+		if(to_lower(@config['CMD_Not_Found_Message_Action']) == 'repeat') {
+			if(array_index_exists(@nocmdData[@discord['userid']], 1)) { 
+				if(@nocmdData[@discord['userid']][1]['command'] != @command[0]) { @sendUserMessage = false }
+			} else { 
+				@sendUserMessage = false
+			}
+		}
+		if(@config['CMD_Not_Found_Message_Action'] == false) { @sendUserMessage = false }
+		if(@sendUserMessage == true) {
+			_discordBot_send_message(array('content': 'I have no idea what that command is, try ?help', 'reference_id': @discord['id']), @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
+		}		
 		return('NotACmd')
 	}
 
@@ -2152,8 +2171,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		}
 	}
 	_db_msg_Console('<'.(time() - @StartTime).'ms> '.@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])
-	@sendLogMsg = true
-	if(array_index_exists(@config, 'CMD_Log_Ignore_Users')) {
+		if(array_index_exists(@config, 'CMD_Log_Ignore_Users')) {
 		if(array_contains(@config['CMD_Log_Ignore_Users'], @discord['username']) || array_contains(@config['CMD_Log_Ignore_Users'], @discord['userid'])) { @sendLogMsg = false }
 	}
 	if(@sendLogMsg == true) {
