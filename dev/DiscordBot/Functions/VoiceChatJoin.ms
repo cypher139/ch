@@ -45,14 +45,14 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 		if(@lastping == '' || @lastping == null) { @lastping = 1230768000000 }
 		if(import('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress') == true) { die() } else {
 			@timeout = 60000
-			@discordMsg = replace(@vc['VC_Ping_Message'], '%RoleID%', '<@&'.@vc['VC_Role_ID'].'>')
-			@discordMsg = replace(@discordMsg, '%UserID%', '<@'.@discord['userid'].'>')
-			@discordMsg = replace(@discordMsg, '%ChannelName%', @discord['channel'])
-			@discordMsg = replace(@discordMsg, '%Channel%', '<#'.@discord['channelid'].'>')
-			@mcMsg = replace(@vc['VC_Ping_Message_MC'], '%User%', @discord['username'])
-			@mcMsg = replace(@mcMsg, '%Channel%', @discord['channel'])
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping + @vc['VC_Ping_Timeout'])) {
+				@discordMsg = replace(@vc['VC_Ping_Message'], '%RoleID%', '<@&'.@vc['VC_Role_ID'].'>')
+				@discordMsg = replace(@discordMsg, '%UserID%', '<@'.@discord['userid'].'>')
+				@discordMsg = replace(@discordMsg, '%ChannelName%', @discord['channel'])
+				@discordMsg = replace(@discordMsg, '%Channel%', '<#'.@discord['channelid'].'>')
+				@mcMsg = replace(@vc['VC_Ping_Message_MC'], '%User%', @discord['username'])
+				@mcMsg = replace(@mcMsg, '%Channel%', @discord['channel'])
 				export('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress', true)
 			#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
 				set_timeout(@timeout, closure(){
@@ -81,7 +81,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 					}
 				});
 				set_timeout((@timeout + 10000), closure(){
-					export('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress', false)
+					export('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress', null)
 				});
 			}
 		}

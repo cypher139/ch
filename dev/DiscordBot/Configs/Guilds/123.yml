@@ -290,11 +290,13 @@ LB_Options:
   Level_Up_Message: "%UserID% just leveled up to %Level%"
 # - Level up message type: Set to true for current channel, false to disable, log to send to log channel, dm to dm user instead
   Level_Up_Announce: true
-# - Only Start announcing when level reaches this start threshold
+# - Only Start announcing when level reaches this start threshold:
   Level_Up_Announce_Start: 0
   Level_Up_Announce_End: 50
-# - Only announce Level up if includes a Role Rewards Rank change
+# - Only announce Level Up if there is a Role Rewards Rank change?
   Level_Up_Announce_OnlyReward: true
+# - Reference the message that triggered a Level Up message?
+  Level_Up_Announce_Reference: true
 # If a message is sent in these channels, do NOT count it towards XP earning.
   NoXP_Channels:
   - 'botspam'

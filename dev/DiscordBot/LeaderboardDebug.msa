@@ -143,13 +143,13 @@ msg('User ID: '.@id)
 switch($action) {
 case 'level':
 case 'l':
-	if(!array_index_exists(@args, 0)) { die() }
-	if(!is_numeric(@args[0])) { die('Non-numeric Level given.') }
+	if(!array_index_exists(@args, 1)) { die() }
+	if(!is_numeric(@args[1])) { die('Non-numeric Level given.') }
 	if(array_index_exists(@leaderboard, 'members', @id)) {
 		@oldlvl = @leaderboard['members'][@id]['level']
-		@leaderboard['members'][@id]['level'] = @args[0]
+		@leaderboard['members'][@id]['level'] = @args[1]
 		export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
-		msg('ID level: Was: '.@oldlvl.' Now: '.@args[0])
+		msg('ID level: Was: '.@oldlvl.' Now: '.@args[1])
 	} else {
 		msg('did not find ID')
 	}

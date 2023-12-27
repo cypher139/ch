@@ -468,15 +468,15 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		@msg3 = 'msg: array: '
 		foreach(@k: @v in @raw) {
 			if(@k == 'content' || string_starts_with(@k, 'embed') || @k == 'allowed_mentions' || @k == 'reference_id' || @k == 'custom_split') {
-				@msg3 = @msg3.@k.' '
+				@msgk = @k
 				if(@k == 'embeds') { 
 					if(!array_index_exists(@v, 1)) {
-						@msg3 = reg_replace('s$', '', @msg3)
+						@msgk = reg_replace('s$', '', @msgk)
 					}
 				}
 				if(@k == 'embed') {
 					if(!array_index_exists(@v, 1)) {
-						@msg3 = @msg3.'unsupported'
+						@msgk = @msgk.' unsupported'
 						@type = 'admin'
 						_db_msg_Console('A message queued to Discord used too many embeds for the "embed" array. Use "embeds" for multiple embeds. Message not sent.', @guild, 'debug')
 						export('DiscordBot.debug.sm.embed', @raw)
@@ -485,6 +485,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 				}
 				if(@k == 'reference_id') {
 					if(!is_numeric(@v)) {
+						@msgk = color(12).@k.color('r')
 						array_remove(@raw, @k)
 					}
 				}
@@ -492,8 +493,10 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 					@splitRegEx = @v
 					array_remove(@raw, @k)
 				}
+				@msg3 = @msg3.@msgk.' '
 				continue()
 			}
+			@msg3 = @msg3.color(8).@k.' '.color('r')
 			array_remove(@raw, @k)
 		}
 		if(array_index_exists(@raw, 'embeds') && array_index_exists(@raw, 'embed')) {
@@ -667,9 +670,8 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 					discord_private_message(@channel, @msg)
 				}
 			} else {
-				if(array_index_exists(@message, 'allowed_mentions')) {
-					array_remove(@message, 'allowed_mentions')
-				}
+				if(array_index_exists(@message, 'allowed_mentions')) { array_remove(@message, 'allowed_mentions') }
+				if(array_index_exists(@message, 'reference_id')) { array_remove(@message, 'reference_id') }
 				discord_private_message(@channel, @message)
 			}
 			return(true)
@@ -1643,7 +1645,9 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 				@sendchannel = @discord['userid']
 			}
 			if(@sendMsgtoLog == true) { @sendchannel = @config['Log_Channel'] @type = 'broadcast' }
-			_discordBot_send_message(@discordMsg, @discord['serverid'], 'confirm', @sendchannel, @type)
+			@outMsg = array('content': @discordMsg)
+			if(@config['LB_Options']['Level_Up_Announce_Reference'] == true) { array_set(@outMsg, 'reference_id', @discord['id']) }
+			_discordBot_send_message(@outMsg, @discord['serverid'], 'confirm', @sendchannel, @type)
 		}
 	}
 # Save Edits
@@ -1732,69 +1736,35 @@ proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array(), @
 	return(@ret)
 }
 
-proc _discordBot_lb_levelXP(@guild = 'default', @args = 1) {
-	@levelxp = array(0, 100)
+proc _discordBot_lb_levelXP(@guild = 'default', @preset = 1) {
+	@levelxp = array(0, 100, 250, 450)
 	array_resize(@levelxp, 200)
-	@mp = 1
-# Mee6 XP formula:
-	# https://github.com/randomairborne/experienced/blob/main/mee6/src/lib.rs
-	# https://github.com/Mee6/Mee6-documentation/blob/master/docs/levels.md
-	# The operation used to calculate how many XP a given level is is (5 / 6) * level * (2 * level * level + 27 * level + 91)
-	if(@args == 0) {
-		foreach(@i: @lvl in @levelxp) {
-			if(@i < 2) { continue() }
-			@levelxp[@i] = integer((5 / 6) * @i * (2 * @i * @i + 27 * @i + 91))
-		}
+	@d1 = 10
+	@d2 = 12
+	switch(@preset) {
+	case 0:
+	# mee6's XP
+		@d1 = 5
+		@d2 = 6
+	case 'hard':
+		@d1 = 6
+		@d2 = 4
+	case 'easy':
+		@d1 = 4
+		@d2 = 8
+	case 1:
+	default:
+	# cypher139's XP version - Allows to reach new levels easier.
+		@d1 = 4
+		@d2 = 5
 	}
-# cypher139's XP reimplementation via estimates. Allows to reach new levels much easier.
-	if(@args == 1) {
-		foreach(@i: @lvl in @levelxp) {
-			if(@i < 2) { continue() }
-			# Define XP needed to reach each level, as a multiplier of level 1 100xp + previous level
-			switch(@i) {
-			case 2:
-				@mp = 2.5
-			case 3:
-				@mp = 2
-			case 4:
-				@mp = 1.7
-			case 5:
-				@mp = 1.5
-			case 6:
-				@mp = 1.4
-			case 7:
-				@mp = 1.3
-			case 8..11:
-				@mp = 1.25
-			case 12..15:
-				@mp = 1.2
-			case 16..22:
-				@mp = 1.15
-			case 23..32:
-				@mp = 1.1
-			case 33..39:
-				@mp = 1.08
-			case 40..49:
-				@mp = 1.06
-			case 50..69:
-				@mp = 1.05
-			case 70..79:
-				@mp = 1.04
-			case 80..89:
-				@mp = 1.03
-			case 90..109:
-				@mp = 1.025
-			case 110..134:
-				@mp = 1.02
-			case 135..159:
-				@mp = 1.015
-			case 160..169:
-				@mp = 1.013
-			case 170..200:
-				@mp = 1.01
-			}
-			@levelxp[@i] = integer(@levelxp[(@i - 1)] * @mp)
-		}
+	foreach(@i: @lvl in @levelxp) {
+		if(@i < 4) { continue() }
+		# Mee6 XP formula:
+		# https://github.com/randomairborne/experienced/blob/main/mee6/src/lib.rs
+		# https://github.com/Mee6/Mee6-documentation/blob/master/docs/levels.md
+		# The operation used to calculate how many XP a given level is is (5 / 6) * level * (2 * level * level + 27 * level + 91)
+		@levelxp[@i] = integer((@d1 / @d2) * @i * (2 * @i * @i + 27 * @i + 91))
 	}
 	export('DiscordBot.'.@guild.'.Leaderboard.levelXP', @levelxp)
 	_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Leaderboard_LevelXP.json', json_encode(@levelxp), 'CREATE')
