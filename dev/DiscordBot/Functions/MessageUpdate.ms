@@ -1,3 +1,79 @@
+#Notify users of message Updates and reactions, and update bot message caches accordingly.
+proc _db_update_message_cache(@discord, @updateType) {
+	@botconfig = import('DiscordBot.config.Discord')
+	@return = array()
+	@invalidType = 'Message Cache update was given an invalid update type!'
+	@loadBot = ''
+	@loadBotUser = '.user'
+	if(array_index_exists(@discord, 'channeltype')) {
+		if(@discord['channeltype'] == 'TEXT') {
+			array_remove(@discord, 'channeltype')
+		}
+	}
+	if(@discord['bot'] == true) { @loadBot = '.bot' }
+	#bug? if both last message and a user message loaded it will not actually export last message unless imported & cloned
+	@lastServerMsgs = array_deep_clone(import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, array()))
+	if(@discord['bot'] == true) { @loadBotUser = '.bot' }
+	@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBotUser.'.'.@discord['userid'], array())
+	@userIndex = -12
+	@serverIndex = -12
+	@addSi = false
+	@addUi = false
+	@prevData = 'Not Found'
+	#Find each index to edit
+	foreach(@k: @message in @lastUserMsgs) {
+		if(@message['id'] == @discord['id']) {
+			@userIndex = @k
+			break()
+		}
+	}
+	foreach(@k2: @message2 in @lastServerMsgs) {
+		if(@message2['id'] == @discord['id']) {
+			@serverIndex = @k2
+			break()
+		}
+	}
+	# -- If index not found:
+	if(@serverIndex < 0) {
+		array_insert(@lastServerMsgs, @discord, 0)
+		@serverIndex = 0
+		@addSi = true
+	}
+	if(@userIndex < 0) {
+		@isNewUser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
+		@userDiscord = array_deep_clone(@discord)
+		array_set(@userDiscord, 'newuser', @isNewUser)
+		array_insert(@lastUserMsgs, @userDiscord, 0)
+		@userIndex = 0
+		@addUi = true
+	}
+#cache limiter
+	if(array_index_exists(@lastServerMsgs, @botconfig['Msg_Cache_Server'])) { array_remove(@lastServerMsgs, @botconfig['Msg_Cache_Server']) }	
+	if(array_index_exists(@lastUserMsgs, @botconfig['Msg_Cache_User'])) { array_remove(@lastUserMsgs, @botconfig['Msg_Cache_User']) }	
+#edits
+	@newData = array_deep_clone(@lastUserMsgs[@userIndex])
+	switch(@updateType) {
+	case 'edit':
+		if(@addUi == false) { @prevData = @newData['message'] }
+		@newData['message'] = @discord['message']
+		if(!array_index_exists(@newData, 'edits')) { @newData['edits'] = 0 }
+		@newData['edits']++
+		@newData['edittime'] = time()
+		array_set(@return, 'after', @newData['message'])
+	default:
+		_db_msg_Console(@invalidType, @discord['serverid'], 'debug')
+		return(@return)
+	}
+	array_set(@lastUserMsgs, @userIndex, @newData)
+	array_set(@lastServerMsgs, @serverIndex, @newData)
+	export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastServerMsgs)
+	export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBotUser.'.'.@discord['userid'], @lastUserMsgs)
+	array_set(@return, 'ui', @userIndex)
+	array_set(@return, 'si', @serverIndex)
+	array_set(@return, 'before', @prevData)
+return(@return)
+}
+
 bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@time = time()
@@ -6,66 +82,34 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username'])
 	@memberInfo = discord_member_info(@discord['serverid'], @discord['userid'])
-#Save Recent Messages for reference	
-	@loadBot = ''
-	@loadBotUser = '.user'
-	if(array_index_exists(@discord, 'channeltype')) {
-		if(@discord['channeltype'] == 'TEXT') {
-			array_remove(@discord, 'channeltype')
-		}
-	}
-	# Server's last 50 messages
-	if(@discord['bot'] == true) { @loadBot = '.bot' }
-	#bug? if both last message and a user message loaded it will not actually export last message unless imported & cloned
-	@lastServerMsgs = array_deep_clone(import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, array()))
-	# User's last 30 messages
-	if(@discord['bot'] == true) { @loadBotUser = '.bot' }
-	@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBotUser.'.'.@discord['userid'], array())
-	@index = null
-	@sindex = null
-	@beforemsg = 'Not Found'
-	foreach(@k: @message in @lastUserMsgs) {
-		if(@message['id'] == @discord['id']) {
-			@index = @k
-			@beforemsg = @message['message']
-			@lastUserMsgs[@k]['message'] = @discord['message']
-			if(!array_index_exists(@lastUserMsgs, @k, 'edits')) { @lastUserMsgs[@k]['edits'] = 0 }
-			@lastUserMsgs[@k]['edits']++
-			@lastUserMsgs[@k]['edittime'] = @time
-			break()
-		}
-	}
-	foreach(@k: @message2 in @lastServerMsgs) {
-		if(@message2['id'] == @discord['id']) {
-			@sindex = @k
-			@beforemsg = @message2['message']
-			@lastServerMsgs[@k]['message'] = @discord['message']
-			if(!array_index_exists(@lastServerMsgs, @k, 'edits')) { @lastServerMsgs[@k]['edits'] = 0 }
-			@lastServerMsgs[@k]['edits']++
-			@lastServerMsgs[@k]['edittime'] = @time
-			# console(4)
-			break()
-		}
-	}
-
-	export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastServerMsgs)
-	export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBotUser.'.'.@discord['userid'], @lastUserMsgs)
-
+	@embedColor = array('r': 0, 'g': 0, 'b': 200)
+# Update Recent Messages with current data	
+	@saveMsg = _db_update_message_cache(@discord, 'edit')
 # Remaining items are not relevant if event is consumed, or is a bot
 	if(@discord['bot'] == true || is_consumed() == true) { die() }
-	if(@beforemsg == 'Not Found') { die(@beforemsg) }
-	_db_msg_Console(@userDisplay.'\'s Message Edit:  ui: '.@index.', si: '.@sindex.'\nBefore: '.@beforemsg.'\nAfter: '.@lastUserMsgs[@index]['message'], @discord['serverid'], 'debug')
-	@msgColor = array('r': 0, 'g': 0, 'b': 200)
-	if(@memberInfo['color'] != null) { @msgColor = @memberInfo['color'] }
-#Send to Admin Logs	
+# Find what changed, does not count added content
+	@aSplit = parse_args(@saveMsg['after'])
+	@bSplit = parse_args(@saveMsg['before'])
+	if(array_size(@bSplit) == array_size(@aSplit)) {
+		foreach(@i: @word in @aSplit) {
+			if(@bSplit[@i] != @word) {
+				@aSplit[@i] = color(11).@word.color('r')
+			}
+		}
+	}
+	@afterDisplay = array_implode(@aSplit, ' ')
+# Send to Admin Logs
+	_db_msg_Console(@userDisplay.'\'s Message Edit:  ui: '.@saveMsg['ui'].', si: '.@saveMsg['si'].'\n'.color(9).'B: '.color('r').@saveMsg['before'].'\n'.color(10).'A: '.color('r').@afterDisplay, @discord['serverid'], 'debug')
+	if(@memberInfo['color'] != null) { @embedColor = @memberInfo['color'] }
 	@logMsg = array('author': array('icon_url': @memberInfo['avatar'], 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])),
 	'title': 'Message Edited in <#'.@discord['channelid'].'>',
 	'url': 'https://discordapp.com/channels/'.@discord['serverid'].'/'.@discord['channelid'].'/'.@discord['id'],
-	'fields': array(array('name': 'Before', 'value': @beforemsg, 'inline': false), array('name': 'After', 'value': @lastUserMsgs[@index]['message'], 'inline': false)),
+	'fields': array(array('name': 'Before', 'value': @saveMsg['before'], 'inline': false), array('name': 'After', 'value': @discord['message'], 'inline': false)),
 	'footer': array('text': 'User ID: '.@discord['userid']),
-	'color': @msgColor,
+	'color': @embedColor,
 	'timestamp': time()
 	)
+	if(@saveMsg['before'] == 'Not Found') { array_remove(@logMsg['fields'], 0) }
 	if(@config['Log_Message_Edit'] == true) {
 		_discordBot_send_message(array('embeds': array(@logMsg)), @discord['serverid'], 'log')
 	}

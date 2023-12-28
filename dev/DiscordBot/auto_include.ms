@@ -2071,13 +2071,13 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@lastmsgs = import('DiscordBot.last.cmd.message')
 	if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 	array_insert(@lastmsgs, @discord, 0)
-	if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
+	if(array_index_exists(@lastmsgs, @botconfig['Msg_Cache_Cmd'])) { array_remove(@lastmsgs, @botconfig['Msg_Cache_Cmd']) }
 	export('DiscordBot.last.cmd.message', @lastmsgs)
 
 	@lastmsgs = import('DiscordBot.last.cmd.message.return')
 	if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 	array_insert(@lastmsgs, @CmdReturn, 0)
-	if(array_index_exists(@lastmsgs, 20)) { array_remove(@lastmsgs, 20) }
+	if(array_index_exists(@lastmsgs, @botconfig['Msg_Cache_Cmd'])) { array_remove(@lastmsgs, @botconfig['Msg_Cache_Cmd']) }
 	export('DiscordBot.last.cmd.message.return', @lastmsgs)	
 #Send Messages
 #return messages final message, unless true/false. multiple messages need to be handled by action
