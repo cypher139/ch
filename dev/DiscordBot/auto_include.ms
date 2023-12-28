@@ -237,13 +237,20 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 proc _discordBot_get_server_info(@guild) {
 	if(@guild == null || @guild == '') { die() }
 	if(!is_numeric(@guild)) { die() }
-	discord_request('GET', 'guilds/'.@guild.'/preview', null, closure(@data){ 
-		# console(@data)
-		array_set(@data, 'retrieved', time())
-		export('DiscordBot.Guilds.Info.'.@guild, @data)
-	}, closure(@data){ 
-		_db_msg_Console(color('c').'Cannot retrieve Guild info for guild "'.@guild.'". \n'.color(7).@data, @guild)
+	@time = time()
+	@id = rand(123, 465)
+	x_new_thread(@id.@time, closure(){
+		discord_request('GET', 'guilds/'.@guild.'/preview', null, closure(@data){ 
+			# console(@data)
+			array_set(@data, 'retrieved', time())
+			export('DiscordBot.Guilds.Info.'.@guild, @data)
+			store_value('DiscordBot.'.@guild.'.guild.Info', @data)
+		}, closure(@data){ 
+			_db_msg_Console(color('c').'Cannot retrieve Guild info for guild "'.@guild.'". \n'.color(7).@data, @guild)
+		});
 	});
+	x_thread_join(@id.@time, 7000)
+	return(import('DiscordBot.Guilds.Info.'.@guild))
 }
 
 proc _db_get_user_nick(@userID, @serverID, @username) {
@@ -905,11 +912,19 @@ proc _discordBot_dc_add_member(@discord) {
 }
 
 proc _discordBot_backup_members(@args) {
-	@config = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Discord')
 	@guilds = import('DiscordBot.Guilds', array())
 	if(array_size(@guilds) == 0) { return(false) }
 	@writes = 0
+	@lastUpdateTime = get_value('DiscordBot.last.CacheUpdate')
+	if(!is_array(@lastUpdateTime)) { @lastUpdateTime = array() }
+	@lastBackupTime = get_value('DiscordBot.last.Backup')
+	if(!is_array(@lastBackupTime)) { @lastBackupTime = array() }
 	foreach(@guild in @guilds) {
+		#Update check
+		if(array_index_exists(@lastBackupTime, @guild) && array_index_exists(@lastUpdateTime, @guild)) {
+			if(@lastBackupTime[@guild] > @lastUpdateTime[@guild]) { continue() }
+		}
 		@data = array(
 		'membersID': get_value('DiscordBot.'.@guild.'.members.ID'),
 		'membersNames': get_value('DiscordBot.'.@guild.'.members.names'),
@@ -921,6 +936,7 @@ proc _discordBot_backup_members(@args) {
 		'rolesMembers': get_value('DiscordBot.'.@guild.'.roles.members'),
 		'Leaderboard': import('DiscordBot.'.@guild.'.Leaderboard'),
 		'Invites': get_value('DiscordBot.'.@guild.'.Invites'),
+		'GuildInfo': get_value('DiscordBot.'.@guild.'.guild.Info'),
 		'JoinInfo': get_value('DiscordBot.'.@guild.'.Join.info')
 		)
 		@time = time();
@@ -930,7 +946,9 @@ proc _discordBot_backup_members(@args) {
 			_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/'.simple_date('MMyy', @time).'/'.@guild.'_'.simple_date('MM-dd-yy_HHmm_', @time).@k.'.json', json_encode(@v), 'CREATE')
 			@writes++
 		}
+		array_set(@lastBackupTime, @guild, @time)
 	}
+	store_value('DiscordBot.last.Backup', @lastBackupTime)
 	return(@writes)
 }
 
@@ -942,8 +960,21 @@ proc _discordBot_update_members(@useguild = 0) {
 			@guilds = array(@useguild)
 		}
 		if(array_size(@guilds) == 0) { return(false) }
+		@lastUpdateTime = get_value('DiscordBot.last.CacheUpdate')
+		if(!is_array(@lastUpdateTime)) { @lastUpdateTime = array() }
 		foreach(@guild in @guilds) {
 			@debugstats = array('size': array(), 'nf': 0, 'af': 0, 'fails': 0);
+		#Guild Infos
+			x_new_thread('DiscordBotUpdateGuildInfo'.rand(1153,5407), closure(){
+				_discordBot_get_server_info(@guild);
+			});
+			if(array_index_exists(@lastUpdateTime, @guild)) {
+				if(import('DiscordBot.'.@guild.'.CacheUpdate') != true) { continue() }
+			} else { 
+				array_set(@lastUpdateTime, @guild, @startTime)
+			}
+			@guildInfo = import('DiscordBot.Guilds.Info.'.@guild)
+		#Members Cache and Activity Updates
 			@membersID = array();
 			try {
 				@membersID = discord_get_members(@guild);
@@ -1156,6 +1187,7 @@ proc _discordBot_update_members(@useguild = 0) {
 				}
 			}
 		# Save data
+			array_set(@lastUpdateTime, @guild, @startTime)
 			@alldebugstats = import('DiscordBot.debug.stats.last.updatemembers', array())
 			if(@config['LB_Enable'] == true && is_array(@leaderboard)) { export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard) }
 			array_set(@debugstats['size'], 'rrUp', @rrUpdates)
@@ -1182,6 +1214,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
 			array_set(@debugstats['size'], 'inv', array_size(@invites))
 			array_set(@debugstats['size'], 'au', array_size(@activeUsers))
+			export('DiscordBot.'.@guild.'.CacheUpdate', null)
 			array_set(@alldebugstats, @guild, @debugstats)
 			export('DiscordBot.debug.stats.last.updatemembers', @alldebugstats)
 			store_value('DiscordBot.debug.'.@guild.'.rank.stats', @rankstats)
@@ -1191,6 +1224,7 @@ proc _discordBot_update_members(@useguild = 0) {
 				_db_msg_Console('['.@k.'] active: '.@v, @guild)
 			} */
 		}
+		store_value('DiscordBot.last.CacheUpdate', @lastUpdateTime)
 		@timeElapsed = time() - @startTime;
 		_db_msg_Console('Update:  '.color(3).@timeElapsed.'ms', 'none', 'bot')
 		return(true);

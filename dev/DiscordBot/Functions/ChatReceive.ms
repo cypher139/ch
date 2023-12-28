@@ -32,6 +32,7 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	
 # Remaining items to only occur if event is not consumed
 	if(is_consumed() == false) {
+		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
 	#Message Formatting
 		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 			@discord['message'] = '<Sent a GIF>'

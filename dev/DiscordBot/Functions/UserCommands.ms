@@ -17,6 +17,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 # Command in approved channels:
 # Mentions, via batch, or server's set prefix
 	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) == true) {
+		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
 	# Attachment: batch
 	/* cut
 		if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
