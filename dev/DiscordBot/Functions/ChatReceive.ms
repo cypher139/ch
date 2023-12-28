@@ -32,7 +32,6 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	
 # Remaining items to only occur if event is not consumed
 	if(is_consumed() == false) {
-		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
 	#Message Formatting
 		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 			@discord['message'] = '<Sent a GIF>'
@@ -49,21 +48,21 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 				@discord['message'] = @discord['message'].@filenum.@attach['filename']
 			}
 		}
-	#Save Recent Messages for reference
+	#Save Recent Messages for reference	
 		@loadBot = ''
 		if(array_index_exists(@discord, 'channeltype')) {
 			if(@discord['channeltype'] == 'TEXT') {
 				array_remove(@discord, 'channeltype')
 			}
 		}
-	# Server's last messages
+		# Server's last 50 messages
 		if(@discord['bot'] == true) { @loadBot = '.bot' }
 		@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @discord, 0)
-		if(array_index_exists(@lastmsgs, @botconfig['Msg_Cache_Server'])) { array_remove(@lastmsgs, @botconfig['Msg_Cache_Server']) }
+		if(array_index_exists(@lastmsgs, 50)) { array_remove(@lastmsgs, 50) }
 		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastmsgs)
-	# User's last messages
+		# User's last 30 messages
 		if(@discord['bot'] == false) { @loadBot = '.user' }
 		@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'])
 		@isNewUser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
@@ -71,7 +70,7 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		@userDiscord = array_deep_clone(@discord)
 		array_set(@userDiscord, 'newuser', @isNewUser)
 		array_insert(@lastUserMsgs, @userDiscord, 0)
-		if(array_index_exists(@lastUserMsgs, @botconfig['Msg_Cache_User'])) { array_remove(@lastUserMsgs, @botconfig['Msg_Cache_User']) }
+		if(array_index_exists(@lastUserMsgs, 30)) { array_remove(@lastUserMsgs, 30) }
 		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'], @lastUserMsgs)	
 	#Check User Role Ranks
 		if(@config['Use_Role_Ranks'] == true && @discord['bot'] == false) {

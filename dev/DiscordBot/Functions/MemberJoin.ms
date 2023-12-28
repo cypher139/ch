@@ -12,7 +12,6 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		@userDisplaydc = @discord['nickname'].'  ` '.@discord['username'].' ` '
 	}
 	@consolejoinMsg = 'Member '.color(10).'joined: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>'.color('r')
-	export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
 # Set New User for other checks
 	export('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], true);
 # Log Invite Code Usage
