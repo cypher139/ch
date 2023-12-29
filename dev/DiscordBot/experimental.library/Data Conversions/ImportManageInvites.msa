@@ -1,18 +1,48 @@
 # This imports the MangaeInvite bot server invite data, for use with a CH based invite log system. Requires manual additions of codes to the import json file.
 # If you are using the ManageInvite bot, you can visit their API, download a json of your current invite data, add the relevant invite codes to each array, and then use this command to finish importing into cypher139's Discord bot
-admin:/importmi [$serverid] [$] = >>>
+admin:/importmi [$guild] [$] = >>>
 @name = 'Discord'
-@id = $serverid
+@guild = 0
+@prefix = 'DB Import Invites'
 @args = parse_args($)
 @config = import('DiscordBot.config.Discord')
 if(array_contains(@args, 'help')) {
 	msg('This imports the MangaeInvite bot server invite data, for use with a CH based invite log system. Requires manual additions of codes.')
 	die()
 }
-@mibotdata = json_decode(read(import('DiscordBot.logs.dir').'/'.@id.'/response_mi.json'))['data']
-# msg(@mibotdata)
-if(@mibotdata[0]['guildID'] != @id) {
-	die('Guild given to command does not match guild in bot data!')
+#Guild ID Setup
+if(!is_numeric($guild)) {
+	@guildNick = import('DiscordBot.Guilds.Nicknames', array())
+	switch(to_lower($guild)) {
+	case 'default':
+	case 'primary':
+	case '-':
+		@guild = @botconfig['Primary_Guild']
+	default:
+		foreach(@sid: @nick in @guildNick) {
+			if(to_lower($guild) == to_lower(@nick)) {
+				@guild = @sid
+				break()
+			}
+		}
+	}
+} else if(length($guild) > 15) {
+	if(array_contains(import('DiscordBot.Guilds', array()), $guild)) {
+		@guild = $guild
+	}
+}
+if(!is_numeric(@guild) || @guild <= 0) { die(color(12).'['.@prefix.'] Guild is not recognized by DiscordBot. Check the Server ID or nickname given.') }
+@config = import('DiscordBot.config.'.@guild)
+
+@importedData = array()
+	try { 
+		@importedData = json_decode(read(import('DiscordBot.config.dir').'/response_mi_'.@guild.'.json'))['data']
+	} catch(Exception @ex) {
+		die(@ex['message'])
+	}
+_db_msg_Console(@importedData, @guild, 'debug')
+if(@importedData[0]['guildID'] != @id) {
+	die(color(12).'['.@prefix.'] Guild given does not match Guild in imported data! Check the Server ID given in the json filename.')
 }
 
 #code
@@ -21,7 +51,7 @@ if(@mibotdata[0]['guildID'] != @id) {
 # inviter = username
 # userid = userID
 @inv = array()
-foreach(@i: @data in @mibotdata) {
+foreach(@i: @data in @importedData) {
 	if(!array_index_exists(@data, 'code')) {
 		msg('Cannot import index '.@i.' from user '.@data['userID'].', no code given. ['.@data['regular'].' - '.@data['leaves'].']') 
 		continue()
@@ -33,7 +63,7 @@ foreach(@i: @data in @mibotdata) {
 	if(array_index_exists(@data, 'username')) { array_set(@inv[@data['code']], 'username', @data['username']) }
 	if(array_index_exists(@data, 'regular')) { array_set(@inv[@data['code']], 'uses', @data['regular']) }
 }
-msg(color('a').'Imported saved ManageInvite bot data'.color('r').', now checking current invites:')
+msg(color(10).'Imported saved ManageInvite bot data'.color('r').', now checking current invites:')
 try {
 	discord_retrieve_invites(@id, closure(@raw) { 
 		foreach(@i: @invite in @raw) {

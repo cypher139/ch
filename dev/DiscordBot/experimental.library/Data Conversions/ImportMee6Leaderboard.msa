@@ -1,17 +1,14 @@
 # If you use the Mee6 Leaderboard you can import the leaderboard data to cypher139's Discord bot, then discontinue Mee6 usage if desired
-admin:/importmee6lb [$serverid] [$] = >>>
+admin:/importmee6lb [$guild] [$] = >>>
 @name = 'Discord'
-@id = $serverid
+@guild = 0
 @args = parse_args($)
+@prefix = 'DiscordBot'
 @botconfig = import('DiscordBot.config.Discord')
-@config = import('DiscordBot.config.'.@id)
-if(!is_array(@config)) {
-	msg(color('c').'Guild given is not recognized by DiscordBot')
-	die()
-}
+
 if(array_contains(@args, 'help')) {
 	msg('This imports the Mee6 Leaderboard data to CH storage, for use with a CH based leaderboard ranking system.')
-	msg('specify the Mee6 server ID to use after the command. ex. if your leaderboard link is "https://mee6.xyz/en/leaderboard/123456" the server ID is "123456".')
+	msg('Specify the Mee6 server ID to use after the command. ex. if your leaderboard link is "https://mee6.xyz/en/leaderboard/123456" the server ID is "123456".')
 	die()
 }
 
@@ -61,39 +58,59 @@ proc _convert_json_data(@raw, @guild) {
 	msg('You will need to add the Role Rewards configuration manually to the DiscordBot Guild Config file. A config file was provided to copypaste from.')
 	return(true)
 }
-
-
-if($serverid == 'local') { 
+#Guild ID Setup
+if(!is_numeric($guild)) {
+	@guildNick = import('DiscordBot.Guilds.Nicknames', array())
+	switch(to_lower($guild)) {
+	case 'default':
+	case 'primary':
+	case 'local':
+	case '-':
+		@guild = @botconfig['Primary_Guild']
+	default:
+		foreach(@sid: @nick in @guildNick) {
+			if(to_lower($guild) == to_lower(@nick)) {
+				@guild = @sid
+				break()
+			}
+		}
+	}
+} else if(length($guild) > 15) {
+	if(array_contains(import('DiscordBot.Guilds', array()), $guild)) {
+		@guild = $guild
+	}
+}
+if(!is_numeric(@guild) || @guild <= 0) { die(color(12).'['.@prefix.'] Guild is not recognized by DiscordBot. Check the Server ID or nickname given.') }
+@config = import('DiscordBot.config.'.@guild)
+#Actions
+if($guild == 'local') { 
+# Import from a local file, only supports importing into Primary Guild!
 	try { 
-		@LeaderboardData = import('DiscordBot.logs.dir').'/'.@guild.'/Import-Leaderboard.json'
+		@LeaderboardData = import('DiscordBot.config.dir').'/Guilds/Import_Leaderboard_'.@guild.'.json'
 	} catch(Exception @ex) {
 		die(@ex['message'])
 	}
-	_write_file(import('DiscordBot.logs.dir').'/'.$serverid.'/Mee6-Leaderboard-'.@LeaderboardData['guild']['name'].'.json', @LeaderboardData, 'OVERWRITE')
-	_convert_json_data(@LeaderboardData, $serverid)
+	_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Mee6-Leaderboard-'.@LeaderboardData['guild']['name'].'.json', @LeaderboardData, 'OVERWRITE')
+	_convert_json_data(@LeaderboardData, @guild)
 	die()
 }
 	
-if(!is_numeric($serverid)) {
-	die('Invalid Server ID given.')
-}
-
 if(array_contains(@args, 'view')) {
-msg(get_value('DiscordBot.'.@guild.'.Leaderboard'))
-die()
+	msg(get_value('DiscordBot.'.@guild.'.Leaderboard'))
+	die()
 }
 
-http_request('https://mee6.xyz/api/plugins/levels/leaderboard/'.$serverid.'?limit=999&page=0', array('blocking': true, 'success': closure(@data) {
+http_request('https://mee6.xyz/api/plugins/levels/leaderboard/'.@guild.'?limit=999&page=0', array('blocking': true, 'success': closure(@data) {
 	if(@data['error'] == true) {
 		if(@data['responseCode'] == 404) {
-			die('Guild "'.$serverid.'" was not found.')
+			die('Guild "'.@guild.'" was not found.')
 		}
 		msg('No relevant data received from server, did you typo the server ID?')
 		export('DiscordBot.debug.http.error', @data)
 		return(false)
 	} else {
-		_write_file(import('DiscordBot.logs.dir').'/'.$serverid.'/Mee6-Leaderboard-'.json_decode(@data['body'])['guild']['name'].'.json', @data['body'], 'OVERWRITE')
-		_convert_json_data(@data['body'], $serverid)
+		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Mee6-Leaderboard-'.json_decode(@data['body'])['guild']['name'].'.json', @data['body'], 'OVERWRITE')
+		_convert_json_data(@data['body'], @guild)
 		return(true)
 	}
 }));

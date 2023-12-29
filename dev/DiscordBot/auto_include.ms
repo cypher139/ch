@@ -106,6 +106,7 @@ proc _db_load_guilds(array @guilds = array()) {
 	if(array_size(@guilds) == 0) { return(false) }
 	@guildList = array()
 	@consoleChats = array()
+	export('DiscordBot.Guilds.Nicknames', array())
 	foreach(@guild in @guilds) {
 		if(!is_numeric(@guild)) { continue() } 
 		@return = _db_load_config(@guild)
@@ -202,6 +203,9 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 			}
 			# Setup Server Info
 			_discordBot_get_server_info(@cfgtype)
+			@guildNick = import('DiscordBot.Guilds.Nicknames', array())
+			array_set(@guildNick, @cfgtype, @loadcfg['Server_Nickname'])
+			export('DiscordBot.Guilds.Nicknames', @guildNick)
 		}
 	} else {
 		switch(string(@cfgtype)) {
