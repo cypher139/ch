@@ -74,10 +74,10 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 						discord_broadcast(@discord['serverid'], @vc['VC_Text_Channel_ID'], array('content': @discordMsg, 'allowed_mentions': array('parse': array('ROLE'))))
 						_db_mc_broadcast(@mcMsg, 'player')
 						store_value('DiscordBot.last.ping.'.@vc['VC_Role_ID'], time())
-						@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.current.stats')
+						@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
 						if(!is_array(@stats)) { @stats = array('start': (time() - @timeout), 'end': '', 'users': '', 'channel': @discord['channel']) }
 						array_set(@stats, 'pinguser', @discord['username'])
-						store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.current.stats', @stats)
+						store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
 					}
 				});
 				set_timeout((@timeout + 10000), closure(){
@@ -90,23 +90,23 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	#Save current users in channel, only after 90 seconds so user is stayin
 	set_timeout(90000, closure(){
 		if(discord_member_get_voice_channel(@discord['serverid'], @discord['userid']) == @discord['channelid']) {
-			@currentVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.current')
+			@currentVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users')
 			if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
-			@totalVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.total')
+			@totalVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total')
 			if(!is_array(@totalVCUsers)) { @totalVCUsers = array() }
-			@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.current.stats')
+			@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
 			if(!is_array(@stats)) { 
 				@stats = array('start': (time() - 90000), 'end': '', 'users': '', 'channel': @discord['channel'])
-				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.current.stats', @stats)
+				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
 			}
 				
 			if(!array_contains(@currentVCUsers, @discord['userid'])) { 
 				@currentVCUsers[] = @discord['userid']
-				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.current', @currentVCUsers)
+				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users', @currentVCUsers)
 			}
 			if(!array_contains(@totalVCUsers, @discord['userid'])) { 
 				array_set(@totalVCUsers, @discord['userid'], @discord['username'])
-				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.total', @totalVCUsers)
+				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total', @totalVCUsers)
 			}
 		}
 	});
@@ -126,9 +126,9 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	} else {	
 		@vc = array('VC_DM_Thanks': false)
 	}
-	@totalVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.total')
+	@totalVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total')
 	if(!is_array(@totalVCUsers)) { die() }
-	@currentVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.current')
+	@currentVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users')
 	if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
 	
 	if(array_contains(@currentVCUsers, @discord['userid'])) { array_remove_values(@currentVCUsers, @discord['userid']) }
@@ -172,9 +172,9 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		}
 		_db_msg_Console('Call Completed in the '.@discord['channel'].' channel! Users who joined: '.color(3).array_implode(@totalVCUsers, ', '), @discord['serverid'])
 		#Save Stats
-		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.current');
-		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.total');
-		@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.current.stats')
+		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users');
+		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total');
+		@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
 		if(!is_array(@stats)) { die() }
 		
 		@stats['end'] = time()
@@ -186,10 +186,10 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		@lastmsgs = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@lastmsglone)
 		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
 		array_insert(@lastmsgs, @stats, 0);
-		_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/VC-Stats'.@lastmsglone.'-'.@discord['channelid'].'.json', json_encode(@lastmsgs), 'overwrite')
+		_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/'.simple_date('MMyy', time()).'/'.@discord['serverid'].'_'.simple_date('MMyy', time()).'_VC_Stats'.@lastmsglone.'-'.@discord['channelid'].'.json', json_encode(@lastmsgs), 'overwrite')
 		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@lastmsglone, @lastmsgs);
-		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.current.stats');
+		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats');
 	} else {
-		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.users.current', @currentVCUsers);
+		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users', @currentVCUsers);
 	}
 }
