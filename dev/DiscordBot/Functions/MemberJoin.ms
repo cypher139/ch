@@ -49,11 +49,11 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				foreach(@code: @data in @inv) {
 					if(array_index_exists(@previnv, @data['code'])) {
 						if(@data['uses'] > @previnv[@data['code']]['uses']) {
-							array_push(@matches, @code)
+							@matches[] = @code
 							@msgSuffix = 'Invite: '.color(3).@data['code'].color('r').' <'.color(10).@data['uses'].color('r').' > '.color(9).@previnv[@data['code']]['uses'].color('r').'>'
 						}
 					} else if(@data['uses'] == 1) {
-						array_push(@matches, @code)
+						@matches[] = @code
 						@msgSuffix = 'Invite: '.color(3).@data['code'].color('r').' <'.color(10).'New invite'.color('r').'>'
 					}
 				}	

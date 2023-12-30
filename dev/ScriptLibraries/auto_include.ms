@@ -196,11 +196,10 @@ proc _register_sign_command(string @name, string @proc, array @options = array()
 
 proc _array_string_contains(array @array, string @needle, string @matchType = 'default', @returnType = 'boolean', @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
-	if(array_size(@array) == 0) { return(false) }
-	if(@needle == '') { return(false) }
-	if(@doKeys != '') {	@array = array_keys(@array) }
+	if(@needle == '') { throw('ms.lang.CastException', 'No string given.') die() }
 	@return = false
 	@returnArray = array()
+	if(@doKeys != '') {	@array = array_keys(@array) }
 	foreach(@haystack in @array) {
 		switch(@matchType) {
 		case 'min':
@@ -215,6 +214,8 @@ proc _array_string_contains(array @array, string @needle, string @matchType = 'd
 			@returnArray[] = @haystack
 #			msg('i think '.@haystack.' is an option at: '.string_position(to_lower(@haystack), to_lower(@needle)))
 		}
+	} else {
+		console('Empty array given')
 	}
 	switch(string(@returnType)) {
 	case 'array':

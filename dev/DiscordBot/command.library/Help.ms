@@ -15,11 +15,11 @@ proc _discordBot_cmd_help(@discord) {
 	foreach(@cmd: @data in @cmdList) {
 		@lCmd = to_lower(@cmd)
 		if(@discord['admin'] == false && @data['admin'] == true) { continue() }
-		array_push(@cmdListName, @lCmd)
+		@cmdListName[] = @lCmd
 		if(is_array(@data['alias']) && @discord['admin'] == true) {
 			if(array_index_exists(@data, 'alias', 0)) {
 				foreach(@a in @data['alias']) {
-					array_push(@cmdListAlias, to_lower(@a))
+					@cmdListAlias[] = to_lower(@a)
 				}
 			}
 		}
@@ -38,7 +38,7 @@ proc _discordBot_cmd_help(@discord) {
 	if(@discord['admin'] == true) { 
 		array_sort(@cmdListAlias, 'STRING')
 		@aliasembed = array('fields': array(array('name': 'Aliases', 'value': '`'.array_implode(array_unique(@cmdListAlias), '` `').'`', 'inline': false)), 'color': array('r': 170, 'g': 221, 'b': 0))
-		array_push(@embeds, @aliasembed)
+		@embeds[] = @aliasembed
 	}
 	_discordBot_send_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds), @discord['serverid'], 'discord', @discord['userid'], 'dm')
 	return(true)

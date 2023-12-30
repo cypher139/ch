@@ -38,7 +38,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	@gf = 0
 	foreach(@guild in import('DiscordBot.Guilds')) {
 		@cfg = import('DiscordBot.config.'.@guild)
-		if(@cfg['DM_Notify'] == true) {	array_push(@guildcfgNotify, @guild) }
+		if(@cfg['DM_Notify'] == true) {	@guildcfgNotify[] = @guild }
 		array_set(@guildcfgCmd, @guild, @cfg['CMD_Command_Prefix']);
 		array_set(@guildcfgChannel, @guild, @cfg['Log_Channel']);
 		array_set(@guildcfgURL, @guild, @cfg['URL_Broadcast']);
@@ -170,7 +170,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	# Include message content?
 		if(@userConfig[@discord['userid']]['NotifyContent'] == true) {	
 		#Yes, include Urls if present
-			if(array_size(@urlembed) > 0) {	array_push(@msgembed, @urlembed) }
+			if(array_size(@urlembed) > 0) {	@msgembed[] = @urlembed }
 		} else {
 		#no, don't display content as requested
 			@msgtype = 'message content'

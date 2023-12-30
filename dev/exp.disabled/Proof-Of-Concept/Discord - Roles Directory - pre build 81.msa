@@ -210,7 +210,7 @@ case 'update':
 								}
 							}
 		#				}
-						array_push(@userarray, @usernick)
+						@userarray[] = @usernick
 					}
 					array_push(@filearray, '@'.array_implode(@userarray, ', @').' \r\n')
 					@userarray = array()
@@ -284,7 +284,7 @@ default:
  -get current roles @memberroles = get_value (members.roles)
  -add new roles to array 
  if(array_contains(@memberroles[memberid], roleid) continue()
- array_push(@memberroles[memberid], role) loop
+ @memberroles[memberid][] = role loop
  -set roles (@memberroles[memberid])
  -save new array (store_value members.roles[memberid])
  */

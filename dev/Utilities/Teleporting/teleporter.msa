@@ -183,7 +183,7 @@ if(reg_count('^.+_PRESSURE_PLATE', get_block(pcursor())) > 0) {
 		if(array_index_exists(@args, 3)) {
 			if(!array_contains(get_worlds(), @args[3])) { @args[3] = pworld() }
 		} else {
-			array_push(@args, pworld())
+			@args[] = pworld()
 		}
 		#validate location check
 		try(

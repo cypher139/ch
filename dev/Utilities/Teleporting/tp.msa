@@ -52,7 +52,7 @@ if(!array_index_exists(@args, 2)) { die(color('c').'You need to specify the Z co
 if(array_index_exists(@args, 3)) {
 	if(!array_contains(get_worlds(), @args[3])) { @args[3] = pworld() }
 } else {
-	array_push(@args, pworld())
+	@args[] = pworld()
 }
 		
 

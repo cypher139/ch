@@ -25,7 +25,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 			@otherplayers = array()
 			foreach(@accname in all_players()) {
 				if(pinfo(@accname)[3] = @login['ip']) {
-					array_push(@otherplayers, pinfo(@accname)[0])
+					@otherplayers[] = pinfo(@accname)[0]
 				}
 			}
 			@players = '%f'.array_implode(@otherplayers, ', ').'%f'

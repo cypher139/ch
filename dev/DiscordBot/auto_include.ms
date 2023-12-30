@@ -115,14 +115,14 @@ proc _db_load_guilds(array @guilds = array()) {
 		}
 		if(@return['Console_Messages_Chat'] == true) {
 			if(array_index_exists(@return, 'Server_Nickname')) {
-				array_push(@consoleChats, @return['Server_Nickname']);
+				@consoleChats[] = @return['Server_Nickname']
 			} else if(array_index_exists(@return, 'LB_Options', 'Guild_Name')) { 
-				array_push(@consoleChats, @return['LB_Options']['Guild_Name']);
+				@consoleChats[] = @return['LB_Options']['Guild_Name']
 			} else {
-				array_push(@consoleChats, @guild);
+				@consoleChats[] = @guild
 			}
 		}
-		array_push(@guildList, @guild)
+		@guildList[] = @guild
 	}
 	if(array_size(@guildList) == 0) { return(false) }
 	if(array_size(@consoleChats) > 0) { 
@@ -374,7 +374,7 @@ proc _db_sanitize_message(@message, @caller, @guild, @from, @dm) {
 	foreach(@k: @v in @sanitize) {
 		if(@k == 'Markdown') { continue() }
 		if(@v == false) {
-			array_push(@allowedMentions, to_upper(@k))
+			@allowedMentions[] = to_upper(@k)
 		}
 	}
 	@return = array('message': @message)
@@ -512,7 +512,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		}
 		if(array_index_exists(@raw, 'embeds') && array_index_exists(@raw, 'embed')) {
 			if(array_index_exists(@raw['embeds'], 0)) {
-				array_push(@raw['embeds'], @raw['embed'][0])
+				@raw['embeds'][] = @raw['embed'][0]
 			} else {
 				array_remove(@raw, 'embeds')
 			}
@@ -608,7 +608,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		if(reg_count(@splitRegEx, @message['content']) > 1) {
 			for(@i = 1, @i <= @count, @i++) {
 				@match = reg_match(@splitRegEx, @message['content'])[0]
-				array_push(@split, @match)
+				@split[] = @match
 				@message['content'] = @message['content'][cslice(length(@match), (length(@message['content']) - 1))]
 			}
 		}
@@ -808,7 +808,7 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 			@suffix = @suffix.'\n <Also attached file:> '
 		}
 		foreach(@num: @attach in @discord['attachments']) {
-			array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))
+			@urls[] = array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false)
 			@filenum = 'File: '
 			if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
 			@suffix = @suffix.@filenum.@attach['filename']
@@ -901,7 +901,7 @@ proc _discordBot_dc_add_member(@discord) {
 	if(@membersID == null) { @membersID = get_value('DiscordBot.'.@discord['serverid'].'.members.ID') }
 	if(!is_array(@membersID)) { @membersID = discord_get_members(@discord['serverid']) }
 	if(!array_contains(@membersID, @discord['userid'])) {
-		array_push(@membersID, @discord['userid'])
+		@membersID[] = @discord['userid']
 		store_value('DiscordBot.'.@discord['serverid'].'.members.ID', @membersID)
 		export('DiscordBot.'.@discord['serverid'].'.members.ID', @membersID)
 	}
@@ -1636,7 +1636,7 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 	# Place and Set new role
 		# _db_msg_Console(@currentrank, @discord['serverid'], 'debug')
 		if(@currentrank != '') {
-			array_push(@userRoles, @currentrank['RoleID'])
+			@userRoles[] = @currentrank['RoleID']
 			#Set New roles
 			try { 
 				discord_member_set_roles(@discord['serverid'], @userID, @userRoles, 'Role Rewards: Awarded New Rank '.@currentrank['RoleName'])
@@ -1745,7 +1745,7 @@ proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array(), @
 	case 'true':
 	# Add user to Active role
 		if(@hasActiveRole == false) {
-			array_push(@userRoles, @config['LB_Options']['Active_User_Role'])
+			@userRoles[] = @config['LB_Options']['Active_User_Role']
 			@roleMsg = 'Awarded Active User role'
 			@ret = 'Added'
 		}
@@ -1892,7 +1892,7 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 		if(reg_count(@config['CMD_Command_Prefix'], @line) == 0) { _db_msg_Console(@i.'no prefix', @discord['serverid'], 'debug') continue() }
 		@discord['message'] = @line
 		@return = _discordBot_handlecommand(@discord, @senddm, 'batch')
-		array_push(@returns, @return)
+		@returns[] = @return
 	}
 	return(@returns)
 }		
@@ -2209,11 +2209,11 @@ proc _discordBot_init_cmd_list(@test) {
 		if(is_array(@data['alias'])) {
 			foreach(@alias in @data['alias']) {
 				array_set(@cmdListName, to_lower(@alias), @cmd)
-				array_push(@cmdListAlias, @alias)
+				@cmdListAlias[] = @alias
 			}
 		}
 		if(!array_index_exists(@cmdListCat, @data['category'])) { array_set(@cmdListCat, @data['category'], array()) }
-		array_push(@cmdListCat[@data['category']], @lCmd)
+		@cmdListCat[@data['category']][] = @lCmd
 	}
 	export('DiscordBot.Command.List.Name', @cmdListName)
 	export('DiscordBot.Command.List.Alias', @cmdListAlias)

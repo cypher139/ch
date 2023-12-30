@@ -17,7 +17,7 @@ bind('discord_message_received', array('id': 'Chat.Discord.cmd', 'priority': 'HI
 	#Setup list of server members
 	@membersID = get_value('server.Discord.members.ID')
 	if(!array_contains(@membersID, @discord['userid'])) {
-		array_push(@membersID, @discord['userid'])
+		@membersID[] = @discord['userid']
 		store_value('server.Discord.members.ID', @membersID)
 	}
 	@membersnames = get_value('server.Discord.members.names')
@@ -246,7 +246,7 @@ if(!array_index_exists(@actions, @command)) {
 				discord_private_message(@discord['userid'], '```List of IDs:```')
 				for(@i = 1, @i <= @count, @i++) {
 					@match = reg_match('[\\s\\S]{1,2000}(?:>|$)', @IDs)[0]
-					array_push(@split, @match)
+					@split[] = @match
 					@IDs = @IDs[cslice(length(@match), (length(@IDs) - 1))]
 			#debug		discord_private_message(@discord['userid'], '```#'.@i.'```')
 					discord_private_message(@discord['userid'], @match)
@@ -293,7 +293,7 @@ if(!array_index_exists(@actions, @command)) {
 				}
 			}
 		} else {
-			array_push(@userroles, @config['Fake_Admin_Role'])
+			@userroles[] = @config['Fake_Admin_Role']
 			discord_broadcast(@discord['channel'], '<@'.@discord['userid'].'> is now a '.@config['Fake_Admin_Rolename'].'!')
 		}
 		discord_member_set_roles(@discord['userid'], @userroles)

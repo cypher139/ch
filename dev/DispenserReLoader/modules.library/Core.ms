@@ -232,13 +232,13 @@ proc _reloader_get_fuel_items(@option) {
 	#3 and 4 letter words separated so as to not catch generic blocks that aren't usable. 'block' 'leaves' 'cake' 'fan' etc
 	# Overworld Log or Stripped Log 	15 - 300 ticks
 		if(reg_count('^.+[-_][L][O][G]', @v) > 0) {
-			array_push(@allfuelitems, @v)
+			@allfuelitems[] = @v
 			continue()
 		}
 	# Any Wool 	5 - 100 ticks
 	# Overworld Wood or Stripped Wood 	15 - 300 ticks 	
 		if(reg_count('^.+[-_]WOO[DL]', @v) > 0) {
-			array_push(@allfuelitems, @v)
+			@allfuelitems[] = @v
 			continue()
 		}
 	# Any Boat 	60 - 1200 ticks 
@@ -253,7 +253,7 @@ proc _reloader_get_fuel_items(@option) {
 		if(reg_count('^.+[-_][BCSFPT][OAELIR][ARPNG][TPLCND](?:[EIKD]|$)(?:[TNOS_]|$)(?:[GSO]|$)[RA]?', @v) > 0) {
 		# still catches 'fern' 'sand' 'iron', 'blackstone' 'stone'
 			if(reg_count('^.+STONE_', @v) > 0 || reg_count('^.+_BRICK', @v) > 0 || reg_count('^.*IRON_', @v) > 0 || reg_count('^.+_FER', @v) > 0 || reg_count('^.+_SAND', @v) > 0) { continue() } 
-			array_push(@allfuelitems, @v)
+			@allfuelitems[] = @v
 			continue()
 		}
 	}

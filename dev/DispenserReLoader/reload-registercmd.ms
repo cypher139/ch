@@ -55,7 +55,7 @@ register_command('reloader', array(
 				if(array_contains_ic(all_materials(), @args[-2])) {
 					@usetabs = array('clear', 'default')
 					for(@i = 1, @i <= 64, @i++) {
-						array_push(@usetabs, @i)
+						@usetabs[] = @i
 					}
 					@areturn = array_filter(@usetabs, closure(@key, @value) {
 					return(length(@input) <= length(@value)
@@ -141,7 +141,7 @@ register_command('reloaderadmin', array(
 				if(equals_ic(@args[-2], 'qty') || array_contains_ic(all_materials(), @args[-2])) {
 					@usetabs = array('clear', 'default')
 					for(@i = 1, @i <= 64, @i++) {
-						array_push(@usetabs, @i)
+						@usetabs[] = @i
 					}
 					@areturn = array_filter(@usetabs, closure(@key, @value) {
 						return(length(@input) <= length(@value)

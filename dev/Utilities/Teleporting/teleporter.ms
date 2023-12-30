@@ -10,7 +10,7 @@ if(reg_count('^.+_PRESSURE_PLATE', get_block(@ratchet['location'])) == 0) {
 	@otherblocks = get_value('ch.dev.data.event.pressure_plate.types')
 	if(!is_array(@otherblocks)) { @otherblocks = array() }
 	if(!array_contains(@otherblocks, get_block(@ratchet['location']))) { 
-		array_push(@otherblocks, get_block(@ratchet['location']))
+		@otherblocks[] = get_block(@ratchet['location'])
 		store_value('ch.dev.data.event.pressure_plate.types', @otherblocks)
 		console(color('c').'New: '.color(8).' pressure_plate_activated event occured on a '.get_block(@ratchet['location']))
 		console(color(8).'Current types found:  '.array_implode(@otherblocks, ', '))

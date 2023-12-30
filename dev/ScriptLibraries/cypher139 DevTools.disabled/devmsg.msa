@@ -118,7 +118,7 @@ if(array_size(@args) > 0) {
 				export('ch.player.'.@uuid.'.dev.scripts.'.@arg, false)
 				msg(@prefix.color('f').'Developer messages are '.color('c').'disabled'.color('f').' for script: '.@arg)
 			} else {
-				array_push(@ds, @arg)
+				@ds[] = @arg
 				msg(@prefix.color('f').'Developer messages are '.color('a').'enabled'.color('f').' for script: '.@arg)
 			}
 		}

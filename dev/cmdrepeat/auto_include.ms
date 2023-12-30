@@ -4,7 +4,7 @@ export('cmdrepeat.console.command.show', get_value('cmdrepeat.console.command.sh
 # get_commands() is a huge array. sort into a single array:
 @allcmds = array()
 foreach(@v in get_commands()) {
-	array_push(@allcmds, @v['name'])
+	@allcmds[] = @v['name']
 	array_push_all(@allcmds, @v['aliases'])
 }
 export('cmdrepeat.all.commands', @allcmds)

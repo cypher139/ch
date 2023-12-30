@@ -69,13 +69,13 @@ proc _codegen(@codelength, @codetype, @codetype2) {
 		@chars = array_get(@all)
 	case 'n8':
 	case '8bit':
-		array_push(@number, 0)
+		@number[] = 0
 		@chars = @number
 		@codelength = 3
 		@numlimit = array(2,5,5)
 	case 'n16':
 	case '16bit':
-		array_push(@number, 0)
+		@number[] = 0
 		@chars = @number
 		@codelength = 5
 		@numlimit = array(6,5,5,3,5)

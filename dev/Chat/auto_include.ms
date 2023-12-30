@@ -76,7 +76,7 @@ proc _chat_load_config(@cfgtype) {
 				@previp = ''
 				foreach(@k: @v in @loadcfg['IP_Blacklist']) {
 					if(!array_contains(@ipFileList, @v)) {
-						array_push(@ipFileList, @v)
+						@ipFileList[] = @v
 					}
 					if(@v == @previp) {
 						array_remove(@ipFileList, @k)

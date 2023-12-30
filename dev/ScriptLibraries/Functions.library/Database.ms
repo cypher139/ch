@@ -16,7 +16,7 @@ msg(@action.', a: '.@args)
 @option2 = ''
 if(array_size(@args) == 0) {
 	if(function_exists('player')) {
-		array_push(@args, player())
+		@args[] = player()
 	} else {
 		return('[Database] Not enough arguments provided')
 	}
@@ -97,7 +97,7 @@ switch(@action){
 
 	case 'clearvalue':
 	case 'cv':
-		if(array_size(@args) == 0) { array_push(@args, player()) }
+		if(array_size(@args) == 0) { @args[] = player() }
 		@returnmsg = @prefix.color(6).'Clear value: '.color('d').@args[0]
 		if(has_value(@args[0]) == true) {
 			clear_value(@args[0])
@@ -145,7 +145,7 @@ switch(@action){
 	case 'clearindex':
 	case 'ci':
 		if(function_exists('player')) {
-			if(array_size(@args) == 0) { array_push(@args, player()) }
+			if(array_size(@args) == 0) { @args[] = player() }
 		}
 		if(!array_index_exists(@args, 0)) { return(@prefix.'Specify a value with an array!') }
 		if(!array_index_exists(@args, 1)) { return(@prefix.'Specify index to remove!') }
@@ -172,10 +172,10 @@ switch(@action){
 	case 'exportvalue':
 	case 'ex':
 		@time = time()
-		if(array_size(@args) == 0) { array_push(@args, player()) }
+		if(array_size(@args) == 0) { @args[] = player() }
 		@v = get_value(@args[0])
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
-		if(!array_index_exists(@args, 1)) { array_push(@args, 'yml') }
+		if(!array_index_exists(@args, 1)) { @args[] = 'yml' }
 		@fileext = ''
 		switch(string(@args[1])) {
 		case 'raw':
@@ -279,7 +279,7 @@ switch(@action){
 
 	case 'getvalues':
 	case 'gvs':
-		if(array_size(@args) == 0) { array_push(@args, player()) }
+		if(array_size(@args) == 0) { @args[] = player() }
 		@v = get_values(@args[0])
 		@returnmsg = @prefix.color(6).'Get values: '.color('d').@args[0]
 		foreach(@key: @data in @v) {
@@ -290,7 +290,7 @@ switch(@action){
 
 	case 'hasvalues':
 	case 'hvs':
-		if(array_size(@args) == 0) { array_push(@args, player()) }
+		if(array_size(@args) == 0) { @args[] = player() }
 		@v = get_values(@args[0])
 		@returnmsg = @prefix.color(6).'Has values: '.color('d').@args[0]
 		foreach(@key: @data in @v) {

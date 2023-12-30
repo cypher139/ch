@@ -79,7 +79,7 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs, @type) {
 	#Select Word
 	@test2 = ''
 	if(!array_index_exists(@cmdargs, 1)) {
-		array_push(@cmdargs, @word)
+		@cmdargs[] = @word
 		# if(!is_numeric(@cmdargs[1])) { @test2 = @cmdargs[1] }
 	}
 	if(is_numeric(@cmdargs[1])) {
@@ -220,7 +220,7 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 		}
 		@msg = true
 	} else {
-		array_push(@userroles, @config['Fake_Admin_Role'])
+		@userroles[] = @config['Fake_Admin_Role']
 		@msg = '<@'.@discord['userid'].'> is now a **'.@config['Fake_Admin_Rolename'].'**!'
 	}
 	discord_member_set_roles(@discord['serverid'], @discord['userid'], @userroles, 'Fake Admin Role command')
