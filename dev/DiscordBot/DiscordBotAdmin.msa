@@ -19,7 +19,7 @@ foreach(@arg in @args) {
 include_dir('command.library');
 #pseudo array for actions that require event array
 # 777378696782657084 = ASCII: MINECRAFT
-@discord = array('bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
+@discord = array('admin': true, 'bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
 
 @config = import('DiscordBot.config.'.@guild)
 msg('Using Server ID: '.@guild)
@@ -162,19 +162,15 @@ case 'vc':
 
 case 'wrf':
 case 'welcomerolesfinder':
-	if(!array_index_exists(@args, 0)) { @args = array('r') }
-	@return = _discordBot_WelcomeRolesFinder(@args[0])
-	if(reg_count('^[WwNn]', @args[0]) > 0) {
-		msg('['.@name.'] IDs: \n'.array_implode(@return['list'], '\n'))
-		msg('['.@name.'] '.@return['amount'].' '.@return['msg'])
-	} else {
-		if(array_index_exists(@return, 'zero')) {
-			msg('['.@name.'] '.@return['zero'].' members were detected as having 0 roles.')
-		}
-		if(array_index_exists(@return, 'welcome')) {
-			msg('['.@name.'] '.@return['welcome'].' members were detected as having only the Welcome Roles.')
+	if(!array_index_exists(@args, 0)) { @args = array('w') }
+	@return = _discordBot_cmd_wrf(@discord, array(@args[0], 'mc'))
+	if(!is_array(@return)) { die('['.@name.'] '.color(7).@return) }
+	if(array_index_exists(@args, 1)) {
+		if(reg_count('^[Ll]', @args[1]) > 0 && array_size(@return['MCCmd']['list']) > 0) {
+			msg('['.@name.'] IDs: \n'.array_implode(@return['MCCmd']['list'], '\n'))
 		}
 	}
+	msg('['.@name.'] '.color(7).@return['MCCmd']['msg'])
 default:
 msg('Action Not Recognized!')	
 }

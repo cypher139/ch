@@ -1919,11 +1919,11 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		_db_msg_Console('Required Discord data not given to Command Handler!', 'debug')
 		return(false)
 	}
-	#Check for specified server, if not given already
+	#Check for specified server, if not given already. User must be a member of that server!
 	if(@discord['serverid'] == 0) {
 		@guilds = import('DiscordBot.Guilds')
 		foreach(@i: @v in parse_args(@discord['message'])) {
-			if(array_contains(@guilds, @v)) {
+			if(is_numeric(@v) && length(@v) > 15 && array_contains(@guilds, @v)) {
 				@discord['serverid'] = @v
 				@discord['message'] = replace(@discord['message'], @v, '')
 			}
@@ -1931,6 +1931,10 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	}
 	if(@discord['serverid'] == 0) {
 		@discord['serverid'] = @botconfig['Primary_Guild']
+	}
+	if(!array_contains(discord_get_members(@discord['serverid']), @discord['userid'])) {
+		console('User not a member!')
+		return('UserNotServerMember')
 	}
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@return = false
@@ -2146,6 +2150,9 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 				_db_msg_Console(@CmdReturn['console'], @discord['serverid'])
 				array_remove(@CmdReturn, 'console')
 			}
+			if(array_index_exists(@CmdReturn, 'MCCmd')) {
+				array_remove(@CmdReturn, 'MCCmd')
+			}
 			if(array_index_exists(@CmdReturn, 'MC')) {
 				_db_mc_broadcast(@CmdReturn['MC'], @CmdReturn['players'])
 				array_remove(@CmdReturn, 'MC')
@@ -2284,50 +2291,6 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 
 
 #### Bot Command Logic
-
-proc _discordBot_WelcomeRolesFinder(@type = 'none', @guild) {
-### REWRITE
-	@botconfig = import('DiscordBot.config.Discord')
-	if(@guild == '' || @guild == null) {
-		#primary guild
-		@guild = @botconfig['Primary_Guild']
-	}
-	@config = import('DiscordBot.config.'.@guild, '???')
-	if(@config == '???') {
-		_db_msg_Console(color(7).'Guild "'.@guild.'" given was not recognized', 'debug')
-		return(false)
-	}
-	@name = 'Discord'
-	@return = array('msg': 'Invalid Option', 'amount': '', 'list': array())
-	#View Welcome or No roles.
-	if(reg_count('^[WwNn0]', @type) > 0) {
-		@suffix = ''
-		if(reg_count('^[Ww]', @type) > 0) {
-			@suffix = 'welcomeroles'
-			@return['msg'] = 'members were detected as having only the Welcome Roles.'
-		}
-		if(reg_count('^[Nn0]', @type) > 0) {	
-			@suffix = 'none'
-			@return['msg'] = 'members were detected as having 0 roles.'
-		}
-		@roles = get_value('DiscordBot.'.@guild.'.members.roles.'.@suffix)
-		if(is_array(@roles)) {
-			@return['amount'] = array_size(@roles)
-		} else {
-			@return['msg'] = 'Role Data not populated yet, please wait for auto-updates'
-			return(@return)
-		}
-		@membernames = get_value('DiscordBot.'.@guild.'.members.names')
-		if(!is_array(@membernames)) { die('plz fill members.names array') }
-		foreach(@username: @userid in @membernames) {
-			if(array_contains(@roles, @userid)) {
-				array_push(@return['list'], @username.' <'.@userid.'>')
-			}
-		}
-		return(@return)
-	}
-	return(@return)	
-}
 
 /*
 proc _discordBot_link_mc_account(@from = '', @type = 'create', @user = '', @id = '', @code = '', @options) {
