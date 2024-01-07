@@ -1,5 +1,4 @@
-#version 1.1-tmc
-#requires build #85
+#Admin actions for the Discord bot, accessed via the Minecraft server
 admin:/discordbot [$action] [$] = >>>
 @name = 'Discord'
 @prefix = '['.@name.'] '
@@ -53,7 +52,7 @@ case 'backup':
 	_discordBot_backup_members();
 case 'update':
 	@startTime = time();
-	msg(color('a').'Updating DiscordBot\'s internal cache data for each guild...')
+	msg(color(10).'Updating DiscordBot\'s internal cache data for each guild...')
 	_discordBot_update_members();
 	x_thread_join('DiscordBotUpdate', 10000)
 	@stats = import('DiscordBot.debug.stats.last.updatemembers')
@@ -70,9 +69,9 @@ case 'update':
 	@timeElapsed = time() - @startTime;
 	msg(color(3).'Time elapsed: '.@timeElapsed.'ms.')
 case 'memberinfo':
-	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to view!') }
+	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord user ID to view!') }
 	@gmr = discord_member_info(@guild, @args[0])
-	msg(color('a').'Member info:')
+	msg(color(10).'Member info:')
 	msg(@gmr)
 case 'viewinvites':
 	discord_retrieve_invites(@guild, closure(@ex) { 
@@ -88,7 +87,7 @@ case 'transferroles':
 		msg(@return)
 	}
 case 'getroles':
-	if(!array_index_exists(@args, 0)) { die(@prefix.color('c').'Specify the Discord user ID!') }
+	if(!array_index_exists(@args, 0)) { die(@prefix.color(12).'Specify the Discord user ID!') }
 	if(!array_index_exists(@args, 1)) { @args[] = 0 }
 	@roles = ''
 	switch(@args[1]) {
@@ -99,9 +98,9 @@ case 'getroles':
 			@roles = discord_member_get_roles(@guild, @args[0])
 			if(player() != '~console') { @roles = array_keys(@roles) }
 		} catch(NotFoundException @ex) {
-			die(@prefix.color('e').'User ID Not Found on Server.')
+			die(@prefix.color(14).'User ID Not Found on Server.')
 		} catch(Exception @ex) {
-			die(@prefix.color('c').'Discord User ID: '.@ex['message'])
+			die(@prefix.color(12).'Discord User ID: '.@ex['message'])
 		}
 	case 1:
 	case 'saved':
@@ -111,16 +110,50 @@ case 'getroles':
 			if(array_index_exists(@roles, @args[0])) {
 				@roles = @roles[@args[0]]
 			} else {
-				die(@prefix.color('c').'Discord User ID not found in internal storage!')
+				die(@prefix.color(12).'Discord User ID not found in internal storage!')
 			}
 		} else { die(@prefix.'Internal storage not found') }
 	default:
-		die(color('e').'Specify Search type: CHDiscord cache or internal storage')
+		die(color(14).'Specify Search type: CHDiscord cache or internal storage')
 	}
-	msg(color('a').@prefix.'Roles found for User '.color(3).@args[0].color('a').': '.color('r').@roles)
+	msg(color(10).@prefix.'Roles found for User '.color(3).@args[0].color(10).': '.color('r').@roles)
 
 case 'vcstats':
 case 'vc':
+	proc _vc_display_duration(@time) {
+		@dateType = 'HH\'h\' mm\'m\' ss\'s\''
+		@dl = ''
+		if(@time < 60000) {
+		#less than min
+			@dateType = 'ss\'s\''
+		} else if(@time >= 60000 && @time < 3600000) {
+		#over 1 min
+			@dateType = 'mm\'m\' ss\'s\''
+		} else if(@time >= 3600000 && @time < 86400000) {
+		#over 1 hour - uses above default.
+			@dateType = 'HH\'h\' mm\'m\' ss\'s\''
+		} else if(@time >= 86400000) {
+		#over 1 day
+			@dl = (simple_date('D', @time) - 1).'d '
+		} 
+		return(@dl.simple_date(@dateType, @time));
+	}
+	proc _vc_display_stat(@stat, @prefix, @vcrole) {
+		@callLength = @stat['end'] - @stat['start']
+		msg(@prefix.'Channel: '.@stat['channel'].' Start: '.simple_date('MM/dd/yy HH:mm', @stat['start']).' / End: '.simple_date('MM/dd/yy HH:mm', @stat['end']).' [Length: '._vc_display_duration(@callLength).']');
+		if(array_index_exists(@stat, 'pinguser')) {
+			msg(color(13).@stat['pinguser'].color('r').' triggered @'.@vcrole.' ping.');
+		}
+		if(array_index_exists(@stat, 'time')) {
+			@message = 'Users joined: '.color(10).array_size(@stat['users']).color('r').' ('.color(11)
+			foreach(@userID: @userName in @stat['users']) {
+				@message = @message.@userName.color(8).' ['._vc_display_duration(@stat['time'][@userID]).'], '.color(11)
+			}
+			msg(@message.color('r').')')
+		} else { 
+			msg('Users joined: '.color(11).array_implode(@stat['users'], color(8).', '.color(11)));
+		}
+	}
 	@channel = array_keys(@config['VC_Options'])[0]
 	foreach(@arg in @args) {
 		if(array_contains(array_keys(@config['VC_Options']), @arg)) {
@@ -129,35 +162,47 @@ case 'vc':
 			break()
 		}
 	}
-	@id = null
+	@vcrole = @config['VC_Options'][@channel]['VC_Role_Name']
+	@id = 0
+	@sid = 1
 	@a = ''
 	if(array_index_exists(@args, 1)) { @a = '.alone' }
-	if(!array_index_exists(@args, 0)) { @args = array('None') }
+	if(!array_index_exists(@args, 0)) { @args[] = 'all' }
 	@stats = get_value('DiscordBot.'.@guild.'.VC.'.@channel.@a)
-	if(!is_array(@stats)) { die('['.@name.'] There are no stats saved.') }	
+	if(!is_array(@stats)) { die('['.@name.'] There are no VC channel stats saved.') }	
 	if(is_numeric(@args[0])) {
-		@id = $id - 1
-	}
-	switch(@id) {
-	case 0..19:
+		@id = integer(abs(@args[0]) - 1)
+		if(@id < 0) { @id = 0 }
 		if(array_index_exists(@stats, @id)) {
-			msg(color(9).'['.@name.'] Last Voice Chat stat #'.(@id + 1).':');
-			msg('Channel: '.@stats[@id]['channel'].' Start: '.simple_date('MM/dd/yy HH:mm', @stats[@id]['start']).' / End: '.simple_date('MM/dd/yy HH:mm', @stats[@id]['end']));
-			msg('Users joined: '.color('b').array_implode(@stats[@id]['users'], ', '));
-			if(array_index_exists(@stats[@id], 'pinguser')) {
-				msg('User that triggered VC Role ping: '.@stats[@id]['pinguser']);
-			}
-		} else { msg('['.@name.'] Voice Chat ID was not found.') }
-	case 'all':
-	case null:
-		msg('['.@name.'] Last Voice Chat stats:')
-		foreach(@i: @stat in @stats) {
-			msg(color(9).'#'.(@i + 1).':'.color('r').' Channel: '.@stat['channel'].' Start: '.simple_date('MM/dd/yy HH:mm', @stat['start']).' / End: '.simple_date('MM/dd/yy HH:mm', @stat['end']));
-			msg('Users joined: '.color('b').array_implode(@stat['users'], ', '));
-			if(array_index_exists(@stat, 'pinguser')) { msg('User that triggered VC Role ping: '.@stat['pinguser']) }
+			msg(color(9).'['.@name.'] "'.@stats[@id]['channel'].'" channel\'s Last Voice Chat #'.(@id + 1).':');
+			_vc_display_stat(@stats[@id], '', @vcrole)
+		} else { 
+			msg('['.@name.'] That Voice Chat number was not found.')
 		}
-	default:
-		msg('['.@name.'] Last Voice Chat ID not recognized.');
+	} else {
+		switch(@args[0]) {
+		case 'fix':
+			if(@a != '') { die() }
+			msg('['.@name.'] Fix All '.@config['Server_Nickname'].' Voice Chat stats for channel: '.@stats[0]['channel'])
+			@alonestats = get_value('DiscordBot.'.@guild.'.VC.'.@channel.'.alone')
+			foreach(@i: @stat in @stats) {
+				if(array_size(@stat['users']) < 2) {
+					@alonestats[] = @stat
+					array_remove(@stats, @i)
+				}
+			}
+			foreach(@i: @stat in @stats) {
+				 _vc_display_stat(@stat, color(9).'#'.(@i + 1).':'.color('r').' ', @vcrole)
+			}
+			store_value('DiscordBot.'.@guild.'.VC.'.@channel.'.alone', @alonestats)
+			store_value('DiscordBot.'.@guild.'.VC.'.@channel, @stats)
+		case 'all':
+		default:
+			msg('['.@name.'] All '.@config['Server_Nickname'].' Voice Chat stats for channel: '.@stats[0]['channel'])
+			foreach(@i: @stat in @stats) {
+				 _vc_display_stat(@stat, color(9).'#'.(@i + 1).':'.color('r').' ', @vcrole)
+			}
+		}
 	}
 
 case 'wrf':

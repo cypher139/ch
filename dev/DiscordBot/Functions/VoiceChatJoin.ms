@@ -16,14 +16,14 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	@isAdmin = false
 	@isRole = false
 	@usePing = false
-	@userroles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
-	foreach(@role: @roleid in @userroles) {
+	@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
+	foreach(@role: @roleid in @userRoles) {
 		if(array_contains_ic(@config['Role_Admins'], @role)) {
 			@isAdmin = true
 			break()
 		}
 	}
-#setup config
+# Setup config
 	if(array_index_exists(@config, 'VC_Options', @discord['channelid'])) {
 		@vc = @config['VC_Options'][@discord['channelid']]
 	} else if(array_index_exists(@config, 'VC_Options', @discord['channel'])) {
@@ -31,7 +31,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	} else {	
 		@vc = array('VC_Ping_If_Role_Member': false, 'VC_Role_ID': 123)
 	}
-	if(array_contains(@userroles, @vc['VC_Role_ID'])) { @isRole = true }
+	if(array_contains(@userRoles, @vc['VC_Role_ID'])) { @isRole = true }
 	if(@vc['VC_Ping_If_Role_Member'] == true) {
 		if(@isRole == true) { @usePing = true }
 	} else {
@@ -41,19 +41,20 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	#Ping @VC role to come join the main VC channel.
 	if(@usePing == true && @vc['VC_Role_ID'] != 123) {
 	# Get last time the bot pinged the role
-		@lastping = get_value('DiscordBot.last.ping.'.@vc['VC_Role_ID'])
-		if(@lastping == '' || @lastping == null) { @lastping = 1230768000000 }
-		if(import('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress') == true) { die() } else {
+		@lastping = get_value('DiscordBot.VC.last.pings')
+		if(!is_array(@lastping)) { @lastping = array() }
+		if(!array_index_exists(@lastping, @vc['VC_Role_ID'])) { array_set(@lastping, @vc['VC_Role_ID'], 1230768000000) }
+		if(import('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress') == true) { die() } else {
 			@timeout = 60000
 	# :angrypingemoji: 1 ping every 12 hours only!
-			if(time() > (@lastping + @vc['VC_Ping_Timeout'])) {
+			if(time() > (@lastping[@vc['VC_Role_ID']] + @vc['VC_Ping_Timeout'])) {
 				@discordMsg = replace(@vc['VC_Ping_Message'], '%RoleID%', '<@&'.@vc['VC_Role_ID'].'>')
 				@discordMsg = replace(@discordMsg, '%UserID%', '<@'.@discord['userid'].'>')
 				@discordMsg = replace(@discordMsg, '%ChannelName%', @discord['channel'])
 				@discordMsg = replace(@discordMsg, '%Channel%', '<#'.@discord['channelid'].'>')
 				@mcMsg = replace(@vc['VC_Ping_Message_MC'], '%User%', @discord['username'])
 				@mcMsg = replace(@mcMsg, '%Channel%', @discord['channel'])
-				export('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress', true)
+				export('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress', true)
 			#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
 				set_timeout(@timeout, closure(){
 					if(discord_member_get_voice_channel(@discord['serverid'], @discord['userid']) == @discord['channelid']) {
@@ -73,43 +74,35 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 						}					
 						discord_broadcast(@discord['serverid'], @vc['VC_Text_Channel_ID'], array('content': @discordMsg, 'allowed_mentions': array('parse': array('ROLE'))))
 						_db_mc_broadcast(@mcMsg, 'player')
-						store_value('DiscordBot.last.ping.'.@vc['VC_Role_ID'], time())
+						@lastping[@vc['VC_Role_ID']] = time()
+						store_value('DiscordBot.VC.last.pings', @lastping)
 						@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
-						if(!is_array(@stats)) { @stats = array('start': (time() - @timeout), 'end': '', 'users': '', 'channel': @discord['channel']) }
+						if(!is_array(@stats)) { @stats = array('active': array(), 'activetime': array(), 'start': (time() - @timeout), 'end': '', 'users': array(), 'channel': @discord['channel']) }
 						array_set(@stats, 'pinguser', @discord['username'])
 						store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
 					}
 				});
 				set_timeout((@timeout + 10000), closure(){
-					export('DiscordBot.'.@discord['serverid'].'.VC.ping.in.progress', null)
+					export('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress', null)
 				});
 			}
 		}
 	}
 	
 	#Save current users in channel, only after 90 seconds so user is stayin
-	set_timeout(90000, closure(){
-		if(discord_member_get_voice_channel(@discord['serverid'], @discord['userid']) == @discord['channelid']) {
-			@currentVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users')
-			if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
-			@totalVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total')
-			if(!is_array(@totalVCUsers)) { @totalVCUsers = array() }
-			@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
-			if(!is_array(@stats)) { 
-				@stats = array('start': (time() - 90000), 'end': '', 'users': '', 'channel': @discord['channel'])
-				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
-			}
-				
-			if(!array_contains(@currentVCUsers, @discord['userid'])) { 
-				@currentVCUsers[] = @discord['userid']
-				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users', @currentVCUsers)
-			}
-			if(!array_contains(@totalVCUsers, @discord['userid'])) { 
-				array_set(@totalVCUsers, @discord['userid'], @discord['username'])
-				store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total', @totalVCUsers)
-			}
-		}
-	});
+	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
+	if(!is_array(@stats)) { 
+		@stats = array('active': array(), 'activetime': array(), 'start': time(), 'end': '', 'users': array(), 'channel': @discord['channel'])
+	}
+		
+	if(!array_contains(@stats['active'], @discord['userid'])) { 
+		@stats['active'][] = @discord['userid']
+		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users', @stats['active'])
+	}
+	if(!array_contains(@stats['users'], @discord['userid'])) { 
+		array_set(@stats['users'], @discord['userid'], @discord['username'])
+		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total', @stats['users'])
+	}
 }
 
 
@@ -125,35 +118,37 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		@vc = @config['VC_Options'][@discord['channel']]
 	} else {	
 		@vc = array('VC_DM_Thanks': false)
-	}
-	@totalVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total')
-	if(!is_array(@totalVCUsers)) { die() }
-	@currentVCUsers = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users')
-	if(!is_array(@currentVCUsers)) { @currentVCUsers = array() }
+	}	
+	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
+	if(!is_array(@stats)) { die() }
+	# Remove user from active in call
+	if(array_contains(@stats['active'], @discord['userid'])) { array_remove_values(@stats['active'], @discord['userid']) }
+	if(!array_index_exists(@stats['time'], @discord['userid'])) { array_set(@stats['time'], @discord['userid'], 0) }
+	@userTime = time() - @stats['activetime'][@discord['userid']]
+	@stats['time'][@discord['userid']] = @stats['time'][@discord['userid']] + @userTime
 	
-	if(array_contains(@currentVCUsers, @discord['userid'])) { array_remove_values(@currentVCUsers, @discord['userid']) }
 	
 	#End of call
-	if(!array_index_exists(@currentVCUsers, 0)) {
+	if(!array_index_exists(@stats['active'], 0)) {
 		#DM thanks
-		if(@vc['VC_DM_Thanks'] == true && array_size(@totalVCUsers) > 1) {
-			foreach(@userid: @username in @totalVCUsers) {
-				@UserRole = ''
+		if(@vc['VC_DM_Thanks'] == true && array_size(@stats['users']) > 1) {
+			foreach(@userid: @username in @stats['users']) {
+				@userRoles = ''
 				try {
-					@UserRole = discord_member_get_roles(@discord['serverid'], @userid)
+					@userRoles = discord_member_get_roles(@discord['serverid'], @userid)
 				} catch(NotFoundException @ex) {
 					_db_msg_Console('User '.@username.' <@'.@userid.'> was recently in Voice Chat, but now is not found on the server. Did they chat and leave?', @discord['serverid'])
 					continue()
 				}
-				@otherVCUsers = array_shallow_clone(@totalVCUsers)
+				@otherVCUsers = array_shallow_clone(@stats['users'])
 				array_remove_values(@otherVCUsers, @username);
 				if(@vc['VC_DM_VC_Role'] == false) {
-					if(array_contains_ic(@UserRole, @vc['VC_Role_ID'])) {
+					if(array_contains_ic(@userRoles, @vc['VC_Role_ID'])) {
 						continue()
 					}
 				}
 				@isAdmin = false
-				foreach(@role: @roleid in @UserRole) {
+				foreach(@role: @roleid in @userRoles) {
 					if(array_contains_ic(@config['Role_Admins'], @role)) {
 						@isAdmin = true
 						break()
@@ -166,21 +161,18 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 				} else {
 					@dmMsg = replace(@dmMsg, '%OtherUsers%', array_implode(array_normalize(@otherVCUsers)[..-2], ',').' and '.array_normalize(@otherVCUsers)[..-1])
 				}
-				# @dmMsg = replace(@dmMsg, '%TotalUsers%', array_implode(@totalVCUsers, ' and '))
+				# @dmMsg = replace(@dmMsg, '%TotalUsers%', array_implode(@stats['users'], ' and '))
 				discord_private_message(@userid, @dmMsg);
 			}
 		}
-		_db_msg_Console('Call Completed in the '.@discord['channel'].' channel! Users who joined: '.color(3).array_implode(@totalVCUsers, ', '), @discord['serverid'])
+		_db_msg_Console('A call was finished in the '.@discord['channel'].' channel! Joined: '.color(3).array_implode(@stats['users'], ', '), @discord['serverid'])
 		#Save Stats
-		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users');
-		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total');
-		@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
-		if(!is_array(@stats)) { die() }
-		
 		@stats['end'] = time()
-		@stats['users'] = @totalVCUsers
+		array_remove(@stats, 'active')
+		array_remove(@stats, 'activetime')
+		
 		@lastmsglone = ''
-		if(array_size(@totalVCUsers) < 2) {
+		if(array_size(@stats['users']) < 2) {
 			@lastmsglone = '.alone'
 		}			
 		@lastmsgs = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@lastmsglone)
@@ -190,6 +182,6 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@lastmsglone, @lastmsgs);
 		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats');
 	} else {
-		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users', @currentVCUsers);
+		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats);
 	}
 }
