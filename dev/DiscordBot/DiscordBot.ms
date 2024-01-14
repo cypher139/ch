@@ -32,7 +32,7 @@ if(in_cmdline_mode()) {
 }
 
 # Version Check
-@requiredVersion = array(2, 11, 2)
+@requiredVersion = array(2, 12, 0)
 if(extension_exists('CHDiscord')) {
 	@version = reg_replace('[^0-9.]+', '', extension_info()['CHDiscord']['version'])
 		foreach(@place: @num in split('.', @version)) {
@@ -58,7 +58,7 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 			@ret8901 = _db_load_guilds(discord_get_servers());
 			# If successful: Setup initial tasks
 			if(@ret8901 == true) {
-				set_cron('0 1 * * 0', closure(){ _discordBot_update_members() });
+				set_cron('0 1 * * 0,3', closure(){ _discordBot_update_members() });
 				set_cron('7 0 * * 0', closure(){ _discordBot_backup_members() });
 				@ret8902 = discord_member_info(@return8762['Bot_ID'])
 				export('DiscordBot.Bot.Info', @ret8902)

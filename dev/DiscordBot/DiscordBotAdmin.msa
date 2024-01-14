@@ -208,7 +208,8 @@ case 'vc':
 case 'wrf':
 case 'welcomerolesfinder':
 	if(!array_index_exists(@args, 0)) { @args = array('w') }
-	@return = _discordBot_cmd_wrf(@discord, array(@args[0], 'mc'))
+	@args[] = 'mc'
+	@return = _discordBot_cmd_wrf(@discord, @args)
 	if(!is_array(@return)) { die('['.@name.'] '.color(7).@return) }
 	if(array_index_exists(@args, 1)) {
 		if(reg_count('^[Ll]', @args[1]) > 0 && array_size(@return['MCCmd']['list']) > 0) {

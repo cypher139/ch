@@ -472,6 +472,21 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 			@from = 'Discord'
 		}
 	}
+	if(is_closure(@option)) {
+		@afterMsg = @option
+	} else {
+		@afterMsg = closure(@msgID) {
+		# console(@msgID)
+			@lastmsgs = import('DiscordBot.'.@guild.'.last.message.ID.db')
+			if(!is_array(@lastmsgs)) { @lastmsgs = array() }
+			@newData = array()
+			array_set(@newData, @guild, @msgID)
+			array_insert(@lastmsgs, @newData, 0)
+			if(array_index_exists(@lastmsgs, 100)) { array_remove(@lastmsgs, 100) }
+			export('DiscordBot.'.@guild.'.last.message.ID.db', @lastmsgs)
+			return(true)
+		}
+	}
 	@message = array()
 	# Check if message data given is an array of data
 	if(is_array(@raw)) {
@@ -661,10 +676,10 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 					if(array_index_exists(@message, 'reference_id')) {
 						array_set(@splitmsg, 'reference_id', @message['reference_id'])
 					}					
-					discord_broadcast(@guild, @channel, @splitmsg)
+					discord_broadcast(@guild, @channel, @splitmsg, @afterMsg)
 				}
 			} else {
-				discord_broadcast(@guild, @channel, @message)
+				discord_broadcast(@guild, @channel, @message, @afterMsg)
 			}
 			return(true);
 		case 'pm':
@@ -693,18 +708,18 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 			if(array_index_exists(@split, 0)) {
 				foreach(@i: @msg in @split) { 
 					@option = @option.' (Message '.(@i + 1).' of '.array_size(@split).')'
-					discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @msg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))))
+					discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @msg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))), @afterMsg)
 				}
 			} else {
-				discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @message['content']))))
+				discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @message['content']))), @afterMsg)
 			}
 			return(true)	
 		case 'join':
-			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:join:1066426544387543080> Joined:', 'description': @message['content']))))
+			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:join:1066426544387543080> Joined:', 'description': @message['content']))), @afterMsg)
 			return(true)
 		case 'leave':
 		case 'quit':
-			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:leave:1066426677481197618> Left: ', 'description': @message['content']))))
+			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:leave:1066426677481197618> Left: ', 'description': @message['content']))), @afterMsg)
 			return(true)
 		}
 	} catch(InsufficientPermissionException @ex) {
@@ -1968,7 +1983,14 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 /*	
 	# Find if this is a wish or normal chat.
 */	
-
+	@afterMsg = closure(@msgID) {
+		@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.cmd.message.IDs')
+		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
+		array_set(@lastmsgs, @discord['id'], array('id': @msgID, 'time': time()))
+		if(array_index_exists(@lastmsgs, @botconfig['Msg_Cache_Cmd'])) { array_remove(@lastmsgs, @botconfig['Msg_Cache_Cmd']) }
+		export('DiscordBot.'.@discord['serverid'].'.last.cmd.message.IDs', @lastmsgs)
+		return(true)
+	}
 #Check User Permissions
 	#to  check: does get roles work in a dm
 	@userType = 'User'
@@ -2129,7 +2151,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 			@messageType = 'discord'
 			@return = true
 		}
-		_discordBot_send_message(@returnMsg, @discord['serverid'], @messageType, @discord['SendChannel'], @discord['UseDM'])
+		_discordBot_send_message(@returnMsg, @discord['serverid'], @messageType, @discord['SendChannel'], @discord['UseDM'], @afterMsg)
 	} else if(is_array(@CmdReturn)) {
 		if(array_index_exists(@CmdReturn, 'content') || array_index_exists(@CmdReturn, 'embeds')) {
 			if(array_index_exists(@CmdReturn, 'dm')) {
@@ -2163,7 +2185,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 					array_set(@CmdReturn, 'reference_id', @discord['id'])
 				}
 			}
-			_discordBot_send_message(@CmdReturn, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_send_message(@CmdReturn, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'], @afterMsg)
 			@return = true
 		} else {
 			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@CmdReturn, @discord['serverid'], 'admin')

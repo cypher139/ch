@@ -89,23 +89,25 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 		}
 	}
 	
-	#Save current users in channel, only after 90 seconds so user is stayin
+	#Save current users in channel.
 	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
 	if(!is_array(@stats)) { 
 		@stats = array('active': array(), 'activetime': array(), 'start': time(), 'end': '', 'users': array(), 'channel': @discord['channel'])
+		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
 	}
 		
 	if(!array_contains(@stats['active'], @discord['userid'])) { 
 		@stats['active'][] = @discord['userid']
-		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users', @stats['active'])
+		# store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users', @stats['active'])
 	}
 	if(!array_contains(@stats['users'], @discord['userid'])) { 
 		array_set(@stats['users'], @discord['userid'], @discord['username'])
-		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total', @stats['users'])
+		# store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total', @stats['users'])
 	}
+	if(!array_index_exists(@stats, 'activetime', @discord['userid'])) { array_set(@stats['activetime'], @discord['userid'], time()) }
+	@stats['activetime'][@discord['userid']] = time()
 }
-
-
+#--------------------------------------------
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord');
@@ -128,6 +130,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	@stats['time'][@discord['userid']] = @stats['time'][@discord['userid']] + @userTime
 	
 	
+	console(@discord['username'].' time: '.@userTime)
 	#End of call
 	if(!array_index_exists(@stats['active'], 0)) {
 		#DM thanks
@@ -170,7 +173,6 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		@stats['end'] = time()
 		array_remove(@stats, 'active')
 		array_remove(@stats, 'activetime')
-		
 		@lastmsglone = ''
 		if(array_size(@stats['users']) < 2) {
 			@lastmsglone = '.alone'

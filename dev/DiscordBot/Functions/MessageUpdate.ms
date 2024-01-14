@@ -60,6 +60,26 @@ proc _db_update_message_cache(@discord, @updateType) {
 		@newData['edits']++
 		@newData['edittime'] = time()
 		array_set(@return, 'after', @newData['message'])
+	case 'addreaction':
+	case 'removereaction':
+		if(@addUi == true || @addSi == true) { array_set(@newData, 'message', '') }
+		# if reaction doesnt exist, add array Data
+		if(array_index_exists(@newData, 'reactions')) { 
+			@prevData = array_deep_clone(@newData['reactions'])
+		} else {
+			array_set(@newData, 'reactions', array()) 
+		}
+		if(!array_index_exists(@newData, 'reactions', @discord['emoji'])) { array_set(@newData['reactions'], @discord['emoji'], array()) }
+		if(@updateType == 'addreaction') {
+			@newData['reactions'][@discord['emoji']][] = @discord['userid']
+		}			
+		if(@updateType == 'removereaction') {
+			array_remove_values(@newData['reactions'][@discord['emoji']], @discord['userid'])
+			if(array_size(@newData['reactions'][@discord['emoji']]) == 0) {
+				array_remove(@newData['reactions'], @discord['emoji'])
+			}
+		}
+		array_set(@return, 'after', @newData['reactions'])
 	default:
 		_db_msg_Console(@invalidType, @discord['serverid'], 'debug')
 		return(@return)
@@ -83,6 +103,22 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username'])
 	@memberInfo = discord_member_info(@discord['serverid'], @discord['userid'])
 	@embedColor = array('r': 0, 'g': 0, 'b': 200)
+	#Message Formatting
+	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
+		@discord['message'] = '<Sent a GIF>'
+	}
+	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
+		if(@discord['message'] == '') {	
+			@discord['message'] = '<Sent a file> '
+		} else {
+			@discord['message'] = @discord['message'].'\n <Also attached file:> '
+		}
+		foreach(@num: @attach in @discord['attachments']) {
+			@filenum = 'File: '
+			if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
+			@discord['message'] = @discord['message'].@filenum.@attach['filename']
+		}
+	}
 # Update Recent Messages with current data	
 	@saveMsg = _db_update_message_cache(@discord, 'edit')
 # Remaining items are not relevant if event is consumed, or is a bot
@@ -140,4 +176,20 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 			}
 		}
 	}
+}
+
+bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'priority': 'MONITOR'), null, @discord) {
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
+	array_set(@discord, 'id', @discord['messageid'])
+	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message.', @discord['serverid'], 'debug')
+	# Update Recent Messages with current data	
+	@saveMsg = _db_update_message_cache(@discord, 'addreaction')
+}
+
+bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 'priority': 'MONITOR'), null, @discord) {
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
+	array_set(@discord, 'id', @discord['messageid'])
+	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message.', @discord['serverid'], 'debug')
+	# Update Recent Messages with current data	
+	@saveMsg = _db_update_message_cache(@discord, 'removereaction')
 }

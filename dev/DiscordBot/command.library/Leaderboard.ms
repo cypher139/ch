@@ -45,10 +45,18 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			@userIDs[] = @lbTop[0]['id']
 		case 'second':
 			@userIDs[] = @lbTop[1]['id']
-		case 1..9:
-			@userIDs[] = @lbTop[(@arg - 1)]['id']
+		case 'third':
+			@userIDs[] = @lbTop[2]['id']
+		case 'fourth':
+			@userIDs[] = @lbTop[3]['id']
 		default:
-			@usercheckargs[] = @arg
+			if(is_numeric(@arg) && length(@arg) < 6) {
+				if(array_index_exists(@lbTop, (@arg - 1))) {
+					@userIDs[] = @lbTop[(@arg - 1)]['id']
+				}
+			} else {
+				@usercheckargs[] = @arg
+			}
 		}
 	}
 		
@@ -91,7 +99,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			#All checked users did not have an lb entry.
 			return('Leaderboard entry not found for this User.')
 		} else {
-			#No arguments, view yourself
+			#No arguments, or no IDs found: view yourself
 			@userIDs[] = @discord['userid']
 		}
 	}
