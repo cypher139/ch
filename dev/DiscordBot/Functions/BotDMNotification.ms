@@ -24,9 +24,13 @@ proc _db_format_msg_attach(@discord, @url = false) {
 
 bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notification'), null, @discord) {
 	array_set(@discord, 'time', time())
-	@botconfig = import('DiscordBot.config.Discord')
 	@saveDM = array_deep_clone(@discord)
-#Don't save or notify if this is a command message
+	array_set(@discord, 'UseDM', 'dm')
+# Command check: #Don't save or notify if this is a command message
+	@isCmd = _discordBot_iscommand(@discord)
+	if(@isCmd == true || is_consumed() == true) { die() }
+#Else, not a command.
+	@botconfig = import('DiscordBot.config.Discord')
 	@guildcfgNotify = array()
 	@guildcfgCmd = array()
 	@guildcfgChannel = array()
@@ -52,32 +56,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			}
 		}
 	}
-
-# Command check
-# Redundant when UserCommands.ms is in use.
-	@isCmd = false
-	# Check for each server's Command prefix
-	foreach(@serverid: @cmdprefix in @guildcfgCmd) {
-		if(reg_count(@cmdprefix, @discord['message']) > 0 && array_contains(@userServers, @serverid)) {
-			@isCmd = true
-			@userserver = @serverid
-			break()
-		} 
-	}
-	# Prefix not found, check for first word matches a command name
-	if(@isCmd == false) {
-		@cmdList = import('DiscordBot.Command.List.Name')
-		@check = parse_args(@discord['message'])
-		if(is_array(@cmdList) && array_size(@check) > 0) {
-			if(array_index_exists(@cmdList, to_lower(@check[0]))) {
-				@isCmd = true
-			}
-		}
-	}
-	if(@isCmd == true) { die() }
-
-#Else: not a command
-	# User settings
+# User settings
 	@recentDMs = get_value('DiscordBot.DMs.recent')
 	@userConfig = import('DiscordBot.DMs.user.settings')
 	if(is_array(@userConfig)) {

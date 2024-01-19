@@ -60,19 +60,9 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 		
 		
 	#Wish support here
-	# Prefix:
-		if(reg_count(@config['CMD_Command_Prefix'], @discord['message']) > 0) {
-			@isCmd = true
-		}
-	# Mentions:
-		if(reg_count('^[@]'.@botconfig['Bot_Name'].'\\s', @discord['message']) > 0) {
-			@isCmd = true
-			@isMention = 'mention'
-		}
-		if(reg_count('^[@]'.@botinfo['displayname'].'\\s', @discord['message']) > 0) {
-			@isCmd = true
-			@isMention = 'mention'
-		}
+	
+		@isCmd = _discordBot_iscommand(@discord)
+		@isMention = _discordBot_ismention(@discord)
 	}
 	
 	# Action command, all message output is handled from there.
@@ -87,63 +77,34 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 		NoCmdGiven
 		NotACmd
 		*/
+		if(@isMention == true) { @isMention = 'mention' }
 		@return = _discordBot_handlecommand(@discord, @ChannelType, @isMention)
 	}
 }
 # DM commands
 bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'priority': 'HIGH'), null, @discord) {
 	array_set(@discord, 'time', time())
+	array_set(@discord, 'UseDM', 'dm')
 	@botconfig = import('DiscordBot.config.Discord')
 	@guilds = import('DiscordBot.Guilds')
-	@guildcfgNotify = array()
-	@guildcfgCmd = array()
-	@guildcfgChannel = array()
-	@guildcfgURL = array()
 	@userserver = 0
 	@userServers = array()
-	@avatar = 'https://cdn.discordapp.com/embed/avatars/0.png'
-	@gf = 0
+# Default server ID to send
 	foreach(@guild in @guilds) {
-		@cfg = import('DiscordBot.config.'.@guild)
-		if(@cfg['DM_Notify'] == true) {	@guildcfgNotify[] = @guild }
-		array_set(@guildcfgCmd, @guild, @cfg['CMD_Command_Prefix']);
-		array_set(@guildcfgChannel, @guild, @cfg['Log_Channel']);
-		array_set(@guildcfgURL, @guild, @cfg['URL_Broadcast']);
 		if(array_contains(discord_get_members(@guild), @discord['userid'])) {
 			@userServers[] = @guild
-			@gf++
 			@userserver = @guild
 		}
 	}
-
 #Command check
-	@isCmd = false
-	# Check for each server's Command prefix
-	foreach(@serverid: @cmdprefix in @guildcfgCmd) {
-		if(reg_count(@cmdprefix, @discord['message']) > 0 && array_contains(@userServers, @serverid)) {
-			@isCmd = true
-			@userserver = @serverid
-			break()
-		} 
+	@isCmd = _discordBot_iscommand(@discord, 'id')
+	if(!is_boolean(@isCmd)) {
+		@userserver = @isCmd
+		@isCmd = true
 	}
-	# Prefix not found, check for first word matches a command name
-	if(@isCmd == false) {
-		@cmdList = import('DiscordBot.Command.List.Name')
-		@check = parse_args(@discord['message'])
-		if(is_array(@cmdList) && array_size(@check) > 0) {
-			if(array_index_exists(@cmdList, to_lower(@check[0]))) {
-				@isCmd = true
-			}
-		}
-	}
+
 	if(@isCmd == true) {
 		consume();
-		foreach(@i: @v in parse_args(@discord['message'])) {
-			if(array_contains(@guilds, @v)) {
-				@userserver = @v
-				@discord['message'] = replace(@discord['message'], @v, '')
-			}
-		}
 		array_set(@discord, 'channel', @discord['userid']);
 		array_set(@discord, 'serverid', @userserver);
 		array_set(@discord, 'nickname', @discord['displayname']);

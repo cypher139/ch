@@ -176,6 +176,19 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 			}
 		}
 	}
+#check for command
+	@isCmd = false
+	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) == true) {
+		@isCmd = _discordBot_iscommand(@discord)
+	}
+	# Action command, all message output is handled from there.
+	if(@isCmd == true) {
+		consume();
+		array_set(@discord, 'time', time())
+		@isMention = _discordBot_ismention(@discord)
+		if(@isMention == true) { @isMention = 'mention' }
+		@return = _discordBot_handlecommand(@discord, 'edit', @isMention)
+	}
 }
 
 bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'priority': 'MONITOR'), null, @discord) {

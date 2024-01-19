@@ -1,28 +1,29 @@
 proc _discordBot_cmd_cypher(@discord) {
+	@return = ''
 	if(@discord['username'] != 'Cypher') {
-		_discordBot_send_message('Cypher no Cyphing!', 'discord', @discord['serverid'], @discord['SendChannel'], @discord['UseDM'])
+		@return = 'Cypher no Cyphing!'
 	} else {
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'Cypher was here'), 'image': 'https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+		@return = array('embeds': array(array('footer': array('text': 'Cypher was here'), 'image': 'https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif')))
 	}
-	return(true)
+	return(@return)
 }
 
 
 proc _discordBot_cmd_say(@discord, @cmdargs) {
+	@return = ''
 	if(!array_index_exists(@cmdargs, 0)) {
-		_discordBot_send_message(array('embeds': array(array('image': 'https://media.tenor.com/Ks8QMnG25nMAAAAC/kevin-hart-say-what.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
-		die()
+		return(array('embeds': array(array('image': 'https://media.tenor.com/Ks8QMnG25nMAAAAC/kevin-hart-say-what.gif'))))
 	}
 	switch(rand(1,6)) {
 	case 2:
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+		@return = array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif')))
 	case 4:
-		_discordBot_send_message(array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif'))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+		@return = array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif')))
 	default:
 		@sayicons = array('https://media.tenor.com/qJUcFWzUWlIAAAAd/xtina-christina-aguilera.gif', 'https://media.tenor.com/nMkuF8c3DV0AAAAC/zootopia-fox.gif', 'https://media.tenor.com/EJieOpbWHS8AAAAi/i-have-nothing-to-say-real-housewives-of-beverly-hills.gif')
-		_discordBot_send_message(array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username'])))), @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'])
+		@return = array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username']))))
 	}
-	return(true)
+	return(@return)
 }
 
 

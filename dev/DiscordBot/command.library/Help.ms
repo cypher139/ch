@@ -40,8 +40,7 @@ proc _discordBot_cmd_help(@discord) {
 		@aliasembed = array('fields': array(array('name': 'Aliases', 'value': '`'.array_implode(array_unique(@cmdListAlias), '` `').'`', 'inline': false)), 'color': array('r': 170, 'g': 221, 'b': 0))
 		@embeds[] = @aliasembed
 	}
-	_discordBot_send_message(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds), @discord['serverid'], 'discord', @discord['userid'], 'dm')
-	return(true)
+	return(array('content': 'Hi '.@discord['username'].@userTypeDisplay.'!', 'embeds': @embeds, 'dm': 'dm'))
 }
 
 
