@@ -40,9 +40,7 @@ proc _db_update_message_cache(@discord, @updateType) {
 		@addSi = true
 	}
 	if(@userIndex < 0) {
-		@isNewUser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
 		@userDiscord = array_deep_clone(@discord)
-		array_set(@userDiscord, 'newuser', @isNewUser)
 		array_insert(@lastUserMsgs, @userDiscord, 0)
 		@userIndex = 0
 		@addUi = true
@@ -84,7 +82,7 @@ proc _db_update_message_cache(@discord, @updateType) {
 		_db_msg_Console(@invalidType, @discord['serverid'], 'debug')
 		return(@return)
 	}
-	array_set(@lastUserMsgs, @userIndex, @newData)
+	if(@discord['userid'] == @newData['userid']) { array_set(@lastUserMsgs, @userIndex, @newData) }
 	array_set(@lastServerMsgs, @serverIndex, @newData)
 	export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastServerMsgs)
 	export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBotUser.'.'.@discord['userid'], @lastUserMsgs)
@@ -190,6 +188,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 		@return = _discordBot_handlecommand(@discord, 'edit', @isMention)
 	}
 }
+
 
 bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }

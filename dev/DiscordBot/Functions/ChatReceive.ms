@@ -66,10 +66,8 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	# User's last messages
 		if(@discord['bot'] == false) { @loadBot = '.user' }
 		@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'])
-		@isNewUser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
 		if(!is_array(@lastUserMsgs)) { @lastUserMsgs = array() }
 		@userDiscord = array_deep_clone(@discord)
-		array_set(@userDiscord, 'newuser', @isNewUser)
 		array_insert(@lastUserMsgs, @userDiscord, 0)
 		if(array_index_exists(@lastUserMsgs, @botconfig['Msg_Cache_User'])) { array_remove(@lastUserMsgs, @botconfig['Msg_Cache_User']) }
 		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'], @lastUserMsgs)	

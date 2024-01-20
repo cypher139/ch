@@ -23,9 +23,11 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		if(!is_array(@asmembers)) { @asmembers = array() }
 		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	}
-	@newLastMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message.new.'.@discord['userid'], array())
+	@newLastMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.NewUser.'.@discord['userid'], array())
 	if(!is_array(@newLastMsgs)) { @newLastMsgs = array() }
-	@newuser = import('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
+	@newuser = false
+	@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
+	if((@userJoinTime + @config['AS_New_User_Time']) > @time) { @newuser = true }
 	@adduser = false
 	@triggerReason = ''
 	@triggerReasonalt = ''
@@ -142,7 +144,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		#If a New User: record messages in special key
 		if(@newuser == true) {
 			array_insert(@newLastMsgs, @discord, 0)
-			export('DiscordBot.'.@discord['serverid'].'.last.message.new.'.@discord['userid'], @newLastMsgs)
+			export('DiscordBot.'.@discord['serverid'].'.Cache.Messages.NewUser.'.@discord['userid'], @newLastMsgs)
 		}
 	}
 }

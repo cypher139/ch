@@ -14,7 +14,6 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	@consolejoinMsg = 'Member '.color(10).'joined: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>'.color('r')
 	export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
 # Set New User for other checks
-	export('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], true);
 # Log Invite Code Usage
 	if(@config['Log_Invites'] == true) {
 		@membersInfo = get_value('DiscordBot.'.@discord['serverid'].'.members.info')
@@ -191,9 +190,6 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		if(@config['Log_Invites'] == false) { _db_msg_Console(@consolejoinMsg, @discord['serverid']) }
 	});
 # Unset New User for other checks
-	set_timeout(@config['AS_New_User_Time'], closure(){
-		export('DiscordBot.'.@discord['serverid'].'.new.user.'.@discord['userid'], false);
-	});
 # Get data from closures, save
 	set_timeout(10000, closure(){
 		@wm = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
@@ -228,10 +224,10 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		}
 		if(@isMember == true) {
 			store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)
-			# @jointimes = get_value('DiscordBot.'.@discord['serverid'].'.Join.times')
-			# if(!is_array(@jointimes)) { @jointimes = array() }
-			# array_set(@jointimes, @time, array('userid': @discord['userid'], 'user': @discord['username']))
-			# store_value('DiscordBot.'.@discord['serverid'].'.Join.times', @jointimes)
+			@joinTimes = import('DiscordBot.'.@discord['serverid'].'.Join.times')
+			if(!is_array(@joinTimes)) { @joinTimes = _db_memberinfo_jointime(@discord['serverid'], 0) }
+			array_set(@joinTimes, @discord['userid'], @time)
+			export('DiscordBot.'.@discord['serverid'].'.Join.times', @joinTimes)
 			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')
 		} else {
 			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join_Left-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')
