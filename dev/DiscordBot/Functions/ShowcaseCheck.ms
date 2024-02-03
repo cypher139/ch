@@ -4,20 +4,30 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 	array_set(@discord, 'time', time());
 	@botconfig = import('DiscordBot.config.Discord');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
-	if(!array_index_exists(@config, 'Showcase_Channel')) { die() }
+	if(!array_index_exists(@config, 'Showcase_Channel') || !array_index_exists(@config, 'Showcase_Channel_Talk')) { die() }
+	if(!array_index_exists(@config, 'Showcase_Reactions')) {
+		array_set(@config, 'Showcase_Reactions', array(
+		# Chat was not allowed, as it did not fit the posting requirements
+		'Not_Allowed': 'To show your cool project please include a picture!\n To react, add a reaction and talk in %TalkChannel%',
+		# Previous message already is a comment from same poster
+		'Multiple_Msgs': '%UserID% To include more details about your project please edit the additional info into your previous post.',
+		# Chat was a reaction from another user
+		'Reaction_Comment': 'Thanks for your comment %UserID%! To avoid chat in the showcases, **add a reaction** to the original post and **talk in %TalkChannel%** about the showcased project!'
+		));
+	}
 	@ytregex = '^https:[/]{2}[w]{0,3}[.]?youtu[.]?be[./](?:com[/]watch[?]v=)?[A-z0-9]{11}(?:[?]?si=[A-z0-9-]{16})?$'
 	
 	if(@discord['channelid'] == @config['Showcase_Channel']) {
-		@lastmsgs = get_value('DiscordBot.'.@discord['serverid'].'.last.message.showcase')
+		@cacheShowcases = get_value('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Showcase')
 		@isUser = false
 		@isOtherUser = false
 		@isAllowed = false
-		@reaction = 'To show your cool project please include a picture!\n To react, add a reaction and talk in <#'.@config['Welcome_Text_Channel_ID'].'>'
+		@reaction = @config['Showcase_Reactions']['Not_Allowed']
 		if(!array_index_exists(@discord, 'attachments', 0, 'filename')) {
 			@checkMsg = array();
 			@checkIndex = @discord['time']
-			if(is_array(@lastmsgs)) {
-				foreach(@i: @msg in @lastmsgs) {
+			if(is_array(@cacheShowcases)) {
+				foreach(@i: @msg in @cacheShowcases) {
 					if(@msg['channelid'] != @config['Showcase_Channel']) {
 						continue()
 					} 
@@ -27,7 +37,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 					}
 					#If this message was beyond timeout (3 days), remove & continue
 					if(time() > (@msg['time'] + 259200000)) {
-						array_remove(@lastmsgs, @i)
+						array_remove(@cacheShowcases, @i)
 						continue()
 					}				
 					@checkMsg = @msg
@@ -53,7 +63,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 						} else {
 						# Previous message already is a comment
 							@isAllowed = false
-							@reaction = '<@'.@discord['userid'].'> To include more details about your project please edit the additional info into your previous post.'
+							@reaction = @config['Showcase_Reactions']['Multiple_Msgs']
 						}
 					# --- Different user commenting ---
 					} else if(reg_count(@ytregex, @discord['message']) > 0) {
@@ -61,7 +71,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 						@isAllowed = true
 					} else {
 						@isAllowed = false
-						@reaction = 'Thanks for your comment <@'.@discord['userid'].'>! To avoid chat in the showcases, **add a reaction** to the original post and **talk in <#'.@config['Welcome_Text_Channel_ID'].'>** about the showcased project!'
+						@reaction = @config['Showcase_Reactions']['Reaction_Comment']
 					}
 				} else {
 				# No matches found, allow.
@@ -81,20 +91,22 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 		# Allow new person to post with their project
 			@isAllowed = true
 		}
+		@reaction = replace(@reaction, '%UserID%', '<@'.@discord['userid'].'>')
+		@reaction = replace(@reaction, '%TalkChannel%', '<#'.@config['Showcase_Channel_Talk'].'>')
 		if(@isAllowed == true) {
 		# Save recent messages (persistently, not ram)
-			@lastmsgs = get_value('DiscordBot.'.@discord['serverid'].'.last.message.showcase')
-			if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-			array_insert(@lastmsgs, @discord, 0)
-			store_value('DiscordBot.'.@discord['serverid'].'.last.message.showcase', @lastmsgs)
+			@cacheShowcases = get_value('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Showcase')
+			if(!is_array(@cacheShowcases)) { @cacheShowcases = array() }
+			array_insert(@cacheShowcases, @discord, 0)
+			store_value('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Showcase', @cacheShowcases)
 		} else { 
 		# Save recent deleted messages (ram this time)
-			@removedmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message.showcase.removed')
-			if(!is_array(@removedmsgs)) { @removedmsgs = array() }
+			@removedMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Showcase.removed')
+			if(!is_array(@removedMsgs)) { @removedMsgs = array() }
 			array_set(@discord, 'reaction', @reaction)
-			array_insert(@removedmsgs, @discord, 0)
-			if(array_index_exists(@removedmsgs, 20)) { array_remove(@removedmsgs, 20) }
-			export('DiscordBot.'.@discord['serverid'].'.last.message.showcase.removed', @removedmsgs)
+			array_insert(@removedMsgs, @discord, 0)
+			if(array_index_exists(@removedMsgs, 20)) { array_remove(@removedMsgs, 20) }
+			export('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Showcase.removed', @removedMsgs)
 		}
 	#Remove disallowed Post, and message copy to user
 		if(@isAllowed == false) {

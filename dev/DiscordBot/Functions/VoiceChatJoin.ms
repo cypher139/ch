@@ -59,14 +59,14 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 				set_timeout(@timeout, closure(){
 					if(discord_member_get_voice_channel(@discord['serverid'], @discord['userid']) == @discord['channelid']) {
 						#Has the role just been mentioned?
-						@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message')
-						if(is_array(@lastmsgs)) {
-							foreach(@index: @message in @lastmsgs) {
+						@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
+						if(is_array(@cacheMsgs)) {
+							foreach(@i in @cacheMsgs['server']) {
 							# Only check messages that are posted within timeout period. 
-								if(@message['time'] < (time() - @vc['VC_Ping_Timeout'])) {
+								if(@cacheMsgs['messages'][@i]['time'] < (time() - @vc['VC_Ping_Timeout'])) {
 									continue()
 								}
-								if(reg_count('@'.@vc['VC_Role_Name'], @message['message']) > 0) {						
+								if(reg_count('@'.@vc['VC_Role_Name'], @cacheMsgs['messages'][@i]['message']) > 0) {						
 									@discordMsg = 'Hey I was going to do that ping!'
 									break()
 								}
@@ -98,11 +98,9 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 		
 	if(!array_contains(@stats['active'], @discord['userid'])) { 
 		@stats['active'][] = @discord['userid']
-		# store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.users', @stats['active'])
 	}
 	if(!array_contains(@stats['users'], @discord['userid'])) { 
 		array_set(@stats['users'], @discord['userid'], @discord['username'])
-		# store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.total', @stats['users'])
 	}
 	if(!array_index_exists(@stats, 'activetime', @discord['userid'])) { array_set(@stats['activetime'], @discord['userid'], time()) }
 	@stats['activetime'][@discord['userid']] = time()
@@ -173,15 +171,15 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		@stats['end'] = time()
 		array_remove(@stats, 'active')
 		array_remove(@stats, 'activetime')
-		@lastmsglone = ''
+		@statType = ''
 		if(array_size(@stats['users']) < 2) {
-			@lastmsglone = '.alone'
+			@statType = '.alone'
 		}			
-		@lastmsgs = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@lastmsglone)
-		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-		array_insert(@lastmsgs, @stats, 0);
-		_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/'.simple_date('MMyy', time()).'/'.@discord['serverid'].'_'.simple_date('MMyy', time()).'_VC_Stats'.@lastmsglone.'-'.@discord['channelid'].'.json', json_encode(@lastmsgs), 'overwrite')
-		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@lastmsglone, @lastmsgs);
+		@lastVCStats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@statType)
+		if(!is_array(@lastVCStats)) { @lastVCStats = array() }
+		array_insert(@lastVCStats, @stats, 0);
+		_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/'.simple_date('MMyy', time()).'/'.@discord['serverid'].'_'.simple_date('MMyy', time()).'_VC_Stats'.@statType.'-'.@discord['channelid'].'.json', json_encode(@lastVCStats), 'overwrite')
+		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@statType, @lastVCStats);
 		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats');
 	} else {
 		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats);

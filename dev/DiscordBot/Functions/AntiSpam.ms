@@ -23,38 +23,41 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		if(!is_array(@asmembers)) { @asmembers = array() }
 		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	}
-	@newLastMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.NewUser.'.@discord['userid'], array())
-	if(!is_array(@newLastMsgs)) { @newLastMsgs = array() }
+	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
+	if(!is_array(@cacheMsgs)) { @cacheMsgs = array() }
 	@newuser = false
 	@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
 	if((@userJoinTime + @config['AS_New_User_Time']) > @time) { @newuser = true }
 	@adduser = false
 	@triggerReason = ''
 	@triggerReasonalt = ''
-	@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message.user.'.@discord['userid'], array())
-	
+	@lastUserMsgs = array()
+	if(array_index_exists(@cacheMsgs, 'user', @discord['userid'])) {
+		foreach(@userMsgID in @cacheMsgs['user'][@discord['userid']]) {
+			@lastUserMsgs[] = @cacheMsgs['messages'][@userMsgID]
+		}
+	}
 # Record channels user has talked on recently
-	@userchannels = import('DiscordBot.'.@discord['serverid'].'.user.chat.channels')
+	@userchannels = import('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels')
 	if(!is_array(@userchannels)) { @userchannels = array() }
 	if(array_index_exists(@userchannels, @discord['userid'])) {
 		if(!array_contains(@userchannels[@discord['userid']], @discord['channelid'])) {
 			@userchannels[@discord['userid']][] = @discord['channelid']
-			export('DiscordBot.'.@discord['serverid'].'.user.chat.channels', @userchannels)
+			export('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels', @userchannels)
 		}		
 	} else {		
 		array_set(@userchannels, @discord['userid'], array(@discord['channelid']))
-		export('DiscordBot.'.@discord['serverid'].'.user.chat.channels', @userchannels)
+		export('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels', @userchannels)
 	}
 
 #Checks
-
 # Duplicate messages (More than 3-4 is typically indicative of spam)
 	# Do not count if previous data not available, or message is blank
 	if(array_index_exists(@lastUserMsgs, 2) && @discord['message'] != '') {
 		@dcount = import('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', 0)
 		# Last message is the same as current:
 		if(@lastUserMsgs[0]['message'] == @discord['message']) {
-			## Add extra count: Current message is same yet posted on different channel. Can be indicative of spam same message on all available channels. 
+			## Add extra count: Current message is same yet posted on different channel. Can be indicative of spam same message on all available channels.
 			if(@lastUserMsgs[0]['channelid'] != @discord['channelid']) { @dcount++ }
 			# Last 2 messages is ... also the same as current:
 			if(@lastUserMsgs[1]['message'] == @discord['message']) {
@@ -111,17 +114,13 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		@count[@discord['userid']]++
 		export('DiscordBot.'.@discord['serverid'].'.antispam.trigger', @count)
 	#If first trigger:
-		if(@count < 2) {
+		if(@count[@discord['userid']] < 2) {
 			@msgcount = 0
+		# Delete all messages recorded in the user's last message storage
 			if(@config['AS_Delete_Messages'] == true) {
-			# Delete all messages recorded in the user's last message storage
-				if(@newuser == true) {
-					foreach(@message in @newLastMsgs) {
-						@return = _db_as_dm(@message);
-						if(@return == true) { @msgcount++ }
-					}
-				} else {
-					foreach(@message in @lastUserMsgs) {
+				foreach(@message in @lastUserMsgs) {
+					# Action upon only today's messages
+					if(@message['time'] > (@time - 86400000)) {
 						@return = _db_as_dm(@message);
 						if(@return == true) { @msgcount++ }
 					}
@@ -135,16 +134,15 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			_discordBot_send_message('__**Anti Spam alert**__\n User `'.@discord['username'].'`  '.@discord['userid'].' triggered Anti Spam protection!\n *Protection Reason:* '.@triggerReason.@actiontaken, @discord['serverid'], 'admin');
 			_discordBot_send_message('Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.', @discord['serverid'], 'death', @discord['userid'], 'dm')
 		}
-	#Actions for each trigger:	
+	#Actions for each trigger:
 		if(@config['AS_Delete_Messages'] == true) {
 			_db_as_dm(@discord);
 		}
-	} else {
-	#User OK 
-		#If a New User: record messages in special key
-		if(@newuser == true) {
-			array_insert(@newLastMsgs, @discord, 0)
-			export('DiscordBot.'.@discord['serverid'].'.Cache.Messages.NewUser.'.@discord['userid'], @newLastMsgs)
-		}
+		@asMsgs = import('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', array())
+		if(!array_index_exists(@asMsgs, @discord['userid'])) { array_set(@asMsgs, @discord['userid'], array()) }
+		array_insert(@asMsgs[@discord['userid']], @discord, 0)
+		export('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', @asMsgs)
 	}
+	# } else {
+	#User OK 
 }

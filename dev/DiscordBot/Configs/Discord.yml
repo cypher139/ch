@@ -23,6 +23,6 @@ Allowed_Mentions:
 #
 # Message Caches:
 # - How many message of each type to keep in RAM for reference in various bot functions?
-Msg_Cache_User: 50
-Msg_Cache_Server: 100
-Msg_Cache_Cmd: 25
+Msg_Cache_User: 500
+Msg_Cache_Server: 1000
+Msg_Cache_Cmd: 250

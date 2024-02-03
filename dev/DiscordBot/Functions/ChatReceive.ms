@@ -1,7 +1,8 @@
 # Receive messages from Discord users, pass data to Leaderboard and Minecraft server, save message for future reference.
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
-	array_set(@discord, 'time', time());
+	@time = time()
+	array_set(@discord, 'time', @time);
 	@botconfig = import('DiscordBot.config.Discord')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@noXP = false
@@ -33,6 +34,9 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 # Remaining items to only occur if event is not consumed
 	if(is_consumed() == false) {
 		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
+		@newuser = false
+		@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
+		if((@userJoinTime + @config['AS_New_User_Time']) > @time) { @newuser = true }
 	#Message Formatting
 		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 			@discord['message'] = '<Sent a GIF>'
@@ -50,27 +54,25 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 			}
 		}
 	#Save Recent Messages for reference
-		@loadBot = ''
+		@userType = 'user'
+		if(@discord['bot'] == true) { @userType = 'bot' }
 		if(array_index_exists(@discord, 'channeltype')) {
 			if(@discord['channeltype'] == 'TEXT') {
 				array_remove(@discord, 'channeltype')
 			}
 		}
-	# Server's last messages
-		if(@discord['bot'] == true) { @loadBot = '.bot' }
-		@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot)
-		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-		array_insert(@lastmsgs, @discord, 0)
-		if(array_index_exists(@lastmsgs, @botconfig['Msg_Cache_Server'])) { array_remove(@lastmsgs, @botconfig['Msg_Cache_Server']) }
-		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastmsgs)
-	# User's last messages
-		if(@discord['bot'] == false) { @loadBot = '.user' }
-		@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'])
-		if(!is_array(@lastUserMsgs)) { @lastUserMsgs = array() }
-		@userDiscord = array_deep_clone(@discord)
-		array_insert(@lastUserMsgs, @userDiscord, 0)
-		if(array_index_exists(@lastUserMsgs, @botconfig['Msg_Cache_User'])) { array_remove(@lastUserMsgs, @botconfig['Msg_Cache_User']) }
-		export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot.'.'.@discord['userid'], @lastUserMsgs)	
+		@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
+		if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
+		array_set(@cacheMsgs['messages'], @discord['id'], @discord)
+		if(!array_index_exists(@cacheMsgs, @userType, @discord['userid'])) { array_set(@cacheMsgs[@userType], @discord['userid'], array()) }
+		array_insert(@cacheMsgs[@userType][@discord['userid']], @discord['id'], 0)
+		array_insert(@cacheMsgs['server'], @discord['id'], 0)
+		if(array_size(@cacheMsgs['messages']) > @botconfig['Msg_Cache_Server'] + 100) {
+			array_remove(@cacheMsgs['messages'], array_sort(array_keys(@cacheMsgs['messages']), 'NUMERIC')[0])
+		}
+		if(array_index_exists(@cacheMsgs, @userType, @discord['userid'], @botconfig['Msg_Cache_User']) && @newuser == false) { array_remove(@cacheMsgs[@userType][@discord['userid']], @botconfig['Msg_Cache_User']) }
+		if(array_index_exists(@cacheMsgs, 'server', @botconfig['Msg_Cache_Server'])) { array_remove(@cacheMsgs['server'], @botconfig['Msg_Cache_Server']) }
+		export('DiscordBot.'.@discord['serverid'].'.Cache.Messages', @cacheMsgs)
 	#Check User Role Ranks
 		if(@config['Use_Role_Ranks'] == true && @discord['bot'] == false) {
 			@rrupdates = import('DiscordBot.'.@discord['serverid'].'.user.update.time.rr')

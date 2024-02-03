@@ -442,7 +442,6 @@ proc _discordBot_find_emoji(string @findEmoji, @originationGuild, @skipGuild) {
 	return(@results)
 }
 
-# new error message: :dp: +
 
 proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
@@ -478,13 +477,13 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	} else {
 		@afterMsg = closure(@msgID) {
 		# console(@msgID)
-			@lastmsgs = import('DiscordBot.'.@guild.'.last.message.ID.db')
-			if(!is_array(@lastmsgs)) { @lastmsgs = array() }
+			@cacheID = import('DiscordBot.'.@guild.'.Cache.Messages.sent.IDs')
+			if(!is_array(@cacheID)) { @cacheID = array() }
 			@newData = array()
 			array_set(@newData, @guild, @msgID)
-			array_insert(@lastmsgs, @newData, 0)
-			if(array_index_exists(@lastmsgs, 100)) { array_remove(@lastmsgs, 100) }
-			export('DiscordBot.'.@guild.'.last.message.ID.db', @lastmsgs)
+			array_insert(@cacheID, @newData, 0)
+			if(array_index_exists(@cacheID, 100)) { array_remove(@cacheID, 100) }
+			export('DiscordBot.'.@guild.'.Cache.Messages.sent.IDs', @cacheID)
 			return(true)
 		}
 	}
@@ -1213,6 +1212,7 @@ proc _discordBot_update_members(@useguild = 0) {
 					export('DiscordBot.config.'.@guild, @config);
 				}
 			# Clear memory:
+				#if(@idisNewUser == false) {
 				if((@idJoinTime + @config['AS_New_User_Time']) < @startTime) {
 					if(is_array(import('DiscordBot.'.@guild.'.Cache.Messages.NewUser.'.@id))) {
 						export('DiscordBot.'.@guild.'.Cache.Messages.NewUser.'.@id, null)
@@ -1607,7 +1607,7 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 		@xpType = 0
 		# If new user: Presuming antispam action
 		@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
-		if((@userJoinTime + @config['AS_New_User_Time']) > @time) { return(false) }
+		if((@userJoinTime + @config['AS_New_User_Time']) > time()) { return(false) }
 	}
 	# Do not count XP on messages from 1) Channels marked as no XP earning 2) Command spam channel
 	if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel']) || @discord['channel'] == @config['CMD_Default_Channel']) {
@@ -1969,7 +1969,6 @@ proc _db_memberinfo_jointime(@guild, @userid) {
 	return(@joinTimes[@userid])
 }
 
-
 proc _discordBot_ismention(@discord, @regexPrefix = '^') {
 	@botconfig = import('DiscordBot.config.Discord')
 	@botinfo = import('DiscordBot.Bot.Info')
@@ -2126,7 +2125,6 @@ proc _discordBot_iscommand(@discord, @returnType = 'a', @regexPrefix = '^') {
 	return(@isCmd)
 }
 
-
 proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@StartTime = time()
 	@sendLogMsg = true
@@ -2186,11 +2184,11 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		array_set(@discord, 'SendChannel', @discord['userid'])
 		@cmdfromdis = ' in DM'
 	case 'edit':
-		@lastCommandMsgs = import('DiscordBot.'.@discord['serverid'].'.last.cmd.message.IDs')
-		if(!is_array(@lastCommandMsgs)) { @lastCommandMsgs = array() }
-		if(array_index_exists(@lastCommandMsgs, @discord['id']) && to_lower(@config['CMD_Message_Action']) != 'delete') {
-			if(@lastCommandMsgs[@discord['id']]['time'] > (time() - 86400000)) { 
-				@editMsg = @lastCommandMsgs[@discord['id']]['id'] 
+		@commandReplyIDs = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.sent.IDs')
+		if(!is_array(@commandReplyIDs)) { @commandReplyIDs = array() }
+		if(array_index_exists(@commandReplyIDs, @discord['id']) && to_lower(@config['CMD_Message_Action']) != 'delete') {
+			if(@commandReplyIDs[@discord['id']]['time'] > (time() - 86400000)) { 
+				@editMsg = @commandReplyIDs[@discord['id']]['id'] 
 				@cmdfromdis = ' (via message edit)'
 			}
 		}
@@ -2213,11 +2211,11 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		array_set(@returnMsg, 'message_id', @editMsg)
 	}
 	@afterMsg = closure(@msgID) {
-		@lastmsgs = import('DiscordBot.'.@discord['serverid'].'.last.cmd.message.IDs')
-		if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-		array_set(@lastmsgs, @discord['id'], array('id': @msgID, 'time': time()))
-		if(array_index_exists(@lastmsgs, @botconfig['Msg_Cache_Cmd'])) { array_remove(@lastmsgs, @botconfig['Msg_Cache_Cmd']) }
-		export('DiscordBot.'.@discord['serverid'].'.last.cmd.message.IDs', @lastmsgs)
+		@cacheID = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.sent.IDs')
+		if(!is_array(@cacheID)) { @cacheID = array() }
+		array_set(@cacheID, @discord['id'], array('id': @msgID, 'time': time()))
+		if(array_index_exists(@cacheID, @botconfig['Msg_Cache_Cmd'])) { array_remove(@cacheID, @botconfig['Msg_Cache_Cmd']) }
+		export('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.sent.IDs', @cacheID)
 		return(true)
 	}
 #Check User Permissions
@@ -2327,17 +2325,17 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 # _db_msg_Console('retis: '.is_string(@CmdReturn), @discord['serverid'], 'debug')
 #Save Recent Messages and Returns for reference	
 	array_set(@discord, 'return', @CmdReturn)
-	@lastmsgs = import('DiscordBot.last.cmd.message')
-	if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-	array_insert(@lastmsgs, @discord, 0)
-	if(array_index_exists(@lastmsgs, @botconfig['Msg_Cache_Cmd'])) { array_remove(@lastmsgs, @botconfig['Msg_Cache_Cmd']) }
-	export('DiscordBot.last.cmd.message', @lastmsgs)
+	@cacheCmd = import('DiscordBot.Cache.Cmd.Messages')
+	if(!is_array(@cacheCmd)) { @cacheCmd = array() }
+	array_insert(@cacheCmd, @discord, 0)
+	if(array_index_exists(@cacheCmd, @botconfig['Msg_Cache_Cmd'])) { array_remove(@cacheCmd, @botconfig['Msg_Cache_Cmd']) }
+	export('DiscordBot.Cache.Cmd.Messages', @cacheCmd)
 
-	@lastmsgs = import('DiscordBot.last.cmd.message.return')
-	if(!is_array(@lastmsgs)) { @lastmsgs = array() }
-	array_insert(@lastmsgs, @CmdReturn, 0)
-	if(array_index_exists(@lastmsgs, @botconfig['Msg_Cache_Cmd'])) { array_remove(@lastmsgs, @botconfig['Msg_Cache_Cmd']) }
-	export('DiscordBot.last.cmd.message.return', @lastmsgs)	
+	@cacheCmd = import('DiscordBot.Cache.Cmd.Messages.return')
+	if(!is_array(@cacheCmd)) { @cacheCmd = array() }
+	array_insert(@cacheCmd, @CmdReturn, 0)
+	if(array_index_exists(@cacheCmd, @botconfig['Msg_Cache_Cmd'])) { array_remove(@cacheCmd, @botconfig['Msg_Cache_Cmd']) }
+	export('DiscordBot.Cache.Cmd.Messages.return', @cacheCmd)	
 #Send Messages
 #return messages final message, unless true/false. multiple messages need to be handled by action
 	if(to_lower(@config['CMD_Message_Action']) == 'reply') {

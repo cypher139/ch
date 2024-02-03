@@ -13,7 +13,6 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	}
 	@consolejoinMsg = 'Member '.color(10).'joined: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>'.color('r')
 	export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
-# Set New User for other checks
 # Log Invite Code Usage
 	if(@config['Log_Invites'] == true) {
 		@membersInfo = get_value('DiscordBot.'.@discord['serverid'].'.members.info')
@@ -189,7 +188,6 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 # Console Log
 		if(@config['Log_Invites'] == false) { _db_msg_Console(@consolejoinMsg, @discord['serverid']) }
 	});
-# Unset New User for other checks
 # Get data from closures, save
 	set_timeout(10000, closure(){
 		@wm = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())

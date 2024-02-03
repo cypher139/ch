@@ -1,58 +1,78 @@
 #Notify users of message Updates and reactions, and update bot message caches accordingly.
 proc _db_update_message_cache(@discord, @updateType) {
-	@botconfig = import('DiscordBot.config.Discord')
 	@return = array()
-	@invalidType = 'Message Cache update was given an invalid update type!'
-	@loadBot = ''
-	@loadBotUser = '.user'
+	@msgID = 0
+	if(array_index_exists(@discord, 'id')) {
+		@msgID = @discord['id']
+	} else if(array_index_exists(@discord, 'messageid')) { 
+		@msgID = @discord['messageid'] 
+	} else { 
+		return(false)
+	}
+	@botconfig = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.'.@discord['serverid'])
+	@userType = 'user'
 	if(array_index_exists(@discord, 'channeltype')) {
 		if(@discord['channeltype'] == 'TEXT') {
 			array_remove(@discord, 'channeltype')
 		}
 	}
-	if(@discord['bot'] == true) { @loadBot = '.bot' }
-	#bug? if both last message and a user message loaded it will not actually export last message unless imported & cloned
-	@lastServerMsgs = array_deep_clone(import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, array()))
-	if(@discord['bot'] == true) { @loadBotUser = '.bot' }
-	@lastUserMsgs = import('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBotUser.'.'.@discord['userid'], array())
+	if(@discord['bot'] == true) { @userType = 'bot' }
+	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
+	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
 	@userIndex = -12
 	@serverIndex = -12
 	@addSi = false
 	@addUi = false
 	@prevData = 'Not Found'
+	@newuser = false
+	@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
+	if((@userJoinTime + @config['AS_New_User_Time']) > time()) { @newuser = true }
 	#Find each index to edit
-	foreach(@k: @message in @lastUserMsgs) {
-		if(@message['id'] == @discord['id']) {
-			@userIndex = @k
+	foreach(@k1: @id1 in @cacheMsgs['server']) {
+		if(@id1 == @msgID) {
+			@serverIndex = @k1
 			break()
 		}
 	}
-	foreach(@k2: @message2 in @lastServerMsgs) {
-		if(@message2['id'] == @discord['id']) {
-			@serverIndex = @k2
+	if(!array_index_exists(@cacheMsgs, @userType, @discord['userid'])) { array_set(@cacheMsgs[@userType], @discord['userid'], array()) }
+	foreach(@k2: @id2 in @cacheMsgs[@userType][@discord['userid']]) {
+		if(@id2 == @msgID) {
+			@userIndex = @k2
 			break()
 		}
 	}
 	# -- If index not found:
+	
+	if(!array_index_exists(@cacheMsgs, 'messages', @msgID)) {
+		array_set(@cacheMsgs['messages'], @msgID, @discord)
+	}
 	if(@serverIndex < 0) {
-		array_insert(@lastServerMsgs, @discord, 0)
+		array_insert(@cacheMsgs['server'], @msgID, 0)
 		@serverIndex = 0
 		@addSi = true
 	}
 	if(@userIndex < 0) {
-		@userDiscord = array_deep_clone(@discord)
-		array_insert(@lastUserMsgs, @userDiscord, 0)
+		if(@discord['userid'] == @cacheMsgs['messages'][@msgID]['userid']) { 
+			array_insert(@cacheMsgs[@userType][@discord['userid']], @msgID, 0)
 		@userIndex = 0
-		@addUi = true
+			@addUi = true
+		}
+		@userIndex = 0
 	}
 #cache limiter
-	if(array_index_exists(@lastServerMsgs, @botconfig['Msg_Cache_Server'])) { array_remove(@lastServerMsgs, @botconfig['Msg_Cache_Server']) }	
-	if(array_index_exists(@lastUserMsgs, @botconfig['Msg_Cache_User'])) { array_remove(@lastUserMsgs, @botconfig['Msg_Cache_User']) }	
+	if(array_index_exists(@cacheMsgs['server'], @botconfig['Msg_Cache_Server'])) { array_remove(@cacheMsgs['server'], @botconfig['Msg_Cache_Server']) }	
+	if(array_index_exists(@cacheMsgs[@userType][@discord['userid']], @botconfig['Msg_Cache_User']) && @newuser == false) { array_remove(@cacheMsgs[@userType][@discord['userid']], @botconfig['Msg_Cache_User']) }	
 #edits
-	@newData = array_deep_clone(@lastUserMsgs[@userIndex])
+	@newData = array_deep_clone(@cacheMsgs['messages'][@msgID])
 	switch(@updateType) {
 	case 'edit':
 		if(@addUi == false) { @prevData = @newData['message'] }
+		if(@discord['userid'] != @newData['userid']) {
+			@newData['userid'] = @discord['userid']
+			@newData['username'] = @discord['username']
+			array_insert(@cacheMsgs[@userType][@discord['userid']], @msgID, 0)
+		}
 		@newData['message'] = @discord['message']
 		if(!array_index_exists(@newData, 'edits')) { @newData['edits'] = 0 }
 		@newData['edits']++
@@ -60,7 +80,7 @@ proc _db_update_message_cache(@discord, @updateType) {
 		array_set(@return, 'after', @newData['message'])
 	case 'addreaction':
 	case 'removereaction':
-		if(@addUi == true || @addSi == true) { array_set(@newData, 'message', '') }
+		if(@addUi == true || @addSi == true) { if(!array_index_exists(@newData, 'message')) { array_set(@newData, 'message', '') }}
 		# if reaction doesnt exist, add array Data
 		if(array_index_exists(@newData, 'reactions')) { 
 			@prevData = array_deep_clone(@newData['reactions'])
@@ -79,17 +99,15 @@ proc _db_update_message_cache(@discord, @updateType) {
 		}
 		array_set(@return, 'after', @newData['reactions'])
 	default:
-		_db_msg_Console(@invalidType, @discord['serverid'], 'debug')
+		_db_msg_Console('Message Cache update was given an invalid update type!', @discord['serverid'], 'debug')
 		return(@return)
 	}
-	if(@discord['userid'] == @newData['userid']) { array_set(@lastUserMsgs, @userIndex, @newData) }
-	array_set(@lastServerMsgs, @serverIndex, @newData)
-	export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBot, @lastServerMsgs)
-	export('DiscordBot.'.@discord['serverid'].'.last.message'.@loadBotUser.'.'.@discord['userid'], @lastUserMsgs)
+	array_set(@cacheMsgs['messages'], @msgID, @newData)
+	export('DiscordBot.'.@discord['serverid'].'.Cache.Messages', @cacheMsgs)
 	array_set(@return, 'ui', @userIndex)
 	array_set(@return, 'si', @serverIndex)
 	array_set(@return, 'before', @prevData)
-return(@return)
+	return(@return)
 }
 
 bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priority': 'MONITOR'), null, @discord) {
@@ -163,8 +181,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 				switch(rand(1, @config['Reply_Message_Edit_Random'])) {
 				case 4:
 				case 10:
-				case 50:
-				case 40..49:
+				case 40..50:
 				case 69:
 					@sendReply = true
 				}
@@ -192,7 +209,6 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 
 bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
-	array_set(@discord, 'id', @discord['messageid'])
 	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message.', @discord['serverid'], 'debug')
 	# Update Recent Messages with current data	
 	@saveMsg = _db_update_message_cache(@discord, 'addreaction')
@@ -200,7 +216,6 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 
 bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
-	array_set(@discord, 'id', @discord['messageid'])
 	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message.', @discord['serverid'], 'debug')
 	# Update Recent Messages with current data	
 	@saveMsg = _db_update_message_cache(@discord, 'removereaction')

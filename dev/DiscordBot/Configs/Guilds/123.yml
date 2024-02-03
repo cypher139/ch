@@ -36,10 +36,20 @@ AS_New_User_Time: 600000000
 AS_New_User_Channel_Limit: 7
 # If a user triggers Anti Spam, delete their most recent messages?
 AS_Delete_Messages: true
-# Showcase channel
-# Intended as a place to show your server community's art projects and ward off chats to another channel.
+# Showcase Channel
+# Intended as a place to show your server community's art projects, latest game achivements, etc., and ward off chat to another channel.
 # To enable the Showcase channel chat protection feature place the channel's ID below:
 Showcase_Channel: 123235346
+#What channel should users be redirected to if they are talking about project?
+Showcase_Channel_Talk: 987654213
+# What replies should we say to users who were chatting?
+Showcase_Reactions:
+  # Chat was not allowed, as it did not fit the posting requirements
+  Not_Allowed: "To show your cool project please include a picture!\n To react, add a reaction and talk in %TalkChannel%"
+  # Previous message already is a comment from same poster
+  Multiple_Msgs: "%UserID% To include more details about your project please edit the additional info into your previous post."
+  # Chat was a reaction from another user
+  Reaction_Comment: "Thanks for your comment %UserID%! To avoid chat in the showcases, **add a reaction** to the original post and **talk in %TalkChannel%** about the showcased project!"
 #
 #
 # Mentions
@@ -363,3 +373,8 @@ Role_Ranks_IgnoreUser:
 - 98765432
 Role_Ranks_IgnoreRole:
 - 98765432
+#
+#
+# Role Groups
+# Have certain sub roles that count under a specific category role? group them here for use in member directory features
+# Format: Role Name: Group Role
