@@ -62,13 +62,13 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	#Wish support here
 	
 		@isCmd = _discordBot_iscommand(@discord)
-		@isMention = _discordBot_ismention(@discord)
 	}
 	
 	# Action command, all message output is handled from there.
 	if(@isCmd == true) {
 		consume();
 		array_set(@discord, 'time', time())
+		@isMention = _discordBot_ismention(@discord)
 		/*	
 		Returns:
 		false = no command found or error. (See debug return)

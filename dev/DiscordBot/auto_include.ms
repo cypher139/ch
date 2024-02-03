@@ -1,17 +1,16 @@
 ### Core Startup
+@pf = '/'
+if(get_os() == 'WINDOWS') { @pf = '\\' }
+@path = ''
 if(in_cmdline_mode()) {
-	@pf = '/'
-	if(get_os() == 'WINDOWS') { @pf = '\\' }
 	export('DiscordBot.version', '1.0.dev-cmd')
-	export('DiscordBot.config.dir', file_resolve(pwd().@pf.'Configs'))
-	export('DiscordBot.logs.dir', file_resolve(pwd().@pf.'Logs'))
+	@path = pwd()
 } else {
-	@pf = '/'
-	if(get_os() == 'WINDOWS') { @pf = '\\' }
 	export('DiscordBot.version', '1.0.dev')
-	export('DiscordBot.config.dir', file_resolve(sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot'.@pf.'Configs'))
-	export('DiscordBot.logs.dir', file_resolve(sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot'.@pf.'Logs'))
+	@path = sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot'
 }
+export('DiscordBot.config.dir', file_resolve(@path.@pf.'Configs'))
+export('DiscordBot.logs.dir', file_resolve(@path.@pf.'Logs'))
 ##########################################
 ### Bot Admin Functions
 ##########################################
