@@ -93,7 +93,6 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
 	if(!is_array(@stats)) { 
 		@stats = array('active': array(), 'activetime': array(), 'start': time(), 'end': '', 'users': array(), 'channel': @discord['channel'])
-		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
 	}
 		
 	if(!array_contains(@stats['active'], @discord['userid'])) { 
@@ -104,6 +103,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	}
 	if(!array_index_exists(@stats, 'activetime', @discord['userid'])) { array_set(@stats['activetime'], @discord['userid'], time()) }
 	@stats['activetime'][@discord['userid']] = time()
+	store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
 }
 #--------------------------------------------
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
@@ -123,7 +123,8 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	if(!is_array(@stats)) { die() }
 	# Remove user from active in call
 	if(array_contains(@stats['active'], @discord['userid'])) { array_remove_values(@stats['active'], @discord['userid']) }
-	if(!array_index_exists(@stats['time'], @discord['userid'])) { array_set(@stats['time'], @discord['userid'], 0) }
+	if(!array_index_exists(@stats, 'time')) { array_set(@stats, 'time', array()) }
+	if(!array_index_exists(@stats, 'time', @discord['userid'])) { array_set(@stats['time'], @discord['userid'], 0) }
 	@userTime = time() - @stats['activetime'][@discord['userid']]
 	@stats['time'][@discord['userid']] = @stats['time'][@discord['userid']] + @userTime
 	

@@ -209,6 +209,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 
 bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
+	array_set(@discord, 'time', time());
 	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message.', @discord['serverid'], 'debug')
 	# Update Recent Messages with current data	
 	@saveMsg = _db_update_message_cache(@discord, 'addreaction')
@@ -216,6 +217,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 
 bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
+	array_set(@discord, 'time', time());
 	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message.', @discord['serverid'], 'debug')
 	# Update Recent Messages with current data	
 	@saveMsg = _db_update_message_cache(@discord, 'removereaction')
