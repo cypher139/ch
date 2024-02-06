@@ -11,8 +11,23 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		@userDisplay = @discord['nickname'].' ('.@discord['username'].')'
 		@userDisplaydc = @discord['nickname'].'  ` '.@discord['username'].' ` '
 	}
-	@consolejoinMsg = 'Member '.color(10).'joined: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>'.color('r')
+	@consolejoinMsg = 'Member '.color(10).'joined: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>%PrevJoins%'.color('r')
+	@discordjoinMsg = strip_colors(@consolejoinMsg)
+	@prevjoinsMsgC = ''
+	@prevjoinsMsgD = ''
 	export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
+# Log time(s) user joined Server
+	@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times')
+	if(!is_array(@logJointimes)) { @logJointimes = array() }
+	if(!array_index_exists(@logJointimes, @discord['userid'])) { array_set(@logJointimes, @discord['userid'], array()) }
+	if(array_index_exists(@logJointimes, @discord['userid'], 0)) {
+		@prevjoinsMsgC = ' Joins: '.array_implode(@logJointimes[@discord['userid']], ', ').' '
+		@prevjoinsMsgD = '`-Joins: <t:'.array_implode(@logJointimes[@discord['userid']], ':f> <t:').':f>`'
+	}
+	@consolejoinMsg = replace(@consolejoinMsg, '%PrevJoins%', @prevjoinsMsgC)
+	@discordjoinMsg = replace(@discordjoinMsg, '%PrevJoins%', @prevjoinsMsgD)
+	array_insert(@logJointimes[@discord['userid']], substr(@time, 0, 10), 0)
+	store_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times', @logJointimes)
 # Log Invite Code Usage
 	if(@config['Log_Invites'] == true) {
 		@membersInfo = get_value('DiscordBot.'.@discord['serverid'].'.members.info')
@@ -93,6 +108,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				@invMessage = replace(@invMessage, '%Uses%', @results['use'])
 				@invMessage = replace(@invMessage, '%Inviter%', @results['inviter'])
 				@invMessage = replace(@invMessage, '%InviterID%', @results['inviterid'])
+				@invMessage = replace(@invMessage, '%PrevJoins%', @prevjoinsMsgD)
 				if(@results['use'] < 2) { 
 					@invMessage = replace(@invMessage, '%InviterID1%', @results['inviterid'])
 				} else {
@@ -124,21 +140,21 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		try {
 			@currentroles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
 		} catch (NotFoundException @ex) {
-	#Assume user was insta-kick (such as account age does not meet server req.)
+	# Assume user was insta-kicked: (example: account age does not meet server req.)
 			_db_msg_Console('New Join '.@discord['username'].' <@'.@discord['userid'].'> was not found on server. Were they insta-kicked??', @discord['serverid'])
 			die()
 		} catch (Exception @ex) {
 			_db_msg_Console(@ex, @discord['serverid'], 'debug')
 			die()
 		}
-# Restore leaderboard entry	
+# Restore leaderboard entry
 	@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard')
 	@oldlb = get_value('DiscordBot.'.@discord['serverid'].'.members.former.leaderboard')
 	if(is_array(@leaderboard) && is_array(@oldlb)) {
 		if(array_index_exists(@oldlb, @discord['userid'])) {
 			array_set(@leaderboard['members'], @discord['userid'], @oldlb[@discord['userid']])
 			array_remove(@leaderboard['members'][@discord['userid']], 'removed')
-			@leaderboard['lastedit'] = time()
+			@leaderboard['lastedit'] = @time
 			export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
 		}
 	}
@@ -248,6 +264,15 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		@userDisplay = @discord['nickname'].' ('.@discord['username'].')'
 		@userDisplaydc = @discord['nickname'].'  ` '.@discord['username'].' ` '
 	}
+# Get number of leaves
+	@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'log.users.Join.Times')
+	if(!is_array(@logJointimes)) { @logJointimes = array() }
+	if(!array_index_exists(@logJointimes, @discord['userid'])) { array_set(@logJointimes, @discord['userid'], array()) }
+	@userLeaves = array_size(@logJointimes[@discord['userid']])
+	if(@userLeaves > 1) {
+		@invmsgSuffix = ' -Leaves: '.@userLeaves
+		@consolemsgSuffix = ' Leaves: '.@userLeaves
+	}
 # Remove user entry from internal storages
 	@membersRoles = get_value('DiscordBot.'.@discord['serverid'].'.members.roles')
 	if(!is_array(@membersRoles)) { @membersRoles = array() }
@@ -278,8 +303,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	if(is_array(@leaderboard)) {
 		if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { 
 			if(@leaderboard['members'][@discord['userid']]['level'] > 0) {
-				@invmsgSuffix = '-Level: '.@leaderboard['members'][@discord['userid']]['level']
-				@consoleMsgSuffix = 'Level: '.@leaderboard['members'][@discord['userid']]['level']
+				@invmsgSuffix = @invmsgSuffix.' -Level: '.@leaderboard['members'][@discord['userid']]['level']
+				@consoleMsgSuffix = @consolemsgSuffix.' Level: '.@leaderboard['members'][@discord['userid']]['level']
 			}
 			if(@config['LB_Options']['Remove_On_Leave'] == true) { @lbremove = 1 }
 			if(@leaderboard['members'][@discord['userid']]['level'] < 6) { @lbremove = 1 }		
@@ -306,7 +331,6 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		}
 		if(array_index_exists(@wm, @discord['userid'])) { array_set(@joininfo[@discord['userid']], 'wmid', @wm[@discord['userid']]) }
 	}
-	# @invmsgSuffix = ', but I didn\'t figure out how they had joined it.'
 	@wmres = ''
 	if(array_contains(array_keys(@joininfo), @discord['userid'])) {
 	# Add leave stats to invite used
@@ -318,14 +342,12 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 				@consoleMsgSuffix = @consoleMsgSuffix.' Invite: '.@joininfo[@discord['userid']]['code']
 				if(!array_index_exists(@inv, @joininfo[@discord['userid']]['code'], 'leaves')) { array_set(@inv[@joininfo[@discord['userid']]['code']], 'leaves', 0) }
 				@inv[@joininfo[@discord['userid']]['code']]['leaves']++
-				# @inv[@joininfo[@discord['userid']]['code']]['uses']--
-				#Discord does not decrement uses number
 				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
 			}
 		} else if(is_array(@joininfo[@discord['userid']]['code'])) { 
 			@matches = array_implode(@joininfo[@discord['userid']]['code'], '  ')
-			@invmsgSuffix = ', but I\'m not sure which of these invites were used: `'.@matches.'`'
-			@consoleMsgSuffix = ' Invites: '.@matches
+			@invmsgSuffix = @invmsgSuffix.' -Invites: I\'m not sure which one: '.@matches
+			@consoleMsgSuffix = @consolemsgSuffix.' Invites: '.@matches
 		}
 	# New Members:
 		if(time() < (@joininfo[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) {
@@ -359,7 +381,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		}
 		_discordBot_send_message('**'.@userDisplaydc.'** left the server. '.@invmsgSuffix, @discord['serverid'], 'log')
 	}
-	_db_msg_Console('Member '.color(12).'left: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'> '.@consoleMsgSuffix.color('r').@wmres, @discord['serverid'])
+	_db_msg_Console('Member '.color(12).'left: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>'.@consoleMsgSuffix.color('r').@wmres, @discord['serverid'])
 #Remove Leaderboard entry, save entry if not a new member
 	if(@lbremove != 0) { 
 		if(@lbremove != 2) {
