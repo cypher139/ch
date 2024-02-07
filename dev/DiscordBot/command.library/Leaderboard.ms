@@ -149,6 +149,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 		'footer': array('text': 'Retrieved'),
 		'timestamp': time()
 		)
+		if(@userInfo['color'] == null) { array_remove(@embed, 'color') }
 		if(@showExtraInfo == true) {
 			if(@leaderboard['members'][@userID]['last_msg'] == 0) {	@lbLM = '`-`' } else { @lbLM = '<t:'.substr(@leaderboard['members'][@userID]['last_msg'], 0, 10).':f>' }
 			@embed['fields'][] = array('name': 'Last Message', 'value': @lbLM, 'inline': true)

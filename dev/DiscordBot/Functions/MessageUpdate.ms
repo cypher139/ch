@@ -20,8 +20,7 @@ proc _db_update_message_cache(@discord, @updateType) {
 	if(@discord['bot'] == true) { @userType = 'bot' }
 	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
-	@userIndex = -12
-	@serverIndex = -12
+	if(!array_index_exists(@cacheMsgs, @userType, @discord['userid'])) { array_set(@cacheMsgs[@userType], @discord['userid'], array()) }
 	@addSi = false
 	@addUi = false
 	@prevData = 'Not Found'
@@ -29,33 +28,20 @@ proc _db_update_message_cache(@discord, @updateType) {
 	@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
 	if((@userJoinTime + @config['AS_New_User_Time']) > time()) { @newuser = true }
 	#Find each index to edit
-	foreach(@k1: @id1 in @cacheMsgs['server']) {
-		if(@id1 == @msgID) {
-			@serverIndex = @k1
-			break()
-		}
-	}
-	if(!array_index_exists(@cacheMsgs, @userType, @discord['userid'])) { array_set(@cacheMsgs[@userType], @discord['userid'], array()) }
-	foreach(@k2: @id2 in @cacheMsgs[@userType][@discord['userid']]) {
-		if(@id2 == @msgID) {
-			@userIndex = @k2
-			break()
-		}
-	}
-	# -- If index not found:
-	
+	@userIndex = array_index(@cacheMsgs[@userType][@discord['userid']], @msgID)
+	@serverIndex = array_index(@cacheMsgs['server'], @msgID)
 	if(!array_index_exists(@cacheMsgs, 'messages', @msgID)) {
 		array_set(@cacheMsgs['messages'], @msgID, @discord)
 	}
-	if(@serverIndex < 0) {
+	# -- If index not found: Add message id to server/user indexes. -list for debug the index number
+	if(@serverIndex < 0 || @serverIndex == null) {
 		array_insert(@cacheMsgs['server'], @msgID, 0)
 		@serverIndex = 0
 		@addSi = true
 	}
-	if(@userIndex < 0) {
-		if(@discord['userid'] == @cacheMsgs['messages'][@msgID]['userid']) { 
+	if(@userIndex < 0 || @userIndex == null) {
+		if(@discord['userid'] == @cacheMsgs['messages'][@msgID]['userid']) {
 			array_insert(@cacheMsgs[@userType][@discord['userid']], @msgID, 0)
-		@userIndex = 0
 			@addUi = true
 		}
 		@userIndex = 0
@@ -106,6 +92,8 @@ proc _db_update_message_cache(@discord, @updateType) {
 	export('DiscordBot.'.@discord['serverid'].'.Cache.Messages', @cacheMsgs)
 	array_set(@return, 'ui', @userIndex)
 	array_set(@return, 'si', @serverIndex)
+	array_set(@return, 'addui', @addUi)
+	array_set(@return, 'addsi', @addSi)
 	array_set(@return, 'before', @prevData)
 	return(@return)
 }
@@ -151,7 +139,11 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	}
 	@afterDisplay = array_implode(@aSplit, ' ')
 # Send to Admin Logs
-	_db_msg_Console(@userDisplay.'\'s Message Edit:  ui: '.@saveMsg['ui'].', si: '.@saveMsg['si'].'\n'.color(9).'B: '.color('r').@saveMsg['before'].'\n'.color(10).'A: '.color('r').@afterDisplay, @discord['serverid'], 'debug')
+	@addUi = ''
+	@addSi = ''
+	if(@saveMsg['addui'] == true) { @addUi = color(10).'+'.color('r') }
+	if(@saveMsg['addsi'] == true) { @addSi = color(10).'+'.color('r') }
+	_db_msg_Console(@userDisplay.'\'s Message Edit:  ['.@addUi.'ui: '.@saveMsg['ui'].'  '.@addSi.'si: '.@saveMsg['si'].']\n'.color(9).'B: '.color('r').@saveMsg['before'].'\n'.color(10).'A: '.color('r').@afterDisplay, @discord['serverid'], 'debug')
 	if(@memberInfo['color'] != null) { @embedColor = @memberInfo['color'] }
 	@logMsg = array('author': array('icon_url': @memberInfo['avatar'], 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])),
 	'title': 'Message Edited in <#'.@discord['channelid'].'>',
@@ -210,15 +202,24 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	array_set(@discord, 'time', time());
-	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message.', @discord['serverid'], 'debug')
-	# Update Recent Messages with current data	
+	# Update Recent Messages with current data
 	@saveMsg = _db_update_message_cache(@discord, 'addreaction')
+	@addindex = ''
+	if(@saveMsg['addui'] == true) { @addindex = color(10).'+ui'.color('r') }
+	if(@saveMsg['addsi'] == true) { @addindex = @addindex.color(10).'+si'.color('r') }
+	#Send to Admin Logs
+	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message. '.@addindex, @discord['serverid'], 'debug')
 }
 
 bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	array_set(@discord, 'time', time());
-	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message.', @discord['serverid'], 'debug')
-	# Update Recent Messages with current data	
+	
+	# Update Recent Messages with current data
 	@saveMsg = _db_update_message_cache(@discord, 'removereaction')
+	@addindex = ''
+	if(@saveMsg['addui'] == true) { @addindex = color(10).'+ui'.color('r') }
+	if(@saveMsg['addsi'] == true) { @addindex = @addindex.color(10).'+si'.color('r') }
+	#Send to Admin Logs
+	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message. '.@addindex, @discord['serverid'], 'debug')
 }
