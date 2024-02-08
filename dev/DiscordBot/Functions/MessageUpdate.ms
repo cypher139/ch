@@ -24,9 +24,7 @@ proc _db_update_message_cache(@discord, @updateType) {
 	@addSi = false
 	@addUi = false
 	@prevData = 'Not Found'
-	@newuser = false
-	@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
-	if((@userJoinTime + @config['AS_New_User_Time']) > time()) { @newuser = true }
+	@newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
 	#Find each index to edit
 	@userIndex = array_index(@cacheMsgs[@userType][@discord['userid']], @msgID)
 	@serverIndex = array_index(@cacheMsgs['server'], @msgID)

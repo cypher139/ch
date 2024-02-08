@@ -25,9 +25,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	}
 	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array() }
-	@newuser = false
-	@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
-	if((@userJoinTime + @config['AS_New_User_Time']) > @time) { @newuser = true }
+	@newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
 	@adduser = false
 	@triggerReason = ''
 	@triggerReasonalt = ''

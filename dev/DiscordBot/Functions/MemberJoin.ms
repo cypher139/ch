@@ -22,11 +22,12 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	if(!array_index_exists(@logJointimes, @discord['userid'])) { array_set(@logJointimes, @discord['userid'], array()) }
 	if(array_index_exists(@logJointimes, @discord['userid'], 0)) {
 		@prevjoinsMsgC = ' Joins: '.array_implode(@logJointimes[@discord['userid']], ', ').' '
-		@prevjoinsMsgD = '`-Joins: <t:'.array_implode(@logJointimes[@discord['userid']], ':f> <t:').':f>`'
+		@prevjoinsMsgD = '` -Joins: `'
+		foreach(@jt in @logJointimes[@discord['userid']]) { @prevjoinsMsgD = @prevjoinsMsgD.' <t:'.substr(@jt, 0, 10).':f>' }
 	}
 	@consolejoinMsg = replace(@consolejoinMsg, '%PrevJoins%', @prevjoinsMsgC)
 	@discordjoinMsg = replace(@discordjoinMsg, '%PrevJoins%', @prevjoinsMsgD)
-	array_insert(@logJointimes[@discord['userid']], substr(@time, 0, 10), 0)
+	array_insert(@logJointimes[@discord['userid']], @time, 0)
 	store_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times', @logJointimes)
 # Log Invite Code Usage
 	if(@config['Log_Invites'] == true) {
@@ -238,10 +239,6 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		}
 		if(@isMember == true) {
 			store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)
-			@joinTimes = import('DiscordBot.'.@discord['serverid'].'.Join.times')
-			if(!is_array(@joinTimes)) { @joinTimes = _db_memberinfo_jointime(@discord['serverid'], 0) }
-			array_set(@joinTimes, @discord['userid'], @time)
-			export('DiscordBot.'.@discord['serverid'].'.Join.times', @joinTimes)
 			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')
 		} else {
 			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Member-Join_Left-Times.csv', @time.','.@discord['userid'].','.@discord['username'].'\n', 'Append')

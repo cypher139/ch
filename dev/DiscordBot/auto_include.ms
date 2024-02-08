@@ -1133,6 +1133,8 @@ proc _discordBot_update_members(@useguild = 0) {
 			@config = import('DiscordBot.config.'.@guild);
 			@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard');
 			@invites = get_value('DiscordBot.'.@guild.'.Invites');
+			@logJointimes = get_value('DiscordBot.'.@guild.'.log.users.Join.Times')
+			if(!is_array(@logJointimes)) { @logJointimes = array() }
 			@rrUpdates = 0
 			@sortWR = array(123,456);
 			if(@config['Welcome_Roles_Award'] == true) {
@@ -1184,7 +1186,6 @@ proc _discordBot_update_members(@useguild = 0) {
 	# Process each User ID
 			foreach(@index: @id in @membersID) {
 		# Member Info (avatar, isBot, Username, etc)
-				@idJoinTime = _db_memberinfo_jointime(@guild, @id)
 				@idInfo = ''
 				@idLastMsg = 0
 				@idLevel = 0
@@ -1210,9 +1211,13 @@ proc _discordBot_update_members(@useguild = 0) {
 					if(@idInfo['nickname'] != '') { @config['Bot_Name'] = @idInfo['nickname'] } else { @config['Bot_Name'] = @idInfo['nickname'] }
 					export('DiscordBot.config.'.@guild, @config);
 				}
-			# Clear memory:
-				#if(@idisNewUser == false) {
-				if((@idJoinTime + @config['AS_New_User_Time']) < @startTime) {
+			# Add User Join time to logs, if not present
+				if(!array_index_exists(@logJointimes, @id)) { array_set(@logJointimes, @id, array()) }
+				if(!array_index_exists(@logJointimes, @id, 0)) {
+					array_insert(@logJointimes[@id], @idInfo['joined_at'], 0)
+				}
+			# New User: Clear memory if no longer new
+				if((@idInfo['joined_at'] + @config['AS_New_User_Time']) < @startTime) {
 					if(is_array(import('DiscordBot.'.@guild.'.Cache.Messages.NewUser.'.@id))) {
 						export('DiscordBot.'.@guild.'.Cache.Messages.NewUser.'.@id, null)
 					}
@@ -1353,6 +1358,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
 			array_set(@debugstats['size'], 'inv', array_size(@invites))
 			array_set(@debugstats['size'], 'au', array_size(@activeUsers))
+			store_value('DiscordBot.'.@guild.'.log.users.Join.Times', @logJointimes)
 			export('DiscordBot.'.@guild.'.CacheUpdate', null)
 			array_set(@alldebugstats, @guild, @debugstats)
 			export('DiscordBot.debug.stats.last.updatemembers', @alldebugstats)
@@ -1605,8 +1611,8 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	# Event consumed
 		@xpType = 0
 		# If new user: Presuming antispam action
-		@userJoinTime = _db_memberinfo_jointime(@discord['serverid'], @discord['userid']);
-		if((@userJoinTime + @config['AS_New_User_Time']) > time()) { return(false) }
+		@newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
+		if(@newuser == true) { return(false) }
 	}
 	# Do not count XP on messages from 1) Channels marked as no XP earning 2) Command spam channel
 	if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel']) || @discord['channel'] == @config['CMD_Default_Channel']) {
@@ -1948,24 +1954,19 @@ proc _discordBot_lb_levelXP(@guild = 'default', @preset = 1) {
 
 #### Bot Command Functions
 
-proc _db_memberinfo_jointime(@guild, @userid) {
+proc _db_is_newmember(@guild, @userid) {
 	if(!is_numeric(@guild)) { return(0) }
 	if(!is_numeric(@userid)) { return(0) }
-	@joinTimes = import('DiscordBot.'.@guild.'.Join.times')
-	if(!is_array(@joinTimes)) {
-		@joinTimes = array()
-		@joinInfo = get_value('DiscordBot.'.@guild.'.Join.info')
-		if(!is_array(@joinInfo)) { return(0) }
-		foreach(@uid: @User in @joinInfo) {
-			if(array_index_exists(@User, 'time')) { 
-				array_set(@joinTimes, @uid, @User['time'])
-			}
-		}
-		export('DiscordBot.'.@guild.'.Join.times', @joinTimes)
+	@config = import('DiscordBot.config.'.@guild);
+	@newuser = false
+	@userJoinTime = 0
+	try {
+		@userJoinTime = discord_member_info(@guild, @userid)['joined_at']
+	} catch(NotFoundException @ex) {
+		export('DiscordBot.'.@guild.'.debug.user.not.found.'.@userid, 1)
 	}
-	if(@userid == 0) { return(@joinTimes) }
-	if(!array_index_exists(@joinTimes, @userid)) { return(0) }
-	return(@joinTimes[@userid])
+	if((@userJoinTime + @config['AS_New_User_Time']) > time()) { @newuser = true }
+	return(@newuser)
 }
 
 proc _discordBot_ismention(@discord, @regexPrefix = '^') {
