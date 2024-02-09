@@ -4,7 +4,7 @@ admin:/discorddm [$id] [$] = >>>
 @recentDMs = get_value('DiscordBot.DMs.recent')
 @id = ''
 if(!is_array(@recentDMs)) { @recentDMs = array() }
-if(!array_index_exists(@recentDMs, 0)) { die(color('c').'There are no saved recent DMs present!') }
+if(!array_index_exists(@recentDMs, 0)) { die(color(12).'There are no saved recent DMs present!') }
 /*
 reading:
 
@@ -15,24 +15,24 @@ get userdm based on userid (value), check userdms for matching time (index)
 switch($id) {
 	case '':
 	case null:
-		die(color('c').'You must specify a user ID to send a DM to!')
+		die(color(12).'You must specify a user ID to send a DM to!')
 	case 'count':
 		msg('Current DMs stored: '.array_size(@recentDMs))
 		die()
 	case 'read':
 	case 'view':
 	case 'open':
-		if(!has_permission(player(), 'commandhelper.alias.Discord.DM.read')) { die(color('c').'You do not have permission to read DMs!?') }
+		if(!has_permission(player(), 'commandhelper.alias.Discord.DM.read')) { die(color(12).'You do not have permission to read DMs!?') }
 		
-		if($ == '') { die(color('c').'You must specify a message to read!') }
+		if($ == '') { die(color(12).'You must specify a message to read!') }
 		@msgid = parse_args($)[0]
-		if(!is_numeric(@msgid)) { die(color('c').'You must specify the recent history number of the DM to read.') }
+		if(!is_numeric(@msgid)) { die(color(12).'You must specify the recent history number of the DM to read.') }
 		@msgid--
 		if(@msgid < 0) { @msgid = 0 }
 	
 		if(array_index_exists(@recentDMs, @msgid)) {
 			@userDMs = get_value('DiscordBot.DMs.log.'.array_implode(@recentDMs[@msgid]))
-			if(!is_array(@userDMs)) { die(color('c').'Error: This user does not have saved DM data.') }
+			if(!is_array(@userDMs)) { die(color(12).'Error: This user does not have saved DM data.') }
 			@readDM = ''
 			foreach(@i: @dm in @userDMs) {
 				if(@dm['time'] == array_implode(array_keys(@recentDMs[@msgid]))) {
@@ -66,7 +66,7 @@ switch($id) {
 			} 
 			die()	
 		} else {
-			die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, there is no message at Recent DM #'.@msgid.'!')
+			die(color(14).'['.color(6).@name.color(14).'] '.color(7).'Sorry, there is no message at Recent DM #'.@msgid.'!')
 		}
 	case 'r':
 	case 'reply':
@@ -75,10 +75,10 @@ switch($id) {
 	default:
 		@id = $id
 }
-#if(!is_numeric($id)) {die(color('c').'You must specify a user ID numerically! Right click the user profile and select Copy ID.') } Not needed, username without tag accepted
+#if(!is_numeric($id)) {die(color(12).'You must specify a user ID numerically! Right click the user profile and select Copy ID.') } Not needed, username without tag accepted
 msg(color(4).'With Great Power comes Great Responsibility.'.color(3).' Please ensure the messages you send are family-friendly and do not harrass others.')
 
-if($ == '') { die(color('c').'You must specify a message to send!') }
+if($ == '') { die(color(12).'You must specify a message to send!') }
 @sendmsg = strip_colors($)
 
 try {
@@ -86,7 +86,7 @@ try {
 	discord_private_message(@id, '`['.player().']` '.@sendmsg)
 	msg(color(6).'Message Sent')
 } catch(Exception @ex) {
-	msg(color('c').'Message Not Sent')
+	msg(color(12).'Message Not Sent')
 	msg(color('7').@ex['message'])
 	die()
 }

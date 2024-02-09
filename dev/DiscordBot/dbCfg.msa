@@ -2,8 +2,8 @@
 admin:/discordbotcfg [$config='Discord'] [$type='DiscordBot'] [$] = >>>
 proc _db_help() {
 	msg(color(6).'Chat: Admin help:')
-	msg(color('a').'Command usage: <required> [optional]')
-	msg(color('a').'/discordbotcfg <action> [option1] [option2] [option3] [option4]')
+	msg(color(10).'Command usage: <required> [optional]')
+	msg(color(10).'/discordbotcfg <action> [option1] [option2] [option3] [option4]')
 	msg(color(6).'Actions:')
 	msg(color(7).'/discordbotcfg <config>'.color(4).' - '.color('f').'Reloads specified config.')
 

@@ -1,5 +1,4 @@
-#version 1.1-tmc
-#requires build #84
+#Debug actions, not meant for normal everyday usage, just bot maintenance.
 admin:/dbdbg [$action] [$] = >>>
 @name = 'Discord'
 @prefix = '['.@name.'] '
@@ -21,7 +20,7 @@ case 'backup':
 	_discordBot_backup_members();
 case 'update':
 	@startTime = time();
-	msg(color('a').'Updating DiscordBot\'s internal cache data for each guild...')
+	msg(color(10).'Updating DiscordBot\'s internal cache data for each guild...')
 	_discordBot_update_members();
 	@stats = import('DiscordBot.debug.stats.last.updatemembers')
 	if(is_array(@stats)) {
@@ -42,9 +41,9 @@ case 'removeinvite':
 	if(is_array(@previnv[@args[0]]['code'])) {
 		if(array_index_exists(@previnv, @args[0], 'code', 1)) {
 			array_remove_values(@previnv[@args[0]]['code'], @args[1])
-			msg(color('a').'Removed invite code '.@args[1].' from ID '.@args[0])
+			msg(color(10).'Removed invite code '.@args[1].' from ID '.@args[0])
 		} else {
-			msg(color('e').'Only one code exists, are you sure you want to remove this code?')
+			msg(color(14).'Only one code exists, are you sure you want to remove this code?')
 		}
 		if(array_size(@previnv[@args[0]]['code']) == 1) {
 			@invid = discord_member_info(@guild, @inv[array_implode(@previnv[@args[0]]['code'], '')]['userid'])
@@ -54,12 +53,12 @@ case 'removeinvite':
 		}
 		store_value('DiscordBot.'.@guild.'.Join.info', @previnv)
 	} else {
-		msg(color('c').'Only one code exists, are you sure you want to remove this code?')
+		msg(color(12).'Only one code exists, are you sure you want to remove this code?')
 	}
 case 'memberinfo':
-	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord user ID to view!') }
+	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord user ID to view!') }
 	@gmr = discord_member_info(@guild, @args[0])
-	msg(color('a').'Member info:')
+	msg(color(10).'Member info:')
 	msg(@gmr)
 case 'getmembers':
 	@gmr = discord_get_members(@guild)
@@ -67,9 +66,9 @@ case 'getmembers':
 	msg(@gmr)
 case 'getmemberroles':
 case 'gmr':
-	if(!array_index_exists(@args, 0)) { die(color('c').'Specify the Discord role ID to view!') }
+	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord role ID to view!') }
 	@gmr = discord_get_members_with_role(@guild, @args[0])
-	msg(color('a').'Members with role "'.@args[0].'":')
+	msg(color(10).'Members with role "'.@args[0].'":')
 	msg(@gmr)
 case 'viewinvites':
 	discord_retrieve_invites(@guild, closure(@ex) { 

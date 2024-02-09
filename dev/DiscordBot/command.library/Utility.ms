@@ -107,13 +107,13 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 proc _discordBot_cmd_transferroles(@discord, @args) {
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@fromroleAdmin = false
-	@returnmsg = color('a').'Roles transfer for Discord User "'.color(3).@args[1].'" '
-	if(!array_index_exists(@args, 0)) { return(color('c').'Specify the Discord user ID to copy from!') }
-	if(!array_index_exists(@args, 1)) { return(color('c').'Specify the Discord user ID to copy to!') }
+	@returnmsg = color(10).'Roles transfer for Discord User "'.color(3).@args[1].'" '
+	if(!array_index_exists(@args, 0)) { return(color(12).'Specify the Discord user ID to copy from!') }
+	if(!array_index_exists(@args, 1)) { return(color(12).'Specify the Discord user ID to copy to!') }
 	if(!array_index_exists(@args, 2)) { @args[] = 'none' }
 	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
 		if(@args[0] != 'undo') {
-			return(color('c').'Discord Usernames are not supported in this command.')
+			return(color(12).'Discord Usernames are not supported in this command.')
 		}
 	}
 	@TRlog = get_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer')
@@ -123,14 +123,14 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	try {
 		@toroles = discord_member_get_roles(@discord['serverid'], @args[1])
 	} catch(Exception @ex) {
-		return(color('c').'To ID Not Found on Server: '.@ex['message'])
+		return(color(12).'To ID Not Found on Server: '.@ex['message'])
 	}
 	
 	# One transfer per user
 	if(array_index_exists(@TRlog, @args[1]) && @args[2] != 'undo' && @args[0] != 'undo') {
 		#ignore if admin and yourself
 		if(@discord['admin'] == true && @discord['userid'] == @args[1]) { @selfadmin = 1 } else {
-			return(color('c').'Only one roles transfer is allowed per user account.')
+			return(color(12).'Only one roles transfer is allowed per user account.')
 		}
 	}
 
@@ -153,14 +153,14 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 		if(is_array(@roles)) {
 			if(array_index_exists(@roles, @args[0])) {
 				@fromroles = @roles[@args[0]]
-				_db_msg_Console(color('e').'From ID: Not Found on Server, using internal cache.', @discord['serverid'])
+				_db_msg_Console(color(14).'From ID: Not Found on Server, using internal cache.', @discord['serverid'])
 			} else if(array_index_exists(@rolesFR, @args[0])) {
 				@fromroles = @rolesFR[@args[0]]
-				_db_msg_Console(color('e').'From ID: Not Found on Server, using internal storage.', @discord['serverid'])
+				_db_msg_Console(color(14).'From ID: Not Found on Server, using internal storage.', @discord['serverid'])
 			} else {
-				return(color('c').'From ID was Not Found on Server or internal cache!')
+				return(color(12).'From ID was Not Found on Server or internal cache!')
 			}
-		} else { return(color('c').'From ID was Not Found on Server; internal storage not initialized!') }
+		} else { return(color(12).'From ID was Not Found on Server; internal storage not initialized!') }
 	}
 	
 	# Admin roles nag
@@ -184,7 +184,7 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 		if(array_index_exists(@saveoldroles, @args[1])) {
 			@toroles = @saveoldroles[@args[1]]
 		} else {
-			return(color('c').'That user does not have previous data to undo!')
+			return(color(12).'That user does not have previous data to undo!')
 		}
 	} else {
 	# adds from roles, not sets to!
@@ -198,14 +198,14 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	try {
 		discord_member_set_roles(@discord['serverid'], @args[1], @toroles)
 	} catch(Exception @ex) {
-		_db_msg_Console(color('c').'Transfer roles: set roles failed: '.@ex['classType'].@ex['message'], @discord['serverid'])
+		_db_msg_Console(color(12).'Transfer roles: set roles failed: '.@ex['classType'].@ex['message'], @discord['serverid'])
 		return('NoPerms')
 	}
 	#Save 
 	array_set(@TRlog, @args[1], array('time': time(), 'fromuser': @args[0], 'issuer': @discord['userid']))
 	store_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer', @TRlog)
-	@msgrolesreturn = color('a').'Discord User '.color(3).@args[1].color('a').' had their Roles set to:\n'.color('r').array_keys(@toroles)
-	return(array('content': @returnmsg.color('a').'successful.', 'console': @msgrolesreturn))
+	@msgrolesreturn = color(10).'Discord User '.color(3).@args[1].color(10).' had their Roles set to:\n'.color('r').array_keys(@toroles)
+	return(array('content': @returnmsg.color(10).'successful.', 'console': @msgrolesreturn))
 }
 
 

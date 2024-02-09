@@ -45,7 +45,7 @@ proc _list_worlds() {
 		}
 		msg(color(7).@w.@wtdisplay)
 	}
-    msg(@prefix.color(9).'You are in world: '.color('e').pworld())
+    msg(@prefix.color(9).'You are in world: '.color(14).pworld())
 }
 @world = ''
 if(array_index_exists(@args, 0)) { 

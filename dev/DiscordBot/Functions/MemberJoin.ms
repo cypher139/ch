@@ -188,7 +188,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					foreach(@word in parse_args(@ex['message'])) {
 						if(string_starts_with(@word, '"')) { @id = replace(@word, '"', '') }
 					}
-					_db_msg_Console('  '.@discord['serverid'].'] Welcome role ID '.color('c').@id.color('r').' does not exist!', @discord['serverid'])
+					_db_msg_Console('Welcome role ID '.color(12).@id.color('r').' does not exist!', @discord['serverid'])
 				}
 			}
 		}
@@ -358,7 +358,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 					discord_delete_message(@discord['serverid'], @config['Welcome_Text_Channel_Name'], @joininfo[@discord['userid']]['wmid'])
 					@wmres = color(8).' <New join>'
 				} catch(Exception @ex) {
-					@wmres = ' Unable to remove Welcome Message!\n'.color('c').@ex['classType'].': '.@ex['message']
+					@wmres = ' Unable to remove Welcome Message!\n'.color(12).@ex['classType'].': '.@ex['message']
 				}
 			}
 		} else {

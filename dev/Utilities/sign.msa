@@ -36,7 +36,7 @@ switch(@action){
 	die()
 
 	case 'read':
-		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).@here)
+		msg(color(14).'['.color(6).@name.color(14).'] '.color(7).@here)
 		if(is_sign_at(@here) == 'true') {
 			@signtext = get_sign_text(@here)
 			@read = reg_split(', ', @signtext)
@@ -51,16 +51,16 @@ switch(@action){
 	case 'load':
 	case 'l':
 		@read = get_value('sign.player.'.@player['id'].'.savedsign')
-		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign! Your saved sign text is:')
+		msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Loaded sign! Your saved sign text is:')
 		msg(@read)
 	case 'save':
 	case 's':
-		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).@here)
+		msg(color(14).'['.color(6).@name.color(14).'] '.color(7).@here)
 		if(is_sign_at(@here) == 'true') {
 			@signtext = get_sign_text(@here)
 			@read = reg_split(', ', @signtext)
 			store_value('sign.player.'.@player['id'].'.savedsign', @signtext)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Saved sign! This sign says:')
+			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Saved sign! This sign says:')
 			msg(@read[0])
 			msg(@read[1])
 			msg(@read[2])
@@ -71,23 +71,23 @@ switch(@action){
 	case 'savetext':
 	case 't':
 		store_value('sign.player.'.@player['id'].'.savedsign', @text)
-		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Saved sign! The text will show up like this:')
+		msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Saved sign! The text will show up like this:')
 		try(msg(@text[0]))
 		try(msg(@text[1]))
 		try(msg(@text[2]))
 		try(msg(@text[3]))
 	case 'set':
-		msg(color('e').'['.color(6).@name.color('e').'] '.color(7).@here['x'].', '.@here['y'].', '.@here['z'].', '.@here['world'])
+		msg(color(14).'['.color(6).@name.color(14).'] '.color(7).@here['x'].', '.@here['y'].', '.@here['z'].', '.@here['world'])
 		if(is_sign_at(@here) == true) {
 			@oldsigntext = get_sign_text(@here)
 			store_value('sign.player.'.@player['id'].'.savedsign.undo', @oldsigntext)
 			store_value('sign.player.'.@player['id'].'.savedsign.undo.loc', @here)	
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'This sign used to say:\n'.color('r').array_implode(@oldsigntext, '\n'))
+			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'This sign used to say:\n'.color('r').array_implode(@oldsigntext, '\n'))
 			@savedsign = get_value('sign.player.'.@player['id'].'.savedsign')
 			if(!is_array(@savedsign)) { @savedsign = reg_split(', ', @savedsign) }
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign text!')
+			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Loaded sign text!')
 			set_sign_text(@here, @savedsign)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Saved sign! This sign now says:\n'.color('r').array_implode(@savedsign, '\n'))
+			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Saved sign! This sign now says:\n'.color('r').array_implode(@savedsign, '\n'))
 			} else {
 			msg(color('c').'['.color(6).@name.color('c').'] '.color('c').'Look at a sign!')
 		}
@@ -98,9 +98,9 @@ switch(@action){
 		if(is_sign_at(@here) == 'true') {
 			@savedsign = get_value('sign.player.'.@player['id'].'.savedsign.undo')
 			@newread = reg_split(', ', @savedsign)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign!')
+			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Loaded sign!')
 			set_sign_text(@here, @savedsign)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Undid sign at '.@here.' ! This sign now says:')
+			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Undid sign at '.@here.' ! This sign now says:')
 			try(msg(@newread[0]))
 			try(msg(@newread[1]))
 			try(msg(@newread[2]))
@@ -115,9 +115,9 @@ switch(@action){
 		if(is_sign_at(@here) == 'true') {
 			@savedsign = get_value('sign.player.'.@player['id'].'.savedsign')
 			@newread = reg_split(', ', @savedsign)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Loaded sign!')
+			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Loaded sign!')
 			set_sign_text(@here, @savedsign)
-			msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Redid sign at '.@here.' ! This sign now says:')
+			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Redid sign at '.@here.' ! This sign now says:')
 			try(msg(@newread[0]))
 			try(msg(@newread[1]))
 			try(msg(@newread[2]))

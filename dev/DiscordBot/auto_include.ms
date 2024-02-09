@@ -31,7 +31,7 @@ proc _db_msg_Admins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 proc _db_msg_Console(@message, @guild, string @type = 'prefix') {
 	if(@guild == '' || @guild == null || @guild == false) {
 		@guild = import('DiscordBot.config.Discord')['Primary_Guild']
-		console(color('e').'Nag: No guild given at: '.get_stack_trace());
+		console(color(14).'Nag: No guild given at: '.get_stack_trace());
 	}
 	@config = array()
 	switch(string(@guild)) {
@@ -40,7 +40,7 @@ proc _db_msg_Console(@message, @guild, string @type = 'prefix') {
 	case 'false': 
 		@config = array('Server_Nickname': 'DiscordBot', 'Console_Messages': true, 'Console_Debug': true)
 	case 'debug': 
-		@config = array('Server_Nickname': 'DiscordBot '.color('e').'<debug>'.color('r'), 'Console_Messages': true, 'Console_Debug': true)
+		@config = array('Server_Nickname': 'DiscordBot '.color(14).'<debug>'.color('r'), 'Console_Messages': true, 'Console_Debug': true)
 	default:
 		@config = import('DiscordBot.config.'.@guild)
 	}
@@ -249,7 +249,7 @@ proc _discordBot_get_server_info(@guild) {
 			export('DiscordBot.Guilds.Info.'.@guild, @data)
 			store_value('DiscordBot.'.@guild.'.guild.Info', @data)
 		}, closure(@data){ 
-			_db_msg_Console(color('c').'Cannot retrieve Guild info for guild "'.@guild.'". \n'.color(7).@data, @guild)
+			_db_msg_Console(color(12).'Cannot retrieve Guild info for guild "'.@guild.'". \n'.color(7).@data, @guild)
 		});
 	});
 	x_thread_join(@id.@time, 7000)
@@ -736,7 +736,7 @@ console('sm'.@guild.': '.@channel.' '.@editMsg)
 	} catch(InsufficientPermissionException @ex) {
 		@msg = @ex['message']
 		if(string_ends_with(@ex['message'], 'VIEW_CHANNEL')) {
-			@msg = color('c').'Bot cannot view channel: '.@channel
+			@msg = color(12).'Bot cannot view channel: '.@channel
 		}
 		_db_msg_Admins(@prefixErrorMsg.@msg, '[DiscordBot] ['.@guild.'] '.@msg)
 		return(false)
@@ -748,7 +748,7 @@ console('sm'.@guild.': '.@channel.' '.@editMsg)
 		foreach(@st in @ex['stackTrace']) {
 			@traceDisplay = @traceDisplay.'\n'.@st['id'].'  '.@st['line'].'.'.@st['col']
 		}
-		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.color('c').@ex['classType'].' '.color(7).@ex['message'].@traceDisplay)
+		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.color(12).@ex['classType'].' '.color(7).@ex['message'].@traceDisplay)
 		return(false)
 	}
 }
@@ -1154,7 +1154,7 @@ proc _discordBot_update_members(@useguild = 0) {
 				} catch(InsufficientPermissionException @ex) {
 					if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
 						array_set(@config, 'NoInvites', true)
-						_db_msg_Console(color('c').'Invite Logging is Enabled, but bot does not have permission to view invites!', @guild)
+						_db_msg_Console(color(12).'Invite Logging is Enabled, but bot does not have permission to view invites!', @guild)
 					} else {
 						_db_msg_Console(@ex['message'], @guild)
 					}
@@ -2301,7 +2301,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		if(array_index_exists(@nocmdData[@discord['userid']], 20)) { array_remove(@nocmdData[@discord['userid']], 20) }
 		store_value('DiscordBot.debug.cmd.not.found', @nocmdData)
 		#Send Not Found messages
-		_db_msg_Console(@discord['username'].' tried to use non-existent command'.@cmdfromdis.': '.color('e').@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
+		_db_msg_Console(@discord['username'].' tried to use non-existent command'.@cmdfromdis.': '.color(14).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
 		#Send User Message
 		@sendUserMessage = true
 		if(@cmdfrom == 'mention') { @sendUserMessage = false }

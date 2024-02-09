@@ -74,7 +74,7 @@ try {
 			} else { array_set(@inv, @invite['code'], @invite) }
 		}
 		store_value('DiscordBot.'.@id.'.Invites', @inv)
-		msg(color('a').'Current Invite data added and saved.')
+		msg(color(10).'Current Invite data added and saved.')
 	});
 } catch(InsufficientPermissionException @ex) {
 	if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {

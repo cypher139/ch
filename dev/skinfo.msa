@@ -80,7 +80,7 @@ if(@you == @player,
 	@youmsg = color(3).@player.'\'s'
 )
 msg(color(7).'['.color('gold').@name.color(7).'] '.@youmsg.color(6).' Worldedit selection: ')
-msg(color('d').'Position #1: '.sk_pos1(@player)['x'].','.sk_pos1(@player)['y'].','.sk_pos1(@player)['z'])
-msg(color('d').'Position #2: '.sk_pos2(@player)['x'].','.sk_pos2(@player)['y'].','.sk_pos2(@player)['z'])
+msg(color(13).'Position #1: '.sk_pos1(@player)['x'].','.sk_pos1(@player)['y'].','.sk_pos1(@player)['z'])
+msg(color(13).'Position #2: '.sk_pos2(@player)['x'].','.sk_pos2(@player)['y'].','.sk_pos2(@player)['z'])
 
 <<<

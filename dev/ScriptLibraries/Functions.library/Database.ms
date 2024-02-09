@@ -57,7 +57,7 @@ switch(@action){
 		} else {
 			export('ch.export.undo', array(@args[0], @args[1..]))
 			
-			msg(@prefix.color(6).'Export: '.color('d').@args[0])
+			msg(@prefix.color(6).'Export: '.color(13).@args[0])
 			export(@args[0], @args[1..])
 			@v = import(@args[0])
 			msg(@prefix.color(6).'Value '.@args[0].' exported to: '.color(7).@v)
@@ -93,14 +93,14 @@ switch(@action){
 			}
 		}
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
-		@return = @prefix.color(6).'Import: '.color('d').@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
+		@return = @prefix.color(6).'Import: '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
 		if(@as > 9) { @return = @return.'\n'.@arraymsg }
 		return(@return)
 
 	case 'clearvalue':
 	case 'cv':
 		if(array_size(@args) == 0) { @args[] = @player }
-		@returnmsg = @prefix.color(6).'Clear value: '.color('d').@args[0]
+		@returnmsg = @prefix.color(6).'Clear value: '.color(13).@args[0]
 		if(has_value(@args[0]) == true) {
 			clear_value(@args[0])
 			if(has_value(@args[0]) == false) { @returnmsg = @returnmsg.'\n'.@prefix.color(10).'Successfully cleared value.' }
@@ -140,7 +140,7 @@ switch(@action){
 				if(is_numeric(@v)) { @color = 9 }
 			}
 		}
-		@return = @prefix.color(6).'Value: '.color('d').@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
+		@return = @prefix.color(6).'Value: '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
 		if(@as > 9) { @return = @return.'\n'.@arraymsg }
 		return(@return)
 		
@@ -167,7 +167,7 @@ switch(@action){
 		} else {
 			return(@prefix.color(12).'Value is Not an Array!')
 		}
-		return(@prefix.color(6).'Clear Index: '.color(3).@args[1].color('r').' from '.color('d').@args[0].'\n'.@msg)
+		return(@prefix.color(6).'Clear Index: '.color(3).@args[1].color('r').' from '.color(13).@args[0].'\n'.@msg)
 
 	case 'exportvalue':
 	case 'ex':
@@ -196,7 +196,7 @@ switch(@action){
 		} else {
 			@returnmsg = color(12).' was not exported'
 		}
-		return(@prefix.color(6).'Value '.color('d').@args[0].@returnmsg.color(7).' to a file!')
+		return(@prefix.color(6).'Value '.color(13).@args[0].@returnmsg.color(7).' to a file!')
 		
 
 	case 'hasvalue':
@@ -222,13 +222,13 @@ switch(@action){
 				@returnmsg = @prefix.color(6).'There is no data to restore.'
 			} else {
 				store_value(@undo[0], @undo[1])
-				@returnmsg = @prefix.color(6).'Restored '.color('d').@undo[0].color(6).' to: '.color(7).@undo[1]
+				@returnmsg = @prefix.color(6).'Restored '.color(13).@undo[0].color(6).' to: '.color(7).@undo[1]
 			}
 			return(@returnmsg)
 		}
 		if(array_size(@args) < 2) { die(@prefix.color('c').'Not enough arguments provided.') }
 		@new = @args[1..]
-		@returnmsg = @prefix.color(6).'Store value: '.color('d').@args[0]
+		@returnmsg = @prefix.color(6).'Store value: '.color(13).@args[0]
 		@returnmsg = @returnmsg.'\n'.@prefix.color(6).'Previous: '.color(7).@old
 		export('ch.sv.undo', array(@args[0], @old))
 		switch(@args[1]) {
@@ -281,7 +281,7 @@ switch(@action){
 	case 'gvs':
 		if(array_size(@args) == 0) { @args[] = @player }
 		@v = get_values(@args[0])
-		@returnmsg = @prefix.color(6).'Get values: '.color('d').@args[0]
+		@returnmsg = @prefix.color(6).'Get values: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
 			@returnmsg = @returnmsg.'\n'.color(2).@key.': '.color(7).@data
 		}
@@ -292,7 +292,7 @@ switch(@action){
 	case 'hvs':
 		if(array_size(@args) == 0) { @args[] = @player }
 		@v = get_values(@args[0])
-		@returnmsg = @prefix.color(6).'Has values: '.color('d').@args[0]
+		@returnmsg = @prefix.color(6).'Has values: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
 			@returnmsg = @returnmsg.'\n'.color(2).@key
 		}
@@ -316,7 +316,7 @@ switch(@action){
 		}
 		@v = get_values(@args[0])
 		export('ch.cvs.undo', @v)
-		@returnmsg = @prefix.color(6).'Clear all values: '.color('d').@args[0]
+		@returnmsg = @prefix.color(6).'Clear all values: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
 			clear_value(@key)
 			if(has_value(@key) == false) { @returnmsg = @returnmsg.'\n'.@prefix.color(6).'Cleared value: '.@key }
@@ -333,7 +333,7 @@ switch(@action){
 		@falsemsg = ''
 		@falsecount = 0
 		@v = get_values(@args[0])
-		@returnmsg = @prefix.color(6).'Has export copy: '.color('d').@args[0]
+		@returnmsg = @prefix.color(6).'Has export copy: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
 			@result = ''
 			@import = import(@key, '~~~~~~')	
