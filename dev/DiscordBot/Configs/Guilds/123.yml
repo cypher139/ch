@@ -36,6 +36,8 @@ AS_New_User_Time: 600000000
 AS_New_User_Channel_Limit: 7
 # If a user triggers Anti Spam, delete their most recent messages?
 AS_Delete_Messages: true
+# Log various User Info in the Spam alert message?
+AS_Log_ShowUserInfo: true
 # Showcase Channel
 # Intended as a place to show your server community's art projects, latest game achivements, etc., and ward off chat to another channel.
 # To enable the Showcase channel chat protection feature place the channel's ID below:

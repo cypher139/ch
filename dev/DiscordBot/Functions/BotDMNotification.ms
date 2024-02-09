@@ -147,11 +147,23 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			@dcMsg = @dcMsg[cslice(0, 1910)].' ...'
 		}
 	# Include message content?
-		if(@userConfig[@discord['userid']]['NotifyContent'] == true) {	
+		# Antispam: No, don't read back DM spam - some spammers also spam the message to bot when AS DM's to tell them that they are timed out.
+		@isAS = import('DiscordBot.user.'.@discord['userid'].'.ASTriggerMessage')
+		if(is_array(@isAS)) {
+			@oserver = ''
+			if(@guild != @isAS['serverid']) { @oserver = ' on another server' }
+			@ASMsg = '<<<Anti Spam protection is active for this user'.@oserver.'.>>>'
+			if(@discord['message'] == @isAS['message']) {
+				@ASMsg = @ASMsg.'\nThe same spam that triggered Anti Spam was just DMed to me.'
+			} else {
+				@ASMsg = @ASMsg.'\nTo avoid repeating spam their message is not displayed here.'
+			}
+			@msgembed[0]['description'] = @ASMsg
+		} else if(@userConfig[@discord['userid']]['NotifyContent'] == true) {	
 		#Yes, include Urls if present
 			if(array_size(@urlembed) > 0) {	@msgembed[] = @urlembed }
 		} else {
-		#no, don't display content as requested
+		# No, don't display content as requested
 			@msgtype = 'message content'
 			if(array_index_exists(@discord, 'attachments', 0, 'filename') && @saveDM['message'] == '') { @msgtype = 'attachment' }
 			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype = @msgtype.'s' }

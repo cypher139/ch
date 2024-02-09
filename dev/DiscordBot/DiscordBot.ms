@@ -74,9 +74,9 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 				if(array_index_exists(@return8762['Allowed_Mentions'], 0)) {
 					discord_set_allowed_mentions(@return8762['Allowed_Mentions']);
 				}
-				# Every 10 minutes store changes to leaderboard in RAM to the database
-				# Also publishes json to logs. A webserver can pull from this for an online leaderboard display.
-				set_interval(600000, 100000, closure(){ _discordBot_lb_update_database() });
+				#AutoSave: store changes to certain database keys in RAM to the database every few minutes. ex. Leaderboard data.
+				# - Leaderboard: Also publishes json to logs. A webserver can pull from this for an online leaderboard display.
+				set_interval(@return8762['AutoSave_Wait'], 100000, closure(){ _discordBot_db_autosave() });
 				_db_mc_broadcast(@connectmsg, '', true);
 			} else {
 				discord_disconnect();

@@ -1,3 +1,9 @@
+# Autosave Keys
+@x8db = import('DiscordBot.db.save.keys', array())
+@x8db[] = 'antispam.members'
+@x8db[] = 'bot.antispam.triggers'
+export('DiscordBot.db.save.keys', @x8db)
+
 # Anti Spam functions: Check if user is repeating messages, new user chatting on too many channels, etc.
 proc _db_as_dm(@discord) {
 	try {
@@ -17,18 +23,19 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	@botconfig = import('DiscordBot.config.Discord');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
 	@guildInfo = import('DiscordBot.Guilds.Info.'.@discord['serverid'], array('name': @config['Server_Nickname']));
+	@codeDesc = array(0: 'Unknown', 1: '*New* user has talked on more than the limit of '.@config['AS_New_User_Channel_Limit'].' different channels.', 2: '*New* user used a global mention: `%word%`', 3: 'Duplicated same message', 4: 'Duplicated same message across 3 or more channels')
+	# 0: not selected, 1: New user: channel limit, 2: New user used here/everyone, 3: Dupe messages, 4: dupe messages over 3 channels
+	@reasonCode = 0
 	@asmembers = import('DiscordBot.'.@discord['serverid'].'.antispam.members');
 	if(!is_array(@asmembers)) { 
 		@asmembers = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
-		if(!is_array(@asmembers)) { @asmembers = array() }
+		if(!is_array(@asmembers)) { @asmembers = array('lastedit': 0) }
 		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	}
 	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array() }
 	@newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
 	@adduser = false
-	@triggerReason = ''
-	@triggerReasonalt = ''
 	@lastUserMsgs = array()
 	if(array_index_exists(@cacheMsgs, 'user', @discord['userid'])) {
 		foreach(@userMsgID in @cacheMsgs['user'][@discord['userid']]) {
@@ -47,7 +54,6 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		array_set(@userchannels, @discord['userid'], array(@discord['channelid']))
 		export('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels', @userchannels)
 	}
-
 #Checks
 # Duplicate messages (More than 3-4 is typically indicative of spam)
 	# Do not count if previous data not available, or message is blank
@@ -62,7 +68,10 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				# Previous 2 messages match, highly likely spam event. Increment counter.
 				@dcount++
 				## Add extra count x2: Current message posted on channel that isn't either of the previous 2 channels. Highly likely spam event! (or someone legitly replying "lol" to everything)
-				if(@lastUserMsgs[0]['channelid'] != @discord['channelid'] && @lastUserMsgs[1]['channelid'] != @discord['channelid'] && @lastUserMsgs[0]['channelid'] != @lastUserMsgs[1]['channelid']) { @dcount++ @triggerReasonalt = ' across 3 or more channels' }
+				if(@lastUserMsgs[0]['channelid'] != @discord['channelid'] && @lastUserMsgs[1]['channelid'] != @discord['channelid'] && @lastUserMsgs[0]['channelid'] != @lastUserMsgs[1]['channelid']) {
+					@dcount++
+					@reasonCode = 4
+				}
 			}
 		}
 		if(@dcount > 0) {
@@ -74,7 +83,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	### If the counter reaches 5, trigger anti spam
 		if(@dcount > 5) {
 			@adduser = true
-			@triggerReason = 'Duplicated messages'.@triggerReasonalt
+			if(@reasonCode == 0) { @reasonCode = 3 }
 		}
 	}	
 # Checks for New Users:
@@ -82,14 +91,15 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	# New user has talked on most channels - unlikely unless spamming. **Set limit to around number of channels @everyone can talk on.**
 		if(array_size(@userchannels[@discord['userid']]) >= @config['AS_New_User_Channel_Limit']) {
 			@adduser = true
-			@triggerReason = '*New* user talked on over '.@config['AS_New_User_Channel_Limit'].' different channels.'
+			@reasonCode = 1
 		}
 	# New user pinged here or everyone
 		@checkmsg = parse_args(@discord['message'])
 		foreach(@word in @checkmsg) {
 			if(to_lower(@word) == '@here' || to_lower(@word) == '@everyone') {
 				@adduser = true
-				@triggerReason = '*New* user used a global mention: `'.@word.'`'
+				@reasonCode = 2
+				@codeDesc[@reasonCode] = replace(@codeDesc[@reasonCode], '%word%', @word)
 			}
 		}
 	}
@@ -97,22 +107,27 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # Add user to Triggered state:
 	if(@adduser == true) {
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
-			array_set(@asmembers, @discord['userid'], array('time': @time, 'username': @discord['username'], 'reason': @triggerReason, 'triggercount': 0))
-			export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
-			store_value('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
+			array_set(@asmembers, @discord['userid'], array('rt': @reasonCode, 'log': false, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0))
 		}
 	}
 	
 # !!! User is in Triggered state: !!!
 	if(array_index_exists(@asmembers, @discord['userid'])) {
 		consume();
-		@actiontaken = '\n*Actions taken:*'
-		@count = import('DiscordBot.'.@discord['serverid'].'.antispam.trigger', array())
-		if(!array_index_exists(@count, @discord['userid'])) { array_set(@count, @discord['userid'], 0) }
-		@count[@discord['userid']]++
-		export('DiscordBot.'.@discord['serverid'].'.antispam.trigger', @count)
-	#If first trigger:
-		if(@count[@discord['userid']] < 2) {
+		@actiontaken = '\n - *Actions taken:*'
+	# Record total server triggers
+		@count = import('DiscordBot.bot.antispam.triggers')
+		if(!is_array(@count)) { 
+			@count = get_value('DiscordBot.bot.antispam.triggers')
+			if(!is_array(@count)) { @count = array('lastedit': 0, 'total': 0) }
+		}
+		if(!array_index_exists(@count, @discord['serverid'])) { array_set(@count, @discord['serverid'], 0) }
+		@count[@discord['serverid']]++
+		@count['total']++
+		@count['lastedit'] = @time
+		export('DiscordBot.bot.antispam.triggers', @count)
+	# If user's first trigger:
+		if(@asmembers[@discord['userid']]['triggercount'] < 2) {
 			@msgcount = 0
 		# Delete all messages recorded in the user's last message storage
 			if(@config['AS_Delete_Messages'] == true) {
@@ -127,10 +142,68 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			if(@msgcount > 0) {
 				@actiontaken = @actiontaken.' Deleted '.@msgcount.' of user\'s recent messages'
 			}
+		# Save spam message used (i.e. for DMs to verify is same spam was DM'ed to bot)
+			export('DiscordBot.user.'.@discord['userid'].'.ASTriggerMessage', @discord)
 		# Message Admins, and DM user.
-			if(@actiontaken == '\n*Actions taken:*') { @actiontaken = '' }
-			_discordBot_send_message('__**Anti Spam alert**__\n User `'.@discord['username'].'`  '.@discord['userid'].' triggered Anti Spam protection!\n *Protection Reason:* '.@triggerReason.@actiontaken, @discord['serverid'], 'admin');
-			_discordBot_send_message('Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.', @discord['serverid'], 'death', @discord['userid'], 'dm')
+			if(@actiontaken == '\n - *Actions taken:*') { @actiontaken = '' }
+			@logMsg = array('content': '__**Anti Spam alert**__\nUser `'.@discord['username'].'`  '.@discord['userid'].' triggered Anti Spam protection!\n - *Protection Reason:* '.@codeDesc[@reasonCode].@actiontaken)
+			@userinfo = array()
+			try {
+				@userinfo = discord_member_info(@discord['serverid'], @discord['userid']);
+			} catch(NotFoundException @ex) {
+				export('DiscordBot.'.@discord['serverid'].'.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
+			} 
+			if(@config['AS_Log_ShowUserInfo'] == true && array_index_exists(@userinfo, 'userid')) {
+				@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
+				@displayUR = 'None'
+				if(array_size(@userRoles) > 0) { @displayUR = '<@&'.array_implode(@userRoles, '> <@&').'>' }
+				array_set(@logMsg, 'embeds', array())
+			#Get Avatar and embed color info
+				if(!array_index_exists(@userinfo, 'avatar')) { array_set(@userinfo, 'avatar', 'https://cdn.discordapp.com/embed/avatars/0.png') }
+				@logMsg['embeds'][] = array(
+				'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])),
+				'color': array('r': 109, 'g': 109, 'b': 109),
+				'thumbnail': @userinfo['avatar'].'?size=48',
+				'fields': array(
+					array('name': 'Joined', 'value': '<t:'.substr(@userinfo['joined_at'], 0, 10).':f>', 'inline': true),
+					array('name': 'New User', 'value': @newuser, 'inline': true)
+				),
+				'footer': array('text': 'ID: '.@discord['userid']),
+				'timestamp': time()
+				)
+				if(array_index_exists(@userinfo, 'color')) {
+					if(@userinfo['color'] != null) {
+						array_set(@logMsg['embeds'][0], 'color', @userinfo['color'])
+					}
+				}
+				@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard')
+				if(is_array(@leaderboard)) {
+					if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { 
+						if(@leaderboard['members'][@discord['userid']]['level'] > 0) {
+							@logMsg['embeds'][0]['fields'][] = array('name': 'Leaderboard Level', 'value': @leaderboard['members'][@discord['userid']]['level'], 'inline': true)
+						}	
+					}
+				}
+				@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
+				if(!is_array(@joininfo)) { @joininfo = array() }
+				if(!array_index_exists(@joininfo, @discord['userid'])) {
+					@inv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())	
+					if(array_index_exists(@inv, @discord['userid'], 'code')) {
+						array_set(@joininfo, @discord['userid'], array('code': @inv[@discord['userid']]['code']))
+					}
+				}
+				if(array_index_exists(@joininfo, @discord['userid'], 'code')) {
+					@code = @joininfo[@discord['userid']]['code']
+					if(is_array(@joininfo[@discord['userid']]['code'])) { @code = array_implode(@joininfo[@discord['userid']]['code'], ', ') }
+					if(@code != '') { @logMsg['embeds'][0]['fields'][] = array('name': 'Invite', 'value': @code, 'inline': true) }
+				}
+				@logMsg['embeds'][0]['fields'][] = array('name': 'Roles ['.array_size(@userRoles).']', 'value': @displayUR, 'inline': false)
+			}
+			if(@asmembers[@discord['userid']]['log'] == false) { 
+				_discordBot_send_message(@logMsg, @discord['serverid'], 'admin');
+				_discordBot_send_message('Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.', @discord['serverid'], 'death', @discord['userid'], 'dm')
+				@asmembers[@discord['userid']]['log'] = true
+			}
 		}
 	#Actions for each trigger:
 		if(@config['AS_Delete_Messages'] == true) {
@@ -140,6 +213,9 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		if(!array_index_exists(@asMsgs, @discord['userid'])) { array_set(@asMsgs, @discord['userid'], array()) }
 		array_insert(@asMsgs[@discord['userid']], @discord, 0)
 		export('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', @asMsgs)
+		@asmembers['lastedit'] = @time
+		@asmembers[@discord['userid']]['triggercount']++
+		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	}
 	# } else {
 	#User OK 

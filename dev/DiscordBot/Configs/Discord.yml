@@ -8,7 +8,11 @@ Log_Channel: bot-logs
 # Which server should your bot primarly listen to? This server will have extra functionality related to your Minecraft server.
 Primary_Guild: 2313
 URL_Broadcast: true
+# Autosave:
+# Wait how long (in ms) between each autosave of certain database keys?
+AutoSave_Wait: 600000
 # Bot Activity:
+Set_Activity: true
 # - Accepted types: PLAYING, STREAMING, LISTENING, WATCHING, CUSTOM_STATUS, or COMPETING
 Activity_Type: PLAYING
 Activity_Message: Minecraft

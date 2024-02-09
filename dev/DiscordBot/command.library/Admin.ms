@@ -48,9 +48,9 @@ proc _discordBot_cmd_wrf(@discord, @args) {
 
 proc _discordBot_cmd_asremove(@discord, @args) {
 	# Remove user from triggered state
-	if(!array_index_exists(@args, 0)) { return(color('c').'Specify the Discord user ID to remove anti spam restrictions!') }
+	if(!array_index_exists(@args, 0)) { return(color(12).'Specify the Discord user ID to remove anti spam restrictions!') }
 	if(!is_numeric(@args[0])) {
-		return(color('c').'Discord Usernames are not supported in this command.')
+		return(color(12).'Discord Usernames are not supported in this command.')
 	}
 	@userid = @args[0]
 	@asmembers = import('DiscordBot.'.@discord['serverid'].'.antispam.members');
@@ -78,6 +78,7 @@ proc _discordBot_cmd_asremove(@discord, @args) {
 	store_value('DiscordBot.'.@discord['serverid'].'.antispam.members.removed', @asmembersR)
 	store_value('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
+	export('DiscordBot.user.'.@discord['userid'].'.ASTriggerMessage', null)
 	#export('DiscordBot.'.@discord['serverid'].'.'.@userid.'.antispam.trigger', null)
 	return('Removed '.@userid.' ('.@username.') from Anti-Spam restrictions.')
 }

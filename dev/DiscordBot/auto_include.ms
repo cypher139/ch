@@ -81,10 +81,10 @@ proc _db_msg_Console(@message, @guild, string @type = 'prefix') {
 }
 
 proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
-	@config = import('DiscordBot.config.Discord')	
+	@config = import('DiscordBot.config.Discord')
+	if(@config['Set_Activity'] == false) { return(false) }
 	if(@type == '' || @type == null) { @type = @config['Activity_Type'] }
 	if(@message == '' || @message == null) { @message = @config['Activity_Message'] }
-	
 	@acttypes8901 = reg_split('of\\s|[,.]\\s(?:or\\s)*', reflect_docs('discord_set_activity', 'description'))[2..]
 	foreach(@k: @v in @acttypes8901) {
 		if(to_upper(@v) != @v) { array_remove(@acttypes8901, @k) }
@@ -96,7 +96,7 @@ proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
 			_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color('r').@ex['message'], color(12).' ('.@ex['classType'].')', true)
 		}
 	} else {
-		_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Selected Bot Activity Type is not supported!')
+		_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: Type "'.@config['Activity_Type'].'" is not supported!')
 	}
 }
 
@@ -276,6 +276,44 @@ proc _db_get_user_nick(@userID, @serverID, @username) {
 	} else {
 		return(@memberInfo['username'])
 	}
+}
+
+proc _discordBot_db_autosave(string @usekey = '', @option) {
+	_db_msg_Console('Autosaving', 'debug')
+	@botconfig = import('DiscordBot.config.Discord')
+# Get list of keys to check for
+	@allKeys = import('DiscordBot.db.save.keys', array())
+	@time = time()
+	@results = array('null': array(), 'na': array(), 'noTS': array(), 'nolb': array(), 'saved': array(), 'nochange': array())
+	if(@usekey != '') { @allKeys = array(@usekey) }
+	if(array_size(@allKeys) == 0) { return(false) }
+	foreach(@guild in import('DiscordBot.Guilds')) {
+		@config = import('DiscordBot.config.'.@guild)
+		foreach(@e in @allKeys) {
+			@gp = @guild.'.'
+			if(string_starts_with(@e, 'bot')) { @gp = '' }
+			@saveKey = import('DiscordBot.'.@gp.@e)
+			#Checks
+			if(is_null(@saveKey)) { @results['null'][] = @gp.@e; continue() }
+			if(!is_array(@saveKey)) { @results['na'][] = @gp.@e; continue() }
+			if(!array_index_exists(@saveKey, 'lastedit')) { @results['noTS'][] = @gp.@e; continue() }
+			if(@e == 'Leaderboard' && @config['LB_Enable'] != true) { @results['nolb'][] = @gp.@e; continue() }
+			# actions
+			if(@saveKey['lastedit'] > (@time - @botconfig['AutoSave_Wait'])) {
+				store_value('DiscordBot.'.@gp.@e, @saveKey)
+				@results['saved'][] = @gp.@e;
+				if(@e == 'Leaderboard') {
+					_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Leaderboard_'.reg_replace('\\s', '_', @saveKey['guild']['name']).'.json', json_encode(@saveKey), 'OVERWRITE')
+				}
+			} else {
+				@results['nochange'][] = @gp.@e;
+			}
+		}
+	}
+	export('DiscordBot.db.autosave.time', @time)
+	export('DiscordBot.db.autosave.results', @results)
+	# return(@results)
+	return(true)
 }
 
 ##########################################
@@ -688,7 +726,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 				if(@editMsg == 0) {
 					discord_broadcast(@guild, @channel, @message, @afterMsg)
 				} else {
-console('sm'.@guild.': '.@channel.' '.@editMsg)
+# console('sm'.@guild.': '.@channel.' '.@editMsg)
 					_discordBot_edit_message(@message, 'sm', @guild, @channel, @editMsg)
 				}
 			}
@@ -1559,33 +1597,6 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 
 #### Leaderboard Management
 
-
-proc _discordBot_lb_update_database(@args) {
-	foreach(@guild in import('DiscordBot.Guilds')) {
-	#check for import leaderboard, and import (database lastedittime)
-		@config = import('DiscordBot.config.'.@guild)
-		if(@config['LB_Enable'] != true) {
-			# _db_msg_Console('noenable', @guild, 'debug')
-			return(false)
-		}
-		@leaderboard = import('DiscordBot.'.@guild.'.Leaderboard', array('lastedit': 0));
-		@lastsave = import('DiscordBot.'.@guild.'.Leaderboard.last.save');
-		if(@lastsave == null) { @lastsave = time() }
-		if(@leaderboard['lastedit'] > @lastsave) {
-			# _db_msg_Console('Saved Leaderboard Database.', @guild)
-			store_value('DiscordBot.'.@guild.'.Leaderboard', @leaderboard)
-			@saveoldroles = import('DiscordBot.'.@guild.'.debug.roles.Leaderboard.undo')
-			if(is_array(@saveoldroles)) {
-				store_value('DiscordBot.'.@guild.'.debug.roles.Leaderboard.undo', @saveoldroles)
-			}
-			export('DiscordBot.'.@guild.'.Leaderboard.last.save', time())
-			_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Leaderboard_'.reg_replace('\\s', '_', @leaderboard['guild']['name']).'.json', json_encode(@leaderboard), 'OVERWRITE')
-			return(true)
-		}
-	# } else { _db_msg_Console('nosave', @guild, 'debug') return(false) }
-	}
-}
-
 proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	if(@config['LB_Enable'] != true) { return(false) }
@@ -1767,6 +1778,7 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 		if(!is_array(@saveoldroles)) { @saveoldroles = get_value('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo') }
 		if(!is_array(@saveoldroles)) { @saveoldroles = array() }
 		array_set(@saveoldroles, @discord['userid'], @userRoles)
+		array_set(@saveoldroles, 'lastedit', time())
 		export('DiscordBot.'.@discord['serverid'].'.debug.roles.Leaderboard.undo', @saveoldroles)
 		
 	# Remove old role rewards

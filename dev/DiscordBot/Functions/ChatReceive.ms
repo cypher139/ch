@@ -1,3 +1,9 @@
+# Autosave Keys
+@x8db = import('DiscordBot.db.save.keys', array())
+@x8db[] = 'Leaderboard'
+@x8db[] = 'debug.roles.Leaderboard.undo'
+export('DiscordBot.db.save.keys', @x8db)
+
 # Receive messages from Discord users, pass data to Leaderboard and Minecraft server, save message for future reference.
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
