@@ -49,7 +49,7 @@ case 'asremove':
 		msg(@return)
 	}
 case 'backup':
-	_discordBot_backup_members();
+	_discordBot_backup_guild_data();
 case 'update':
 	@startTime = time();
 	msg(color(10).'Updating DiscordBot\'s internal cache data for each guild...')

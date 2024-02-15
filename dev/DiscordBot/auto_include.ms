@@ -279,20 +279,25 @@ proc _db_get_user_nick(@userID, @serverID, @username) {
 }
 
 proc _discordBot_db_autosave(string @usekey = '', @option) {
-	_db_msg_Console('Autosaving', 'debug')
+	# _db_msg_Console('Autosaving', 'debug')
 	@botconfig = import('DiscordBot.config.Discord')
+	@prefix = 'DiscordBot.'
 # Get list of keys to check for
-	@allKeys = import('DiscordBot.db.save.keys', array())
+	@allKeys = import(@prefix.'db.save.keys', array())
 	@time = time()
 	@results = array('null': array(), 'na': array(), 'noTS': array(), 'nolb': array(), 'saved': array(), 'nochange': array())
 	if(@usekey != '') { @allKeys = array(@usekey) }
 	if(array_size(@allKeys) == 0) { return(false) }
+	@botSaved = array()
 	foreach(@guild in import('DiscordBot.Guilds')) {
-		@config = import('DiscordBot.config.'.@guild)
+		@config = import(@prefix.'config.'.@guild)
 		foreach(@e in @allKeys) {
 			@gp = @guild.'.'
-			if(string_starts_with(@e, 'bot')) { @gp = '' }
-			@saveKey = import('DiscordBot.'.@gp.@e)
+			if(string_starts_with(@e, 'bot')) { 
+				@gp = ''
+				if(array_contains(@botSaved, @e)) { continue() } else { @botSaved[] = @e; }
+			}
+			@saveKey = import(@prefix.@gp.@e)
 			#Checks
 			if(is_null(@saveKey)) { @results['null'][] = @gp.@e; continue() }
 			if(!is_array(@saveKey)) { @results['na'][] = @gp.@e; continue() }
@@ -300,7 +305,7 @@ proc _discordBot_db_autosave(string @usekey = '', @option) {
 			if(@e == 'Leaderboard' && @config['LB_Enable'] != true) { @results['nolb'][] = @gp.@e; continue() }
 			# actions
 			if(@saveKey['lastedit'] > (@time - @botconfig['AutoSave_Wait'])) {
-				store_value('DiscordBot.'.@gp.@e, @saveKey)
+				store_value(@prefix.@gp.@e, @saveKey)
 				@results['saved'][] = @gp.@e;
 				if(@e == 'Leaderboard') {
 					_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Leaderboard_'.reg_replace('\\s', '_', @saveKey['guild']['name']).'.json', json_encode(@saveKey), 'OVERWRITE')
@@ -310,8 +315,8 @@ proc _discordBot_db_autosave(string @usekey = '', @option) {
 			}
 		}
 	}
-	export('DiscordBot.db.autosave.time', @time)
-	export('DiscordBot.db.autosave.results', @results)
+	export(@prefix.'db.autosave.time', @time)
+	export(@prefix.'db.autosave.results', @results)
 	# return(@results)
 	return(true)
 }
@@ -1087,7 +1092,7 @@ proc _discordBot_dc_add_member(@discord) {
 	}
 }
 
-proc _discordBot_backup_members(@args) {
+proc _discordBot_backup_guild_data(@args) {
 	@botconfig = import('DiscordBot.config.Discord')
 	@guilds = import('DiscordBot.Guilds', array())
 	if(array_size(@guilds) == 0) { return(false) }
@@ -1113,7 +1118,8 @@ proc _discordBot_backup_members(@args) {
 		'Leaderboard': import('DiscordBot.'.@guild.'.Leaderboard'),
 		'Invites': get_value('DiscordBot.'.@guild.'.Invites'),
 		'GuildInfo': get_value('DiscordBot.'.@guild.'.guild.Info'),
-		'JoinInfo': get_value('DiscordBot.'.@guild.'.Join.info')
+		'JoinInfo': get_value('DiscordBot.'.@guild.'.Join.info'),
+		'LogJoinTimes': get_value('DiscordBot.'.@guild.'.log.users.Join.Times')
 		)
 		@time = time();
 		foreach(@k: @v in @data) {

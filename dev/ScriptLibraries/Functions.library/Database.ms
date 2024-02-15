@@ -45,23 +45,23 @@ if(function_exists('player')) {
 switch(@action){
 	case 'export':
 	# TODO port store value
+		@returnmsg = @prefix.color(6).'Export: '.color(13).@args[0]
 		if(@args[0] == 'undo') {
 			@undo = import('ch.export.undo', array())
 			if(array_size(@undo) == 0) {
 				msg(@prefix.color(6).'There is no data to restore.')
 			} else {
 				export(@key, @data)
-				msg(@prefix.color(6).'Restored '.@undo[0].' to :'.@undo[1])
+				@returnmsg = @prefix.color(6).'Restored '.color(13).@undo[0].color(6).' to: '.color(7).@undo[1]
+				return(@returnmsg)
 			}
-			die()
-		} else {
-			export('ch.export.undo', array(@args[0], @args[1..]))
-			
-			msg(@prefix.color(6).'Export: '.color(13).@args[0])
-			export(@args[0], @args[1..])
-			@v = import(@args[0])
-			msg(@prefix.color(6).'Value '.@args[0].' exported to: '.color(7).@v)
 		}
+		export('ch.export.undo', array(@args[0], @args[1..]))
+		export(@args[0], @args[1..])
+		@v = import(@args[0])
+		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
+		@returnmsg = @returnmsg.'\n'.@prefix.color(6).'Saved '.color(3).@type.color(6).': '.color(7).@v
+		return(@returnmsg)
 
 	case 'import':
 		@v = import(@args[0])

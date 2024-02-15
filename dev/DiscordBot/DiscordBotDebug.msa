@@ -16,8 +16,13 @@ foreach(@arg in @args) {
 }
 msg('Using Server ID: '.@guild)
 switch(@action) {
+case 'react':
+	@channelID = import('DiscordBot.debug.cmd.react.id.channel')
+	@msgID = import('DiscordBot.debug.cmd.react.id.message')
+	discord_request('PUT', 'channels/'.@channelID.'/messages/'.@msgID.'/reactions/%E2%9C%85/@me', null, closure(@ex) { console('reaction success: \n'.@ex) }, closure(@ex) { console('reaction failed: \n'.@ex) })
+	discord_request('PUT', 'channels/'.@channelID.'/messages/'.@msgID.'/reactions/%E2%9D%8C/@me', null, closure(@ex) { console('reaction success: \n'.@ex) }, closure(@ex) { console('reaction failed: \n'.@ex) })
 case 'backup':
-	_discordBot_backup_members();
+	_discordBot_backup_guild_data();
 case 'update':
 	@startTime = time();
 	msg(color(10).'Updating DiscordBot\'s internal cache data for each guild...')
@@ -76,6 +81,39 @@ case 'viewinvites':
 		store_value('DiscordBot.debug.invites.save', @ex)
 		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
 	});
+case 'addformerjoinlog':
+	@LogJoinTimes = get_value('DiscordBot.'.@guild.'.log.users.Join.Times')
+	if(!is_array(@LogJoinTimes)) { @LogJoinTimes = array() }
+	@membersFormer = get_value('DiscordBot.'.@guild.'.members.former')
+	if(!is_array(@membersFormer)) { die('no former info in guild') }
+	@adds = 0
+	foreach(@userid: @userinfo in @membersFormer) {
+		@index = 0
+		if(!array_index_exists(@userinfo, 'time')) { continue() }
+		if(array_index_exists(@LogJoinTimes, @userid)) { 
+			if(array_contains(@LogJoinTimes[@userid], @userinfo['time'])) { continue() }		
+		} else { 
+			array_set(@LogJoinTimes, @userid, array())
+		}
+		@LogJoinTimes[@userid][] = @userinfo['time'];
+		@adds++
+	}
+	store_value('DiscordBot.'.@guild.'.log.users.Join.Times', @LogJoinTimes)
+	@color = 7
+	if(@adds > 0) { @color = 10 }
+	msg(color(@color).'Added '.color(9).@adds.color(@color).' entries (out of '.array_size(@membersFormer).') to Join Times log.')
+case 'findmultiplejoins':
+	@LogJoinTimes = get_value('DiscordBot.'.@guild.'.log.users.Join.Times')
+	@results = array()
+	foreach(@userid: @usertimes in @LogJoinTimes) {
+		if(array_size(@usertimes) > 1) {
+			array_set(@results, @userid, @usertimes)
+		}
+	}
+	msg('Found '.array_size(@results).' out of '.array_size(@LogJoinTimes).' known joins:')
+	if(array_size(@results) > 0) {
+		msg(@results)
+	}
 default:
 msg('Action Not Recognized!')	
 }

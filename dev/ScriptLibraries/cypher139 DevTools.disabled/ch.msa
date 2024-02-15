@@ -268,8 +268,10 @@ case 'date':
 			die('Not a timestamp?')
 		}
 	} else { @time = time(); }
-	msg(simple_date('MM/dd/yyyy HH:mm:ss', @time))
-	msg(simple_date('MM-dd-yy_HH-mm_', @time))
+	msg(@time)
+	msg(color(10).'Date(-7): '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @time))
+	# msg(simple_date('MM-dd-yy_HH-mm_', @time))
+	msg(color(11).'ISO8601: '.simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', @time, 'UTC'))
 case 'time':
 	msg(time())
 	msg(substr(time(), 0, 10))

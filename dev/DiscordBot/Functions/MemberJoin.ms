@@ -268,7 +268,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	@userLeaves = array_size(@logJointimes[@discord['userid']])
 	if(@userLeaves > 1) {
 		@invmsgSuffix = ' -Leaves: '.@userLeaves
-		@consolemsgSuffix = ' Leaves: '.@userLeaves
+		@consoleMsgSuffix = ' Leaves: '.@userLeaves
 	}
 # Remove user entry from internal storages
 	@membersRoles = get_value('DiscordBot.'.@discord['serverid'].'.members.roles')
@@ -301,7 +301,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { 
 			if(@leaderboard['members'][@discord['userid']]['level'] > 0) {
 				@invmsgSuffix = @invmsgSuffix.' -Level: '.@leaderboard['members'][@discord['userid']]['level']
-				@consoleMsgSuffix = @consolemsgSuffix.' Level: '.@leaderboard['members'][@discord['userid']]['level']
+				@consoleMsgSuffix = @consoleMsgSuffix.' Level: '.@leaderboard['members'][@discord['userid']]['level']
 			}
 			if(@config['LB_Options']['Remove_On_Leave'] == true) { @lbremove = 1 }
 			if(@leaderboard['members'][@discord['userid']]['level'] < 6) { @lbremove = 1 }		
@@ -344,7 +344,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		} else if(is_array(@joininfo[@discord['userid']]['code'])) { 
 			@matches = array_implode(@joininfo[@discord['userid']]['code'], '  ')
 			@invmsgSuffix = @invmsgSuffix.' -Invites: I\'m not sure which one: '.@matches
-			@consoleMsgSuffix = @consolemsgSuffix.' Invites: '.@matches
+			@consoleMsgSuffix = @consoleMsgSuffix.' Invites: '.@matches
 		}
 	# New Members:
 		if(time() < (@joininfo[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) {
