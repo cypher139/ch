@@ -256,6 +256,11 @@ proc _discordBot_get_server_info(@guild) {
 	return(import('DiscordBot.Guilds.Info.'.@guild))
 }
 
+proc _db_get_snowflake_time(@snowflake, @epoch = 1420070400000) {
+	if(!is_integral(@snowflake)) { throw('ms.lang.CastException', 'Snowflake is not an integer.') }
+	return(rshift(@snowflake, 22) + @epoch)
+}
+
 proc _db_get_user_nick(@userID, @serverID, @username) {
 	@botconfig = import('DiscordBot.config.Discord')
 	if(@userID == null || @userID == '') { throw('ms.lang.CastException', 'User ID not given to nick display') }
@@ -344,8 +349,8 @@ proc _db_sanitize_message(@message, @caller, @guild, @from, @dm) {
 		@sanitize['Role'] = true
 		@sanitize['Everyone'] = true
 		try (
-			foreach(@role in array_keys(discord_member_get_roles(@guild, @from))) {
-				if(array_contains_ic(@config['Role_Admins'], @role)) {
+			foreach(@rN: @rID in discord_member_get_roles(@guild, @from)) {
+				if(array_contains_ic(@config['Role_Admins'], @rN) || array_contains(@config['Role_Admins'], @rID)) {
 					@sanitize['Markdown'] = false
 					@sanitize['User'] = false
 					@sanitize['Role'] = false
@@ -1355,7 +1360,7 @@ proc _discordBot_update_members(@useguild = 0) {
 							@consoleMsg = @consoleMsg.@rrStats['rrMsg'].color('r')
 						}
 					} else {
-						@consoleMsg = @consoleMsg.color(7).@rrStats.color('r')
+						@consoleMsg = @consoleMsg.color(8).'(RR) '.@rrStats.color('r')
 					}
 					array_set(@rankstats, @idInfo['username'], @rrStats)
 				}
@@ -1428,6 +1433,13 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	if(!is_array(@config['Role_Ranks'])) { return('no rank data') }
 	@ranknums = array_sort(array_keys(@config['Role_Ranks']), 'NUMERIC')
+	if(@config['Role_Ranks_IgnoreAdmin'] == true) {
+		foreach(@irole in @config['Role_Admins']) {
+			if(array_contains(@userRoles, @irole) || array_index_exists(@userRoles, @irole)) {
+				return('ignored Admin');
+			}
+		}
+	}
 	if(is_array(@config['Role_Ranks_IgnoreUser'])) {
 		if(array_contains(@config['Role_Ranks_IgnoreUser'], @discord['userid'])) {
 			return('ignored User');
@@ -2240,16 +2252,18 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	#to  check: does get roles work in a dm
 	@userType = 'User'
 	@isAdmin = false
-	try (
-		@userroles = array_keys(discord_member_get_roles(@discord['serverid'], @discord['username']))
-		foreach(@role in @userroles) {
-			if(array_contains_ic(@config['Role_Admins'], @role)) {
+	try {
+		foreach(@rN: @rID in discord_member_get_roles(@discord['serverid'], @discord['username'])) {
+			if(array_contains_ic(@config['Role_Admins'], @rN) || array_contains(@config['Role_Admins'], @rID)) {
 				@userType = 'Admin'
 				@isAdmin = true
 				break()
 			}
 		}
-	)
+	} catch(Exception @ex) {
+		_db_msg_Console('Cmd isAdmin check: '.@ex, @discord['serverid'], 'error')
+		return('NotAdmin')
+	}
 ###############
 	# _db_msg_Console(@actions, @discord['serverid'], 'debug')
 	# _db_msg_Console(@commandList, @discord['serverid'], 'debug')

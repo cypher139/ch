@@ -146,7 +146,7 @@ CMD_Channels_Receive:
 CMD_Channels_Send:
 - general
 - minecraft
-# Default channel to use bot commands in, usually a "botspam" channel meant to keep spamm away from other channels.
+# Default channel to use bot commands in, usually a "botspam" channel meant to keep spam away from other channels.
 CMD_Default_Channel: botspam
 # What should the bot do with the originating command message?
 # "delete" to delete the message, "reply" to reference to message in command reply
@@ -371,6 +371,7 @@ Role_Ranks_Separators:
 - 822679
 - 822680
 # If needed, list User and Role IDs below that need to be ignored by the rank system.
+Role_Ranks_IgnoreAdmin: false
 Role_Ranks_IgnoreUser:
 - 98765432
 Role_Ranks_IgnoreRole:

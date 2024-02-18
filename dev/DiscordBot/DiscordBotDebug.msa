@@ -114,6 +114,13 @@ case 'findmultiplejoins':
 	if(array_size(@results) > 0) {
 		msg(@results)
 	}
+case 'snowflaketime':
+	if(!array_index_exists(@args, 0)) { @args[] = @botconfig['Bot_ID'] }
+	msg('Snowflake: '.@args[0])
+	@snowtime = _db_get_snowflake_time(@args[0])
+	msg('Timestamp: '.@snowtime)
+	msg(color(10).'Date: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @snowtime, 'UTC'))
+	msg(color(11).'ISO8601: '.simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', @snowtime, 'UTC'))
 default:
 msg('Action Not Recognized!')	
 }

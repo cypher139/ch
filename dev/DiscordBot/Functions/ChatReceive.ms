@@ -2,7 +2,7 @@
 @x8db = import('DiscordBot.db.save.keys', array())
 @x8db[] = 'Leaderboard'
 @x8db[] = 'debug.roles.Leaderboard.undo'
-export('DiscordBot.db.save.keys', @x8db)
+export('DiscordBot.db.save.keys', array_unique(@x8db))
 
 # Receive messages from Discord users, pass data to Leaderboard and Minecraft server, save message for future reference.
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
@@ -108,20 +108,21 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 			@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard', array())
 			if(array_index_exists(@leaderboard, 'members', @discord['userid'], 'color')) { @usernamecolor = @leaderboard['members'][@discord['userid']]['color'] }
 			@isAdmin = false
-			foreach(@role in array_keys(@userRoles)) {
-				if(array_contains_ic(@config['Role_Admins'], @role)) {
+			foreach(@rN: @rID in @userRoles) {
+				if(array_contains_ic(@config['Role_Admins'], @rN) || array_contains(@config['Role_Admins'], @rID)) {
 					@isAdmin = true
 					break()
 				}
 			}
-			foreach(@role in array_keys(@userRoles)) {
-				if(array_contains_ic(array_keys(@config['Role_Colors']), @role)) {
-					#admin colors: ensure an admin role gets picked for color
-					if(@isAdmin == true && !array_contains_ic(@config['Role_Admins'], @role)) {
-						continue()
-					}
+			foreach(@rN: @rID in @userRoles) {
+				@role = 0
+				if(array_contains_ic(array_keys(@config['Role_Colors']), @rN)) { @role = @rN }
+				if(array_contains_ic(array_keys(@config['Role_Colors']), @rID)) { @role = @rID }
+				if(@role != 0) {	
+					#Try to ensure an admin role gets picked for color
+					if(@isAdmin == true && !array_contains_ic(@config['Role_Admins'], @role)) { continue() }
 					@usernamecolor = @config['Role_Colors'][@role]
-	#dev				_db_msg_Console('chose role: '.@role, @discord['serverid'], 'debug')
+	#dev				_db_msg_Console('chose role color: '.@role, @discord['serverid'], 'debug')
 					#Only go with first role found
 					break()
 				}

@@ -17,8 +17,8 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	@isRole = false
 	@usePing = false
 	@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
-	foreach(@role: @roleid in @userRoles) {
-		if(array_contains_ic(@config['Role_Admins'], @role)) {
+	foreach(@rN: @rID in @userRoles) {
+		if(array_contains_ic(@config['Role_Admins'], @rN) || array_contains(@config['Role_Admins'], @rID)) {
 			@isAdmin = true
 			break()
 		}
@@ -45,7 +45,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 		if(!is_array(@lastping)) { @lastping = array() }
 		if(!array_index_exists(@lastping, @vc['VC_Role_ID'])) { array_set(@lastping, @vc['VC_Role_ID'], 1230768000000) }
 		if(import('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress') == true) { die() } else {
-			@timeout = 60000
+			@timeout = 20000
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping[@vc['VC_Role_ID']] + @vc['VC_Ping_Timeout'])) {
 				@discordMsg = replace(@vc['VC_Ping_Message'], '%RoleID%', '<@&'.@vc['VC_Role_ID'].'>')
@@ -150,12 +150,12 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 					}
 				}
 				@isAdmin = false
-				foreach(@role: @roleid in @userRoles) {
-					if(array_contains_ic(@config['Role_Admins'], @role)) {
+				foreach(@rN: @rID in @userRoles) {
+					if(array_contains_ic(@config['Role_Admins'], @rN) || array_contains(@config['Role_Admins'], @rID)) {
 						@isAdmin = true
 						break()
 					}
-				}				
+				}		
 				if(@isAdmin == true) { continue() }
 				@dmMsg = replace(@vc['VC_DM_Thanks_Message'], '%User%', @username)
 				if(array_size(@otherVCUsers) < 2) {

@@ -2,7 +2,7 @@
 @x8db = import('DiscordBot.db.save.keys', array())
 @x8db[] = 'antispam.members'
 @x8db[] = 'bot.antispam.triggers'
-export('DiscordBot.db.save.keys', @x8db)
+export('DiscordBot.db.save.keys', array_unique(@x8db))
 
 # Anti Spam functions: Check if user is repeating messages, new user chatting on too many channels, etc.
 proc _db_as_dm(@discord) {
@@ -151,7 +151,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			try {
 				@userinfo = discord_member_info(@discord['serverid'], @discord['userid']);
 			} catch(NotFoundException @ex) {
-				export('DiscordBot.'.@discord['serverid'].'.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
+				export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
 			} 
 			if(@config['AS_Log_ShowUserInfo'] == true && array_index_exists(@userinfo, 'userid')) {
 				@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
@@ -165,8 +165,9 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				'color': array('r': 109, 'g': 109, 'b': 109),
 				'thumbnail': @userinfo['avatar'].'?size=48',
 				'fields': array(
-					array('name': 'Joined', 'value': '<t:'.substr(@userinfo['joined_at'], 0, 10).':f>', 'inline': true),
-					array('name': 'New User', 'value': @newuser, 'inline': true)
+					array('name': 'Join: Server', 'value': '<t:'.substr(@userinfo['joined_at'], 0, 10).':f>', 'inline': true),
+					array('name': 'Server: Is New User', 'value': @newuser, 'inline': true),
+					array('name': 'Join: Discord', 'value': '<t:'.substr(rshift(@discord['userid'], 22) + 1420070400000, 0, 10).':f>', 'inline': true)
 				),
 				'footer': array('text': 'ID: '.@discord['userid']),
 				'timestamp': time()
