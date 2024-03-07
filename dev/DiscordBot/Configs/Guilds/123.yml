@@ -201,6 +201,12 @@ VC_Options:
     # VC_Channel_ID: 987654321
 # Voice Chat Channel's name. Case sensitive!
     # VC_Channel_Name: General
+# Server Logs:
+# Uncomment log types to show that type in your server log channel.
+    VC_Logs:
+    - Join
+    - Leave
+    - Completed
 # Ping Timeout
 # How long (in milliseconds) should we wait before performing another ping?
 # Default: 12 hours = 43200000

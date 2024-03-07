@@ -1,13 +1,23 @@
 #Ping users to join VC when a user joins the channel, and record channel stats.
-/*
-Voice Chat monitor:
-If:
- -- User has joined the monitored Voice Channel
- -- User has the specified "Voice Chat" ping role
- -- After 60 seconds User is still in voice channel
- -- "Voice Chat" ping role has not been pinged by the bot in over 12 hours
-Then this will send a message to the ping role to come join voice chat
-*/
+proc _vc_display_duration(@time) {
+	@dateType = 'HH\'h\' mm\'m\' ss\'s\''
+	@dl = ''
+	if(@time < 60000) {
+	#less than min
+		@dateType = 'ss\'s\''
+	} else if(@time >= 60000 && @time < 3600000) {
+	#over 1 min
+		@dateType = 'mm\'m\' ss\'s\''
+	} else if(@time >= 3600000 && @time < 86400000) {
+	#over 1 hour - uses above default.
+		@dateType = 'HH\'h\' mm\'m\' ss\'s\''
+	} else if(@time >= 86400000) {
+	#over 1 day
+		@dl = (simple_date('D', @time) - 1).'d '
+	} 
+	return(@dl.simple_date(@dateType, @time));
+}
+
 bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
 	@botconfig = import('DiscordBot.config.Discord')
@@ -104,6 +114,26 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	if(!array_index_exists(@stats, 'activetime', @discord['userid'])) { array_set(@stats['activetime'], @discord['userid'], time()) }
 	@stats['activetime'][@discord['userid']] = time()
 	store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
+# Send logs	
+	@logMsg = array('embeds': array())
+	if(array_contains(@vc['VC_Logs'], 'Join')) {
+		@userinfo = array()
+		try {
+			@userinfo = discord_member_info(@discord['serverid'], @discord['userid']);
+		} catch(NotFoundException @ex) {
+			export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
+		}
+		if(!array_index_exists(@userinfo, 'avatar')) { array_set(@userinfo, 'avatar', 'https://cdn.discordapp.com/embed/avatars/0.png') }
+		@embed = array(
+			'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username']),
+			'color': array('r': 66, 'g': 180, 'b': 129),
+			'description': '<@'.@discord['userid'].'> joined voice channel: <#'.@discord['channelid'].'>',
+			'footer': array('text': 'ID '.@discord['userid']),
+			'timestamp': time()
+		)
+		@logMsg['embeds'][] = @embed;
+		_discordBot_send_message(@logMsg, @discord['serverid'], 'log');
+	}
 }
 #--------------------------------------------
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
@@ -127,9 +157,27 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	if(!array_index_exists(@stats, 'time', @discord['userid'])) { array_set(@stats['time'], @discord['userid'], 0) }
 	@userTime = time() - @stats['activetime'][@discord['userid']]
 	@stats['time'][@discord['userid']] = @stats['time'][@discord['userid']] + @userTime
-	
-	
-	console(@discord['username'].' time: '.@userTime)
+	@userinfo = array('bot': false)
+	try {
+		@userinfo = discord_member_info(@discord['serverid'], @discord['userid']);
+	} catch(NotFoundException @ex) {
+		export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
+	} 
+	if(!array_index_exists(@userinfo, 'avatar')) { array_set(@userinfo, 'avatar', 'https://cdn.discordapp.com/embed/avatars/0.png') }
+	#Log User Leave
+	_db_msg_Console(@discord['username'].' VC time: '.@userTime.' (total '.@stats['time'][@discord['userid']].')', @discord['serverid'], 'debug')
+	@logMsg = array('embeds': array())
+	if(array_contains(@vc['VC_Logs'], 'Leave')) {
+		@embed = array(
+			'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username']),
+			'color': array('r': 253, 'g': 70, 'b': 15),
+			'description': '<@'.@discord['userid'].'> left voice channel: <#'.@discord['channelid'].'>',
+			'footer': array('text': 'ID '.@discord['userid']),
+			'timestamp': time()
+		)
+		@logMsg['embeds'][] = @embed;
+	}
+		
 	#End of call
 	if(!array_index_exists(@stats['active'], 0)) {
 		#DM thanks
@@ -156,7 +204,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 						break()
 					}
 				}		
-				if(@isAdmin == true) { continue() }
+				if(@isAdmin == true || @userinfo['bot'] == true) { continue() }
 				@dmMsg = replace(@vc['VC_DM_Thanks_Message'], '%User%', @username)
 				if(array_size(@otherVCUsers) < 2) {
 					@dmMsg = replace(@dmMsg, '%OtherUsers%', array_implode(@otherVCUsers, ''))
@@ -181,8 +229,36 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		array_insert(@lastVCStats, @stats, 0);
 		_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/'.simple_date('MMyy', time()).'/'.@discord['serverid'].'_'.simple_date('MMyy', time()).'_VC_Stats'.@statType.'-'.@discord['channelid'].'.json', json_encode(@lastVCStats), 'overwrite')
 		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@statType, @lastVCStats);
-		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats');
+		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats');	
+	#End logs
+		if(array_contains(@vc['VC_Logs'], 'Completed') && array_size(@stats['users']) > 1) {
+		# send embed to channel, with fields of each caller and length
+			@callLength = @stats['end'] - @stats['start']
+			@embed = array(
+			'color': array('r': 39, 'g': 175, 'b': 211),
+			'title': 'Voice Call Completed',
+			'description': '<#'.@discord['channelid'].'> | Users: '.array_implode(@stats['users']).' | Total Time: '._vc_display_duration(@callLength),
+			'fields': array(),
+			'footer': array('text': 'Completed at'),
+			'timestamp': time()
+			)
+			if(array_index_exists(@stats, 'pinguser')) {
+				@embed['fields'][] = array('name': 'VC Ping', 'value': @stats['pinguser'], 'inline': true)
+			}
+			@usercount = 0
+			foreach(@userID: @userName in @stats['users']) {
+				@fieldname = '\u200b'
+				if(@usercount == 0) { @fieldname = 'All Users:' }
+				@embed['fields'][] = array('name': @fieldname, 'value': '<@'.@userID.'>: '._vc_display_duration(@stats['time'][@userID]), 'inline': true)
+				@usercount++
+			}
+			@logMsg['embeds'][] = @embed;
+		}
 	} else {
 		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats);
+	}
+#Send Logs
+	if(array_index_exists(@logMsg, 'embeds', 0)) {
+		_discordBot_send_message(@logMsg, @discord['serverid'], 'log');
 	}
 }

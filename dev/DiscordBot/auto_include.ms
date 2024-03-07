@@ -2282,6 +2282,11 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	}
 	# No mentions
 	@command[0] = reg_replace('@', '', @command[0])
+#Command Blacklist
+	if(array_contains(@botconfig['CMD_Blacklist_Commands'], @command[0])) {
+		_db_msg_Console(color(8).'Commands: Ignored '.color(9).@command[0], @discord['serverid'], 'debug')
+		return('Blacklist')
+	}
 # Setup Arguments
 	@args = array()
 	if(array_index_exists(@command, 1)) {
@@ -2292,7 +2297,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@commanddismc = ''
 	@commanddisdc = ''
 	if(array_index_exists(@args, 0)) {
-# Remove mention in arguments 
+# Remove mention in arguments
 		if(array_index_exists(@config, 'Sanitize_CMD_Arguments')) {
 			foreach(@mention: @replacement in @config['Sanitize_CMD_Arguments']) {
 				foreach(@k: @arg in @args) {
@@ -2308,7 +2313,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		if(!array_index_exists(@args, 0)) { @commanddisdc = '' }
 	}
 	
-# Deny Admin commands	
+# Deny Admin commands
 	if(array_index_exists(@commandList, @command[0])) {
 		if(@actions[@commandList[@command[0]]]['admin'] == true && @userType != 'Admin') {
 			_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfromdis.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
@@ -2318,7 +2323,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	}
 	array_set(@discord, 'admin', @isAdmin)
 
-# Execute command action 
+# Execute command action
 	if(array_index_exists(@commandList, @command[0])) {
 		@CmdReturn = @actions[@commandList[@command[0]]]['cmd'](@discord, @args);
 	} else {
@@ -2483,7 +2488,6 @@ proc _discordBot_init_cmd_list(@test) {
 	@cmdListName = array()
 	@cmdListAlias = array()
 	@cmdListCat = array()
-	
 	foreach(@cmd: @data in @commandList) {
 		@lCmd = to_lower(@cmd)
 		array_set(@cmdListName, @lCmd, @cmd)

@@ -30,3 +30,13 @@ Allowed_Mentions:
 Msg_Cache_User: 500
 Msg_Cache_Server: 1000
 Msg_Cache_Cmd: 250
+#
+# Command System:
+# - List blacklisted commands across the entire bot below:
+CMD_Blacklist_Commands:
+  - p
+  - skip
+  - pause
+  - queue
+  - stop
+  - play
