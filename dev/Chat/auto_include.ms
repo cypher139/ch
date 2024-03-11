@@ -58,6 +58,7 @@ proc _chat_load_config(@cfgtype) {
 			return(false)
 		}
 	case 'Discord':
+	case 'Bot':
 		if(!is_proc('db_msg_Admins')) { 
 			_chat_msg_Admins(color(12).'[Chat] To interact with Discord server install the DiscordBot script!')
 			return(false)

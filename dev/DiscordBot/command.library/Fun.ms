@@ -28,7 +28,7 @@ proc _discordBot_cmd_say(@discord, @cmdargs) {
 
 
 proc _discordBot_cmd_fakeban(@discord, @cmdargs, @type) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@word = 'ban'
 	@fromuser = @discord['userid']

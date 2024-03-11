@@ -30,7 +30,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	@isCmd = _discordBot_iscommand(@discord)
 	if(@isCmd == true || is_consumed() == true) { die() }
 #Else, not a command.
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@guildcfgNotify = array()
 	@guildcfgCmd = array()
 	@guildcfgChannel = array()

@@ -3,7 +3,7 @@ proc _discordBot_cmd_ping(@discord, @args) {
 }
 
 proc _discordBot_cmd_help(@discord) {
-	@config = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.Bot')
 	@userTypeDisplay = ''
 	@cmdList = import('DiscordBot.Command.List')
 	if(!is_array(@cmdList)) { _db_msg_Console('Command list not initialized', 'debug') return(false) }

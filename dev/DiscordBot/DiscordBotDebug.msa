@@ -4,7 +4,7 @@ admin:/dbdbg [$action] [$] = >>>
 @prefix = '['.@name.'] '
 @args = parse_args($)
 @action = to_lower(string($action))
-@botconfig = import('DiscordBot.config.Discord')
+@botconfig = import('DiscordBot.config.Bot')
 @guilds = import('DiscordBot.Guilds')
 @guild = @botconfig['Primary_Guild']
 foreach(@arg in @args) {

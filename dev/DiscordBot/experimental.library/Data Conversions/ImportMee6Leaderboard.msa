@@ -4,7 +4,7 @@ admin:/importmee6lb [$guild] [$] = >>>
 @guild = 0
 @args = parse_args($)
 @prefix = 'DiscordBot'
-@botconfig = import('DiscordBot.config.Discord')
+@botconfig = import('DiscordBot.config.Bot')
 
 if(array_contains(@args, 'help')) {
 	msg('This imports the Mee6 Leaderboard data to CH storage, for use with a CH based leaderboard ranking system.')
@@ -14,7 +14,7 @@ if(array_contains(@args, 'help')) {
 
 proc _convert_json_data(@raw, @guild) {
 	@json = json_decode(@raw)
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@guild)
 	@newLeaderboard = array('Guild_Name': @config['LB_Options']['Guild_Name'], 'lastedit': time(), 'members': array(), 'options': '', 'guild': @json['guild'])
 	foreach(@i: @user in @json['players']) {

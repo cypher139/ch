@@ -4,8 +4,8 @@ include_dir('../command.library')
 _discordBot_init_cmd_list()
 # Servers commands
 bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority': 'HIGH'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
-	@botconfig = import('DiscordBot.config.Discord')
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@botinfo = import('DiscordBot.Bot.Info')
 	@isCmd = false
@@ -85,7 +85,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'priority': 'HIGH'), null, @discord) {
 	array_set(@discord, 'time', time())
 	array_set(@discord, 'UseDM', 'dm')
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@guilds = import('DiscordBot.Guilds')
 	@userserver = 0
 	@userServers = array()

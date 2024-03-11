@@ -19,8 +19,8 @@ proc _vc_display_duration(@time) {
 }
 
 bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
-	@botconfig = import('DiscordBot.config.Discord')
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@vc = ''
 	@isAdmin = false
@@ -137,8 +137,8 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 }
 #--------------------------------------------
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
-	@botconfig = import('DiscordBot.config.Discord');
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
 	# Setup config
 	@vc = ''

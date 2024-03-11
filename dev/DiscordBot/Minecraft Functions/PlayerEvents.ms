@@ -1,7 +1,7 @@
 #Send messages about server events to the Discords
 
 bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), null, @death) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@counter = 0
 	@dc = get_value('DeathCount.players.death.counter')

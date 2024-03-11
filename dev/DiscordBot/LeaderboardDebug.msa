@@ -1,5 +1,5 @@
 admin:/lbdbg [$action] [$] = >>>
-@botconfig = import('DiscordBot.config.Discord')
+@botconfig = import('DiscordBot.config.Bot')
 @id = ''
 @guild = @botconfig['Primary_Guild']
 @guilds = import('DiscordBot.Guilds')

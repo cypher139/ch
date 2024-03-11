@@ -1,5 +1,5 @@
 proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	if(@config['LB_Enable'] != true) { return('NotEnabled') }
 	@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard');

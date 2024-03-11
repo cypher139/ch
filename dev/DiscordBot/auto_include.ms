@@ -30,7 +30,7 @@ proc _db_msg_Admins(@msg, @consolemsg, @cmconcat, @hideplayer) {
 
 proc _db_msg_Console(@message, @guild, string @type = 'prefix') {
 	if(@guild == '' || @guild == null || @guild == false) {
-		@guild = import('DiscordBot.config.Discord')['Primary_Guild']
+		@guild = import('DiscordBot.config.Bot')['Primary_Guild']
 		console(color(14).'Nag: No guild given at: '.get_stack_trace());
 	}
 	@config = array()
@@ -81,7 +81,7 @@ proc _db_msg_Console(@message, @guild, string @type = 'prefix') {
 }
 
 proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
-	@config = import('DiscordBot.config.Discord')
+	@config = import('DiscordBot.config.Bot')
 	if(@config['Set_Activity'] == false) { return(false) }
 	if(@type == '' || @type == null) { @type = @config['Activity_Type'] }
 	if(@message == '' || @message == null) { @message = @config['Activity_Message'] }
@@ -100,7 +100,7 @@ proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
 	}
 }
 
-proc _db_load_guilds(array @guilds = array()) {
+proc _db_load_guilds(array @guilds = array(), @prefix = 'DiscordBot') {
 	if(array_size(@guilds) == 0) { @guilds = discord_get_servers() }
 	if(array_size(@guilds) == 0) { return(false) }
 	@guildList = array()
@@ -108,7 +108,24 @@ proc _db_load_guilds(array @guilds = array()) {
 	export('DiscordBot.Guilds.Nicknames', array())
 	foreach(@guild in @guilds) {
 		if(!is_numeric(@guild)) { continue() } 
-		@return = _db_load_config(@guild)
+		if(function_exists('is_dir')) {
+			if(!is_dir(import(@prefix.'.config.dir').'/'.@guild)) {
+				create_dir(import(@prefix.'.config.dir').'/'.@guild)
+			}
+			if(!file_exists(import(@prefix.'.config.dir').'/'.@guild.'/config-'.@guild.'.yml')) {
+				http_request('https://raw.githubusercontent.com/cypher139/ch/release/dev/DiscordBot/Configs/123/config-123.yml', array('blocking': true, 'success': closure(@data) {
+					if(@data['error'] == true) {
+						if(@data['responseCode'] == 404) { console('Default config was not found.')	}
+						export('DiscordBot.debug.http.error', @data)
+						return(false)
+					} else {
+						_write_file(import('DiscordBot.config.dir').'/'.@guild.'/config-'.@guild.'.yml', @data['body'], 'CREATE')
+						return(true)
+					}
+				}));
+			}
+		}
+		@return = _db_load_config(@guild, @prefix)
 		if(!is_array(@return)) {
 			continue()
 		}
@@ -134,9 +151,9 @@ proc _db_load_guilds(array @guilds = array()) {
 }
 
 proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') { 
-	if(@cfgtype == '' || @cfgtype == null) { @cfgtype = 'Discord' }
+	if(@cfgtype == '' || @cfgtype == null) { @cfgtype = 'Bot' }
 	@numtype = ''
-	if(is_numeric(@cfgtype)) { @numtype = 'Guilds/' }
+	if(is_numeric(@cfgtype)) { @numtype = @cfgtype.'/config-' }
 	@loadcfg = ''
 	@prevcfg = import(@prefix.'.config.'.@cfgtype, array())
 # Read config
@@ -146,7 +163,7 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 		@msg1 = color(12).@cfgtype.' Config file could not be read. '
 		@msg2 = @ex['message']
 		@color = 12
-		if(@numtype == 'Guilds/') {
+		if(@numtype == @cfgtype.'/config-') {
 			@msg1 = color(9).'No config found for Guild '.@cfgtype
 			@msg2 = ' ...'
 			@color = 9
@@ -162,19 +179,13 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 	}
 # Checks and Startup Init
 	if(is_numeric(@cfgtype)) {
-		@botconfig = import('DiscordBot.config.Discord')
+		@botconfig = import('DiscordBot.config.Bot')
 		@botInfo = discord_member_info(@cfgtype, @botconfig['Bot_ID'])
 		if(@botInfo['nickname'] != '') { array_set(@loadcfg, 'Bot_Name', @botInfo['nickname']) } else { array_set(@loadcfg, 'Bot_Name', @botInfo['displayname']) }
 		array_set(@loadcfg, 'Bot_ID', @botconfig['Bot_ID'])
-		if(array_contains(@loadcfg['Channels_Receive'], 'default')) {
-			_db_msg_Admins(color(12).'['.@prefix.'] Config file is still using default values. Please configure it in order to use various Discord features.') 
-			return(false)
-		}
-		if(array_index_exists(@loadcfg, 'VC_Options', '987654321')) {
-			_db_msg_Admins(color(14).'['.@prefix.'] Voice Chat Config is still using defaults. Please configure it in order to use the VC Role Ping feature.') 
-		}
-		if(@loadcfg['Welcome_Text_Channel_Name'] == 'default') {
-			_db_msg_Admins(color(14).'['.@prefix.'] Member Config is still using defaults. Please configure it in order to use the Welcome Message feature.') 
+		if(array_contains(@loadcfg['Channels_Receive'], 'default') || array_index_exists(@loadcfg, 'VC_Options', '987654321') || @loadcfg['Welcome_Text_Channel_Name'] == 'default') {
+			_db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is still using default values. Configuration is required to use many of the bot\'s features for this Guild.') 
+			return('Defaults')
 		}
 		if(@loadcfg['LB_Options']['Use_Active_User_Role'] == true) {
 			try {
@@ -214,6 +225,7 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 				return(false)
 			}
 		case 'Discord':
+		case 'Bot':
 			if(!function_exists('discord_connect')) { 
 				_db_msg_Console('CHDiscord extension not installed!', 'none')
 				return(false)
@@ -223,11 +235,8 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 			}
 		case 'Experimental':
 		case 'ex':
-			@dcfg = import('DiscordBot.config.Discord')
+			@dcfg = import('DiscordBot.config.Bot')
 			@loadcfg = array_merge(@loadcfg, @dcfg)
-			if(array_contains(@loadcfg['CS_Server_1_Channels'], 'default')) {
-				_db_msg_Admins(color(14).'['.@prefix.'] Cross server Config is still using default values. Please configure it in order to use Cross-Server chat features.') 
-			}
 		default:
 			_db_msg_Admins(color(12).'[DiscordBot] Config type given not supported.')
 			return(false)
@@ -262,7 +271,7 @@ proc _db_get_snowflake_time(@snowflake, @epoch = 1420070400000) {
 }
 
 proc _db_get_user_nick(@userID, @serverID, @username) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	if(@userID == null || @userID == '') { throw('ms.lang.CastException', 'User ID not given to nick display') }
 	if(@username == null || @username == '') { throw('ms.lang.CastException', 'User name not given to nick display') }
 	if(@serverID == null || @serverID == '') { @serverID = @botconfig['Primary_Guild'] }
@@ -285,7 +294,7 @@ proc _db_get_user_nick(@userID, @serverID, @username) {
 
 proc _discordBot_db_autosave(string @usekey = '', @option) {
 	# _db_msg_Console('Autosaving', 'debug')
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@prefix = 'DiscordBot.'
 # Get list of keys to check for
 	@allKeys = import(@prefix.'db.save.keys', array())
@@ -334,7 +343,7 @@ proc _db_sanitize_message(@message, @caller, @guild, @from, @dm) {
 	if(@message == null || @message == '') { return(null); }
 	if(@caller == null) { @caller = 'Discord' }
 	@caller = to_lower(@caller)
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	if(@guild == '' || @guild == null || @guild == 'bot') { @guild = @botconfig['Primary_Guild'] }
 	@config = import('DiscordBot.config.'.@guild)
 	@sanitize = array('Markdown': false, 'User': false, 'Role': false, 'Everyone': false)
@@ -448,7 +457,7 @@ proc _db_sanitize_message(@message, @caller, @guild, @from, @dm) {
 }
 
 proc _discordBot_find_emoji(string @findEmoji, @originationGuild, @skipGuild) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@checkGuilds = array()
 	@findEmoji = replace(@findEmoji, ':', '')
 	@r2 = false
@@ -493,7 +502,7 @@ proc _discordBot_find_emoji(string @findEmoji, @originationGuild, @skipGuild) {
 proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
 	@prefixErrorMsg = color(6).'['.color(9).'DiscordBot'.color(6).'] '.color(7).'A message queued to send had a problem: '
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	if(@guild == '' || @guild == null || @guild == 'bot') {
 		#primary guild
 		@guild = @botconfig['Primary_Guild']
@@ -802,7 +811,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 }
 
 proc _discordBot_edit_message(@raw, @from, @guild, @channel, @msgID, @type, @option) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	if(!is_numeric(@channel)) { _db_msg_Console('Edit: Channel ID is not numeric!', @guild, 'error') return(false) }
 	if(!is_numeric(@msgID)) { _db_msg_Console('Edit: Message ID is not numeric!', @guild, 'error') return(false) }
 	@config = import('DiscordBot.config.'.@guild)
@@ -952,7 +961,7 @@ proc _discordBot_send_mc_chat(@message, @player, @overrideChannel = null, @type 
 			return(false)
 		}
 	}
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@guilds = import('DiscordBot.Guilds', array());
 	if(array_size(@guilds) == 0) { return(false) }
 	foreach(@guild in @guilds) {
@@ -977,7 +986,7 @@ proc _discordBot_send_mc_chat(@message, @player, @overrideChannel = null, @type 
 
 proc _discordBot_send_cs_chat(@discord, @option) {
 	if(!is_array(@discord)) { return(false) }
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@guilds = import('DiscordBot.Guilds', array());
 	if(array_size(@guilds) == 0) { return(false) }
 	#Message Formatting & File links
@@ -1098,7 +1107,7 @@ proc _discordBot_dc_add_member(@discord) {
 }
 
 proc _discordBot_backup_guild_data(@args) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@guilds = import('DiscordBot.Guilds', array())
 	if(array_size(@guilds) == 0) { return(false) }
 	@writes = 0
@@ -2000,7 +2009,7 @@ proc _db_is_newmember(@guild, @userid) {
 }
 
 proc _discordBot_ismention(@discord, @regexPrefix = '^') {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@botinfo = import('DiscordBot.Bot.Info')
 	@isMention = false
 	if(is_array(@discord)) {
@@ -2024,7 +2033,7 @@ proc _discordBot_ismention(@discord, @regexPrefix = '^') {
 
 #Handle commands from Discord Users
 proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
-	@config = import('DiscordBot.config.Discord')	
+	@config = import('DiscordBot.config.Bot')	
 	@options = parse_args(@lines[0])
 	if(array_index_exists(@options, 0)) {
 		foreach(@opt in @options) {
@@ -2107,7 +2116,7 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 }		
 
 proc _discordBot_iscommand(@discord, @returnType = 'a', @regexPrefix = '^') {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@botinfo = import('DiscordBot.Bot.Info')
 	@isCmd = false
 	@userserver = 0
@@ -2158,7 +2167,7 @@ proc _discordBot_iscommand(@discord, @returnType = 'a', @regexPrefix = '^') {
 proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@StartTime = time()
 	@sendLogMsg = true
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@botinfo = import('DiscordBot.Bot.Info')
 	@cmdfromdis = ''
 	@editMsg = 0
@@ -2507,7 +2516,7 @@ proc _discordBot_init_cmd_list(@test) {
 
 
 proc _discordBot_cmd_proc_finduserID(@target, @discord) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	if(!array_index_exists(@discord, 'serverid')) { array_set(@discord, 'serverid', @botconfig['Primary_Guild']) }
 	if(!array_index_exists(@discord, 'userid')) { array_set(@discord, 'userid', null) }
 	@config = import('DiscordBot.config.'.@discord['serverid'])

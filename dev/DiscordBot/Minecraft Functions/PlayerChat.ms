@@ -16,7 +16,7 @@ proc _db_get_last_channel(@guild, @channel) {
 
 #Send Minecraft Player message to Discord
 bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@channel = null
 	@sendmsg = @chat['message']
@@ -43,7 +43,7 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 #Send Console chat to Discord
 bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MONITOR'), array('prefix': 'say', 'type': 'console'), @event) {
 	if(@event['prefix'] == @event['command']) { console(color(4).'You need to actually say something with say!', false) die() }
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
 	@channel = @config['Minecraft_Channel']

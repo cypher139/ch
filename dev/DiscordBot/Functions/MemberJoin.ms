@@ -1,7 +1,7 @@
 # Welcome DM and Message for new Discord Server Members, and record invite used.
 bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
-	@botconfig = import('DiscordBot.config.Discord')
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@time = time();
 	#This event gives display names under "nickname" index
@@ -249,8 +249,8 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 }
 
 bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
-	@botconfig = import('DiscordBot.config.Discord')
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@lbremove = 0
 	@invmsgSuffix = ''

@@ -4,7 +4,7 @@ admin:/discordbotdbconvmg [$clear='false'] [$type=0] [$] = >>>
 	@dbcount = 0
 	@dmcount = 0
 	@orcount = 0	
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@guild = @botconfig['Primary_Guild']
 	foreach(@key: @data in get_values('DiscordBot.')) {
 		if(reg_count('DMs', @key) > 0) { continue() }

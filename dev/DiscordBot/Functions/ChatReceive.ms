@@ -6,10 +6,10 @@ export('DiscordBot.db.save.keys', array_unique(@x8db))
 
 # Receive messages from Discord users, pass data to Leaderboard and Minecraft server, save message for future reference.
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
 	@time = time()
 	array_set(@discord, 'time', @time);
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@noXP = false
 	if(@discord['bot'] == true || is_consumed() == true) { @noXP = true }

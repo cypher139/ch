@@ -5,7 +5,7 @@ admin:/importmi [$guild] [$] = >>>
 @guild = 0
 @prefix = 'DB Import Invites'
 @args = parse_args($)
-@config = import('DiscordBot.config.Discord')
+@config = import('DiscordBot.config.Bot')
 if(array_contains(@args, 'help')) {
 	msg('This imports the MangaeInvite bot server invite data, for use with a CH based invite log system. Requires manual additions of codes.')
 	die()

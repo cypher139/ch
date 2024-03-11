@@ -9,7 +9,7 @@ proc _db_update_message_cache(@discord, @updateType) {
 	} else { 
 		return(false)
 	}
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@userType = 'user'
 	if(array_index_exists(@discord, 'channeltype')) {
@@ -97,10 +97,10 @@ proc _db_update_message_cache(@discord, @updateType) {
 }
 
 bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priority': 'MONITOR'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
 	@time = time()
 	array_set(@discord, 'time', @time);
-	@botconfig = import('DiscordBot.config.Discord')
+	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username'])
 	@memberInfo = discord_member_info(@discord['serverid'], @discord['userid'])
@@ -198,7 +198,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 
 
 bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'priority': 'MONITOR'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
 	array_set(@discord, 'time', time());
 	# Update Recent Messages with current data
 	@saveMsg = _db_update_message_cache(@discord, 'addreaction')
@@ -210,7 +210,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 }
 
 bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 'priority': 'MONITOR'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die('noGuild') }
+	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
 	array_set(@discord, 'time', time());
 	
 	# Update Recent Messages with current data

@@ -47,7 +47,7 @@ if(extension_exists('CHDiscord')) {
 # Startup Discord Functions
 if(function_exists('discord_connect') && function_exists('discord_member_info') && function_exists('discord_get_servers') && function_exists('discord_set_allowed_mentions')) {
 # Load DiscordBot Configs
-	@return8762 = _db_load_config('Discord');
+	@return8762 = _db_load_config('Bot');
 	if(!is_array(@return8762)) { die() }
 	@connectmsg = color(6).'['.color(9).'Server'.color(6).'] '.color(10).'Connected'.color(8).' to Discord'
 # Connect
