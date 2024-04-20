@@ -66,11 +66,4 @@ transferroles
 asremove  
 whois 
 mc-whitelist
-``` 
-
-
-- Required extensions & libraries:  
-[ScriptLibraries folder](https://github.com/cypher139/ch/tree/release/dev/ScriptLibraries)  
-[Codegen folder](https://github.com/cypher139/ch/tree/release/dev/codegen)  
-[CHDiscord](https://letsbuild.net/jenkins/job/CHDiscord/)  
-[CHFiles](https://letsbuild.net/jenkins/job/CHFiles/)  
+```

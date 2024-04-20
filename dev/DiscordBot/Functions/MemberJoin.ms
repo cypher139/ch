@@ -376,7 +376,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		if(@invmsgSuffix != '') {
 			@invmsgSuffix = '`'.@invmsgSuffix.'`'
 		}
-		_discordBot_send_message('**'.@userDisplaydc.'** left the server. '.@invmsgSuffix, @discord['serverid'], 'log')
+		_discordBot_send_message('<:leave:1066426677481197618> **'.@userDisplaydc.'** left the server. '.@invmsgSuffix, @discord['serverid'], 'log')
 	}
 	_db_msg_Console('Member '.color(12).'left: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'>'.@consoleMsgSuffix.color('r').@wmres, @discord['serverid'])
 #Remove Leaderboard entry, save entry if not a new member

@@ -128,7 +128,8 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 			'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username']),
 			'color': array('r': 66, 'g': 180, 'b': 129),
 			'description': '<@'.@discord['userid'].'> joined voice channel: <#'.@discord['channelid'].'>',
-			'footer': array('text': 'ID '.@discord['userid']),
+			'thumbnail': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/1f4de.png',
+			'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32', 'text': 'ID '.@discord['userid']),
 			'timestamp': time()
 		)
 		@logMsg['embeds'][] = @embed;
@@ -146,7 +147,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		@vc = @config['VC_Options'][@discord['channelid']]
 	} else if(array_index_exists(@config, 'VC_Options', @discord['channel'])) {
 		@vc = @config['VC_Options'][@discord['channel']]
-	} else {	
+	} else {
 		@vc = array('VC_DM_Thanks': false)
 	}	
 	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
@@ -155,7 +156,13 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	if(array_contains(@stats['active'], @discord['userid'])) { array_remove_values(@stats['active'], @discord['userid']) }
 	if(!array_index_exists(@stats, 'time')) { array_set(@stats, 'time', array()) }
 	if(!array_index_exists(@stats, 'time', @discord['userid'])) { array_set(@stats['time'], @discord['userid'], 0) }
-	@userTime = time() - @stats['activetime'][@discord['userid']]
+	@userTime = 0
+	if(array_index_exists(@stats, 'activetime', @discord['userid'])) { 
+		@userTime = time() - @stats['activetime'][@discord['userid']]
+	} else {
+		_db_msg_Console('Cannot compute VC join time for '@discord['username'].': Join event not recorded - Possibly Discord did not provide a join event to the bot.', @discord['serverid'], 'error')
+		@userTime = 30000
+	}
 	@stats['time'][@discord['userid']] = @stats['time'][@discord['userid']] + @userTime
 	@userinfo = array('bot': false)
 	try {
@@ -172,7 +179,8 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 			'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username']),
 			'color': array('r': 253, 'g': 70, 'b': 15),
 			'description': '<@'.@discord['userid'].'> left voice channel: <#'.@discord['channelid'].'>',
-			'footer': array('text': 'ID '.@discord['userid']),
+			'thumbnail': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/1f4de.png',
+			'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32', 'text': 'ID '.@discord['userid']),
 			'timestamp': time()
 		)
 		@logMsg['embeds'][] = @embed;
@@ -237,21 +245,20 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 			@embed = array(
 			'color': array('r': 39, 'g': 175, 'b': 211),
 			'title': 'Voice Call Completed',
-			'description': '<#'.@discord['channelid'].'> | Users: '.array_implode(@stats['users']).' | Total Time: '._vc_display_duration(@callLength),
+			'description': '<#'.@discord['channelid'].'> | '.array_size(@stats['users']).' Users | Total Time: '._vc_display_duration(@callLength),
+			'thumbnail': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/1f4f2.png',
 			'fields': array(),
-			'footer': array('text': 'Completed at'),
+			'footer': array('icon_url': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/2705.png', 'text': 'Completed at'),
 			'timestamp': time()
 			)
 			if(array_index_exists(@stats, 'pinguser')) {
 				@embed['fields'][] = array('name': 'VC Ping', 'value': @stats['pinguser'], 'inline': true)
 			}
-			@usercount = 0
+			@usersMsg = ''
 			foreach(@userID: @userName in @stats['users']) {
-				@fieldname = '\u200b'
-				if(@usercount == 0) { @fieldname = 'All Users:' }
-				@embed['fields'][] = array('name': @fieldname, 'value': '<@'.@userID.'>: '._vc_display_duration(@stats['time'][@userID]), 'inline': true)
-				@usercount++
+				@usersMsg = @usersMsg.'\n<@'.@userID.'>: '._vc_display_duration(@stats['time'][@userID])
 			}
+			@embed['fields'][] = array('name': 'All Users:' , 'value': @usersMsg, 'inline': true)
 			@logMsg['embeds'][] = @embed;
 		}
 	} else {
