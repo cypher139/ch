@@ -7,7 +7,7 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 	if(!is_array(@wllog)) { @wllog = array('Whitelisted': array(), 'log': array(), 'uses': array()) }
 	if(!array_index_exists(@wllog, 'uses', @discord['userid'])) { array_set(@wllog['uses'], @discord['userid'], 0) }
 	@useList = false
-
+	@return = ''
 	# User Must be an admin or have the required role to proceed.
 	if(@discord['admin'] == true) { 
 		@useList = true	

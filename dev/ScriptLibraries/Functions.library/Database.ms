@@ -51,7 +51,7 @@ switch(@action){
 			if(array_size(@undo) == 0) {
 				msg(@prefix.color(6).'There is no data to restore.')
 			} else {
-				export(@key, @data)
+				export(@undo[0], @undo[1])
 				@returnmsg = @prefix.color(6).'Restored '.color(13).@undo[0].color(6).' to: '.color(7).@undo[1]
 				return(@returnmsg)
 			}
@@ -67,6 +67,7 @@ switch(@action){
 		@v = import(@args[0])
 		@arraymsg = ''
 		@as = 0
+		@as2 = 0
 		@color = 7
 		if(is_array(@v)) {
 			@as = array_size(@v)
@@ -75,6 +76,10 @@ switch(@action){
 				if(@args[1] == '-keys') {
 					@v = color(3).'Keys Only: \n'.color(@color).array_keys(@v)
 				} else if(array_index_exists(@v, @args[1])) {
+					if(is_array(@v[@args[1]])) {
+						@as2 = array_size(@v[@args[1]]);
+						@arraymsg = @arraymsg.color(3).' index size: '.@as2
+					}
 					@v = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
 				} else {
 					@v = color(12).'Index '.@args[1].' was not found!'
@@ -94,7 +99,7 @@ switch(@action){
 		}
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
 		@return = @prefix.color(6).'Import: '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
-		if(@as > 9) { @return = @return.'\n'.@arraymsg }
+		if(@as > 9 || @as2 > 9) { @return = @return.'\n'.@arraymsg }
 		return(@return)
 
 	case 'clearvalue':

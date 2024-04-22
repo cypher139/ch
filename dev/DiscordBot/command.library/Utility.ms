@@ -5,7 +5,8 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 		@membernames = array()
 		array_set(@membernames, @discord['username'], @discord['userid']) 
 	}
-	@userConfig = import('DiscordBot.DMs.user.settings', get_value('DiscordBot.DMs.user.settings'));
+	@userConfig = import('DiscordBot.DMs.user.settings');
+	if(!is_array(@userConfig)) { @userConfig = get_value('DiscordBot.DMs.user.settings') }
 	if(is_array(@userConfig)) {
 		if(!array_index_exists(@userConfig, @discord['userid'])) {
 			array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))

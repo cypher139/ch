@@ -12,6 +12,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 		@players = array_implode(@ipdata[@ipnumbers], ', ')
 		@playersMsg = '(Account names: %f'.color(3).@players.'%f)'
 	}
+	@kickMsg = ''
 	@kickPlayer = false
 	@adminMsg = @msgPrefix.'Message Not Given'
 	@kickType = '0'

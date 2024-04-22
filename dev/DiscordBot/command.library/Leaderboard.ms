@@ -151,7 +151,8 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 		)
 		if(@userInfo['color'] == null) { array_remove(@embed, 'color') }
 		if(@showExtraInfo == true) {
-			if(@leaderboard['members'][@userID]['last_msg'] == 0) {	@lbLM = '`-`' } else { @lbLM = '<t:'.substr(@leaderboard['members'][@userID]['last_msg'], 0, 10).':f>' }
+			@lbLM = '`-`'
+			if(@leaderboard['members'][@userID]['last_msg'] != 0) { @lbLM = '<t:'.substr(@leaderboard['members'][@userID]['last_msg'], 0, 10).':f>' }
 			@embed['fields'][] = array('name': 'Last Message', 'value': @lbLM, 'inline': true)
 			if(array_index_exists(@leaderboard, 'members', @userID, 'words')) {
 				@embed['fields'][] = array('name': 'Number of Words', 'value': @leaderboard['members'][@userID]['words'], 'inline': true)

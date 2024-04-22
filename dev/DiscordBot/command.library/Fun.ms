@@ -231,8 +231,7 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 
 #Add Commands to List
 @c3lx = import('DiscordBot.Command.List', array())
-@mIu7 = array(	
-	'ping': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_ping(@discord, @args)); }),
+@mIu7 = array(
 	'cypher': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_cypher(@discord)); }),
 	'say': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_say(@discord, @args)); }),
 	'poo': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_quote(@discord, array('poo'))); }),
