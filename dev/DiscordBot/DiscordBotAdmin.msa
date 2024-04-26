@@ -217,6 +217,54 @@ case 'welcomerolesfinder':
 		}
 	}
 	msg('['.@name.'] '.color(7).@return['MCCmd']['msg'])
+case 'checkforbots':
+	@checklist = json_decode(read(import('DiscordBot.config.dir').'/'.'botlist.json'))
+	@clsize = array_size(@checklist)
+	@guildMembers = discord_get_members(@guild)
+	@results = array()
+	@logjointimes = get_value('DiscordBot.'.@guild.'.log.users.Join.Times')
+	@membersformer = get_value('DiscordBot.'.@guild.'.members.former')
+	if(!is_array(@logjointimes)) { @logjointimes = array() }
+	if(!is_array(@membersformer)) { @membersformer = array() }
+	#check #1: Active
+	foreach(@i: @id in @checklist) {
+		if(array_contains(@guildMembers, @id)) {
+			array_set(@results, @id, array('type': 'active', 'join': discord_member_info(@guild, @id)['joined_at']))
+			continue()
+		}
+	#check #2: join logs
+		if(array_index_exists(@logjointimes, @id)) {
+			array_set(@results, @id, array('type': 'log', 'join': @logjointimes[@id]))
+			continue()
+		}
+	}
+	#check #3: channel join-log?
+	#Message Results
+	@color = 10
+	if(array_size(@results) > 0) { @color = 12 }
+	msg(color(7).'Found '.color(@color).array_size(@results).color(7).' matches out of '.color(14).@clsize.color(7).' Bot IDs checked.')
+	if(array_index_exists(@results, 0)) {
+		@sendMsg = ''
+		foreach(@id: @r in @results) {
+			@msg = 'ID: '.@id.' '
+			if(@r['type'] == 'active') {
+				@info = discord_member_info(@guild, @id)
+				@msg = @msg.color(9).'Username: '.@info['username'].color(14).' (Current '.color(7).'Guild Member)'.color(11).' Joined server: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @r['join'], 'UTC')
+			}			
+			if(@r['type'] == 'log') {
+				@info = array('user': '', 'code': '')
+				if(array_index_exists(@membersformer, @id)) {
+					@info = @membersformer[@id]
+				}
+				foreach(@k: @date in @r['join']) {
+					@r['join'][@k] = simple_date('MM/dd/yyyy HH:mm:ss.SSS', @date, 'UTC')
+				}
+				@msg = @msg.color(9).'Username: '.@info['user'].color(8).'Last invite code: '.@info['code'].color(11).'(Former '.color(7).'Guild Member)'.color(11).' Joined server: '.array_implode(@r['join'], ', ')
+			}
+			@sendMsg = @sendMsg.'\n'.@msg
+		}
+		msg(@sendMsg)
+	}
 default:
 msg('Action Not Recognized!')	
 }

@@ -110,10 +110,26 @@ case 'findmultiplejoins':
 			array_set(@results, @userid, @usertimes)
 		}
 	}
-	msg('Found '.array_size(@results).' out of '.array_size(@LogJoinTimes).' known joins:')
+	@color = 10
+	if(array_size(@results) > 0) { @color = 12 }
+	@sendMsg = color(7).'Found '.color(@color).array_size(@results).color(7).' out of '.color(14).array_size(@LogJoinTimes).color(7).' known joins:'
 	if(array_size(@results) > 0) {
-		msg(@results)
+		@membersformer = get_value('DiscordBot.'.@guild.'.members.former')
+		foreach(@id: @dates in @results) {
+			@msg = 'ID: '.@id.' '
+			@info = array('username': '', 'code': '')
+			if(array_index_exists(@membersformer, @id)) {
+				@info = @membersformer[@id]
+			}
+			@displayDates = array()
+			foreach(@k: @date in @dates) {
+				@displayDates[] = simple_date('MM/dd/yyyy HH:mm:ss.SSS', @date, 'UTC')
+			}
+			@msg = @msg.color(9).'| Username: '.@info['user'].color(8).' | Last invite code: '.@info['code'].color(11).' | Server joins: '.color(11).array_implode(@displayDates, ', ')
+			@sendMsg = @sendMsg.'\n'.@msg
+		}	
 	}
+	msg(@sendMsg)
 case 'snowflaketime':
 	if(!array_index_exists(@args, 0)) { @args[] = @botconfig['Bot_ID'] }
 	msg('Snowflake: '.@args[0])
@@ -121,6 +137,21 @@ case 'snowflaketime':
 	msg('Timestamp: '.@snowtime)
 	msg(color(10).'Date: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @snowtime, 'UTC'))
 	msg(color(11).'ISO8601: '.simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', @snowtime, 'UTC'))
+case 'findoldestdiscord':
+	@serverMembers = discord_get_members(@guild)
+	array_sort(@serverMembers, 'NUMERIC')
+	msg(color(14).'Top 5 oldest Discord Accounts on this server:')
+	foreach(@i: @userID in @serverMembers) {
+		@joined = ''
+		if(@i > 4) { break() }
+		@colors = array(11,10,6,3,9)
+		@userInfo = discord_member_info(@guild, @userID)
+		if(array_contains(@args, 'join')) { @joined = '\n Joined server: '.simple_date('MM/dd/yyyy HH:mm:ss', @userInfo['joined_at'], 'UTC') }
+		@lc = 7
+		if(length(@userID) < 18) { @lc = 11 }
+		msg(color(@colors[@i]).'#'.(@i + 1).': '.@userInfo['username'].color(7).' <'.@userID.'> ('.color(@lc).length(@userID).color(7).') Joined: '.simple_date('MM/dd/yyyy HH:mm:ss', rshift(@userID, 22) + 1420070400000, 'UTC').@joined)
+	}
+	
 default:
 msg('Action Not Recognized!')	
 }
