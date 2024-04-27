@@ -363,24 +363,49 @@ switch(@action){
 	case 'copy':
 	case 'cp':
 		if(!array_index_exists(@args, 1)) { return(@prefix.color(12).'Not enough arguments provided.') }
-		@v = get_value(@args[0])
+		if(!array_index_exists(@args, 2)) { @args[] = 'default' }
+		@v = null
+		switch(string(@args[1])) {
+			case '-p':
+			@v = import(@args[0])
+			case '-e':
+			default:
+			@v = get_value(@args[0])
+		}
 		if(@v == '' || @v == null) {
 			return(@prefix.color(14).'Source value is blank.')
 		}
 		@w = get_value(@args[1])
 		if(@w != null) {
-			if(!array_index_exists(@args, 2)) {
-				@check = import('ch.copy.confirm.'.@args[1])
-				if(@check == 'await') {
-					export('ch.copy.confirm.'.@args[1], null)
-				} else {
-					export('ch.copy.confirm.'.@args[1], 'await')
-					return(@prefix.color(14).'There is existing data in the destination! Run this command again to confirm the copy operation.')
-				}
+			@check = import('ch.copy.confirm.'.@args[1])
+			if(@check == 'await') {
+				export('ch.copy.confirm.'.@args[1], null)
+			} else {
+				export('ch.copy.confirm.'.@args[1], 'await')
+				return(@prefix.color(14).'There is existing data in the destination! Run this command again to confirm the copy operation.')
 			}
-		}	
-		store_value(@args[1], @v)
-		return(@prefix.color(7).'Copied '.@args[0].' to '.@args[1])
+		}
+		@dest = ''
+		@word = ''
+		switch(string(@args[1])) {
+		case '-p':
+			@dest = 'Persistance'
+			@word = 'Saved'
+			store_value(@args[0], @v)
+		case '-e':
+			@dest = 'RAM'
+			@word = 'Exported'
+			export(@args[0], @v)
+		case 'file':
+			@dest = 'chdb_export_'.@v.'_'.simple_date('MMddyy', time()).'.txt'
+			@word = 'Wrote'
+			_write_file(@dest, @v, 'Overwrite')
+		default:
+			@dest = @args[1]
+			@word = 'Copied'
+			store_value(@dest, @v)
+		}
+		return(@prefix.color(7).@word' '.@args[0].' to '.@dest)
 
 	default:
 		return(color(12).'['.color(6).@name.color(12).'] '.color(12).'Action not recognized.')

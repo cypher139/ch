@@ -22,7 +22,7 @@ case 'd':
 case 'db':
 case 'DiscordBot':
 	@prefix = 'DiscordBot'
-	@ret = _db_load_config($config, @prefix)
+	@ret = _db_load_config($config, false, @prefix)
 default:
 	die(color(12).'Type not recognized.')
 }

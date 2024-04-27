@@ -92,6 +92,8 @@ proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
 	if(array_contains(@acttypes8901, to_upper(@type))) {
 		try {
 			discord_set_activity(to_upper(@type), string(@message), @url);
+		} catch(NotFoundException @ex) {
+			_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] '.color(7).'Activity Message not set, connection to Discord server lost.', true)
 		} catch(Exception @ex) {
 			_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color('r').@ex['message'], color(12).' ('.@ex['classType'].')', true)
 		}
@@ -125,7 +127,7 @@ proc _db_load_guilds(array @guilds = array(), @prefix = 'DiscordBot') {
 				}));
 			}
 		}
-		@return = _db_load_config(@guild, @prefix)
+		@return = _db_load_config(@guild, false, @prefix)
 		if(!is_array(@return)) {
 			continue()
 		}
@@ -150,7 +152,7 @@ proc _db_load_guilds(array @guilds = array(), @prefix = 'DiscordBot') {
 	return(true)
 }
 
-proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') { 
+proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') { 
 	if(@cfgtype == '' || @cfgtype == null) { @cfgtype = 'Bot' }
 	@numtype = ''
 	if(is_numeric(@cfgtype)) { @numtype = @cfgtype.'/config-' }
@@ -230,7 +232,7 @@ proc _db_load_config(@cfgtype, @prefix = 'DiscordBot') {
 				_db_msg_Console('CHDiscord extension not installed!', 'none')
 				return(false)
 			}
-			if(array_size(@prevcfg) > 0) {
+			if(array_size(@prevcfg) > 0 && @init == false) {
 				_discordBot_set_activity();
 			}
 		case 'Experimental':

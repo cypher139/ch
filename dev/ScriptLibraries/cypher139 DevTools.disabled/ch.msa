@@ -103,12 +103,12 @@ case 'hasexport':
 case 'he':
 case 'copy':
 case 'cp':
+case 'ex':
 	# call_alias('/chdb '.@action.' '.$)	
 	include_dir('../Functions.library')
 	@return = _chdb($action, $)
 	msg(@return)
 
-	
 case 'events':
 case 'dumpevents':
 case 'ev':
@@ -281,7 +281,12 @@ case null:
 	@dsall = null
 	if(!is_array(@ds)) { @ds = array() }
 	if(array_contains(@ds, 'all') || @player == '~console') {
-		run(/reloadaliases)
+		@reloadoptions = get_value('ch.player.'.@playerID['id'].'.dev.reload.options')
+		if(@reloadoptions == null || @reloadoptions == '') {
+			run(/reloadaliases)
+		} else {
+			run('/recompile -'.@reloadoptions)
+		}
 		if(array_contains(@ds, 'all')) { @dsall = true } else { @dsall = false }
 		foreach(@script in @ds) {
 			export('ch.player.'.@playerID['id'].'.dev.scripts.'.@script, true)

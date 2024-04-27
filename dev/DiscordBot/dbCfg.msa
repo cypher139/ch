@@ -1,9 +1,7 @@
 #Reload Configuration files
 admin:/discordbotcfg [$config='Discord'] [$type='DiscordBot'] [$] = >>>
 proc _db_help() {
-	msg(color(6).'Chat: Admin help:')
-	msg(color(10).'Command usage: <required> [optional]')
-	msg(color(10).'/discordbotcfg <action> [option1] [option2] [option3] [option4]')
+	msg(color(6).'Reload DiscordBot configuration files.')
 	msg(color(6).'Actions:')
 	msg(color(7).'/discordbotcfg <config>'.color(4).' - '.color('f').'Reloads specified config.')
 
@@ -17,16 +15,16 @@ switch($type) {
 case 'c':
 case 'Chat':
 	@prefix = 'Chat'
-	@ret = _db_load_config($config, @prefix)
+	@ret = _db_load_config($config, false, @prefix)
 case 'd':
 case 'db':
 case 'DiscordBot':
 	@prefix = 'DiscordBot'
-	@ret = _db_load_config($config, @prefix)
+	@ret = _db_load_config($config, false, @prefix)
 default:
 	if(!is_numeric($config)) { die(color(12).'Type not recognized.') }
 	@prefix = 'DiscordBot'
-	@ret = _db_load_config($config, @prefix)
+	@ret = _db_load_config($config, false, @prefix)
 }
 
 @prev = import(@prefix.'.config.'.$config)

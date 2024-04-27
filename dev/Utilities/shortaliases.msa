@@ -1,5 +1,8 @@
 ###----Aliases----###
 
+#reload CH
+/rcgx = run('/recompile -gx');
+
 # WorldEdit
 /1 = '//pos1'
 /2 = '//pos2'

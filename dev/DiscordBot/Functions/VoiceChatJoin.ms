@@ -129,7 +129,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 			'color': array('r': 66, 'g': 180, 'b': 129),
 			'description': '<@'.@discord['userid'].'> joined voice channel: <#'.@discord['channelid'].'>',
 			'thumbnail': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/1f4de.png',
-			'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32', 'text': 'ID '.@discord['userid']),
+			'footer': array('text': 'ID '.@discord['userid']),
 			'timestamp': time()
 		)
 		@logMsg['embeds'][] = @embed;
@@ -180,7 +180,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 			'color': array('r': 253, 'g': 70, 'b': 15),
 			'description': '<@'.@discord['userid'].'> left voice channel: <#'.@discord['channelid'].'>',
 			'thumbnail': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/1f4de.png',
-			'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32', 'text': 'ID '.@discord['userid']),
+			'footer': array('text': 'ID '.@discord['userid']),
 			'timestamp': time()
 		)
 		@logMsg['embeds'][] = @embed;
