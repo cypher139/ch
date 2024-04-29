@@ -337,6 +337,66 @@ proc _discordBot_db_autosave(string @usekey = '', @option) {
 	return(true)
 }
 
+proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
+	x_new_thread('DiscordBotCleanCache', closure(){
+		@time = time()
+		@botconfig = import('DiscordBot.config.Bot')
+		if(@exptime < 10000000 || @botconfig['Msg_Cache_Time'] > 2592000000) { @exptime = 2592000000 }
+		@exptime = @time - @exptime
+		if(!is_array(@guildlist)) { @guildlist = import('DiscordBot.Guilds') }
+		# if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
+		@stats = array()
+		foreach(@guild in @guildlist) {
+			@queue = array()
+			if(!array_contains(import('DiscordBot.Guilds'), @guild)) { continue() }
+			# @config = import(@prefix.'config.'.@guild)
+			@cacheMsgs = import('DiscordBot.'.@guild.'.Cache.Messages')
+			if(!is_array(@cacheMsgs)) { continue() }
+			@guildstats = array('cacheb': array_size(@cacheMsgs['server']), 'cachea': 0, 'queue': 0)
+			# 1: Check for messages on server cache above Limit. Always sorted highest first on data insert
+			if(array_index_exists(@cacheMsgs['server'], @botconfig['Msg_Cache_Server'])) {
+				array_push_all(@queue, @cacheMsgs['server'][cslice(@botconfig['Msg_Cache_Server'], array_size(@cacheMsgs['server']) - 1)])
+			}
+			#2: Check for messages with an add date from 30 days ago
+			foreach(@msg in @cacheMsgs['messages']) {
+				if(@msg['time'] < @exptime) {
+					@queue[] = @msg['id']
+				}
+			}
+	_db_msg_Console(array_size(@queue).'\n'.@queue, 'debug')
+			@queue = array_unique(@queue)
+			@guildstats['queue'] = array_size(@queue)
+		# For each queue remove message id index in messages & server (Listed first so reaction added messages with no user attached get purged)
+			foreach(@id in @queue) {
+				array_remove(@cacheMsgs['messages'], @id)
+				array_remove_values(@cacheMsgs['server'], @id)
+			}
+		# For each user's messages check if id is in queue. If so remove ID from user, and queue.
+			foreach(@type in array('user', 'bot')) {
+				foreach(@userid: @usermsgs in @cacheMsgs[@type]) {
+					if(array_size(@queue) == 0) { break(2) }
+					foreach(@index: @msgID in @usermsgs) {
+						if(array_contains(@queue, @msgID)) {
+							array_remove_values(@cacheMsgs[@type][@userid], @msgID)
+							array_remove_values(@queue, @msgID)
+						}
+					}
+				}
+			}
+			if(array_size(@queue) > 0) { _db_msg_Console('Cache queue not empty\n'.@queue, @guild, 'error') }
+			export('DiscordBot.'.@guild.'.Cache.Messages', @cacheMsgs)
+			@guildstats['cachea'] = array_size(@cacheMsgs['server'])
+			array_set(@stats, @guild, @guildstats)
+		}
+		@displaystats = ''
+		foreach(@sid: @stat in @stats) {
+			@displaystats = @displaystats.'\n'.color(rand(7,11)).import('DiscordBot.Guilds.Nicknames')[@sid].': '.@stat['cacheb'].' - '.@stat['queue'].' =  '.@stat['cachea']
+		}
+		_db_msg_Console(color(3).simple_date('MM/dd', @time).' Msg Cache: '.color(10).'<'.(time() - @time).'ms>'.@displaystats, 'debug')
+		return(true);
+	});
+}
+
 ##########################################
 ### Send A Message
 ##########################################
@@ -1261,12 +1321,6 @@ proc _discordBot_update_members(@useguild = 0) {
 				if(!array_index_exists(@logJointimes, @id, 0)) {
 					array_insert(@logJointimes[@id], @idInfo['joined_at'], 0)
 				}
-			# New User: Clear memory if no longer new
-				if((@idInfo['joined_at'] + @config['AS_New_User_Time']) < @startTime) {
-					if(is_array(import('DiscordBot.'.@guild.'.Cache.Messages.NewUser.'.@id))) {
-						export('DiscordBot.'.@guild.'.Cache.Messages.NewUser.'.@id, null)
-					}
-				}
 			# pseudo array for functions that expect event array
 				@discord = array('bot': @idInfo['bot'], 'serverid': @guild, 'userid': @id, 'username': @idInfo['username'])
 			# Leaderboard: Avatars, usernames, role color
@@ -1380,6 +1434,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			@alldebugstats = import('DiscordBot.debug.stats.last.updatemembers', array())
 			if(@config['LB_Enable'] == true && is_array(@leaderboard)) { export('DiscordBot.'.@guild.'.Leaderboard', @leaderboard) }
 			array_set(@debugstats['size'], 'rrUp', @rrUpdates)
+			export('DiscordBot.'.@guild.'.user.update.time.rr', null)
 			store_value('DiscordBot.'.@guild.'.members.ID', @membersID)
 			export('DiscordBot.'.@guild.'.members.ID', @membersID)
 			array_set(@debugstats['size'], 'ID', array_size(@membersID))

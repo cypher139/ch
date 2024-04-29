@@ -26,9 +26,11 @@ Allowed_Mentions:
 #
 #
 # Message Caches:
-# - How many message of each type to keep in RAM for reference in various bot functions?
-Msg_Cache_User: 500
-Msg_Cache_Server: 1000
+# (Kept in RAM for reference in various bot functions)
+# - How many days (expressed in milliseconds) to keep a message in cache? (default / max: 30 days)
+Msg_Cache_Time: 2592000000
+# - How many messages of each type to keep?
+Msg_Cache_Server: 5000
 Msg_Cache_Cmd: 250
 #
 # Command System:
@@ -40,3 +42,5 @@ CMD_Blacklist_Commands:
   - queue
   - stop
   - play
+  - trade
+  - t

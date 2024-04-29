@@ -59,6 +59,7 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 			if(@ret8901 == true) {
 				set_cron('0 1 * * 0,3', closure(){ _discordBot_update_members() });
 				set_cron('7 0 * * 0', closure(){ _discordBot_backup_guild_data() });
+				set_cron('1 0 * * *', closure(){ _discordBot_clean_cache() });
 				@ret8902 = discord_member_info(@return8762['Bot_ID'])
 				export('DiscordBot.Bot.Info', @ret8902)
 				_write_file(import('DiscordBot.logs.dir').'/Bot-Started.txt', simple_date('MM-dd-yy_HHmm', time()).'\n', 'append');

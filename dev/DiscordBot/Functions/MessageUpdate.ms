@@ -5,7 +5,8 @@ proc _db_update_message_cache(@discord, @updateType) {
 	if(array_index_exists(@discord, 'id')) {
 		@msgID = @discord['id']
 	} else if(array_index_exists(@discord, 'messageid')) { 
-		@msgID = @discord['messageid'] 
+		@msgID = @discord['messageid']
+		array_set(@discord, 'id', @discord['messageid'])
 	} else { 
 		return(false)
 	}
@@ -24,12 +25,15 @@ proc _db_update_message_cache(@discord, @updateType) {
 	@addSi = false
 	@addUi = false
 	@prevData = 'Not Found'
-	@newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
+	# @newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
 	#Find each index to edit
 	@userIndex = array_index(@cacheMsgs[@userType][@discord['userid']], @msgID)
 	@serverIndex = array_index(@cacheMsgs['server'], @msgID)
 	if(!array_index_exists(@cacheMsgs, 'messages', @msgID)) {
 		array_set(@cacheMsgs['messages'], @msgID, @discord)
+		if(array_index_exists(@discord, 'messageuserid')) {
+			@cacheMsgs['messages'][@msgID]['userid'] = @discord['messageuserid']
+		}
 	}
 	# -- If index not found: Add message id to server/user indexes. -list for debug the index number
 	if(@serverIndex < 0 || @serverIndex == null) {
@@ -38,15 +42,12 @@ proc _db_update_message_cache(@discord, @updateType) {
 		@addSi = true
 	}
 	if(@userIndex < 0 || @userIndex == null) {
-		if(@discord['userid'] == @cacheMsgs['messages'][@msgID]['userid']) {
+		if(@discord['userid'] == @cacheMsgs['messages'][@msgID]['userid'] && @updateType != 'removereaction') {
 			array_insert(@cacheMsgs[@userType][@discord['userid']], @msgID, 0)
 			@addUi = true
 		}
 		@userIndex = 0
 	}
-#cache limiter
-	if(array_index_exists(@cacheMsgs['server'], @botconfig['Msg_Cache_Server'])) { array_remove(@cacheMsgs['server'], @botconfig['Msg_Cache_Server']) }	
-	if(array_index_exists(@cacheMsgs[@userType][@discord['userid']], @botconfig['Msg_Cache_User']) && @newuser == false) { array_remove(@cacheMsgs[@userType][@discord['userid']], @botconfig['Msg_Cache_User']) }	
 #edits
 	@newData = array_deep_clone(@cacheMsgs['messages'][@msgID])
 	switch(@updateType) {
@@ -212,7 +213,6 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
 	array_set(@discord, 'time', time());
-	
 	# Update Recent Messages with current data
 	@saveMsg = _db_update_message_cache(@discord, 'removereaction')
 	@addindex = ''

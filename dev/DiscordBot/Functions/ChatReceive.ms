@@ -40,7 +40,7 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 # Remaining items to only occur if event is not consumed
 	if(is_consumed() == false) {
 		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
-		@newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
+		# @newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
 	#Message Formatting
 		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 			@discord['message'] = '<Sent a GIF>'
@@ -71,11 +71,6 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		if(!array_index_exists(@cacheMsgs, @userType, @discord['userid'])) { array_set(@cacheMsgs[@userType], @discord['userid'], array()) }
 		array_insert(@cacheMsgs[@userType][@discord['userid']], @discord['id'], 0)
 		array_insert(@cacheMsgs['server'], @discord['id'], 0)
-		if(array_size(@cacheMsgs['messages']) > @botconfig['Msg_Cache_Server'] + 100) {
-			array_remove(@cacheMsgs['messages'], array_sort(array_keys(@cacheMsgs['messages']), 'NUMERIC')[0])
-		}
-		if(array_index_exists(@cacheMsgs, @userType, @discord['userid'], @botconfig['Msg_Cache_User']) && @newuser == false) { array_remove(@cacheMsgs[@userType][@discord['userid']], @botconfig['Msg_Cache_User']) }
-		if(array_index_exists(@cacheMsgs, 'server', @botconfig['Msg_Cache_Server'])) { array_remove(@cacheMsgs['server'], @botconfig['Msg_Cache_Server']) }
 		export('DiscordBot.'.@discord['serverid'].'.Cache.Messages', @cacheMsgs)
 	#Check User Role Ranks
 		if(@config['Use_Role_Ranks'] == true && @discord['bot'] == false) {
