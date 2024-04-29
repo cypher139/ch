@@ -231,29 +231,26 @@ proc _discordBot_cmd_asremove(@discord, @args) {
 	if(!is_array(@asmembers)) { 
 		@asmembers = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
 	}
+	@count = import('DiscordBot.bot.antispam.triggers')
+	if(!is_array(@count)) { 
+		@count = get_value('DiscordBot.bot.antispam.triggers')
+		if(!is_array(@count)) { @count = array('lastedit': 0, 'total': 0) }
+		if(!array_index_exists(@count, 'msgs')) { array_set(@count, 'msgs', array()) }
+	}
 	if(!is_array(@asmembers)) { return(color(12).'No Antispam user data found for this server.') }
 	if(!array_index_exists(@asmembers, @userid)) { return(color(12).'Invalid User ID or User Not Found.') }
-	@asTriggerCount = import('DiscordBot.'.@discord['serverid'].'.antispam.trigger', array())
-	if(array_index_exists(@asTriggerCount, @userid)) { 
-		if(!array_index_exists(@asmembers, @userid, 'triggercount')) { array_set(@asmembers[@userid], 'triggercount', 0) }
-		@asmembers[@userid]['triggercount'] = @asmembers[@userid]['triggercount'] + @asTriggerCount[@userid]
-		array_remove(@asTriggerCount, @userid)
-		export('DiscordBot.'.@discord['serverid'].'.antispam.trigger', @asTriggerCount)
-	}
 	@asmembersR = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
 	if(!is_array(@asmembersR)) { @asmembersR = array() }
-
 	@username = @asmembers[@userid]['username']
-
 	array_set(@asmembers[@userid], 'removed', time())
 	array_set(@asmembers[@userid], 'removeuser', @discord['username'])
 	array_set(@asmembersR, @userid, @asmembers[@userid])
 	array_remove(@asmembers, @userid)
+	if(array_index_exists(@count, 'active', @discord['userid'])) { array_remove(@count['active'], @discord['userid']) }
 	store_value('DiscordBot.'.@discord['serverid'].'.antispam.members.removed', @asmembersR)
 	store_value('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
-	export('DiscordBot.user.'.@discord['userid'].'.ASTriggerMessage', null)
-	#export('DiscordBot.'.@discord['serverid'].'.'.@userid.'.antispam.trigger', null)
+	export('DiscordBot.bot.antispam.triggers', @count)
 	return('Removed '.@userid.' ('.@username.') from Anti-Spam restrictions.')
 }
 

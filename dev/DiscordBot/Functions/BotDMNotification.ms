@@ -67,6 +67,12 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		@userConfig = array()
 		array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
 	}
+#AS: check if user is under Anti Spam
+	@isAS = import('DiscordBot.bot.antispam.triggers')
+	if(!is_array(@isAS)) { 
+		@isAS = get_value('DiscordBot.bot.antispam.triggers')
+		if(!is_array(@isAS)) { @isAS = array('active': array(), 'msgs': array(), 'lastedit': 0, 'total': 0) }
+	}
 # Save recent DMs for future reference if needed
 	@newDM = array()
 	array_set(@newDM, @discord['time'], @discord['userid'])
@@ -89,7 +95,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 # Message Display:
 	@mcMsg = _db_format_msg_attach(@discord, @botconfig['URL_Broadcast']);
 # Send DM notification to Minecraft and Console
-	if(@userConfig[@discord['userid']]['NotifyContent'] == true) {
+	if(@userConfig[@discord['userid']]['NotifyContent'] == true && !array_index_exists(@isAS, 'active', @discord['userid'])) {
 		_db_mc_broadcast(color(9).'[Discord Bot] New DM from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@mcMsg, 'players');
 	}
 	_db_msg_Console(color(9).'DM from '.color(11).@discord['username'].color('r').' <@'.@discord['userid'].'> '.color(9).'Message: \n'.color('r').@mcMsg, 'bot');
@@ -118,7 +124,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 				_db_msg_Console('[DiscordBot] URL Readback: '.color(12).@ex['classType'].': '.@ex['message'])
 			}
 		}
-	}
+	}	
 # Send DM notification to each Discord server logs (if enabled)	
 	foreach(@guild in @guildcfgNotify) {
 	#Check: If user not a member of guild
@@ -148,17 +154,15 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		}
 	# Include message content?
 		# Antispam: No, don't read back DM spam - some spammers also spam the message to bot when AS DM's to tell them that they are timed out.
-		@isAS = import('DiscordBot.user.'.@discord['userid'].'.ASTriggerMessage')
-		if(is_array(@isAS)) {
+		if(array_index_exists(@isAS, 'active', @discord['userid'])) {
 			@oserver = ''
-			if(@guild != @isAS['serverid']) { @oserver = ' on another server' }
-			@ASMsg = '<<<Anti Spam protection is active for this user'.@oserver.'.>>>'
-			if(@discord['message'] == @isAS['message']) {
-				@ASMsg = @ASMsg.'\nThe same spam that triggered Anti Spam was just DMed to me.'
+			if(@guild != @isAS['active'][@discord['userid']]) { @oserver = ' on another server' }
+			@dcMsg = '<<<Anti Spam protection is active for this user'.@oserver.'.>>>'
+			if(array_contains(@isAS['msgs'][@discord['userid']], sha1(@discord['message']))) {
+				@dcMsg = @dcMsg.'\nThe same spam that triggered Anti Spam was just DMed to me.'
 			} else {
-				@ASMsg = @ASMsg.'\nTo avoid repeating spam their message is not displayed here.'
+				@dcMsg = @dcMsg.'\nTo avoid repeating spam their message is not displayed here.'
 			}
-			@msgembed[0]['description'] = @ASMsg
 		} else if(@userConfig[@discord['userid']]['NotifyContent'] == true) {	
 		#Yes, include Urls if present
 			if(array_size(@urlembed) > 0) {	@msgembed[] = @urlembed }
@@ -167,12 +171,13 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			@msgtype = 'message content'
 			if(array_index_exists(@discord, 'attachments', 0, 'filename') && @saveDM['message'] == '') { @msgtype = 'attachment' }
 			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype = @msgtype.'s' }
-			@msgembed[0]['description'] = '<<<user '.@msgtype.' not displayed>>>'
+			@dcMsg = '<<<user '.@msgtype.' not displayed>>>'
 		}
 		@dm1 = 'I received a DM!'
 		if(array_size(@userDMs) < 2) {
 			@dm1 = 'I received my first DM from '.@discord['username'].'!  `'.@discord['userid'].'`'
 		}
+		@msgembed[0]['description'] = @dcMsg
 		try {
 			discord_broadcast(@guild, @guildcfgChannel[@guild], array('content': ':envelope_with_arrow:  '.@dm1, 'embeds': @msgembed))
 		} catch(InsufficientPermissionException @ex) {

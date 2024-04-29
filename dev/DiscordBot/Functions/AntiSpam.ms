@@ -120,10 +120,21 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		if(!is_array(@count)) { 
 			@count = get_value('DiscordBot.bot.antispam.triggers')
 			if(!is_array(@count)) { @count = array('lastedit': 0, 'total': 0) }
+			if(!array_index_exists(@count, 'msgs')) { array_set(@count, 'msgs', array()) }
+			if(!array_index_exists(@count, 'active')) { array_set(@count, 'active', array()) }
 		}
 		if(!array_index_exists(@count, @discord['serverid'])) { array_set(@count, @discord['serverid'], 0) }
 		@count[@discord['serverid']]++
 		@count['total']++
+	# Record User message hash (for DMs to verify if same spam was DM'ed to bot)
+		if(!array_index_exists(@count, 'msgs', @discord['userid'])) { array_set(@count['msgs'], @discord['userid'], array()) }
+		if(!array_contains(@count['msgs'][@discord['userid']], sha1(@discord['message']))) {
+			@count['msgs'][@discord['userid']][] = sha1(@discord['message'])
+		}
+	# Record user is active under Anti Spam
+		if(!array_index_exists(@count, 'active', @discord['userid'])) {
+			array_set(@count['active'], @discord['userid'], @discord['serverid'])
+		}
 		@count['lastedit'] = @time
 		export('DiscordBot.bot.antispam.triggers', @count)
 	# If user's first trigger:
@@ -142,8 +153,6 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			if(@msgcount > 0) {
 				@actiontaken = @actiontaken.' Deleted '.@msgcount.' of user\'s recent messages'
 			}
-		# Save spam message used (i.e. for DMs to verify is same spam was DM'ed to bot)
-			export('DiscordBot.user.'.@discord['userid'].'.ASTriggerMessage', @discord)
 		# Message Admins, and DM user.
 			if(@actiontaken == '\n - *Actions taken:*') { @actiontaken = '' }
 			@logMsg = array('content': '__**Anti Spam alert**__\nUser `'.@discord['username'].'`  '.@discord['userid'].' triggered Anti Spam protection!\n - *Protection Reason:* '.@codeDesc[@reasonCode].@actiontaken)
@@ -210,10 +219,6 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		if(@config['AS_Delete_Messages'] == true) {
 			_db_as_dm(@discord);
 		}
-		@asMsgs = import('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', array())
-		if(!array_index_exists(@asMsgs, @discord['userid'])) { array_set(@asMsgs, @discord['userid'], array()) }
-		array_insert(@asMsgs[@discord['userid']], @discord, 0)
-		export('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', @asMsgs)
 		@asmembers['lastedit'] = @time
 		@asmembers[@discord['userid']]['triggercount']++
 		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
