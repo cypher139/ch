@@ -19,6 +19,8 @@ switch(@action) {
 case 'react':
 	@channelID = import('DiscordBot.debug.cmd.react.id.channel')
 	@msgID = import('DiscordBot.debug.cmd.react.id.message')
+	if(is_array(@channelID)) { @channelID = @channelID[0] }
+	if(is_array(@msgID)) { @msgID = @msgID[0] }
 	discord_request('PUT', 'channels/'.@channelID.'/messages/'.@msgID.'/reactions/%E2%9C%85/@me', null, closure(@ex) { console('reaction success: \n'.@ex) }, closure(@ex) { console('reaction failed: \n'.@ex) })
 	discord_request('PUT', 'channels/'.@channelID.'/messages/'.@msgID.'/reactions/%E2%9D%8C/@me', null, closure(@ex) { console('reaction success: \n'.@ex) }, closure(@ex) { console('reaction failed: \n'.@ex) })
 case 'backup':

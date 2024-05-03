@@ -48,13 +48,13 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 		if(@isRole == false) { @usePing = true }
 		if(@isAdmin == true) { @usePing = false } 
 	}
-	#Ping @VC role to come join the main VC channel.
+#Ping @VC role to come join the main VC channel.
 	if(@usePing == true && @vc['VC_Role_ID'] != 123) {
 	# Get last time the bot pinged the role
 		@lastping = get_value('DiscordBot.VC.last.pings')
 		if(!is_array(@lastping)) { @lastping = array() }
 		if(!array_index_exists(@lastping, @vc['VC_Role_ID'])) { array_set(@lastping, @vc['VC_Role_ID'], 1230768000000) }
-		if(import('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress') == true) { die() } else {
+		if(import('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress') != true) {
 			@timeout = 20000
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping[@vc['VC_Role_ID']] + @vc['VC_Ping_Timeout'])) {
@@ -98,13 +98,11 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 			}
 		}
 	}
-	
-	#Save current users in channel.
+#Save current users in channel.
 	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
 	if(!is_array(@stats)) { 
 		@stats = array('active': array(), 'activetime': array(), 'start': time(), 'end': '', 'users': array(), 'channel': @discord['channel'])
-	}
-		
+	}	
 	if(!array_contains(@stats['active'], @discord['userid'])) { 
 		@stats['active'][] = @discord['userid']
 	}
@@ -114,7 +112,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	if(!array_index_exists(@stats, 'activetime', @discord['userid'])) { array_set(@stats['activetime'], @discord['userid'], time()) }
 	@stats['activetime'][@discord['userid']] = time()
 	store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
-# Send logs	
+# Send logs
 	@logMsg = array('embeds': array())
 	if(array_contains(@vc['VC_Logs'], 'Join')) {
 		@userinfo = array()

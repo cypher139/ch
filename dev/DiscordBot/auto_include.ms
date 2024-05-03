@@ -215,10 +215,10 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 			}
 			# Setup Server Info
 			_discordBot_get_server_info(@cfgtype)
-			@guildNick = import('DiscordBot.Guilds.Nicknames', array())
-			array_set(@guildNick, @cfgtype, @loadcfg['Server_Nickname'])
-			export('DiscordBot.Guilds.Nicknames', @guildNick)
 		}
+		@guildNick = import('DiscordBot.Guilds.Nicknames', array())
+		array_set(@guildNick, @cfgtype, @loadcfg['Server_Nickname'])
+		export('DiscordBot.Guilds.Nicknames', @guildNick)
 	} else {
 		switch(string(@cfgtype)) {
 		case 'Server':

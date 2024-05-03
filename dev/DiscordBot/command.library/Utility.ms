@@ -73,6 +73,7 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 			@userConfig[@userID]['URLReadback'] = false
 			@ret = 'Opt-out successful, Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix
 		}
+		array_set(@userConfig, 'lastedit', time());
 		export('DiscordBot.DMs.user.settings', @userConfig);
 		store_value('DiscordBot.DMs.user.settings', @userConfig);
 		return(@ret)
