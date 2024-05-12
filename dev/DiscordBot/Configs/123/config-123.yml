@@ -7,6 +7,8 @@ Server_Nickname: "Your Server"
 Log_Channel: bot-logs
 # Your server's main logs channel. Member join / invite used messages are sent here.
 Server_Log_Channel: bot-logs
+# Your server's announcements channel. Anti Spam general alerts are sent here.
+Announcement_Channel: announcements
 # Send message to Console: Includes logs such as Member joins, voice chat joins, Bot DM notifications, and Discord Command usage.
 # Note: Error messages are always sent.
 Console_Messages: true
@@ -38,8 +40,10 @@ AS_New_User_Channel_Limit: 7
 AS_Delete_Messages: true
 # Log various User Info in the Spam alert message?
 AS_Log_ShowUserInfo: true
+#General Alert to all server members. Useful to tell users to keep their accounts safe, and to inform users of why many channels may have missing unread messages.
+AS_General_Announcement: "Another member got hacked or just chose to spam sketchy invites. I removed those messages, sorry for the unread notifications! Remember if you get your account back feel free to DM one of us or someone from the server so that you can be unbanned."
 # Showcase Channel
-# Intended as a place to show your server community's art projects, latest game achivements, etc., and ward off chat to another channel.
+# Intended as a place to show your server community's art projects, latest game achievements, etc., and ward off chat to another channel.
 # To enable the Showcase channel chat protection feature place the channel's ID below:
 Showcase_Channel: 123235346
 #What channel should users be redirected to if they are talking about project?

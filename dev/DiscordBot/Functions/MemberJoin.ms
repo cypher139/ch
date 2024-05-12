@@ -136,7 +136,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		}
 	}		
 # Wait a few milliseconds to see if another bot insta-kicks first.
-	set_timeout(1000, closure(){ 
+	set_timeout(1000, closure(){
 		@currentroles = array()
 		try {
 			@currentroles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
@@ -176,8 +176,16 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		if(!is_array(@membersFR)) { @membersFR = array() }
 		if(array_index_exists(@membersFR, @discord['userid']) && @config['Welcome_Roles_Restore'] == true) {
 			array_push_all(@currentroles, @membersFR[@discord['userid']]['data'])
-			discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Previous Member Roles Restored')
-			_db_msg_Console(color(2).'Previous roles restored.', @discord['serverid'])
+			try {
+				discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Previous Member Roles Restored')
+				_db_msg_Console(color(2).'Previous roles restored.', @discord['serverid'])
+			} catch(NotFoundException @ex) {
+				@id = ''
+				foreach(@word in parse_args(@ex['message'])) {
+					if(string_starts_with(@word, '"')) { @id = replace(@word, '"', '') }
+				}
+				_db_msg_Console('Previous role ID '.color(12).@id.color('r').' does not exist!', @discord['serverid'])
+			}
 		} else {
 			if(is_array(@config['Welcome_Roles']) && @config['Welcome_Roles_Award'] == true) {
 				array_push_all(@currentroles, @config['Welcome_Roles'])
@@ -209,6 +217,8 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	set_timeout(10000, closure(){
 		@wm = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
 		@inv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())
+		@rejoiner = false
+		if(array_index_exists(@logJointimes, @discord['userid'], 1)) { @rejoiner = true }
 		@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
 		if(!is_array(@joininfo)) { @joininfo = array() }
 		@isMember = true
@@ -222,6 +232,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			array_set(@joininfo, @discord['userid'], array())
 			array_set(@joininfo[@discord['userid']], 'time', @time);
 			array_set(@joininfo[@discord['userid']], 'user', @discord['username']);
+			array_set(@joininfo[@discord['userid']], 'return', @rejoiner);
 		}
 		if(array_index_exists(@inv, @discord['userid'])) { 
 			if(@isMember == true) {

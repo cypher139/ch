@@ -679,6 +679,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 # Assign Message Origination:
 	switch(to_lower(@from)) {	
 	case 'admin':
+	case 'announce':
 	case 'log':
 	case 'bot':
 	case 'none':
@@ -760,6 +761,8 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	switch(to_lower(@from)) {
 	case 'admin':
 		@channel = @config['Log_Channel']
+	case 'announce':
+		@channel = @config['Announcement_Channel']
 	case 'log':
 		@channel = @config['Server_Log_Channel']
 	case 'debug':
@@ -769,6 +772,8 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	switch(@type){
 	case 'admin':
 		@channel = @config['Log_Channel']
+	case 'announce':
+		@channel = @config['Announcement_Channel']
 	case 'console':
 		@channel = @config['Log_Channel']
 		_db_msg_Console('[Send Message] '.@message['content'], @guild)
@@ -783,6 +788,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 			_db_msg_Console(@message, 'debug')
 			return(true);
 		case 'admin':
+		case 'announce':
 		case 'console':
 		case 'broadcast':
 		case 'b':
@@ -1460,6 +1466,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			array_set(@debugstats['size'], 'au', array_size(@activeUsers))
 			store_value('DiscordBot.'.@guild.'.log.users.Join.Times', @logJointimes)
 			export('DiscordBot.'.@guild.'.CacheUpdate', null)
+			export('DiscordBot.'.@guild.'.returning.users', null)
 			array_set(@alldebugstats, @guild, @debugstats)
 			export('DiscordBot.debug.stats.last.updatemembers', @alldebugstats)
 			store_value('DiscordBot.debug.'.@guild.'.rank.stats', @rankstats)
@@ -2047,6 +2054,23 @@ proc _db_is_newmember(@guild, @userid) {
 		export('DiscordBot.'.@guild.'.debug.user.not.found.'.@userid, 1)
 	}
 	if((@userJoinTime + @config['AS_New_User_Time']) > time()) { @newuser = true }
+	if(@newuser == true) {
+		# Returning users: Bypass new user checks
+		@newreturn = import('DiscordBot.'.@guild.'.returning.users')
+		if(!is_array(@newreturn)) { @newreturn = array() }
+		if(array_index_exists(@newreturn, @userid)) {
+			if(@newreturn[@userid] == true) { @newuser = false }
+		} else {
+			@joininfo = get_value('DiscordBot.'.@guild.'.Join.info')
+			if(array_index_exists(@joininfo, @userid, 'return')) {
+				array_set(@newreturn, @userid, @joininfo[@userid]['return'])
+				if(@joininfo[@userid]['return'] == true) { @newuser = false } 
+			} else {
+				array_set(@newreturn, @userid, false)
+			}
+			export('DiscordBot.'.@guild.'.returning.users', @newreturn)
+		}
+	}
 	return(@newuser)
 }
 

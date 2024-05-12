@@ -5,15 +5,27 @@
 export('DiscordBot.db.save.keys', array_unique(@x8db))
 
 # Anti Spam functions: Check if user is repeating messages, new user chatting on too many channels, etc.
-proc _db_as_dm(@discord) {
+proc _db_as_dm(@discord, @isFirst = false) {
+	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
+	if(!is_array(@cacheMsgs)) { @cacheMsgs = array() }
+	if(array_index_exists(@cacheMsgs, 'messages', @discord['id'], 'deleted')) {
+		if(@cacheMsgs['messages'][@discord['id']]['deleted'] == true) {
+			_db_msg_Console('[AntiSpam] Message ID '.@discord['id'].' already deleted?!  <first:'.@isFirst.'> [Channel: '.@discord['channel'].']', @discord['serverid'])
+			return(false)
+		}
+	}
 	try {
 		discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
+		if(array_index_exists(@cacheMsgs, 'messages', @discord['id'])) {
+			array_set(@cacheMsgs['messages'][@discord['id']], 'deleted', true)
+			export('DiscordBot.'.@discord['serverid'].'.Cache.Messages', @cacheMsgs)
+		}
 		return(true)
 	} catch(Exception @ex) {
 		_db_msg_Console('  ['.@discord['serverid'].'] [AntiSpam] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
 		return(false)
 	}
-}		
+}
 
 bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'priority': 'HIGHEST'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
@@ -107,14 +119,22 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # Add user to Triggered state:
 	if(@adduser == true) {
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
-			array_set(@asmembers, @discord['userid'], array('rt': @reasonCode, 'log': false, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0))
+			# Returning users: Bypass new user checks
+			if(@reasonCode < 3) {
+				@newreturn = import('DiscordBot.'.@guild.'.returning.users')
+				if(!is_array(@newreturn)) { @newreturn = array() }
+				if(array_index_exists(@newreturn, @discord['userid'])) {
+					if(@newreturn[@discord['userid']] == true) { die() }
+				}
+			}
+			array_set(@asmembers, @discord['userid'], array('rt': @reasonCode, 'log': false, 'rtime': @time, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0))
 		}
 	}
 	
 # !!! User is in Triggered state: !!!
 	if(array_index_exists(@asmembers, @discord['userid'])) {
 		consume();
-		@actiontaken = '\n - *Actions taken:*'
+		@actiontaken = '\n- *Actions taken:*'
 	# Record total server triggers
 		@count = import('DiscordBot.bot.antispam.triggers')
 		if(!is_array(@count)) { 
@@ -144,8 +164,8 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			if(@config['AS_Delete_Messages'] == true) {
 				foreach(@message in @lastUserMsgs) {
 					# Action upon only today's messages
-					if(@message['time'] > (@time - 86400000)) {
-						@return = _db_as_dm(@message);
+					if(@message['time'] > (@time - 43200000)) {
+						@return = _db_as_dm(@message, true);
 						if(@return == true) { @msgcount++ }
 					}
 				}
@@ -154,14 +174,14 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				@actiontaken = @actiontaken.' Deleted '.@msgcount.' of user\'s recent messages'
 			}
 		# Message Admins, and DM user.
-			if(@actiontaken == '\n - *Actions taken:*') { @actiontaken = '' }
-			@logMsg = array('content': '__**Anti Spam alert**__\nUser `'.@discord['username'].'`  '.@discord['userid'].' triggered Anti Spam protection!\n - *Protection Reason:* '.@codeDesc[@reasonCode].@actiontaken)
+			if(@actiontaken == '\n- *Actions taken:*') { @actiontaken = '' }
+			@logMsg = array('content': '__**Anti Spam alert**__\nUser <@'.@discord['userid'].'> [`'.@discord['username'].'`  `'.@discord['userid'].'`] triggered Anti Spam protection!\n- *Protection Reason:* '.@codeDesc[@reasonCode].@actiontaken)
 			@userinfo = array()
 			try {
 				@userinfo = discord_member_info(@discord['serverid'], @discord['userid']);
 			} catch(NotFoundException @ex) {
 				export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
-			} 
+			}
 			if(@config['AS_Log_ShowUserInfo'] == true && array_index_exists(@userinfo, 'userid')) {
 				@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
 				@displayUR = 'None'
@@ -209,9 +229,23 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				}
 				@logMsg['embeds'][0]['fields'][] = array('name': 'Roles ['.array_size(@userRoles).']', 'value': @displayUR, 'inline': false)
 			}
-			if(@asmembers[@discord['userid']]['log'] == false) { 
+			if(@asmembers[@discord['userid']]['log'] == false) {
+				_db_msg_Console(color(14).@discord['username'].color(8).' <@'.@discord['userid'].'>'.color(7).' triggered Anti Spam protection. Reason #'.@reasonCode.color(9).'\n'.@codeDesc[@reasonCode], @discord['serverid'])
 				_discordBot_send_message(@logMsg, @discord['serverid'], 'admin');
-				_discordBot_send_message('Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.', @discord['serverid'], 'death', @discord['userid'], 'dm')
+				@announceMsg = ''
+				if(array_index_exists(@config, 'AS_Announcement_'.@reasonCode)) {
+					@announceMsg = replace(@config['AS_Announcement_'.@reasonCode], '%UserID%', '<@'.@discord['userid'].'>')
+				} else if(array_index_exists(@config, 'AS_General_Announcement')) {
+					@announceMsg = @config['AS_General_Announcement']
+				}
+				if(@announceMsg != '') { _discordBot_send_message(@announceMsg, @discord['serverid'], 'announce'); }
+				@subMsg = ''
+				if(@reasonCode < 3) {
+					@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times')
+					if(!is_array(@logJointimes)) { @logJointimes = array() }
+					if(!array_index_exists(@logJointimes, @discord['userid'], 1)) { @subMsg = '\n\nIf you have recently rejoined the server with a new account, ask the moderators to use my `transferroles` command to bypass this AntiSpam protection.' }
+				}
+				_discordBot_send_message('Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.'.@subMsg, @discord['serverid'], 'death', @discord['userid'], 'dm')
 				@asmembers[@discord['userid']]['log'] = true
 			}
 		}
@@ -220,6 +254,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			_db_as_dm(@discord);
 		}
 		@asmembers['lastedit'] = @time
+		array_set(@asmembers[@discord['userid']], 'rtime', @time)
 		@asmembers[@discord['userid']]['triggercount']++
 		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
 	}

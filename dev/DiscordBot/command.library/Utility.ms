@@ -206,6 +206,11 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	#Save 
 	array_set(@TRlog, @args[1], array('time': time(), 'fromuser': @args[0], 'issuer': @discord['userid']))
 	store_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer', @TRlog)
+	@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
+	if(array_index_exists(@joininfo, @args[1])) {
+		array_set(@joininfo[@args[1]], 'return', 'true')
+		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)
+	}
 	@msgrolesreturn = color(10).'Discord User '.color(3).@args[1].color(10).' had their Roles set to:\n'.color('r').array_keys(@toroles)
 	return(array('content': @returnmsg.color(10).'successful.', 'console': @msgrolesreturn))
 }
