@@ -76,6 +76,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 								if(@cacheMsgs['messages'][@i]['time'] < (time() - @vc['VC_Ping_Timeout'])) {
 									continue()
 								}
+								if(!array_index_exists(@cacheMsgs, 'messages', @i, 'message')) { continue() }
 								if(reg_count('@'.@vc['VC_Role_Name'], @cacheMsgs['messages'][@i]['message']) > 0) {						
 									@discordMsg = 'Hey I was going to do that ping!'
 									break()

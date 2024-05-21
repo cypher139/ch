@@ -206,9 +206,6 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 			export('DiscordBot.'.@cfgtype.'.Leaderboard', get_value('DiscordBot.'.@cfgtype.'.Leaderboard'))
 			# Setup Leaderboard
 			if(@loadcfg['LB_Enable'] == true) {
-				if(import('DiscordBot.'.@cfgtype.'.Leaderboard.last.save') == null) {
-					export('DiscordBot.'.@cfgtype.'.Leaderboard.last.save', time());
-				}
 				if(!is_array(import('DiscordBot.'.@cfgtype.'.Leaderboard'))) {
 					export('DiscordBot.'.@cfgtype.'.Leaderboard', array('lastedit': time(), 'members': array()))
 				}

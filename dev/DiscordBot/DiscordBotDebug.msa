@@ -14,6 +14,9 @@ foreach(@arg in @args) {
 		break()
 	}
 }
+#pseudo array for actions that require event array
+# 777378696782657084 = ASCII: MINECRAFT
+@discord = array('admin': true, 'bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
 msg('Using Server ID: '.@guild)
 switch(@action) {
 case 'react':

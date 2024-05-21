@@ -18,10 +18,11 @@ Console_Messages_Chat: false
 Console_Debug: false
 # Send a message to log on Member join with the invite used?
 Log_Invites: true
-# Customize Member join log message sent: 
+# Customize Member join and leave log message: 
 # Variables: %User%  %UserID%  %InviteCode%  %Uses%  %Inviter%  %InviterID%  %InviterID1%
 # %InviterID1% shows the inviter's ID if first time using invite.
-Log_Invites_Message: "**%User%**  [%UserID%] joined using invite **%InviteCode%**\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
+Log_Invites_Message: ":join: **%User%**  [%UserID%] joined using invite **%InviteCode%**\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
+Log_Invites_Leave_Message: ":leave: **%User%** left the server. `%Level% %PrevJoins% %Inviter%`"
 # Show Bot DM Notifications:
 DM_Notify: true
 # Show Bot DM notification if the user is *not* a server member?
