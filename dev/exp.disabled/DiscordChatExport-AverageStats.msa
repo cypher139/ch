@@ -1,0 +1,53 @@
+#parse DiscordChatExporter json files, compute author's total messages and words per message.
+# Requires CHFiles
+admin:/dceaveragestats [$id = 0] [$] = >>>
+@start = time()
+@args = parse_args($)
+if(!is_numeric($id) || length($id) < 17) {
+	die(color(12).'You must specify a User ID to lookup.')
+}
+@authorID = $id
+@mode = 'single'
+@processcount = array()
+@resultsfile = 'CountResults.json'
+@filelist = list_files(import('DiscordBot.logs.dir').'/Export')
+
+foreach(@num: @filename in @filelist) {
+	if(@filename == @resultsfile) { continue() }
+	if(reg_count('[.]ms[a]?$', @filename) > 0) { continue() } 
+	if(reg_count('[.]json$', @filename) == 0) { msg('Ignoring non-JSON file: '.@filename) continue() } 
+	@filedata = json_decode(read(@filename))
+	if(!array_index_exists(@filedata, 'messages', 0, 'content')) { msg('Cannot find required data, not a valid chat export JSON. ('.@filename.')') continue() }
+	# data[messages][0....][content]
+	#per server
+	if(!array_index_exists(@processcount, @filedata['guild']['id'])) {
+		array_set(@processcount, @filedata['guild']['id'], array('name': @filedata['guild']['name'], 'total': 0, 'channel': array()))
+		if(@mode == 'single') { array_set(@processcount[@filedata['guild']['id']], 'authormsgs', 0) }
+	}
+	@count = 0
+	@authormsgs = 0
+	foreach(@i: @message in @filedata['messages']) {
+		if(@mode == 'single') {
+			if(@message['author']['id'] != @authorID) { continue() }
+			@processcount[@filedata['guild']['id']]['authormsgs']++
+		}
+		@newcount = array_size(parse_args(@message['content']))
+		# parse args, count array size
+		# add size to json count
+		@count = @count + @newcount
+		# at the end (size of messages):
+		if(@i + 1 == array_size(@filedata['messages'])) { 
+			@processcount[@filedata['guild']['id']]['total'] = @processcount[@filedata['guild']['id']]['total'] + @count
+			array_set(@processcount[@filedata['guild']['id']]['channel'], @filedata['channel']['id'], @count)
+		}
+	}
+	msg('Processed '.@filename.', Total words: '.@count)
+}
+_write_file(import('DiscordBot.logs.dir').'/Export/'.@resultsfile, json_encode(@processcount), 'overwrite');
+msg(color(3).'ID '.@authorID.' Results:'. color(10).'  <'.(time() - @start).'ms>');
+foreach(@guild in @processcount) {
+	@amsg = ''
+	if(@mode == 'single') { @amsg = color(10).' Author messages: '.color(7).@guild['authormsgs'].color(14).' Average words per message: '.color(7).round(@guild['total'] / @guild['authormsgs'], 2) }
+	msg(color(6).'Guild "'.@guild['name'].'":\n'.color(9).'Total words: '.color(7).@guild['total'].@amsg)
+}
+<<<
