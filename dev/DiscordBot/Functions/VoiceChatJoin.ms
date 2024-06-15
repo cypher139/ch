@@ -20,6 +20,7 @@ proc _vc_display_duration(@time) {
 
 bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	_db_msg_Console(color(10).'VC + '.@discord['username'], @discord['serverid'], 'debug')
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@vc = ''
@@ -39,7 +40,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 	} else if(array_index_exists(@config, 'VC_Options', @discord['channel'])) {
 		@vc = @config['VC_Options'][@discord['channel']]
 	} else {	
-		@vc = array('VC_Ping_If_Role_Member': false, 'VC_Role_ID': 123)
+		@vc = array('VC_Logs': array('Join', 'Leave', 'Completed'), 'VC_Ping_If_Role_Member': false, 'VC_Role_ID': 123)
 	}
 	if(array_contains(@userRoles, @vc['VC_Role_ID'])) { @isRole = true }
 	if(@vc['VC_Ping_If_Role_Member'] == true) {
@@ -138,6 +139,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 #--------------------------------------------
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	_db_msg_Console(color(12).'VC - '.@discord['username'], @discord['serverid'], 'debug')
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
 	# Setup config

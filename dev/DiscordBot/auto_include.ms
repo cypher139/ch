@@ -320,7 +320,7 @@ proc _discordBot_db_autosave(string @usekey = '', @option) {
 			if(@saveKey['lastedit'] > (@time - @botconfig['AutoSave_Wait'])) {
 				store_value(@prefix.@gp.@e, @saveKey)
 				@results['saved'][] = @gp.@e;
-				if(@e == 'Leaderboard') {
+				if(@e == 'Leaderboard' && array_index_exists(@saveKey, 'guild')) {
 					_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Leaderboard_'.reg_replace('\\s', '_', @saveKey['guild']['name']).'.json', json_encode(@saveKey), 'OVERWRITE')
 				}
 			} else {
@@ -1072,6 +1072,8 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 	}
 	#user avatar
 	@userInfo = discord_member_info(@discord['serverid'], @discord['userid'])
+	@userName = @userInfo['displayname']
+	if(@userName == '' || @userName == null) { @userName = @userInfo['username'] }
 	foreach(@guild in @guilds) {
 		if(@discord['serverid'] == @guild) { continue() }
 		@config = import('DiscordBot.config.'.@guild);
@@ -1089,31 +1091,37 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 		@prefixEscape = array('`', '[', ']')
 	# Prefix user to the beginning of message
 		if(@config['CS_Prefix_User'] == true) {
-			# Limit prefix to 1 letter?
-			if(@config['CS_Prefix_Limit'] == false) {
-				@userPrefix = '<@'.@discord['userid'].'>'
-				@prefixEscape = array('', '', '')
-				if(array_index_exists(@discord, 'reference', 'id')) { @userRefPrefix = '<@'.@discord['reference']['userid'].'>' }
+			# Limit user mention to if is a server member
+			if(array_contains(discord_get_members(@guild), @discord['userid'])) {
+				@userPrefix = @discord['userid']
+				@prefixEscape = array('', '<@', '>')
 			} else {
-				@userPrefix = @userInfo['displayname']
-				if(array_index_exists(@discord, 'reference', 'id')) { @userRefPrefix = @discord['reference']['username'] }
+				@userPrefix = @userName
+			}
+			if(array_index_exists(@discord, 'reference', 'id')) {
+				if(array_contains(discord_get_members(@guild), @discord['reference']['userid'])) {
+					@userRefPrefix = '<@'.@discord['reference']['userid'].'>'
+				} else {
+					@userRefPrefix = @discord['reference']['username']
+				}
+			}
+			# Limit prefix to 1 letter
+			if(@config['CS_Prefix_Limit'] == true) {
+				@prefixEscape = array('`', '[', '...]')
+				@uP1 = reg_match('(?<a>[A-Za-z0-9])', @userName)
+				if(array_index_exists(@uP1, 'a')) { @userPrefix = @uP1['a'] } else { @userPrefix = @userName[0] }
+				if(array_index_exists(@discord, 'reference', 'id')) {
+					@uP2 = reg_match('(?<a>[A-Za-z0-9])', @discord['reference']['username'])
+					if(array_index_exists(@uP2, 'a')) { @userRefPrefix = @uP2['a'] } else { @userPrefix = @discord['reference']['username'][0] }
+				}
 			}
 		} else {
 			@userPrefix = @config['Server_Nickname']
 		}
-		if(@config['CS_Prefix_Limit'] == true) {
-			@userPrefix = reg_match('(?<a>[A-Za-z0-9])', @userPrefix)['a']
-			if(@userPrefix == '' || @userPrefix == null) { @userPrefix = '???' }
-			@userPrefix = @userPrefix.'...'
-			if(array_index_exists(@discord, 'reference', 'id')) {
-				@userRefPrefix = reg_match('(?<a>[A-Za-z0-9])', @userRefPrefix)['a']
-				if(@userRefPrefix == '' || @userRefPrefix == null) { @userRefPrefix = '???' }
-				@userRefPrefix = @userRefPrefix.'...'
-			}
-		}
-		if(@discord['bot'] == true) { @userPrefix = @userPrefix.' (Bot)' }
-		@userPrefix = @prefixEscape[0].@prefixEscape[1].@userPrefix.@prefixEscape[2].@prefixEscape[0].': '
-		if(array_index_exists(@discord, 'reference', 'id')) { @userRefPrefix = @prefixEscape[0].@prefixEscape[1].@userRefPrefix.@prefixEscape[2].@prefixEscape[0].': ' }
+		@userPrefixEnd = ': '
+		if(@discord['bot'] == true) { @userPrefixEnd = ' (Bot): ' }
+		@userPrefix = @prefixEscape[0].@prefixEscape[1].@userPrefix.@prefixEscape[2].@prefixEscape[0].@userPrefixEnd
+		if(array_index_exists(@discord, 'reference', 'id')) { @userRefPrefix = @prefixEscape[0].@prefixEscape[1].@userRefPrefix.@prefixEscape[2].@prefixEscape[0].':' }
 
 # Option-add footer of chat from xyz server, thumbnail of user / author
 
@@ -1459,7 +1467,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			store_value('DiscordBot.'.@guild.'.members.info', @membersInfo)
 			export('DiscordBot.'.@guild.'.members.info', @membersInfo)
 			array_set(@debugstats['size'], 'mi', array_size(@membersInfo))
-			array_set(@debugstats['size'], 'inv', array_size(@invites))
+			if(is_array(@invites)) { array_set(@debugstats['size'], 'inv', array_size(@invites)) }
 			array_set(@debugstats['size'], 'au', array_size(@activeUsers))
 			store_value('DiscordBot.'.@guild.'.log.users.Join.Times', @logJointimes)
 			export('DiscordBot.'.@guild.'.CacheUpdate', null)
@@ -2059,6 +2067,7 @@ proc _db_is_newmember(@guild, @userid) {
 			if(@newreturn[@userid] == true) { @newuser = false }
 		} else {
 			@joininfo = get_value('DiscordBot.'.@guild.'.Join.info')
+			if(!is_array(@joininfo)) { @joininfo = array() } 
 			if(array_index_exists(@joininfo, @userid, 'return')) {
 				array_set(@newreturn, @userid, @joininfo[@userid]['return'])
 				if(@joininfo[@userid]['return'] == true) { @newuser = false } 

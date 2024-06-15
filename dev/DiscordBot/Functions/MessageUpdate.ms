@@ -104,8 +104,14 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username'])
-	@memberInfo = discord_member_info(@discord['serverid'], @discord['userid'])
 	@embedColor = array('r': 0, 'g': 0, 'b': 200)
+	@memberInfo = array('color': @embedColor, 'avatar': 'https://cdn.discordapp.com/embed/avatars/0.png')
+	try {
+		@memberInfo = discord_member_info(@discord['serverid'], @discord['userid'])
+	} catch(NotFoundException @ex) {
+		#but how, you ask can a user update a message while also NOT part of your server? answer: Discord system messages.
+		_db_msg_Console('Message Update from '.@discord['username'].' <'.@discord['userid'].'>: User not Found on server. Message Channel: '.@discord['channel'].'Message: ('.@discord['id'].')\n'.@discord['message'], @discord['serverid'], 'debug')
+	}
 	#Message Formatting
 	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 		@discord['message'] = '<Sent a GIF>'

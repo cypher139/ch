@@ -19,6 +19,8 @@ foreach(@arg in @args) {
 @discord = array('admin': true, 'bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
 msg('Using Server ID: '.@guild)
 switch(@action) {
+case 'allservers':
+	msg(discord_get_servers())
 case 'react':
 	@channelID = import('DiscordBot.debug.cmd.react.id.channel')
 	@msgID = import('DiscordBot.debug.cmd.react.id.message')

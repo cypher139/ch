@@ -10,7 +10,7 @@ proc _db_as_dm(@discord, @isFirst = false) {
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array() }
 	if(array_index_exists(@cacheMsgs, 'messages', @discord['id'], 'deleted')) {
 		if(@cacheMsgs['messages'][@discord['id']]['deleted'] == true) {
-			_db_msg_Console('[AntiSpam] Message ID '.@discord['id'].' already deleted?!  <first:'.@isFirst.'> [Channel: '.@discord['channel'].']', @discord['serverid'])
+			_db_msg_Console('[AntiSpam] Message ID '.@discord['id'].' already deleted?!  <first:'.@isFirst.'> [Channel: '.@discord['channel'].']', @discord['serverid'], 'debug')
 			return(false)
 		}
 	}

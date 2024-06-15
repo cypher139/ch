@@ -126,13 +126,13 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		} catch(InsufficientPermissionException @ex) {
 			if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
 				@msg = 'Invite Logging is Enabled, however I do not have permission to view invites!'
-				_db_msg_Console('['.@guild.'] '.@msg, @discord['serverid'])
+				_db_msg_Console('['.@discord['serverid'].'] '.@msg, @discord['serverid'])
 				_discordBot_send_message(@msg, @discord['serverid'], 'log')
 			} else {
-				_db_msg_Console('['.@guild.'] '.@ex['message'], @discord['serverid'])
+				_db_msg_Console('['.@discord['serverid'].'] '.@ex['message'], @discord['serverid'])
 			}
 		} catch(Exception @ex) {
-			_db_msg_Console('['.@guild.'] '.@ex['message'], @discord['serverid'])
+			_db_msg_Console('['.@discord['serverid'].'] '.@ex['message'], @discord['serverid'])
 		}
 	}		
 # Wait a few milliseconds to see if another bot insta-kicks first.
