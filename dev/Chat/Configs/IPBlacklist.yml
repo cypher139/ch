@@ -14,6 +14,48 @@ IP_Blacklist:
 # ThisIsARobbery
 - 193.35.18.92
 ### IPs seen on connection attempts on own or friend's servers:
+# obnoxious with pings. once a hour, german isp. 
+- 195.201.95.90
+# obnoxious with pings, **every 4 minutes**. ip block belongs to scaleway cloud provider
+- 195.154.199.60
+# belongs to UK ISP that is just servers.
+- 87.236.176.7
+- 87.236.176.139
+- 87.236.176.224
+# china cloud provider
+- 43.157.63.14
+# MS datacenter, ms limited
+- 13.83.41.252
+- 172.168.41.85
+- 172.169.5.242
+- 172.212.60.124
+- 172.212.61.116
+- 20.118.69.83
+- 4.151.38.172
+- 57.152.56.133
+# OVHcloud provider
+- 135.125.134.238
+- 51.81.208.11
+# Al Spera - seems to be online game cheats?
+- 185.242.226.52
+# Censys ISP - shodan-like search engine
+- 162.142.125.212
+- 162.142.125.222
+- 167.94.138.123
+- 167.94.138.32
+- 167.94.138.35
+- 167.94.138.46
+- 199.45.154.155
+- 206.168.34.122
+- 206.168.34.198
+- 206.168.34.35
+# Shodan
+- 207.90.244.3
+# M247 Europe SRL - Popular? Europe based VPN exit.
+- 146.70.197.21
+- 146.70.225.149
+# CariNet, Inc., risky? isp
+- 71.6.165.200
 # similar block to pfcloud
 - 45.128.232.101
 # pfcloud, did a ddos
@@ -25,12 +67,17 @@ IP_Blacklist:
 # Bunger
 - 3.77.238.21
 - 3.73.52.141
-#Unknown user, but obnoxious with pings:
+# Unknown user, but obnoxious with pings:
+# Found within Scaleway ISP block
 - 51.15.58.25
 # ServerSeeker
 # (Very obnoxious with pings)
 - 109.123.240.84
-#
+# 31173 Servicea AB - medium risk scam
+- 185.213.154.150
+# ChinaNet Zhejiang Province Network 
+# Known IP to be used in abusive activity.
+- 115.231.78.3
 # Many more IPs, unknown bot type, similar IP blocks to known bots:
 - 118.194.251.128
 - 152.32.183.240
@@ -173,6 +220,7 @@ IP_Blacklist:
 - 35.159.12.56
 - 35.159.38.224
 - 51.158.167.216
+- 51.15.34.47
 - 52.29.138.215
 - 52.57.73.164
 - 52.58.124.228
@@ -188,14 +236,57 @@ IP_Blacklist:
 - 54.93.162.38
 - 54.93.217.48
 - 54.93.39.30
+- 84.247.163.158
 #
 #
 #Add IP ranges here:
 IP_Block_Blacklist:
+#Amazon AWS
 - "3/8"
 - "18.1/16"
 - "45.128/16"
+# spammers
 - "193.35.18/24"
+# Scaleway cloud provider
+- "151.115.0/18"
+- "151.115.64/18"
+- "163.172/16"
+- "163.172.208/20"
+- "195.154/16"
+- "212.129.0/18"
+- "212.47.224/19"
+- "212.83.128/19"
+- "212.83.160/19"
+- "51.15/16"
+# Amazon AWS
 - "5/8"
 - "84.54/16"
+# Constantine Cybersecurity Ltd. - server ISP
+- "87.236/16"
 - "94.103/16"
+- "2a06:4880/16"
+# Censys - vulnerability search engine
+- "162.142.125/24"
+- "167.248.133/24"
+- "167.94.138/24"
+- "199.45/16"
+- "206.168.32/24"
+- "206.168.33/24"
+- "206.168.34/24"
+- "206.168.35/24"
+# CariNet, Inc. ISP, "medium" risk isp
+- "135.84.216/24"
+- "209.126.128/17"
+- "216.75.0/18"
+- "216.98.128/19"
+- "66.240.192/18"
+- "71.6.128/17"
+# VPNs
+- "146.70/16"
+# ChinaNet Zhejiang Province Network 
+# high risk, bad actor
+# not all listed for now
+- "106/8"
+- "115/8"
+# Shodan
+- "207/8"

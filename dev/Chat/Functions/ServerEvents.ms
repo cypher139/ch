@@ -117,36 +117,38 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 }
 
 
-#Ignored IP pings notification
-set_cron('59 23 * * *', closure(){ 
-	@count = 0
+#Ignored & Blacklisted IP pings notification
+set_cron('59 23 * * *', closure(){
 	@serverConfig = import('Chat.config.Server')
-	@iplog = get_value('Server.pings.log.ignore.IP')
-	@useMsg = false
-	if(!is_array(@iplog)) { die(); }
-	if(array_size(@iplog) == 0) { die(); }
-	@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' Ignored IP ping report:'
-	@checktime = (time() - 86400000)
-	foreach(@ipnum: @times in @iplog) {
-		if(@ipnum == 'ip') { continue(); }
-		if(array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @iplog['ip'][@ipnum])) { continue(); }
+	foreach(@type: @typeName in array('ignore': 'Ignored', 'blacklist': 'Blacklisted')) {
 		@count = 0
-		foreach(@data in @times) {
-			if(@checktime > @data) { continue(); }
-			@count++			
+		@iplog = get_value('Server.pings.log.'.@type.'.IP')
+		@useMsg = false
+		if(!is_array(@iplog)) { continue(); }
+		if(array_size(@iplog) == 0) { continue(); }
+		@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' '.@typeName.' IP ping report:'
+		@checktime = (time() - 86400000)
+		foreach(@ipnum: @times in @iplog) {
+			if(@ipnum == 'ip') { continue(); }
+			if(array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @iplog['ip'][@ipnum])) { continue(); }
+			@count = 0
+			foreach(@data in @times) {
+				if(@checktime > @data) { continue(); }
+				@count++			
+			}
+			if(@count > 0) {
+				@useMsg = true
+				@s = ''
+				if(@count > 1) { @s = 's' }
+				@Message = @Message.'\n'.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s
+			}
 		}
-		if(@count > 0) {
-			@useMsg = true
-			@s = ''
-			if(@count > 1) { @s = 's' }
-			@Message = @Message.'\n'.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s
+		if(@useMsg == true) {
+			if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
+				if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), '', 'admin') }
+			}
+			if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
 		}
-	}
-	if(@useMsg == true) {
-		if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
-			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), '', 'admin') }
-		}
-		if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
 	}
 });
 
