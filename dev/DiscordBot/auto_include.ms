@@ -678,6 +678,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	case 'admin':
 	case 'announce':
 	case 'log':
+	case 'ping':
 	case 'bot':
 	case 'none':
 	case 'death':
@@ -765,6 +766,8 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	case 'debug':
 		@channel = @config['Log_Channel']
 		@type = 'debug'
+	case 'ping':
+		if(array_index_exists(@config, 'Ping_Log_Channel')) { @channel = @config['Ping_Log_Channel'] } else { @channel = @config['Log_Channel'] }
 	}
 	switch(@type){
 	case 'admin':
@@ -776,6 +779,8 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		_db_msg_Console('[Send Message] '.@message['content'], @guild)
 	case 'log':
 		@channel = @config['Server_Log_Channel']
+	case 'ping':
+		if(array_index_exists(@config, 'Ping_Log_Channel')) { @channel = @config['Ping_Log_Channel'] } else { @channel = @config['Log_Channel'] }
 	}
 	
 # Message Building:
@@ -790,6 +795,7 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		case 'broadcast':
 		case 'b':
 		case 'log':
+		case 'ping':
 			if(array_index_exists(@split, 0)) {
 				foreach(@i: @msg in @split) {
 					@splitmsg = array('content': @msg)

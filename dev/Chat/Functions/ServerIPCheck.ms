@@ -19,7 +19,10 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 # Should we take action on multiple accounts using the same IP address?
 	if(@serverConfig['Check_Multiple_Accs_IP'] == true) {
 	# How many accounts can be connected with the same IP address at any given time?
-		if(@serverConfig['Concurrent_Accs_IP'] == import('Server.IP.'.@ipnumbers.'.concurrent')) {
+		@concurrentList = import('Server.IP.concurrent')
+		if(!is_array(@concurrentList)) { @concurrentList = array() }
+		if(!array_index_exists(@concurrentList, @ipnumbers)) { array_set(@concurrentList, @ipnumbers, 0) }
+		if(@serverConfig['Concurrent_Accs_IP'] == @concurrentList[@ipnumbers]) {
 			@kickPlayer = true
 			@kickMsg = 'Too many Accounts are using this IP address.'
 			@kickType = @kickType.'1'
