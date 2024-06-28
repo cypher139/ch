@@ -19,6 +19,44 @@ foreach(@arg in @args) {
 @discord = array('admin': true, 'bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
 msg('Using Server ID: '.@guild)
 switch(@action) {
+case 'ram':
+case 'he':
+	@v = array()
+	@slice1 = 11
+	if(array_contains(@args, 'all')) {
+		@v = get_values('DiscordBot.')
+	} else {
+		@v = get_values('DiscordBot.'.@guild)
+		@slice1 = 30
+		if(length(@guild) > 18) { @slice1 = 31 }
+	}
+	@truecount = 0
+	@changedcount = 0
+	@truemsg = color(8).'None Found'
+	@changedmsg = ''
+	@falsemsg = ''
+	@falsecount = 0
+	@returnmsg = color(9).'Values in RAM:'
+	foreach(@key: @data in @v) {
+		@result = ''
+		@import = import(@key, '~~~~~~')
+		if(@import == @data) {
+			@result = color(2).' RAM'
+			@truecount++
+		} else if(@import == '~~~~~~') {
+			@falsecount++
+			@result = ''
+		} else { 
+			@changedcount++
+			@result = color(14).' changed'
+		}
+		@returnmsg = @returnmsg.'\n'.@key[cslice(@slice1, length(@key) - 1)].@result
+	}
+	if(@truecount > 0) { @truemsg = color(2).'RAM: '.@truecount }
+	if(@changedcount > 0) { @changedmsg = color(14).' Changed: '.@changedcount }
+	if(@falsecount > 0) { @falsemsg = color(12).' Stored: '.@falsecount }
+	@returnmsg = @returnmsg.'\n'.color(7).'Totals: '.@truemsg.@changedmsg.@falsemsg
+	msg(@returnmsg)
 case 'allservers':
 	msg(discord_get_servers())
 case 'react':

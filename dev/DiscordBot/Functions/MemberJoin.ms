@@ -29,12 +29,22 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	@discordjoinMsg = replace(@discordjoinMsg, '%PrevJoins%', @prevjoinsMsgD)
 	array_insert(@logJointimes[@discord['userid']], @time, 0)
 	store_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times', @logJointimes)
+	@sendjoinmsg = true
+	if(array_index_exists(@config, 'Log_Member_Join')) {
+		@sendjoinmsg = @config['Log_Member_Join']
+	}
+	@invMessage = @botconfig['Log_Messages_Member_Join']
+	if(array_index_exists(@config, 'Log_Messages_Member_Join')) { 
+		@invMessage = @config['Log_Messages_Member_Join']
+	}
+	@invMessage = replace(@invMessage, '%User%', @userDisplaydc)
+	@invMessage = replace(@invMessage, '%UserID%', @discord['userid'])
+	@invMessage = replace(@invMessage, '%PrevJoins%', @prevjoinsMsgD)
 # Log Invite Code Usage
 	if(@config['Log_Invites'] == true) {
 		@membersInfo = get_value('DiscordBot.'.@discord['serverid'].'.members.info')
 		try {
 			discord_retrieve_invites(@discord['serverid'], closure(@raw) { 
-				@invMessage = @config['Log_Invites_Message']
 				@msgSuffix = ''
 				# Convert raw arrays to associative
 				@previnv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
@@ -103,13 +113,10 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					}
 					@results = array('code': @inv[@selectedCode]['code'], 'inviter': @invitername, 'inviterid': @inv[@selectedCode]['userid'], 'use': @inv[@selectedCode]['uses'])
 				}
-				@invMessage = replace(@invMessage, '%User%', @userDisplaydc)
-				@invMessage = replace(@invMessage, '%UserID%', @discord['userid'])
 				@invMessage = replace(@invMessage, '%InviteCode%', @results['code'])
 				@invMessage = replace(@invMessage, '%Uses%', @results['use'])
 				@invMessage = replace(@invMessage, '%Inviter%', @results['inviter'])
 				@invMessage = replace(@invMessage, '%InviterID%', @results['inviterid'])
-				@invMessage = replace(@invMessage, '%PrevJoins%', @prevjoinsMsgD)
 				if(@results['use'] < 2) { 
 					@invMessage = replace(@invMessage, '%InviterID1%', @results['inviterid'])
 				} else {
@@ -119,7 +126,9 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', @saveinv)
 				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
 				# Logs
-				_discordBot_send_message(@invMessage, @discord['serverid'], 'log');
+				if(@sendjoinmsg == true) {
+					_discordBot_send_message(@invMessage, @discord['serverid'], 'log');
+				}
 				_db_msg_Console(@consolejoinMsg.' '.@msgSuffix, @discord['serverid']);
 				_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Invites.yml', yml_encode(@inv, true), 'overwrite');
 			});
@@ -127,14 +136,32 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
 				@msg = 'Invite Logging is Enabled, however I do not have permission to view invites!'
 				_db_msg_Console('['.@discord['serverid'].'] '.@msg, @discord['serverid'])
-				_discordBot_send_message(@msg, @discord['serverid'], 'log')
+				if(@sendjoinmsg == true) {
+					@invMessage = replace(@invMessage, '%InviteCode%', '')
+					@invMessage = replace(@invMessage, '%Uses%', '')
+					@invMessage = replace(@invMessage, '%Inviter%', '')
+					@invMessage = replace(@invMessage, '%InviterID%', '')
+					@invMessage = replace(@invMessage, '%InviterID1%', '')
+					@invMessage = @invMessage.'\n' 
+				} else { 
+					@invMessage = ''
+				}
+				_discordBot_send_message(@invMessage.@msg, @discord['serverid'], 'log')
 			} else {
 				_db_msg_Console('['.@discord['serverid'].'] '.@ex['message'], @discord['serverid'])
 			}
 		} catch(Exception @ex) {
 			_db_msg_Console('['.@discord['serverid'].'] '.@ex['message'], @discord['serverid'])
 		}
-	}		
+	#Log: Join Message
+	} else if(@sendjoinmsg == true) {
+		@invMessage = replace(@invMessage, '%InviteCode%', '')
+		@invMessage = replace(@invMessage, '%Uses%', '')
+		@invMessage = replace(@invMessage, '%Inviter%', '')
+		@invMessage = replace(@invMessage, '%InviterID%', '')
+		@invMessage = replace(@invMessage, '%InviterID1%', '')
+		_discordBot_send_message(@invMessage, @discord['serverid'], 'log')
+	}
 # Wait a few milliseconds to see if another bot insta-kicks first.
 	set_timeout(1000, closure(){
 		@currentroles = array()
@@ -385,10 +412,14 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		store_value('DiscordBot.'.@discord['serverid'].'.members.former.roles', @membersFR)
 	}
 #Send Logs
-	if(@config['Log_Invites'] == true) {
-		@leaveMsg = ':leave: **%User%** left the server. `%Level% %PrevJoins% %Inviter%`'
-		if(array_index_exists(@config, 'Log_Invites_Leave_Message')) { 
-			@leaveMsg = @config['Log_Invites_Leave_Message']
+	@sendleavemsg = true
+	if(array_index_exists(@config, 'Log_Member_Leave')) {
+		@sendleavemsg = @config['Log_Member_Leave']
+	}
+	if(@sendleavemsg == true) {
+		@leaveMsg = @botconfig['Log_Messages_Member_Leave']
+		if(array_index_exists(@config, 'Log_Messages_Member_Leave')) { 
+			@leaveMsg = @config['Log_Messages_Member_Leave']
 		}
 		@leaveMsg = replace(@leaveMsg, '%User%', @userDisplaydc)
 		@leaveMsg = replace(@leaveMsg, '%UserID%', @discord['userid'])

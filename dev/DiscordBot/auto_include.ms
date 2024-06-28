@@ -181,6 +181,11 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 	}
 # Checks and Startup Init
 	if(is_numeric(@cfgtype)) {
+		if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is too old, please update.') return('OldConfig') }
+		if(@loadcfg['v'] < import('DiscordBot.cfg.version', array(1,1))[1]) {
+			_db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is too old, please update.')
+			return('OldConfig')
+		}
 		@botconfig = import('DiscordBot.config.Bot')
 		@botInfo = discord_member_info(@cfgtype, @botconfig['Bot_ID'])
 		if(@botInfo['nickname'] != '') { array_set(@loadcfg, 'Bot_Name', @botInfo['nickname']) } else { array_set(@loadcfg, 'Bot_Name', @botInfo['displayname']) }
@@ -225,6 +230,11 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 			}
 		case 'Discord':
 		case 'Bot':
+			if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Admins(color(12).'['.@prefix.'] Bot Config is too old, please update.') return('OldConfig') }
+			if(@loadcfg['v'] < import('DiscordBot.cfg.version', array(1,1))[0]) {
+				_db_msg_Admins(color(12).'['.@prefix.'] Bot Config is too old, please update.')
+				return('OldConfig')
+			}
 			if(!function_exists('discord_connect')) { 
 				_db_msg_Console('CHDiscord extension not installed!', 'none')
 				return(false)
@@ -343,6 +353,7 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 		if(!is_array(@guildlist)) { @guildlist = import('DiscordBot.Guilds') }
 		# if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
 		@stats = array()
+		@VCstats = array()
 		foreach(@guild in @guildlist) {
 			@queue = array()
 			if(!array_contains(import('DiscordBot.Guilds'), @guild)) { continue() }

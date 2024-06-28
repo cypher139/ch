@@ -1,4 +1,6 @@
 ### Bot Administration
+# Config version number
+v: 17
 # - CommandHelper profile name in which your Discord Bot token is stored:
 Profile_Name: discordCredentials
 # Your Bot's information:
@@ -44,3 +46,25 @@ CMD_Blacklist_Commands:
   - play
   - trade
   - t
+#
+#
+# Default System Messages
+# If a server does not specify a message in their config, the default listed here is used.
+#Member Joins and Leaves
+Log_Messages_Member_Join: ":join: **%User%**  [%UserID%] joined using invite **%InviteCode%** %PrevJoins%\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
+Log_Messages_Member_Leave: ":leave: **%User%** left the server. `%Level% %PrevJoins% %Inviter%`"
+#General Alert to all server members. Useful to tell users to keep their accounts safe, and to inform users of why many channels may have missing unread messages.
+#Leave blank to disable sending an announcement
+AS_General_Announcement: "oof a member got hacked and spammed the same message a lot. I've removed those messages; sorry for the unread notifications!\nRemember if you get your account back feel free to DM one of us or someone from the server so that you can be unbanned."
+# Showcase Channel
+# What replies should we say to users who were chatting?
+Showcase_Reactions:
+  # Chat was not allowed, as it did not fit the posting requirements
+  Not_Allowed: "To show your cool project please include a picture!\n To react, add a reaction and talk in %TalkChannel%"
+  # Previous message already is a comment from same poster
+  Multiple_Msgs: "%UserID% To include more details about your project please edit the additional info into your previous post."
+  # Chat was a reaction from another user
+  Reaction_Comment: "Thanks for your comment %UserID%! To avoid chat in the showcases, **add a reaction** to the original post and **talk in %TalkChannel%** about the showcased project!"
+#
+#
+  

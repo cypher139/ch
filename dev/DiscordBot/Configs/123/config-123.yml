@@ -1,4 +1,6 @@
 # discordBot Guild Configuration
+# Config version number
+v: 17
 # General admin
 Server_Nickname: "Your Server"
 #
@@ -16,13 +18,20 @@ Console_Messages: true
 Console_Messages_Chat: false
 # Send Bot debug messages for events that occur regarding this server?
 Console_Debug: false
-# Send a message to log on Member join with the invite used?
+#
+# Member Joins and Leaves
+# Send join or Leave log uypon a member join or leave?
+Log_Member_Join: true
+Log_Member_Leave: true
+# Log the invites used on server?
 Log_Invites: true
 # Customize Member join and leave log message: 
-# Variables: %User%  %UserID%  %InviteCode%  %Uses%  %Inviter%  %InviterID%  %InviterID1%
-# %InviterID1% shows the inviter's ID if first time using invite.
-Log_Invites_Message: ":join: **%User%**  [%UserID%] joined using invite **%InviteCode%**\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
-Log_Invites_Leave_Message: ":leave: **%User%** left the server. `%Level% %PrevJoins% %Inviter%`"
+# Variables: %User%  %UserID%  %InviteCode%  %Uses%  %Inviter%  %InviterID%  %InviterID1% %PrevJoins%
+# %InviterID1% shows the inviter's ID if first time using invite. %PrevJoins% shows dates of previous joins if applicable.
+# **Optional, uncomment to customize**
+#Log_Messages_Member_Join: ":join: **%User%** [%UserID%] joined using invite **%InviteCode%** %PrevJoins%\n`Invite: -Use #%Uses%  -From: %Inviter% %InviterID1%`"
+#Log_Messages_Member_Leave: ":leave: **%User%** left the server. `%Level% %PrevJoins% %Inviter%`"
+#
 # Show Bot DM Notifications:
 DM_Notify: true
 # Show Bot DM notification if the user is *not* a server member?
@@ -42,7 +51,9 @@ AS_Delete_Messages: true
 # Log various User Info in the Spam alert message?
 AS_Log_ShowUserInfo: true
 #General Alert to all server members. Useful to tell users to keep their accounts safe, and to inform users of why many channels may have missing unread messages.
-AS_General_Announcement: "Another member got hacked or just chose to spam sketchy invites. I removed those messages, sorry for the unread notifications! Remember if you get your account back feel free to DM one of us or someone from the server so that you can be unbanned."
+# **Optional, uncomment to customize**
+# AS_General_Announcement: "Another member got hacked or just chose to spam sketchy invites. I removed those messages, sorry for the unread notifications! Remember if you get your account back feel free to DM one of us or someone from the server so that you can be unbanned."
+#
 # Showcase Channel
 # Intended as a place to show your server community's art projects, latest game achievements, etc., and ward off chat to another channel.
 # To enable the Showcase channel chat protection feature place the channel's ID below:
@@ -50,13 +61,14 @@ Showcase_Channel: 123235346
 #What channel should users be redirected to if they are talking about project?
 Showcase_Channel_Talk: 987654213
 # What replies should we say to users who were chatting?
-Showcase_Reactions:
+# **Optional, uncomment to customize**
+#Showcase_Reactions:
   # Chat was not allowed, as it did not fit the posting requirements
-  Not_Allowed: "To show your cool project please include a picture!\n To react, add a reaction and talk in %TalkChannel%"
+#  Not_Allowed: "To show your cool project please include a picture!\n To react, add a reaction and talk in %TalkChannel%"
   # Previous message already is a comment from same poster
-  Multiple_Msgs: "%UserID% To include more details about your project please edit the additional info into your previous post."
+#  Multiple_Msgs: "%UserID% To include more details about your project please edit the additional info into your previous post."
   # Chat was a reaction from another user
-  Reaction_Comment: "Thanks for your comment %UserID%! To avoid chat in the showcases, **add a reaction** to the original post and **talk in %TalkChannel%** about the showcased project!"
+#  Reaction_Comment: "Thanks for your comment %UserID%! To avoid chat in the showcases, **add a reaction** to the original post and **talk in %TalkChannel%** about the showcased project!"
 #
 #
 # Mentions

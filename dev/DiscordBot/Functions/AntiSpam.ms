@@ -121,7 +121,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
 			# Returning users: Bypass new user checks
 			if(@reasonCode < 3) {
-				@newreturn = import('DiscordBot.'.@guild.'.returning.users')
+				@newreturn = import('DiscordBot.'.@discord['serverid'].'.returning.users')
 				if(!is_array(@newreturn)) { @newreturn = array() }
 				if(array_index_exists(@newreturn, @discord['userid'])) {
 					if(@newreturn[@discord['userid']] == true) { die() }
@@ -232,7 +232,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			if(@asmembers[@discord['userid']]['log'] == false) {
 				_db_msg_Console(color(14).@discord['username'].color(8).' <@'.@discord['userid'].'>'.color(7).' triggered Anti Spam protection. Reason #'.@reasonCode.color(9).'\n'.@codeDesc[@reasonCode], @discord['serverid'])
 				_discordBot_send_message(@logMsg, @discord['serverid'], 'admin');
-				@announceMsg = ''
+				@announceMsg = @botconfig['AS_General_Announcement']
 				if(array_index_exists(@config, 'AS_Announcement_'.@reasonCode)) {
 					@announceMsg = replace(@config['AS_Announcement_'.@reasonCode], '%UserID%', '<@'.@discord['userid'].'>')
 				} else if(array_index_exists(@config, 'AS_General_Announcement')) {

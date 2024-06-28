@@ -5,15 +5,19 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
 	if(!array_index_exists(@config, 'Showcase_Channel') || !array_index_exists(@config, 'Showcase_Channel_Talk')) { die() }
-	if(!array_index_exists(@config, 'Showcase_Reactions')) {
-		array_set(@config, 'Showcase_Reactions', array(
+	@reactionList = array(
 		# Chat was not allowed, as it did not fit the posting requirements
 		'Not_Allowed': 'To show your cool project please include a picture!\n To react, add a reaction and talk in %TalkChannel%',
 		# Previous message already is a comment from same poster
 		'Multiple_Msgs': '%UserID% To include more details about your project please edit the additional info into your previous post.',
 		# Chat was a reaction from another user
 		'Reaction_Comment': 'Thanks for your comment %UserID%! To avoid chat in the showcases, **add a reaction** to the original post and **talk in %TalkChannel%** about the showcased project!'
-		));
+	);
+	if(array_index_exists(@botconfig, 'Showcase_Reactions')) {
+		@reactionList = @botconfig['Showcase_Reactions']
+	}
+	if(array_index_exists(@config, 'Showcase_Reactions')) {
+		@reactionList = @config['Showcase_Reactions']
 	}
 	@ytregex = '^https:[/]{2}[w]{0,3}[.]?youtu[.]?be[./](?:com[/]watch[?]v=)?[A-z0-9]{11}(?:[?]?si=[A-z0-9-]{16})?$'
 	
@@ -22,7 +26,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 		@isUser = false
 		@isOtherUser = false
 		@isAllowed = false
-		@reaction = @config['Showcase_Reactions']['Not_Allowed']
+		@reaction = @reactionList['Not_Allowed']
 		if(!array_index_exists(@discord, 'attachments', 0, 'filename')) {
 			@checkMsg = array();
 			@checkIndex = @discord['time']
@@ -63,7 +67,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 						} else {
 						# Previous message already is a comment
 							@isAllowed = false
-							@reaction = @config['Showcase_Reactions']['Multiple_Msgs']
+							@reaction = @reactionList['Multiple_Msgs']
 						}
 					# --- Different user commenting ---
 					} else if(reg_count(@ytregex, @discord['message']) > 0) {
@@ -71,7 +75,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 						@isAllowed = true
 					} else {
 						@isAllowed = false
-						@reaction = @config['Showcase_Reactions']['Reaction_Comment']
+						@reaction = @reactionList['Reaction_Comment']
 					}
 				} else {
 				# No matches found, allow.

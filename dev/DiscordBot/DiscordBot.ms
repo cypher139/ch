@@ -42,6 +42,7 @@ if(extension_exists('CHDiscord')) {
 		}
 	}
 }
+export('DiscordBot.cfg.version', array(10,10));
 
 #build 81, 86, 95
 # Startup Discord Functions

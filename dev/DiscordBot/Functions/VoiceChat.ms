@@ -20,7 +20,7 @@ proc _vc_display_duration(@time) {
 
 bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
-	_db_msg_Console(color(10).'VC + '.@discord['username'], @discord['serverid'], 'debug')
+	_db_msg_Console(color(10).'VC <'.@discord['channel'].'>  + '.@discord['username'], @discord['serverid'], 'debug')
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@vc = ''
@@ -89,12 +89,12 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 						@lastping[@vc['VC_Role_ID']] = time()
 						store_value('DiscordBot.VC.last.pings', @lastping)
 						@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
-						if(!is_array(@stats)) { @stats = array('active': array(), 'activetime': array(), 'start': (time() - @timeout), 'end': '', 'users': array(), 'channel': @discord['channel']) }
+						if(!is_array(@stats)) { @stats = array('active': array(), 'activetime': array(), 'start': (time() - @timeout), 'end': '', 'users': array(), 'channel': @discord['channel'], 'channelid': @discord['channelid']) }
 						array_set(@stats, 'pinguser', @discord['username'])
 						store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats', @stats)
 					}
 				});
-				set_timeout((@timeout + 10000), closure(){
+				set_timeout((@timeout + 5000), closure(){
 					export('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress', null)
 				});
 			}
@@ -103,7 +103,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 #Save current users in channel.
 	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
 	if(!is_array(@stats)) { 
-		@stats = array('active': array(), 'activetime': array(), 'start': time(), 'end': '', 'users': array(), 'channel': @discord['channel'])
+		@stats = array('active': array(), 'activetime': array(), 'start': time(), 'end': '', 'users': array(), 'channel': @discord['channel'], 'channelid': @discord['channelid'])
 	}	
 	if(!array_contains(@stats['active'], @discord['userid'])) { 
 		@stats['active'][] = @discord['userid']
@@ -139,7 +139,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 #--------------------------------------------
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
-	_db_msg_Console(color(12).'VC - '.@discord['username'], @discord['serverid'], 'debug')
+	_db_msg_Console(color(12).'VC <'.@discord['channel'].'>  - '.@discord['username'], @discord['serverid'], 'debug')
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
 	# Setup config
@@ -149,7 +149,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	} else if(array_index_exists(@config, 'VC_Options', @discord['channel'])) {
 		@vc = @config['VC_Options'][@discord['channel']]
 	} else {
-		@vc = array('VC_DM_Thanks': false)
+		@vc = array('VC_Logs': array('Join', 'Leave', 'Completed'), 'VC_DM_Thanks': false)
 	}	
 	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats')
 	if(!is_array(@stats)) { die() }
@@ -161,7 +161,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 	if(array_index_exists(@stats, 'activetime', @discord['userid'])) { 
 		@userTime = time() - @stats['activetime'][@discord['userid']]
 	} else {
-		_db_msg_Console('Cannot compute VC join time for '@discord['username'].': Join event not recorded - Possibly Discord did not provide a join event to the bot.', @discord['serverid'], 'error')
+		_db_msg_Console('Cannot compute VC join time for '.@discord['username'].': Join event not recorded - Possibly Discord did not provide a join event to the bot.', @discord['serverid'], 'error')
 		@userTime = 30000
 	}
 	@stats['time'][@discord['userid']] = @stats['time'][@discord['userid']] + @userTime
@@ -189,6 +189,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		
 	#End of call
 	if(!array_index_exists(@stats['active'], 0)) {
+		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats');	
 		#DM thanks
 		if(@vc['VC_DM_Thanks'] == true && array_size(@stats['users']) > 1) {
 			foreach(@userid: @username in @stats['users']) {
@@ -238,7 +239,6 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		array_insert(@lastVCStats, @stats, 0);
 		_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/'.simple_date('MMyy', time()).'/'.@discord['serverid'].'_'.simple_date('MMyy', time()).'_VC_Stats'.@statType.'-'.@discord['channelid'].'.json', json_encode(@lastVCStats), 'overwrite')
 		store_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].@statType, @lastVCStats);
-		clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.live.stats');	
 	#End logs
 		if(array_contains(@vc['VC_Logs'], 'Completed') && array_size(@stats['users']) > 1) {
 		# send embed to channel, with fields of each caller and length
