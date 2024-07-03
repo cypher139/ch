@@ -28,13 +28,13 @@ proc _db_as_dm(@discord, @isFirst = false) {
 }
 
 bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'priority': 'HIGHEST'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
 	if(@discord['bot'] == true) { die() }
 	@time = time();
 	array_set(@discord, 'time', @time);
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
-	@guildInfo = import('DiscordBot.Guilds.Info.'.@discord['serverid'], array('name': @config['Server_Nickname']));
+	@guildInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'], array('name': @config['Server_Nickname']));
 	@codeDesc = array(0: 'Unknown', 1: '*New* user has talked on more than the limit of '.@config['AS_New_User_Channel_Limit'].' different channels.', 2: '*New* user used a global mention: `%word%`', 3: 'Duplicated same message', 4: 'Duplicated same message across 3 or more channels')
 	# 0: not selected, 1: New user: channel limit, 2: New user used here/everyone, 3: Dupe messages, 4: dupe messages over 3 channels
 	@reasonCode = 0

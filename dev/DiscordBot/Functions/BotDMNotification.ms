@@ -40,19 +40,19 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	@userServers = array()
 	@avatar = 'https://cdn.discordapp.com/embed/avatars/0.png'
 	@gf = 0
-	foreach(@guild in import('DiscordBot.Guilds')) {
-		@cfg = import('DiscordBot.config.'.@guild)
-		if(@cfg['DM_Notify'] == true) {	@guildcfgNotify[] = @guild }
-		array_set(@guildcfgCmd, @guild, @cfg['CMD_Command_Prefix']);
-		array_set(@guildcfgChannel, @guild, @cfg['Log_Channel']);
-		array_set(@guildcfgURL, @guild, @cfg['URL_Broadcast']);
-		if(array_index_exists(@cfg, 'DM_Notify_NonMember')) { array_set(@guildcfgNM, @guild, @cfg['DM_Notify_NonMember']) } else { array_set(@guildcfgNM, @guild, false) }
-		if(array_contains(discord_get_members(@guild), @discord['userid'])) {
-			@userServers[] = @guild
+	foreach(@serverID in import('DiscordBot.Servers')) {
+		@cfg = import('DiscordBot.config.'.@serverID)
+		if(@cfg['DM_Notify'] == true) {	@guildcfgNotify[] = @serverID }
+		array_set(@guildcfgCmd, @serverID, @cfg['CMD_Command_Prefix']);
+		array_set(@guildcfgChannel, @serverID, @cfg['Log_Channel']);
+		array_set(@guildcfgURL, @serverID, @cfg['URL_Broadcast']);
+		if(array_index_exists(@cfg, 'DM_Notify_NonMember')) { array_set(@guildcfgNM, @serverID, @cfg['DM_Notify_NonMember']) } else { array_set(@guildcfgNM, @serverID, false) }
+		if(array_contains(discord_get_members(@serverID), @discord['userid'])) {
+			@userServers[] = @serverID
 			@gf++
-			@userserver = @guild
+			@userserver = @serverID
 			if(@gf < 2) {
-				@avatar = discord_member_info(@guild, @discord['userid'])['avatar']
+				@avatar = discord_member_info(@serverID, @discord['userid'])['avatar']
 			}
 		}
 	}
@@ -126,18 +126,18 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		}
 	}	
 # Send DM notification to each Discord server logs (if enabled)	
-	foreach(@guild in @guildcfgNotify) {
+	foreach(@serverID in @guildcfgNotify) {
 	#Check: If user not a member of guild
-		if(!array_contains(@userServers, @guild)) {
-			if(@guildcfgNM[@guild] == false) {
+		if(!array_contains(@userServers, @serverID)) {
+			if(@guildcfgNM[@serverID] == false) {
 				continue()
 			}
 		}
-		@dcMsg = _db_format_msg_attach(@discord, @guildcfgURL[@guild]);
+		@dcMsg = _db_format_msg_attach(@discord, @guildcfgURL[@serverID]);
 		@msgembed = array(array('title': @discord['username'], 'color': array('r': 109, 'g': 109, 'b': 109), 'description': @dcMsg))
 	#Get Avatar and embed color info
 		@userinfo = array('avatar': @avatar)
-		@userinfo = discord_member_info(@guild, @discord['userid']);
+		@userinfo = discord_member_info(@serverID, @discord['userid']);
 		if(array_index_exists(@userinfo, 'avatar')) {
 			array_set(@msgembed[0], 'author', array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])));
 			array_set(@msgembed[0], 'thumbnail', @userinfo['avatar'].'?size=48');
@@ -156,7 +156,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		# Antispam: No, don't read back DM spam - some spammers also spam the message to bot when AS DM's to tell them that they are timed out.
 		if(array_index_exists(@isAS, 'active', @discord['userid'])) {
 			@oserver = ''
-			if(@guild != @isAS['active'][@discord['userid']]) { @oserver = ' on another server' }
+			if(@serverID != @isAS['active'][@discord['userid']]) { @oserver = ' on another server' }
 			@dcMsg = '<<<Anti Spam protection is active for this user'.@oserver.'.>>>'
 			if(array_contains(@isAS['msgs'][@discord['userid']], sha1(@discord['message']))) {
 				@dcMsg = @dcMsg.'\nThe same spam that triggered Anti Spam was just DMed to me.'
@@ -179,15 +179,15 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		}
 		@msgembed[0]['description'] = @dcMsg
 		try {
-			discord_broadcast(@guild, @guildcfgChannel[@guild], array('content': ':envelope_with_arrow:  '.@dm1, 'embeds': @msgembed))
+			discord_broadcast(@serverID, @guildcfgChannel[@serverID], array('content': ':envelope_with_arrow:  '.@dm1, 'embeds': @msgembed))
 		} catch(InsufficientPermissionException @ex) {
 			@msg = @ex['message']
 			if(string_ends_with(@ex['message'], 'VIEW_CHANNEL')) {
-				@msg = 'Bot cannot view Log Channel! ('.@guildcfgChannel[@guild].')'
+				@msg = 'Bot cannot view Log Channel! ('.@guildcfgChannel[@serverID].')'
 			}
-			_db_msg_Console('['.@guild.'] '.@msg, 'bot')
+			_db_msg_Console('['.@serverID.'] '.@msg, 'bot')
 		} catch(Exception @ex) {
-			_db_msg_Console('['.@guild.'] '.@ex['message'], 'bot')
+			_db_msg_Console('['.@serverID.'] '.@ex['message'], 'bot')
 		}
 	}
 }

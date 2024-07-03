@@ -45,9 +45,9 @@ foreach(@num: @filename in @filelist) {
 }
 _write_file(import('DiscordBot.logs.dir').'/Export/'.@resultsfile, json_encode(@processcount), 'overwrite');
 msg(color(3).'ID '.@authorID.' Results:'. color(10).'  <'.(time() - @start).'ms>');
-foreach(@guild in @processcount) {
+foreach(@server in @processcount) {
 	@amsg = ''
-	if(@mode == 'single') { @amsg = color(10).' Author messages: '.color(7).@guild['authormsgs'].color(14).' Average words per message: '.color(7).round(@guild['total'] / @guild['authormsgs'], 2) }
-	msg(color(6).'Guild "'.@guild['name'].'":\n'.color(9).'Total words: '.color(7).@guild['total'].@amsg)
+	if(@mode == 'single') { @amsg = color(10).' Author messages: '.color(7).@server['authormsgs'].color(14).' Average words per message: '.color(7).round(@server['total'] / @server['authormsgs'], 2) }
+	msg(color(6).'Guild "'.@server['name'].'":\n'.color(9).'Total words: '.color(7).@server['total'].@amsg)
 }
 <<<

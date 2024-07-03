@@ -1,6 +1,6 @@
 #"Showcase" channel: only allow new project posts and not misc. chat about the project
 bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
 	array_set(@discord, 'time', time());
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);

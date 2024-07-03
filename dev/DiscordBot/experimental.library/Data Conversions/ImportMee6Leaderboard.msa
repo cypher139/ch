@@ -1,7 +1,7 @@
 # If you use the Mee6 Leaderboard you can import the leaderboard data to cypher139's Discord bot, then discontinue Mee6 usage if desired
 admin:/importmee6lb [$guild] [$] = >>>
 @name = 'Discord'
-@guild = 0
+@serverID = 0
 @args = parse_args($)
 @prefix = 'DiscordBot'
 @botconfig = import('DiscordBot.config.Bot')
@@ -12,10 +12,10 @@ if(array_contains(@args, 'help')) {
 	die()
 }
 
-proc _convert_json_data(@raw, @guild) {
+proc _convert_json_data(@raw, @serverID) {
 	@json = json_decode(@raw)
 	@botconfig = import('DiscordBot.config.Bot')
-	@config = import('DiscordBot.config.'.@guild)
+	@config = import('DiscordBot.config.'.@serverID)
 	@newLeaderboard = array('Guild_Name': @config['LB_Options']['Guild_Name'], 'lastedit': time(), 'members': array(), 'options': '', 'guild': @json['guild'])
 	foreach(@i: @user in @json['players']) {
 		@userid = @json['players'][@i]['id']
@@ -50,67 +50,67 @@ proc _convert_json_data(@raw, @guild) {
 	}
 	#avatar:	https://cdn.discordapp.com/avatars/<USERID>/<AVATARID under {avatar: 123}>.webp?size=512
 	msg('Leaderboard size: '.array_size(@newLeaderboard['members'])) 
-	export('DiscordBot.'.@guild.'.Leaderboard', @newLeaderboard);
-	store_value('DiscordBot.'.@guild.'.Leaderboard', @newLeaderboard);
-	_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Converted-Mee6-Leaderboard-'.@json['guild']['name'].'.json', json_encode(@newLeaderboard), 'OVERWRITE')
-	_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Converted-Mee6-RoleRewards-Config-'.@json['guild']['name'].'.yml', yml_encode(@rr, true), 'OVERWRITE')
+	export('DiscordBot.'.@serverID.'.Leaderboard', @newLeaderboard);
+	store_value('DiscordBot.'.@serverID.'.Leaderboard', @newLeaderboard);
+	_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Converted-Mee6-Leaderboard-'.@json['guild']['name'].'.json', json_encode(@newLeaderboard), 'OVERWRITE')
+	_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Converted-Mee6-RoleRewards-Config-'.@json['guild']['name'].'.yml', yml_encode(@rr, true), 'OVERWRITE')
 	msg('The import of '.@json['guild']['name'].'\'s Leaderboard was successful.')
 	msg('You will need to add the Role Rewards configuration manually to the DiscordBot Guild Config file. A config file was provided to copypaste from.')
 	return(true)
 }
 #Guild ID Setup
 if(!is_numeric($guild)) {
-	@guildNick = import('DiscordBot.Guilds.Nicknames', array())
+	@guildNick = import('DiscordBot.Servers.Nicknames', array())
 	switch(to_lower($guild)) {
 	case 'default':
 	case 'primary':
 	case 'local':
 	case '-':
-		@guild = @botconfig['Primary_Guild']
+		@serverID = @botconfig['Primary_Guild']
 	default:
 		foreach(@sid: @nick in @guildNick) {
 			if(to_lower($guild) == to_lower(@nick)) {
-				@guild = @sid
+				@serverID = @sid
 				break()
 			}
 		}
 	}
 } else if(length($guild) > 15) {
-	if(array_contains(import('DiscordBot.Guilds', array()), $guild)) {
-		@guild = $guild
+	if(array_contains(import('DiscordBot.Servers', array()), $guild)) {
+		@serverID = $guild
 	}
 }
-if(!is_numeric(@guild) || @guild <= 0) { die(color(12).'['.@prefix.'] Guild is not recognized by DiscordBot. Check the Server ID or nickname given.') }
-@config = import('DiscordBot.config.'.@guild)
+if(!is_numeric(@serverID) || @serverID <= 0) { die(color(12).'['.@prefix.'] Guild is not recognized by DiscordBot. Check the Server ID or nickname given.') }
+@config = import('DiscordBot.config.'.@serverID)
 #Actions
 if($guild == 'local') { 
 # Import from a local file, only supports importing into Primary Guild!
 	try { 
-		@LeaderboardData = import('DiscordBot.config.dir').'/Guilds/Import_Leaderboard_'.@guild.'.json'
+		@LeaderboardData = import('DiscordBot.config.dir').'/Servers/Import_Leaderboard_'.@serverID.'.json'
 	} catch(Exception @ex) {
 		die(@ex['message'])
 	}
-	_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Mee6-Leaderboard-'.@LeaderboardData['guild']['name'].'.json', @LeaderboardData, 'OVERWRITE')
-	_convert_json_data(@LeaderboardData, @guild)
+	_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Mee6-Leaderboard-'.@LeaderboardData['guild']['name'].'.json', @LeaderboardData, 'OVERWRITE')
+	_convert_json_data(@LeaderboardData, @serverID)
 	die()
 }
 	
 if(array_contains(@args, 'view')) {
-	msg(get_value('DiscordBot.'.@guild.'.Leaderboard'))
+	msg(get_value('DiscordBot.'.@serverID.'.Leaderboard'))
 	die()
 }
 
-http_request('https://mee6.xyz/api/plugins/levels/leaderboard/'.@guild.'?limit=999&page=0', array('blocking': true, 'success': closure(@data) {
+http_request('https://mee6.xyz/api/plugins/levels/leaderboard/'.@serverID.'?limit=999&page=0', array('blocking': true, 'success': closure(@data) {
 	if(@data['error'] == true) {
 		if(@data['responseCode'] == 404) {
-			die('Guild "'.@guild.'" was not found.')
+			die('Guild "'.@serverID.'" was not found.')
 		}
 		msg('No relevant data received from server, did you typo the server ID?')
 		export('DiscordBot.debug.http.error', @data)
 		return(false)
 	} else {
-		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Mee6-Leaderboard-'.json_decode(@data['body'])['guild']['name'].'.json', @data['body'], 'OVERWRITE')
-		_convert_json_data(@data['body'], @guild)
+		_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Mee6-Leaderboard-'.json_decode(@data['body'])['guild']['name'].'.json', @data['body'], 'OVERWRITE')
+		_convert_json_data(@data['body'], @serverID)
 		return(true)
 	}
 }));

@@ -4,7 +4,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 	if(@config['LB_Enable'] != true) { return('NotEnabled') }
 	@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard');
 	@levelxp = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.levelXP')
-	@serverInfo = import('DiscordBot.Guilds.Info.'.@discord['serverid'])
+	@serverInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'])
 	@showExtraInfo = false
 	@userIDs = array()
 	if(@leaderboard == null) { 
@@ -20,7 +20,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 	}
 	if(@serverInfo == null) { 
 		_discordBot_get_server_info(@discord['serverid'])
-		@serverInfo = import('DiscordBot.Guilds.Info.'.@discord['serverid'])
+		@serverInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'])
 		# @serverIcon = 'https://cdn.discordapp.com/embed/avatars/0.png'
 	}
 	# Calculate Top ranks

@@ -1,5 +1,5 @@
 proc _discordBot_cmd_whois(@discord, @args) {
-	@serverInfo = import('DiscordBot.Guilds.Info.'.@discord['serverid'])
+	@serverInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'])
 	@showExtraInfo = false
 	@userIDs = array()
 	@botconfig = import('DiscordBot.config.Bot')
@@ -179,7 +179,7 @@ proc _discordBot_cmd_wrf(@discord, @args) {
 		@msg = ''
 		@amount = 0
 		@config = import('DiscordBot.config.'.@discord['serverid'])
-		@guildInfo = import('DiscordBot.Guilds.Info.'.@discord['serverid'])
+		@guildInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'])
 		@guildIconType = 'png'
 		if(string_starts_with(@guildInfo['icon'], 'a_')) { @guildIconType = 'gif' }
 		@suffix = ''

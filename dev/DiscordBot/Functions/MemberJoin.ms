@@ -1,6 +1,6 @@
 # Welcome DM and Message for new Discord Server Members, and record invite used.
 bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@time = time();
@@ -287,7 +287,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 }
 
 bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@lbremove = 0

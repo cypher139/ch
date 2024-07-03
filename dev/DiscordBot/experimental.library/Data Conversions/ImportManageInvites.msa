@@ -2,7 +2,7 @@
 # If you are using the ManageInvite bot, you can visit their API, download a json of your current invite data, add the relevant invite codes to each array, and then use this command to finish importing into cypher139's Discord bot
 admin:/importmi [$guild] [$] = >>>
 @name = 'Discord'
-@guild = 0
+@serverID = 0
 @prefix = 'DB Import Invites'
 @args = parse_args($)
 @config = import('DiscordBot.config.Bot')
@@ -12,35 +12,35 @@ if(array_contains(@args, 'help')) {
 }
 #Guild ID Setup
 if(!is_numeric($guild)) {
-	@guildNick = import('DiscordBot.Guilds.Nicknames', array())
+	@guildNick = import('DiscordBot.Servers.Nicknames', array())
 	switch(to_lower($guild)) {
 	case 'default':
 	case 'primary':
 	case '-':
-		@guild = @botconfig['Primary_Guild']
+		@serverID = @botconfig['Primary_Guild']
 	default:
 		foreach(@sid: @nick in @guildNick) {
 			if(to_lower($guild) == to_lower(@nick)) {
-				@guild = @sid
+				@serverID = @sid
 				break()
 			}
 		}
 	}
 } else if(length($guild) > 15) {
-	if(array_contains(import('DiscordBot.Guilds', array()), $guild)) {
-		@guild = $guild
+	if(array_contains(import('DiscordBot.Servers', array()), $guild)) {
+		@serverID = $guild
 	}
 }
-if(!is_numeric(@guild) || @guild <= 0) { die(color(12).'['.@prefix.'] Guild is not recognized by DiscordBot. Check the Server ID or nickname given.') }
-@config = import('DiscordBot.config.'.@guild)
+if(!is_numeric(@serverID) || @serverID <= 0) { die(color(12).'['.@prefix.'] Guild is not recognized by DiscordBot. Check the Server ID or nickname given.') }
+@config = import('DiscordBot.config.'.@serverID)
 
 @importedData = array()
 	try { 
-		@importedData = json_decode(read(import('DiscordBot.config.dir').'/response_mi_'.@guild.'.json'))['data']
+		@importedData = json_decode(read(import('DiscordBot.config.dir').'/response_mi_'.@serverID.'.json'))['data']
 	} catch(Exception @ex) {
 		die(@ex['message'])
 	}
-_db_msg_Console(@importedData, @guild, 'debug')
+_db_msg_Console(@importedData, @serverID, 'debug')
 if(@importedData[0]['guildID'] != @id) {
 	die(color(12).'['.@prefix.'] Guild given does not match Guild in imported data! Check the Server ID given in the json filename.')
 }

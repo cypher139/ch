@@ -1,15 +1,15 @@
 #Admin actions for the Discord bot, accessed via the Minecraft server
-admin:/discordbot [$action] [$] = >>>
+admin:/dbadmin [$action] [$] = >>>
 @name = 'Discord'
 @prefix = '['.@name.'] '
 @args = parse_args($)
 @action = to_lower(string($action))
 @botconfig = import('DiscordBot.config.Bot')
-@guilds = import('DiscordBot.Guilds')
-@guild = @botconfig['Primary_Guild']
+@servers = import('DiscordBot.Servers')
+@serverID = @botconfig['Primary_Guild']
 foreach(@arg in @args) {
-	if(array_contains(@guilds, @arg)) {
-		@guild = @arg
+	if(array_contains(@servers, @arg)) {
+		@serverID = @arg
 		array_remove_values(@args, @arg)
 		break()
 	}
@@ -18,10 +18,10 @@ foreach(@arg in @args) {
 include_dir('command.library');
 #pseudo array for actions that require event array
 # 777378696782657084 = ASCII: MINECRAFT
-@discord = array('admin': true, 'bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
+@discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $)
 
-@config = import('DiscordBot.config.'.@guild)
-msg('Using Server ID: '.@guild)
+@config = import('DiscordBot.config.'.@serverID)
+msg('Using Server ID: '.@serverID)
 
 switch(@action) {
 case '1to100':
@@ -57,8 +57,8 @@ case 'update':
 	x_thread_join('DiscordBotUpdate', 10000)
 	@stats = import('DiscordBot.debug.stats.last.updatemembers')
 	if(is_array(@stats)) {
-		foreach(@guild: @data in @stats) {
-			msg('Guild: '.@guild)
+		foreach(@serverID: @data in @stats) {
+			msg('Guild: '.@serverID)
 			foreach(@k: @v in @data) {
 				if(is_array(@v) || @v > 0) {
 					msg(@k.': '.@v)
@@ -70,13 +70,13 @@ case 'update':
 	msg(color(3).'Time elapsed: '.@timeElapsed.'ms.')
 case 'memberinfo':
 	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord user ID to view!') }
-	@gmr = discord_member_info(@guild, @args[0])
+	@gmr = discord_member_info(@serverID, @args[0])
 	msg(color(10).'Member info:')
 	msg(@gmr)
 case 'viewinvites':
-	discord_retrieve_invites(@guild, closure(@ex) { 
+	discord_retrieve_invites(@serverID, closure(@ex) { 
 		console(@ex) 
-		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
+		_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
 	});
 case 'transferroles':
 	@return = _discordBot_cmd_transferroles(@discord, @args)
@@ -95,7 +95,7 @@ case 'getroles':
 	case 'discord':
 	case 'chd':
 		try {
-			@roles = discord_member_get_roles(@guild, @args[0])
+			@roles = discord_member_get_roles(@serverID, @args[0])
 			if(player() != '~console') { @roles = array_keys(@roles) }
 		} catch(NotFoundException @ex) {
 			die(@prefix.color(14).'User ID Not Found on Server.')
@@ -105,7 +105,7 @@ case 'getroles':
 	case 1:
 	case 'saved':
 	case 'gv':
-		@roles = get_value('DiscordBot.'.@guild.'.members.roles')
+		@roles = get_value('DiscordBot.'.@serverID.'.members.roles')
 		if(is_array(@roles)) {
 			if(array_index_exists(@roles, @args[0])) {
 				@roles = @roles[@args[0]]
@@ -168,7 +168,7 @@ case 'vc':
 	@a = ''
 	if(array_index_exists(@args, 1)) { @a = '.alone' }
 	if(!array_index_exists(@args, 0)) { @args[] = 'all' }
-	@stats = get_value('DiscordBot.'.@guild.'.VC.'.@channel.@a)
+	@stats = get_value('DiscordBot.'.@serverID.'.VC.'.@channel.@a)
 	if(!is_array(@stats)) { die('['.@name.'] There are no VC channel stats saved.') }	
 	if(is_numeric(@args[0])) {
 		@id = integer(abs(@args[0]) - 1)
@@ -184,7 +184,7 @@ case 'vc':
 		case 'fix':
 			if(@a != '') { die() }
 			msg('['.@name.'] Fix All '.@config['Server_Nickname'].' Voice Chat stats for channel: '.@stats[0]['channel'])
-			@alonestats = get_value('DiscordBot.'.@guild.'.VC.'.@channel.'.alone')
+			@alonestats = get_value('DiscordBot.'.@serverID.'.VC.'.@channel.'.alone')
 			foreach(@i: @stat in @stats) {
 				if(array_size(@stat['users']) < 2) {
 					@alonestats[] = @stat
@@ -194,8 +194,8 @@ case 'vc':
 			foreach(@i: @stat in @stats) {
 				 _vc_display_stat(@stat, color(9).'#'.(@i + 1).':'.color('r').' ', @vcrole)
 			}
-			store_value('DiscordBot.'.@guild.'.VC.'.@channel.'.alone', @alonestats)
-			store_value('DiscordBot.'.@guild.'.VC.'.@channel, @stats)
+			store_value('DiscordBot.'.@serverID.'.VC.'.@channel.'.alone', @alonestats)
+			store_value('DiscordBot.'.@serverID.'.VC.'.@channel, @stats)
 		case 'all':
 		default:
 			msg('['.@name.'] All '.@config['Server_Nickname'].' Voice Chat stats for channel: '.@stats[0]['channel'])
@@ -220,16 +220,16 @@ case 'welcomerolesfinder':
 case 'checkforbots':
 	@checklist = json_decode(read(import('DiscordBot.config.dir').'/'.'botlist.json'))
 	@clsize = array_size(@checklist)
-	@guildMembers = discord_get_members(@guild)
+	@guildMembers = discord_get_members(@serverID)
 	@results = array()
-	@logjointimes = get_value('DiscordBot.'.@guild.'.log.users.Join.Times')
-	@membersformer = get_value('DiscordBot.'.@guild.'.members.former')
+	@logjointimes = get_value('DiscordBot.'.@serverID.'.log.users.Join.Times')
+	@membersformer = get_value('DiscordBot.'.@serverID.'.members.former')
 	if(!is_array(@logjointimes)) { @logjointimes = array() }
 	if(!is_array(@membersformer)) { @membersformer = array() }
 	#check #1: Active
 	foreach(@i: @id in @checklist) {
 		if(array_contains(@guildMembers, @id)) {
-			array_set(@results, @id, array('type': 'active', 'join': discord_member_info(@guild, @id)['joined_at']))
+			array_set(@results, @id, array('type': 'active', 'join': discord_member_info(@serverID, @id)['joined_at']))
 			continue()
 		}
 	#check #2: join logs
@@ -248,7 +248,7 @@ case 'checkforbots':
 		foreach(@id: @r in @results) {
 			@msg = 'ID: '.@id.' '
 			if(@r['type'] == 'active') {
-				@info = discord_member_info(@guild, @id)
+				@info = discord_member_info(@serverID, @id)
 				@msg = @msg.color(9).'Username: '.@info['username'].color(14).' (Current '.color(7).'Guild Member)'.color(11).' Joined server: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @r['join'], 'UTC')
 			}			
 			if(@r['type'] == 'log') {

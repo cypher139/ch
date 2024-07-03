@@ -5,19 +5,19 @@ admin:/dbdbg [$action] [$] = >>>
 @args = parse_args($)
 @action = to_lower(string($action))
 @botconfig = import('DiscordBot.config.Bot')
-@guilds = import('DiscordBot.Guilds')
-@guild = @botconfig['Primary_Guild']
+@servers = import('DiscordBot.Servers')
+@serverID = @botconfig['Primary_Guild']
 foreach(@arg in @args) {
-	if(array_contains(@guilds, @arg)) {
-		@guild = @arg
+	if(array_contains(@servers, @arg)) {
+		@serverID = @arg
 		array_remove_values(@args, @arg)
 		break()
 	}
 }
 #pseudo array for actions that require event array
 # 777378696782657084 = ASCII: MINECRAFT
-@discord = array('admin': true, 'bot': false, 'serverid': @guild, 'userid': 777378696782657084, 'username': player(), 'message': $)
-msg('Using Server ID: '.@guild)
+@discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $)
+msg('Using Server ID: '.@serverID)
 switch(@action) {
 case 'ram':
 case 'he':
@@ -26,9 +26,9 @@ case 'he':
 	if(array_contains(@args, 'all')) {
 		@v = get_values('DiscordBot.')
 	} else {
-		@v = get_values('DiscordBot.'.@guild)
+		@v = get_values('DiscordBot.'.@serverID)
 		@slice1 = 30
-		if(length(@guild) > 18) { @slice1 = 31 }
+		if(length(@serverID) > 18) { @slice1 = 31 }
 	}
 	@truecount = 0
 	@changedcount = 0
@@ -74,8 +74,8 @@ case 'update':
 	_discordBot_update_members();
 	@stats = import('DiscordBot.debug.stats.last.updatemembers')
 	if(is_array(@stats)) {
-		foreach(@guild: @data in @stats) {
-			msg('Guild: '.@guild)
+		foreach(@serverID: @data in @stats) {
+			msg('Guild: '.@serverID)
 			foreach(@k: @v in @data) {
 				if(is_array(@v) || @v > 0) {
 					msg(@k.': '.@v)
@@ -86,8 +86,8 @@ case 'update':
 	@timeElapsed = time() - @startTime;
 	msg(color(3).'Time elapsed: '.@timeElapsed.'ms.')
 case 'removeinvite':
-	@previnv = get_value('DiscordBot.'.@guild.'.Join.info')
-	@inv = get_value('DiscordBot.'.@guild.'.Invites')
+	@previnv = get_value('DiscordBot.'.@serverID.'.Join.info')
+	@inv = get_value('DiscordBot.'.@serverID.'.Invites')
 	if(is_array(@previnv[@args[0]]['code'])) {
 		if(array_index_exists(@previnv, @args[0], 'code', 1)) {
 			array_remove_values(@previnv[@args[0]]['code'], @args[1])
@@ -96,40 +96,40 @@ case 'removeinvite':
 			msg(color(14).'Only one code exists, are you sure you want to remove this code?')
 		}
 		if(array_size(@previnv[@args[0]]['code']) == 1) {
-			@invid = discord_member_info(@guild, @inv[array_implode(@previnv[@args[0]]['code'], '')]['userid'])
+			@invid = discord_member_info(@serverID, @inv[array_implode(@previnv[@args[0]]['code'], '')]['userid'])
 			@previnv[@args[0]]['inviter'] = @invid['username']
 			@previnv[@args[0]]['inviterid'] = @invid['userid']
 			@previnv[@args[0]]['code'] = array_implode(@previnv[@args[0]]['code'], '')
 		}
-		store_value('DiscordBot.'.@guild.'.Join.info', @previnv)
+		store_value('DiscordBot.'.@serverID.'.Join.info', @previnv)
 	} else {
 		msg(color(12).'Only one code exists, are you sure you want to remove this code?')
 	}
 case 'memberinfo':
 	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord user ID to view!') }
-	@gmr = discord_member_info(@guild, @args[0])
+	@gmr = discord_member_info(@serverID, @args[0])
 	msg(color(10).'Member info:')
 	msg(@gmr)
 case 'getmembers':
-	@gmr = discord_get_members(@guild)
+	@gmr = discord_get_members(@serverID)
 	msg('All members:')
 	msg(@gmr)
 case 'getmemberroles':
 case 'gmr':
 	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord role ID to view!') }
-	@gmr = discord_get_members_with_role(@guild, @args[0])
+	@gmr = discord_get_members_with_role(@serverID, @args[0])
 	msg(color(10).'Members with role "'.@args[0].'":')
 	msg(@gmr)
 case 'viewinvites':
-	discord_retrieve_invites(@guild, closure(@ex) { 
+	discord_retrieve_invites(@serverID, closure(@ex) { 
 		console(@ex) 
 		store_value('DiscordBot.debug.invites.save', @ex)
-		_write_file(import('DiscordBot.logs.dir').'/'.@guild.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
+		_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
 	});
 case 'addformerjoinlog':
-	@LogJoinTimes = get_value('DiscordBot.'.@guild.'.log.users.Join.Times')
+	@LogJoinTimes = get_value('DiscordBot.'.@serverID.'.log.users.Join.Times')
 	if(!is_array(@LogJoinTimes)) { @LogJoinTimes = array() }
-	@membersFormer = get_value('DiscordBot.'.@guild.'.members.former')
+	@membersFormer = get_value('DiscordBot.'.@serverID.'.members.former')
 	if(!is_array(@membersFormer)) { die('no former info in guild') }
 	@adds = 0
 	foreach(@userid: @userinfo in @membersFormer) {
@@ -143,12 +143,12 @@ case 'addformerjoinlog':
 		@LogJoinTimes[@userid][] = @userinfo['time'];
 		@adds++
 	}
-	store_value('DiscordBot.'.@guild.'.log.users.Join.Times', @LogJoinTimes)
+	store_value('DiscordBot.'.@serverID.'.log.users.Join.Times', @LogJoinTimes)
 	@color = 7
 	if(@adds > 0) { @color = 10 }
 	msg(color(@color).'Added '.color(9).@adds.color(@color).' entries (out of '.array_size(@membersFormer).') to Join Times log.')
 case 'findmultiplejoins':
-	@LogJoinTimes = get_value('DiscordBot.'.@guild.'.log.users.Join.Times')
+	@LogJoinTimes = get_value('DiscordBot.'.@serverID.'.log.users.Join.Times')
 	@results = array()
 	foreach(@userid: @usertimes in @LogJoinTimes) {
 		if(array_size(@usertimes) > 1) {
@@ -159,7 +159,7 @@ case 'findmultiplejoins':
 	if(array_size(@results) > 0) { @color = 12 }
 	@sendMsg = color(7).'Found '.color(@color).array_size(@results).color(7).' out of '.color(14).array_size(@LogJoinTimes).color(7).' known joins:'
 	if(array_size(@results) > 0) {
-		@membersformer = get_value('DiscordBot.'.@guild.'.members.former')
+		@membersformer = get_value('DiscordBot.'.@serverID.'.members.former')
 		foreach(@id: @dates in @results) {
 			@msg = 'ID: '.@id.' '
 			@info = array('username': '', 'code': '')
@@ -183,14 +183,14 @@ case 'snowflaketime':
 	msg(color(10).'Date: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @snowtime, 'UTC'))
 	msg(color(11).'ISO8601: '.simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', @snowtime, 'UTC'))
 case 'findoldestdiscord':
-	@serverMembers = discord_get_members(@guild)
+	@serverMembers = discord_get_members(@serverID)
 	array_sort(@serverMembers, 'NUMERIC')
 	msg(color(14).'Top 5 oldest Discord Accounts on this server:')
 	foreach(@i: @userID in @serverMembers) {
 		@joined = ''
 		if(@i > 4) { break() }
 		@colors = array(11,10,6,3,9)
-		@userInfo = discord_member_info(@guild, @userID)
+		@userInfo = discord_member_info(@serverID, @userID)
 		if(array_contains(@args, 'join')) { @joined = '\n Joined server: '.simple_date('MM/dd/yyyy HH:mm:ss', @userInfo['joined_at'], 'UTC') }
 		@lc = 7
 		if(length(@userID) < 18) { @lc = 11 }

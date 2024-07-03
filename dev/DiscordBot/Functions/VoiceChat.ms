@@ -19,7 +19,7 @@ proc _vc_display_duration(@time) {
 }
 
 bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
 	_db_msg_Console(color(10).'VC <'.@discord['channel'].'>  + '.@discord['username'], @discord['serverid'], 'debug')
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
@@ -138,7 +138,7 @@ bind('discord_voice_joined', array('id': 'DiscordBot.VC.Join'), null, @discord) 
 }
 #--------------------------------------------
 bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Guilds'), @discord['serverid'])) { die() }
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
 	_db_msg_Console(color(12).'VC <'.@discord['channel'].'>  - '.@discord['username'], @discord['serverid'], 'debug')
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);

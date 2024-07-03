@@ -1,6 +1,6 @@
-proc _db_get_last_channel(@guild, @channel) {
-	@config = import('DiscordBot.config.'.@guild)
-	@cacheMsgs = import('DiscordBot.'.@guild.'.Cache.Messages')
+proc _db_get_last_channel(@serverID, @channel) {
+	@config = import('DiscordBot.config.'.@serverID)
+	@cacheMsgs = import('DiscordBot.'.@serverID.'.Cache.Messages')
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array()) }
 	foreach(@message in @cacheMsgs['messages']) {
 		if(array_index_exists(@message, 'channel')) {
