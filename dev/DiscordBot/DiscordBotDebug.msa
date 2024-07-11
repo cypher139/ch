@@ -19,6 +19,24 @@ foreach(@arg in @args) {
 @discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $)
 msg('Using Server ID: '.@serverID)
 switch(@action) {
+case 'chmem':
+	@chmem = discord_channel_members(@serverID, @args[0])
+	@bots = 0
+	@users = 0
+	foreach(@user in @chmem) {
+		if(discord_member_info(@serverID, @user)['bot'] == true) {
+			@bots++
+		} else {
+			@users++
+		}
+	}
+	@ac = ''
+	if(array_index_exists(@args, 1)) {
+		if(!is_numeric(@args[1])) { die('Discord Usernames not supported in this command') }
+		@ac = ' , Found User: '.array_contains(@chmem, @args[1])
+	}
+	msg('Users: '.@users.' , Bots: '.@bots.@ac)
+	msg(@chmem)
 case 'ram':
 case 'he':
 	@v = array()

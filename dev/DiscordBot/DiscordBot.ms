@@ -32,7 +32,7 @@ if(in_cmdline_mode()) {
 }
 
 # Version Check
-@requiredVersion = array(2, 13, 0)
+@requiredVersion = array(2, 14, 0)
 if(extension_exists('CHDiscord')) {
 	@version = reg_replace('[^0-9.]+', '', extension_info()['CHDiscord']['version'])
 		foreach(@place: @num in split('.', @version)) {
@@ -42,7 +42,8 @@ if(extension_exists('CHDiscord')) {
 		}
 	}
 }
-export('DiscordBot.cfg.version', array(10,10));
+#App, Server config versions:
+export('DiscordBot.cfg.version', array(10,11));
 
 #build 81, 86, 95
 # Startup Discord Functions

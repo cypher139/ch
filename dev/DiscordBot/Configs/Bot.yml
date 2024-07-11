@@ -1,6 +1,6 @@
 ### Bot Administration
 # Config version number
-v: 17
+v: 10
 # - CommandHelper profile name in which your Discord Bot token is stored:
 Profile_Name: discordCredentials
 # Your Bot's information:
