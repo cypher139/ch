@@ -1088,9 +1088,12 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 		}
 	}
 	#user avatar
-	@userInfo = discord_member_info(@discord['serverid'], @discord['userid'])
-	@userName = @userInfo['displayname']
-	if(@userName == '' || @userName == null) { @userName = @userInfo['username'] }
+	@userName = @discord['username']
+	if(@discord['webhook'] != true) {
+		@userInfo = discord_member_info(@discord['serverid'], @discord['userid'])
+		@userName = @userInfo['displayname']
+		if(@userName == '' || @userName == null) { @userName = @userInfo['username'] }
+	}
 	foreach(@serverID in @servers) {
 		if(@discord['serverid'] == @serverID) { continue() }
 		@config = import('DiscordBot.config.'.@serverID);
@@ -1136,7 +1139,7 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 			@userPrefix = @config['Server_Nickname']
 		}
 		@userPrefixEnd = ': '
-		if(@discord['bot'] == true) { @userPrefixEnd = ' (Bot): ' }
+		if(@discord['bot'] == true || @discord['webhook'] == true) { @userPrefixEnd = ' (Bot): ' }
 		@userPrefix = @prefixEscape[0].@prefixEscape[1].@userPrefix.@prefixEscape[2].@prefixEscape[0].@userPrefixEnd
 		if(array_index_exists(@discord, 'reference', 'id')) { @userRefPrefix = @prefixEscape[0].@prefixEscape[1].@userRefPrefix.@prefixEscape[2].@prefixEscape[0].':' }
 
@@ -1510,6 +1513,7 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 	if(!is_array(@discord)) { return('No data') }
 	if(!array_index_exists(@discord, 'userid')) { return('No user') }
 	if(!array_index_exists(@discord, 'serverid')) { return('server?') }
+	if(@discord['webhook'] == true) { return('webhook?')}
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	if(!is_array(@config['Role_Ranks'])) { return('no rank data') }
 	@ranknums = array_sort(array_keys(@config['Role_Ranks']), 'NUMERIC')
@@ -1770,7 +1774,7 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 			try {
 				@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
 			} catch(Exception @ex) {
-				if(@discord['bot'] == false) {
+				if(@discord['bot'] == false || @discord['webhook'] == false) {
 					return(false)
 				}
 			}
@@ -2118,6 +2122,51 @@ proc _discordBot_ismention(@discord, @regexPrefix = '^') {
 		@isMention = true
 	}
 	return(@isMention)
+}
+
+proc _discordBot_iswebhook(@search) {
+	if(!is_numeric(@search)) {throw('ms.lang.CastException', 'Webhook Search only supports numeric ID searches.')}
+	@return = null
+	@wList = import('DiscordBot.webhooks.list', array(array(), array()))
+	if(array_contains(@wList[0], @search)) { return(true) }	
+	if(array_contains(@wList[1], @search)) { return(false) }
+	discord_request('GET', 'webhooks/'.@search, null,
+		closure(@ex) {
+			#Valid, and data found
+			@kw = import('DiscordBot.webhooks.list', array(array(), array()))
+			@kw[0][] = @search
+			export('DiscordBot.webhooks.list', @kw)
+			@kwdata = import('DiscordBot.webhooks.data', array())
+			array_set(@kwdata, @search, @ex)
+			array_set(@kwdata[@search], 'bot', true)
+			array_set(@kwdata[@search], 'color', array('b': 200, 'g': 0, 'r': 0))
+			array_set(@kwdata[@search], 'displayname', @ex['name'])
+			array_set(@kwdata[@search], 'joined_at', rshift(@ex['id'], 22) + 1420070400000)
+			array_set(@kwdata[@search], 'userid', @ex['id'])
+			array_set(@kwdata[@search], 'username', @ex['name'])
+			array_set(@kwdata[@search], 'avatar', 'https://cdn.discordapp.com/avatars/'.@ex['id'].'/'.@ex['avatar'].'.png')
+			export('DiscordBot.webhooks.data', @kwdata)
+			export('webhooksearch.'.@search, true)
+		},
+		closure(@ex) {
+			# 10015: Unknown Webhook - not a valid webhook ID
+			if(string_contains(@ex, '10015')) {
+				@kw = import('DiscordBot.webhooks.list', array(array(), array()))
+				@kw[1][] = @search
+				export('DiscordBot.webhooks.list', @kw)
+				export('webhooksearch.'.@search, false)
+			}
+			# 50013: Missing Permissions - IS valid, but bot is missing permission to view data.
+			if(string_contains(@ex, '50013')) {
+				@kw = import('DiscordBot.webhooks.list', array(array(), array()))
+				@kw[0][] = @search
+				export('DiscordBot.webhooks.list', @kw)
+				export('webhooksearch.'.@search, true)
+			}
+		}
+	);
+	#if this proc returns null: data still processing, and this tick is invalid to get this data.
+	return(null)
 }
 
 #Handle commands from Discord Users

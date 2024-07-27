@@ -224,7 +224,12 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 		@userroles[] = @config['Fake_Admin_Role']
 		@msg = '<@'.@discord['userid'].'> is now a **'.@config['Fake_Admin_Rolename'].'**!'
 	}
-	discord_member_set_roles(@discord['serverid'], @discord['userid'], @userroles, 'Fake Admin Role command')
+	try {
+		discord_member_set_roles(@discord['serverid'], @discord['userid'], @userroles, 'Fake Admin Role command')
+	} catch(InsufficientPermissionException @ex) {
+		_db_msg_Console(color(12).'command: fakeadmin: Bot does not have set Roles permission!', @discord['serverid'], 'error')
+		@msg = '<@'.@discord['userid'].'> tried and failed to be a *'.@config['Fake_Admin_Rolename'].'*.'
+	}
 	return(@msg)
 }
 

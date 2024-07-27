@@ -2,6 +2,10 @@
 proc _db_update_message_cache(@discord, @updateType) {
 	@return = array()
 	@msgID = 0
+	@msgUserID = @discord['userid']
+	if(array_index_exists(@discord, 'messageuserid')) { @msgUserID = @discord['messageuserid'] }
+	@userType = 'user'
+	if(!array_index_exists(@discord, 'webhook')) { array_set(@discord, 'webhook', false) }
 	if(array_index_exists(@discord, 'id')) {
 		@msgID = @discord['id']
 	} else if(array_index_exists(@discord, 'messageid')) { 
@@ -12,22 +16,34 @@ proc _db_update_message_cache(@discord, @updateType) {
 	}
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
-	@userType = 'user'
 	if(array_index_exists(@discord, 'channeltype')) {
 		if(@discord['channeltype'] == 'TEXT') {
 			array_remove(@discord, 'channeltype')
 		}
 	}
-	if(@discord['bot'] == true) { @userType = 'bot' }
+# Message: is from user or bot?
+	@msgUserisBot = false
+	try {
+		@msgUserisBot = discord_member_info(@discord['serverid'], @msgUserID)['bot']
+	} catch(NotFoundException @ex) {
+		#try to find if a webhook. if such found continue
+		@kw = import('DiscordBot.webhooks.list', array(array(), array()))
+		if(array_contains(@kw[0], @msgUserID)) {
+			@msgUserisBot = true
+		} else {
+			@checkwebhook = _discordBot_iswebhook(@msgUserID);
+		}
+	}
+#Setup User message entry
+	if(@discord['bot'] == true || @discord['webhook'] == true || @msgUserisBot == true) { @userType = 'bot' }
 	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
-	if(!array_index_exists(@cacheMsgs, @userType, @discord['userid'])) { array_set(@cacheMsgs[@userType], @discord['userid'], array()) }
+	if(!array_index_exists(@cacheMsgs, @userType, @msgUserID)) { array_set(@cacheMsgs[@userType], @msgUserID, array()) }
 	@addSi = false
 	@addUi = false
 	@prevData = 'Not Found'
-	# @newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
-	#Find each index to edit
-	@userIndex = array_index(@cacheMsgs[@userType][@discord['userid']], @msgID)
+#Find each index to edit
+	@userIndex = array_index(@cacheMsgs[@userType][@msgUserID], @msgID)
 	@serverIndex = array_index(@cacheMsgs['server'], @msgID)
 	if(!array_index_exists(@cacheMsgs, 'messages', @msgID)) {
 		array_set(@cacheMsgs['messages'], @msgID, @discord)
@@ -42,8 +58,9 @@ proc _db_update_message_cache(@discord, @updateType) {
 		@addSi = true
 	}
 	if(@userIndex < 0 || @userIndex == null) {
-		if(@discord['userid'] == @cacheMsgs['messages'][@msgID]['userid'] && @updateType != 'removereaction') {
-			array_insert(@cacheMsgs[@userType][@discord['userid']], @msgID, 0)
+		# if(@discord['userid'] == @cacheMsgs['messages'][@msgID]['userid'] && @updateType != 'removereaction') {
+		if(!array_index_exists(@cacheMsgs, @userType, @msgUserID, @msgID) && @updateType != 'removereaction') {
+			array_insert(@cacheMsgs[@userType][@msgUserID], @msgID, 0)
 			@addUi = true
 		}
 		@userIndex = 0
@@ -106,18 +123,26 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username'])
 	@embedColor = array('r': 0, 'g': 0, 'b': 200)
 	@memberInfo = array('color': @embedColor, 'avatar': 'https://cdn.discordapp.com/embed/avatars/0.png')
-	try {
-		@memberInfo = discord_member_info(@discord['serverid'], @discord['userid'])
-	} catch(NotFoundException @ex) {
-		#but how, you ask can a user update a message while also NOT part of your server? answer: Discord system messages.
-		_db_msg_Console('Message Update from '.@discord['username'].' <'.@discord['userid'].'>: User not Found on server. Message Channel: '.@discord['channel'].'Message: ('.@discord['id'].')\n'.@discord['message'], @discord['serverid'], 'debug')
+	if(@discord['webhook'] == true) {
+		@iswebhook = _discordBot_iswebhook(@discord['userid']);
+		@kwdata = import('DiscordBot.webhooks.data', array());
+		if(array_index_exists(@kwdata, @discord['userid'])) {
+			@memberInfo = @kwdata[@discord['userid']]
+		}
+	} else {
+		try {
+			@memberInfo = discord_member_info(@discord['serverid'], @discord['userid'])
+		} catch(NotFoundException @ex) {
+			#but how, you ask can a user update a message while also NOT part of your server? answer: Discord system messages.
+			_db_msg_Console('Message Update from '.@discord['username'].' <'.@discord['userid'].'>: User not Found on server. Channel: '.@discord['channel'].' | Message: ('.@discord['id'].')\n'.@discord['message'], @discord['serverid'], 'debug')
+		}
 	}
 	#Message Formatting
 	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] == false) {
 		@discord['message'] = '<Sent a GIF>'
 	}
 	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
-		if(@discord['message'] == '') {	
+		if(@discord['message'] == '') {
 			@discord['message'] = '<Sent a file> '
 		} else {
 			@discord['message'] = @discord['message'].'\n <Also attached file:> '

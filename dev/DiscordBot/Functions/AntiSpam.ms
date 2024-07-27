@@ -21,6 +21,8 @@ proc _db_as_dm(@discord, @isFirst = false) {
 			export('DiscordBot.'.@discord['serverid'].'.Cache.Messages', @cacheMsgs)
 		}
 		return(true)
+	} catch(InsufficientPermissionException @ex) {
+		_db_msg_Console('AntiSpam: Not allowed to delete '.@discord['username'].'\'s messages.', @discord['serverid'], 'error')
 	} catch(Exception @ex) {
 		_db_msg_Console('  ['.@discord['serverid'].'] [AntiSpam] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
 		return(false)

@@ -24,6 +24,38 @@ include_dir('command.library');
 msg('Using Server ID: '.@serverID)
 
 switch(@action) {
+case 'checkpermissions':
+case 'getperms':
+	@perms = discord_get_permissions(@serverID)
+	@requiredPerms = array(
+	# basics:
+	'MESSAGE_SEND': 'I Cannot post *any* messages! How will users interact with me?',
+	'MESSAGE_SEND_IN_THREADS': 'I can\'t post messages in threads, users will need to use regular channels then.',
+	'MESSAGE_HISTORY': 'Any messages I send may not be able to reference another message.',
+	'VIEW_CHANNEL': 'If I can\'t see messages how am I supposed to interact with it?',
+	'MESSAGE_EXT_EMOJI': 'This grants the ability for Cross-Server Chat to use emojis from their servers.',
+	#advanced
+	'MANAGE_SERVER': 'Required for Invite logging. This grants the ability to retrive your server\'s invites.',
+	'MESSAGE_MANAGE': 'Required to delete others messages. Used for: <Anti Spam: remove spam messages> <Showcase: remove chat messages>',
+	'MANAGE_WEBHOOKS': 'Required to retrive data about webhooks. Used in various embeds to show the webhook\'s avatar, if a webhook updates a message.',
+	'VOICE_MOVE_OTHERS': '\"MOVE_MEMBERS\" grants the ability for Voice Chat features to disconnect any bots still in voice channel when all users leave.',
+	'MANAGE_ROLES': 'Setting roles grants the ability for various role related functions to operate: <Leaderboards: Active User, Role Ranks> <Commands: Fakeadmin, transferroles> <Restore previous roles upon user rejoin> <Welcome roles on user join>'
+	)
+	@results = array('true': array(), 'false': '', 'notreq': array())
+	if(array_contains(@perms, 'ADMINISTRATOR')) {
+		die(color(10).'Administrator permissions detected, therefore the bot has the permissions it needs!');
+	}
+	foreach(@p: @desc in @requiredPerms) {
+		if(array_contains(@perms, @p)) {
+			@results['true'][] = @p
+		} else {
+			@results['false'] = @results['false'].'\n'.color(12).@p.': '.color(7).@desc
+		}
+	}
+	msg(color(10).'Required and Granted Permissions: '.color(9).array_implode(@results['true'], '  '))
+	if(@results['false'] != '') {
+		msg(color(4).'Permissions **Not** Found:'.@results['false'])
+	}
 case '1to100':
 	@return = _discordBot_cmd_1to100(@discord, @args)
 	if(is_array(@return)) {

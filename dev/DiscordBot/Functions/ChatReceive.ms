@@ -96,7 +96,12 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 			}
 		}
 		if(@sendtoMC == true && is_consumed() == false && @config['Minecraft_Messages'] == true) {
-			@userRoles = discord_member_get_roles(@discord['serverid'], @discord['username'])
+			@userRoles = array()
+			try {
+				@userRoles = discord_member_get_roles(@discord['serverid'], @discord['username'])
+			} catch(NotFoundException @ex) {
+				export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
+			} 
 		#Set username color based on data previously set from Discord colors
 		# keys system gives roles alphabetically, not server's order
 			@usernamecolor = 'ad0'

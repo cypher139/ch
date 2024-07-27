@@ -19,6 +19,20 @@ foreach(@arg in @args) {
 @discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $)
 msg('Using Server ID: '.@serverID)
 switch(@action) {
+case 'getweb':
+	if(array_index_exists(@args, 0)) {
+		if(!is_numeric(@args[0])) { die('User names are not supported in this command.') }
+	} else {
+		die('User ID required')
+	}
+	@color = 7
+	@res = _discordBot_iswebhook(@args[0])
+	if(@res == true) { @color = 10 }
+	if(@res == false) { @color = 12 }
+	if(@res == null) { call_alias('/dbdbg getweb '.@args[0]) die() }
+	msg(@args[0].' is a webhook: '.color(@color).@res)	
+# 10015: Unknown Webhook
+# 50013: Missing Permissions
 case 'chmem':
 	@chmem = discord_channel_members(@serverID, @args[0])
 	@bots = 0

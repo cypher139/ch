@@ -199,11 +199,14 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 		
 	try {
 		discord_member_set_roles(@discord['serverid'], @args[1], @toroles)
+	} catch(InsufficientPermissionException @ex) {
+		_db_msg_Console(color(12).'command: transferroles: Bot does not have set Roles permission!', @discord['serverid'])
+		return('NoPerms')
 	} catch(Exception @ex) {
 		_db_msg_Console(color(12).'Transfer roles: set roles failed: '.@ex['classType'].@ex['message'], @discord['serverid'])
-		return('NoPerms')
+		return('Error')
 	}
-	#Save 
+	#Save
 	array_set(@TRlog, @args[1], array('time': time(), 'fromuser': @args[0], 'issuer': @discord['userid']))
 	store_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer', @TRlog)
 	@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')

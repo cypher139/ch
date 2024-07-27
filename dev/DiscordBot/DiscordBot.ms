@@ -32,7 +32,7 @@ if(in_cmdline_mode()) {
 }
 
 # Version Check
-@requiredVersion = array(2, 14, 0)
+@requiredVersion = array(2, 15, 0)
 if(extension_exists('CHDiscord')) {
 	@version = reg_replace('[^0-9.]+', '', extension_info()['CHDiscord']['version'])
 		foreach(@place: @num in split('.', @version)) {

@@ -130,7 +130,12 @@ proc _discordBot_cmd_whois(@discord, @args) {
 			export('DiscordBot.debug.user.not.found.'.@userID, @discord['serverid'])
 		} 
 		if(!array_index_exists(@userinfo, 'userid')) { continue() }
-		@userRoles = discord_member_get_roles(@discord['serverid'], @userID)
+		@userRoles = array()
+		try {
+			@userRoles = discord_member_get_roles(@discord['serverid'], @userID)
+		} catch(NotFoundException @ex) {
+			export('DiscordBot.debug.user.not.found.'.@userID, @discord['serverid'])
+		} 
 		@displayUR = 'None'
 		if(array_size(@userRoles) > 0) { @displayUR = '<@&'.array_implode(@userRoles, '> <@&').'>' }
 	#Get Avatar and embed color info
