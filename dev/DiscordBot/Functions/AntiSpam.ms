@@ -40,6 +40,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	@codeDesc = array(0: 'Unknown', 1: '*New* user has talked on more than the limit of '.@config['AS_New_User_Channel_Limit'].' different channels.', 2: '*New* user used a global mention: `%word%`', 3: 'Duplicated same message', 4: 'Duplicated same message across 3 or more channels')
 	# 0: not selected, 1: New user: channel limit, 2: New user used here/everyone, 3: Dupe messages, 4: dupe messages over 3 channels
 	@reasonCode = 0
+	@dmtimeout = 60000
 	@asmembers = import('DiscordBot.'.@discord['serverid'].'.antispam.members');
 	if(!is_array(@asmembers)) { 
 		@asmembers = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
@@ -72,7 +73,17 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # Duplicate messages (More than 3-4 is typically indicative of spam)
 	# Do not count if previous data not available, or message is blank
 	if(array_index_exists(@lastUserMsgs, 2) && @discord['message'] != '') {
-		@dcount = import('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', 0)
+		# @dcount = import('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', 0)
+		@dcount = import('DiscordBot.'.@discord['serverid'].'.antispam.dupecount')
+		if(!is_array(@dcount)) { @dcount = array() }
+		if(!array_index_exists(@dcount, @discord['userid'])) { array_set(@dcount, @discord['userid'], array('f': 0, 'c': 0)) }
+		# Set a new rolling 12 second period:
+		if(@dcount[@discord['userid']]['f'] < @time) {
+			@dcount[@discord['userid']]['f'] = @time + 12345
+			if(@dcount[@discord['userid']]['c'] < 6) {
+				@dcount[@discord['userid']]['c'] = 0
+			}
+		}
 		# Last message is the same as current:
 		if(@lastUserMsgs[0]['message'] == @discord['message']) {
 			## Add extra count: Current message is same yet posted on different channel. Can be indicative of spam same message on all available channels.
@@ -80,25 +91,20 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			# Last 2 messages is ... also the same as current:
 			if(@lastUserMsgs[1]['message'] == @discord['message']) {
 				# Previous 2 messages match, highly likely spam event. Increment counter.
-				@dcount++
+				@dcount[@discord['userid']]['c']++
 				## Add extra count x2: Current message posted on channel that isn't either of the previous 2 channels. Highly likely spam event! (or someone legitly replying "lol" to everything)
 				if(@lastUserMsgs[0]['channelid'] != @discord['channelid'] && @lastUserMsgs[1]['channelid'] != @discord['channelid'] && @lastUserMsgs[0]['channelid'] != @lastUserMsgs[1]['channelid']) {
-					@dcount++
+					@dcount[@discord['userid']]['c']++
 					@reasonCode = 4
 				}
 			}
 		}
-		if(@dcount > 0) {
-			export('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', @dcount)
-			set_timeout(12345, closure(){
-				export('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', null)
-			});
-		}
 	### If the counter reaches 5, trigger anti spam
-		if(@dcount > 5) {
+		if(@dcount[@discord['userid']]['c'] > 5) {
 			@adduser = true
 			if(@reasonCode == 0) { @reasonCode = 3 }
 		}
+		export('DiscordBot.'.@discord['serverid'].'.antispam.dupecount', @dcount)
 	}	
 # Checks for New Users:
 	if(@newuser == true) {
@@ -117,13 +123,22 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			}
 		}
 	}
+# Ignore Checks:
+# Message sent in a No XP (ignored) channel
+	if(array_index_exists(@config, 'AS_Ignore_NoXP')) {
+		if(@config['AS_Ignore_NoXP'] == true) {
+			if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel']) || array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channelid'])) {
+				@adduser = false
+			}
+		}
+	}
 
 # Add user to Triggered state:
 	if(@adduser == true) {
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
 			# Returning users: Bypass new user checks
 			if(@reasonCode < 3) {
-				@newreturn = import('DiscordBot.'.@discord['serverid'].'.returning.users')
+				@newreturn = import('DiscordBot.'.@discord['serverid'].'.is.new.member')
 				if(!is_array(@newreturn)) { @newreturn = array() }
 				if(array_index_exists(@newreturn, @discord['userid'])) {
 					if(@newreturn[@discord['userid']] == true) { die() }
@@ -162,18 +177,50 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	# If user's first trigger:
 		if(@asmembers[@discord['userid']]['triggercount'] < 2) {
 			@msgcount = 0
-		# Delete all messages recorded in the user's last message storage
-			if(@config['AS_Delete_Messages'] == true) {
+		# Delete messages recorded in the user's cached messages?
+			if(@config['AS_Remove_Messages'] == true) {
+				if(@reasonCode < 3) {
+				# New User: Remove last 5 mins of messages
+					@dmtimeout = 300000
+				}
+				#more messages option: remove last 30 mins
+				if(array_index_exists(@config, 'AS_Remove_User_Messages')) {
+					if(@config['AS_Remove_User_Messages'] == true) {
+						@dmtimeout = 1800000
+					}
+				}
+				@debug1 = array()
 				foreach(@message in @lastUserMsgs) {
-					# Action upon only today's messages
-					if(@message['time'] > (@time - 43200000)) {
+					if(!array_index_exists(@message, 'message')) { array_set(@message, 'message', '') }
+					# Action either upon messages within timeout, or messages that match the content of trigger message
+					if(@message['time'] > (@time - @dmtimeout) || array_contains(@count['msgs'][@discord['userid']], sha1(@message['message']))) {
+						@debug1[] = @message['id']; 
 						@return = _db_as_dm(@message, true);
 						if(@return == true) { @msgcount++ }
 					}
 				}
+				console(@debug1)
 			}
 			if(@msgcount > 0) {
-				@actiontaken = @actiontaken.' Deleted '.@msgcount.' of user\'s recent messages'
+				@actiontaken = @actiontaken.' <Deleted '.@msgcount.' of user\'s recent messages>'
+			}
+		# Timeout user
+			if(@config['AS_Timeout_User'] == true) {
+				discord_request('PATCH', 'guilds/'.@discord['serverid'].'/members/'.@discord['userid'], array('communication_disabled_until': simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', (time() + 86400000), 'UTC')), 
+				closure(@ex) { _discordBot_send_message('Successfully set timeout on user `'.@discord['displayname'].'` for the next 24 hours.', @discord['serverid'], 'admin') }, 
+				closure(@ex) { _db_msg_Console('AntiSpam: Set Timeout failed for '.@discord['username'].'\n'.@ex, @discord['serverid'], 'error') }
+				);
+			}
+		#Brand user?
+			if(@config['AS_Brand_User'] == true) {
+				try {
+					discord_member_set_nickname(@discord['serverid'], @discord['userid'], 'SPAMMER: '.@discord['displayname'])
+					@actiontaken = @actiontaken.' <Set Nickname to spammer>'
+				} catch(InsufficientPermissionException @ex) {
+					_db_msg_Console('AntiSpam: Not allowed to set spam nickname for '.@discord['username'], @discord['serverid'], 'error')
+				} catch(Exception @ex) {
+					_db_msg_Console('AntiSpam: nickname:\n'.@ex, @discord['serverid'], 'error')
+				}
 			}
 		# Message Admins, and DM user.
 			if(@actiontaken == '\n- *Actions taken:*') { @actiontaken = '' }
@@ -252,7 +299,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			}
 		}
 	#Actions for each trigger:
-		if(@config['AS_Delete_Messages'] == true) {
+		if(@config['AS_Remove_Messages'] == true) {
 			_db_as_dm(@discord);
 		}
 		@asmembers['lastedit'] = @time

@@ -7,8 +7,6 @@
 	description: Provides functionality to a connected Discord Bot.;
 	requiredExtensions: Core, CHDiscord;
 >
-#version 1.3-tmc
-
 # Command Line Prerequisites
 if(in_cmdline_mode()) {
 	@pathparent = reg_replace('[^/]+$', '', pwd())
@@ -43,7 +41,7 @@ if(extension_exists('CHDiscord')) {
 	}
 }
 #App, Server config versions:
-export('DiscordBot.cfg.version', array(10,11));
+export('DiscordBot.cfg.version', array(10,12));
 
 #build 81, 86, 95
 # Startup Discord Functions

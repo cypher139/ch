@@ -352,10 +352,13 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 		if(@exptime < 10000000 || @botconfig['Msg_Cache_Time'] > 2592000000) { @exptime = 2592000000 }
 		@exptime = @time - @exptime
 		if(!is_array(@guildlist)) { @guildlist = import('DiscordBot.Servers') }
-		# if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
 		@stats = array()
 		@VCstats = array()
 		foreach(@serverID in @guildlist) {
+			# Clean various RAM values:
+			export('DiscordBot.'.@serverID.'.is.new.member', null)
+			export('DiscordBot.'.@serverID.'.antispam.dupecount', null)
+			# Clean Message Cache:
 			@queue = array()
 			if(!array_contains(import('DiscordBot.Servers'), @serverID)) { continue() }
 			@cacheMsgs = import('DiscordBot.'.@serverID.'.Cache.Messages')
@@ -2072,33 +2075,50 @@ proc _db_is_newmember(@serverID, @userid) {
 	if(!is_numeric(@serverID)) { return(0) }
 	if(!is_numeric(@userid)) { return(0) }
 	@config = import('DiscordBot.config.'.@serverID);
-	@newuser = false
+	@return = false
 	@userJoinTime = 0
+	@time = time()
 	try {
 		@userJoinTime = discord_member_info(@serverID, @userid)['joined_at']
 	} catch(NotFoundException @ex) {
 		export('DiscordBot.'.@serverID.'.debug.user.not.found.'.@userid, 1)
 	}
-	if((@userJoinTime + @config['AS_New_User_Time']) > time()) { @newuser = true }
-	if(@newuser == true) {
+	#Only action upon a new user:
+	if((@userJoinTime + @config['AS_New_User_Time']) > @time) { @return = true }
+	if(@return == true) {
 		# Returning users: Bypass new user checks
-		@newreturn = import('DiscordBot.'.@serverID.'.returning.users')
-		if(!is_array(@newreturn)) { @newreturn = array() }
-		if(array_index_exists(@newreturn, @userid)) {
-			if(@newreturn[@userid] == true) { @newuser = false }
+		@save = import('DiscordBot.'.@serverID.'.is.new.member')
+		if(!is_array(@save)) { @save = array() }
+		if(array_index_exists(@save, @userid)) {
+			@return = @save[@userid]
 		} else {
 			@joininfo = get_value('DiscordBot.'.@serverID.'.Join.info')
 			if(!is_array(@joininfo)) { @joininfo = array() } 
+			@logJointimes = get_value('DiscordBot.'.@serverID.'.log.users.Join.Times')
+			if(!is_array(@logJointimes)) { @logJointimes = array() }
 			if(array_index_exists(@joininfo, @userid, 'return')) {
-				array_set(@newreturn, @userid, @joininfo[@userid]['return'])
-				if(@joininfo[@userid]['return'] == true) { @newuser = false } 
+				#Join user return: true if has rejoined (so, user could be not new in that case return = !)
+				if(!is_boolean(@joininfo[@userid]['return'])) { @joininfo[@userid]['return'] = true }
+				@return = !@joininfo[@userid]['return']
+				#Previous join(s) is less than the new user time old? Yea no, Still new.
+				if(array_index_exists(@logJointimes, @userid, 1)) {
+					foreach(@i: @jt in @logJointimes[@userid]) {
+						if(@i < 1) {continue()}
+						if((@jt + @config['AS_New_User_Time']) > @time) {
+							@return = true
+							break()
+						}
+					}
+				}
+				array_set(@save, @userid, @return)
 			} else {
-				array_set(@newreturn, @userid, false)
+				array_set(@save, @userid, false)
+				@return = false
 			}
-			export('DiscordBot.'.@serverID.'.returning.users', @newreturn)
+			export('DiscordBot.'.@serverID.'.is.new.member', @save)
 		}
 	}
-	return(@newuser)
+	return(@return)
 }
 
 proc _discordBot_ismention(@discord, @regexPrefix = '^') {

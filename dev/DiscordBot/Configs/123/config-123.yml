@@ -1,6 +1,6 @@
 # discordBot Guild Configuration
 # Config version number
-v: 11
+v: 12
 # General admin
 Server_Nickname: "Your Server"
 #
@@ -43,13 +43,22 @@ Minecraft_Messages_Admin: true
 #
 # Anti Spam
 # When a member joins, how much time elapses before Anti spam no longer considers them a new join? (in millseconds)
-AS_New_User_Time: 600000000
+# Note: Discord considers joins to be new for a period of 1 week (604800000ms).
+AS_New_User_Time: 604800000
 # How many different channels can a new user post on, before Anti Spam considers them to be a spammer?
 AS_New_User_Channel_Limit: 7
-# If a user triggers Anti Spam, delete their most recent messages?
-AS_Delete_Messages: true
+# Upon a User triggering Anti Spam, delete their spam messages?
+AS_Remove_Messages: true
+# Upon a User triggering Anti Spam, also delete any of their recent messages sent within the past 30 minutes?
+AS_Remove_User_Messages: true
+# Upon a User triggering Anti Spam, Timeout their communications for 24 hours?
+AS_Timeout_User: true
+# Upon a User triggering Anti Spam, Add "Spammer" to their nickname?
+AS_Brand_User: true
 # Log various User Info in the Spam alert message?
 AS_Log_ShowUserInfo: true
+# **Optional** If enabled, does not add user to AntiSpam effects if the message was sent in an "no XP" channel. (Requires Leaderboard config of noXP channels)
+# AS_Ignore_NoXP: true
 #General Alert to all server members. Useful to tell users to keep their accounts safe, and to inform users of why many channels may have missing unread messages.
 # **Optional, uncomment to customize**
 # AS_General_Announcement: "Another member got hacked or just chose to spam sketchy invites. I removed those messages, sorry for the unread notifications! Remember if you get your account back feel free to DM one of us or someone from the server so that you can be unbanned."

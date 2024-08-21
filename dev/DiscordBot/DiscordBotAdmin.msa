@@ -37,8 +37,10 @@ case 'getperms':
 	#advanced
 	'MANAGE_SERVER': 'Required for Invite logging. This grants the ability to retrive your server\'s invites.',
 	'MESSAGE_MANAGE': 'Required to delete others messages. Used for: <Anti Spam: remove spam messages> <Showcase: remove chat messages>',
+	'MODERATE_MEMBERS': 'Required to issue a timeout to a user upon their triggering Anti Spam protections.',
 	'MANAGE_WEBHOOKS': 'Required to retrive data about webhooks. Used in various embeds to show the webhook\'s avatar, if a webhook updates a message.',
 	'VOICE_MOVE_OTHERS': '\"MOVE_MEMBERS\" grants the ability for Voice Chat features to disconnect any bots still in voice channel when all users leave.',
+	'NICKNAME_MANAGE': '\"MANAGE_NICKNAMES\" grants the ability for Anti Spam to add \"spammer\" to those who trigger Anti Spam protections.',
 	'MANAGE_ROLES': 'Setting roles grants the ability for various role related functions to operate: <Leaderboards: Active User, Role Ranks> <Commands: Fakeadmin, transferroles> <Restore previous roles upon user rejoin> <Welcome roles on user join>'
 	)
 	@results = array('true': array(), 'false': '', 'notreq': array())
