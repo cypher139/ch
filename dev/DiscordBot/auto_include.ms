@@ -1,16 +1,3 @@
-### Core Startup
-@pf = '/'
-if(get_os() == 'WINDOWS') { @pf = '\\' }
-@path = ''
-if(in_cmdline_mode()) {
-	export('DiscordBot.version', '1.0.dev-cmd')
-	@path = pwd()
-} else {
-	export('DiscordBot.version', '1.0.dev')
-	@path = sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot'
-}
-export('DiscordBot.config.dir', file_resolve(@path.@pf.'Configs'))
-export('DiscordBot.logs.dir', file_resolve(@path.@pf.'Logs'))
 ##########################################
 ### Bot Admin Functions
 ##########################################

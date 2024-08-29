@@ -1,3 +1,18 @@
+
+# Minecraft only server function:
+if(!in_cmdline_mode()) {
+	#Minecraft server startup: set UUID and IP databases
+	if(is_array(get_value('primus.database.UUID'))) {
+		export('primus.database.UUID', get_value('primus.database.UUID'))
+	} else {
+		export('primus.database.UUID', array('testid': array(1, 5, 10)))
+	}
+	if(is_array(get_value('primus.database.IP'))) {
+		export('primus.database.IP', get_value('primus.database.IP'))
+	} else {
+		export('primus.database.IP', array(1000123: array()))
+	}
+}
 #Setup Dev messages and update player database
 bind('player_join', array('id': 'cypher139.login'), null, @login) {
 #Event playername may sometimes return null? more testing needed

@@ -1,4 +1,3 @@
-#version 1.3-tmc
 bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'), null, @login) {	
 	@serverConfig = import('Chat.config.Server')
 	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))

@@ -1,15 +1,3 @@
-### Core Startup
-export('chatmodifier.name', 'Chat')
-if(in_cmdline_mode() == true) {
-	export('chatmodifier.version', '1.0-tmc-cmd')
-	export('Chat.config.dir', file_resolve(pwd().'/Configs'))
-	export('Chat.logs.dir', file_resolve(pwd().'/Logs'))
-} else {
-	export('chatmodifier.version', '1.0-tmc')
-	export('Chat.config.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Configs'))
-	export('Chat.logs.dir', file_resolve(sys_properties()['user.dir'].'/plugins/CommandHelper/LocalPackages/'.import('chatmodifier.name').'/Logs'))
-}
-
 ### Functions
 
 proc _chat_is_even_number(@number) { return(mod(@number, 2) == 0) }
@@ -65,6 +53,7 @@ proc _chat_load_config(@cfgtype) {
 		}
 	case 'IPBlacklist':
 		@serverConfig = import('Chat.config.Server', array('Write_Blacklist_IP_File': false))
+		export('Chat.config.IPBlacklist.load', time())
 		#Optional: publish Chat's blacklisted IP list to a file for use by your firewall.
 		if(@serverConfig['Write_Blacklist_IP_File'] == true) {
 			@ipFileList = array()
@@ -96,7 +85,14 @@ proc _chat_load_config(@cfgtype) {
 		if(array_contains(@loadcfg['CS_Server_1_Channels'], 'default')) {
 			_chat_msg_Admins(color(14).'[Chat - Discord] Cross server Config is still using default values. Please configure it in order to use Cross-Server chat features.') 
 		}
+	default:
+		_chat_msg_Admins(color(14).'[Chat] config file given not recognized.') 
+		return(false)
 	}
+	@loadTimes = import('Chat.config.load.time')
+	if(!is_array(@loadTimes)) { @loadTimes = array() }
+	array_set(@loadTimes, @cfgtype, time())
+	export('Chat.config.load.time', @loadTimes)
 	export('Chat.config.'.@cfgtype, @loadcfg)
 	return(@loadcfg)
 }
@@ -599,5 +595,6 @@ proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore', boole
 
 ####
 # Load configs
-_chat_load_config('Server');
-_chat_load_config('IPBlacklist');
+#Loading here runs load on every proc call CH makes
+# _chat_load_config('Server');
+# _chat_load_config('IPBlacklist');

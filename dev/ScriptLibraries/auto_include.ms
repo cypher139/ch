@@ -1,17 +1,3 @@
-if(in_cmdline_mode() == false) {
-	#Minecraft server startup: set UUID and IP databases
-	if(is_array(get_value('primus.database.UUID'))) {
-		export('primus.database.UUID', get_value('primus.database.UUID'))
-	} else {
-		export('primus.database.UUID', array('testid': array(1, 5, 10)))
-	}
-	if(is_array(get_value('primus.database.IP'))) {
-		export('primus.database.IP', get_value('primus.database.IP'))
-	} else {
-		export('primus.database.IP', array(1000123: array()))
-	}
-}
-
 proc _write_file(@path, @content, @mode, @option) {
 	if(@path == '' || @content == '') { return(false) }
 	@pf = '/'
@@ -186,7 +172,7 @@ proc _register_sign_command(string @name, string @proc, array @options = array()
 	if(is_associative(@options)) { @options = array_normalize(@options) }
 	if(!array_index_exists(@options, 0)) { @options = array('event', 'sign') }
 	if(array_index_exists(@signCmds, @name)) {
-		console(color('c').'[Signs] A command named '.@name.' was already registered!')
+		console(color(12).'[Signs] A command named '.@name.' was already registered!')
 	}
 	#Register command
 	array_set(@signCmds, @name, array('proc': @proc, 'options': @options))
