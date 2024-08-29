@@ -1,5 +1,5 @@
 #Reload Configuration files
-admin:/discordbotcfg [$config='Discord'] [$type='DiscordBot'] [$] = >>>
+admin:/discordbotcfg [$config='App'] [$type='DiscordBot'] [$] = >>>
 proc _db_help() {
 	msg(color(6).'Reload DiscordBot configuration files.')
 	msg(color(6).'Actions:')

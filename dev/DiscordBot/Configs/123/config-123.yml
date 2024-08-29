@@ -360,6 +360,8 @@ LB_Options:
   # Only start awariding the Active user role if the user has at least this much rank on the leaderboard.
   # -- Set to at least 1 to avoid giving the active user role out immediately to new joiners.
   Active_User_Role_Min_Level: 1
+  # Publish Leaderboard data to a web server?
+  Web_Publish: false
 #
 #
 #

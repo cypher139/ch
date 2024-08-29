@@ -3,6 +3,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
+	@serverinfo = import('DiscordBot.Servers.Info.'.@discord['serverid'], array('name': @config['Server_Nickname']));
 	@time = time();
 	#This event gives display names under "nickname" index
 	@userDisplay = @discord['username']
@@ -203,9 +204,37 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		if(!is_array(@membersFR)) { @membersFR = array() }
 		if(array_index_exists(@membersFR, @discord['userid']) && @config['Welcome_Roles_Restore'] == true) {
 			array_push_all(@currentroles, @membersFR[@discord['userid']]['data'])
+			# Remove Admin roles and/or higher than bot roles
+			@hr = import('DiscordBot.bot.roles.higher', array())
+			@roleAdmin = false
+			foreach(@rn: @rid in @currentroles) {
+				@rm = false
+				if(array_index_exists(@hr, @rid) || array_contains(@hr, @rn)) { @rm = true }
+				if(array_contains_ic(@config['Role_Admins'], @rn) || array_contains(@config['Role_Admins'], @rid)) { @roleAdmin = true @rm = true }
+				if(@rm == true) {
+					array_remove(@currentroles, @rn)
+				}
+			}
+			if(@roleAdmin == true) {
+				_discordBot_send_message('Hello, and welcome back to '.@serverinfo['name'].'! While I was giving you your old roles back I detected a Server Admin role. For security reasons I\'m not awarding that role, Message the server moderation team to reinstate any server access.', @discord['serverid'], 'bot', @discord['userid'], 'dm')
+			}
 			try {
 				discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Previous Member Roles Restored')
 				_db_msg_Console(color(2).'Previous roles restored.', @discord['serverid'])
+			} catch(InsufficientPermissionException @ex) {
+				if(string_contains(@ex['message'], 'Can\'t modify a role with higher or equal highest role than yourself!')) {
+					@roleID = reg_match('[(]id=(.*)[)]', @ex['message'])[1]
+					@roleName = reg_match('(?>Role:)\\W?(?>Role:)?(.*)[(]', @ex['message'])[1]
+					@hr = import('DiscordBot.bot.roles.higher', array())
+					array_set(@hr, @roleID, @roleName)
+					export('DiscordBot.bot.roles.higher', @hr)
+					@errmsg = 'Restoring previous roles for <@'.@discord['userid'].'>: Role "'.@roleName.'" is higher or equal to my highest role, unable to issue previous roles.'
+					_discordBot_send_message(@errmsg, @discord['serverid'], 'log')
+					_db_msg_Console(@errmsg, @discord['serverid'], 'error')
+				} else {
+					_db_msg_Console('I do not have permissions to set roles for '.@discord['userid'], @discord['serverid'], 'error')
+					console(@ex)
+				}
 			} catch(NotFoundException @ex) {
 				@id = ''
 				foreach(@word in parse_args(@ex['message'])) {
@@ -439,6 +468,11 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			array_set(@oldlb[@discord['userid']], 'removed', time())
 			store_value('DiscordBot.'.@discord['serverid'].'.members.former.leaderboard', @oldlb)
 			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Leaderboard_Removed.json', json_encode(@oldlb), 'Overwrite')
+			if(array_index_exists(@config, 'LB_Options', 'Web_Publish')) {
+				if(@config['LB_Options']['Web_Publish'] == true) {
+					_write_file(@botconfig['LB_Web_Path'].'/Leaderboard_'.@discord['serverid'].'_Removed.json', json_encode(@oldlb), 'overwrite')
+				}
+			}
 		}
 		array_remove(@leaderboard['members'], @discord['userid'])
 		@leaderboard['lastedit'] = time()

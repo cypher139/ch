@@ -1,6 +1,6 @@
 ### Bot Administration
 # Config version number
-v: 10
+v: 11
 # - CommandHelper profile name in which your Discord Bot token is stored:
 Profile_Name: discordCredentials
 # Your Bot's information:
@@ -46,6 +46,13 @@ CMD_Blacklist_Commands:
   - play
   - trade
   - t
+#
+#
+# Leaderboard Global options:
+# Path to webserver to publish Leaderboard jsons
+LB_Web_Path: "/var/www/html/"
+# What server's leaderboard should be the default to load? **Requires numeric ID**
+LB_Web_Load_ID: 123456
 #
 #
 # Default System Messages

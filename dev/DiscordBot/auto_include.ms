@@ -92,9 +92,11 @@ proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
 proc _db_load_guilds(array @servers = array(), @prefix = 'DiscordBot') {
 	if(array_size(@servers) == 0) { @servers = discord_get_servers() }
 	if(array_size(@servers) == 0) { return(false) }
+	@botconfig = import('DiscordBot.config.Bot')
 	@guildList = array()
 	@consoleChats = array()
 	export('DiscordBot.Servers.Nicknames', array())
+	export('DiscordBot.LB.Publish.IDs', null)
 	foreach(@serverID in @servers) {
 		if(!is_numeric(@serverID)) { continue() } 
 		if(function_exists('is_dir')) {
@@ -135,6 +137,10 @@ proc _db_load_guilds(array @servers = array(), @prefix = 'DiscordBot') {
 		if(array_size(@consoleChats) > 1) { @s = 's' }
 		_db_msg_Console('Console receives Chat from Guild'.@s.': '.array_implode(@consoleChats, ', '), 'bot') 
 	}
+	@lbPubIDs = import('DiscordBot.LB.Publish.IDs')
+	if(is_array(@lbPubIDs)) {
+		_write_file(@botconfig['LB_Web_Path'].'/Leaderboard_Servers.json', json_encode(@lbPubIDs), 'overwrite')
+	}
 	export('DiscordBot.Servers', @guildList)
 	return(true)
 }
@@ -169,8 +175,8 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 # Checks and Startup Init
 	if(is_numeric(@cfgtype)) {
 		if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is too old, please update.') return('OldConfig') }
-		if(@loadcfg['v'] < import('DiscordBot.cfg.version', array(1,1))[1]) {
-			_db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is too old, please update.')
+		if(@loadcfg['v'] < import('DiscordBot.cfg.version', array(11,11))[1]) {
+			_db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is outdated, please update.')
 			return('OldConfig')
 		}
 		@botconfig = import('DiscordBot.config.Bot')
@@ -191,6 +197,18 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 				@nc = 1
 			}
 		}
+		# Leaderboard: Web Publishing: List of valid servers
+		@lbPubIDs = import('DiscordBot.LB.Publish.IDs')
+		if(!is_array(@lbPubIDs)) { @lbPubIDs = array('primary': 0, 'servers': array()) }
+		if(array_index_exists(@loadcfg, 'LB_Options', 'Web_Publish')) {
+			if(@loadcfg['LB_Options']['Web_Publish'] == true) {
+				array_set(@lbPubIDs, 'primary', @botconfig['LB_Web_Load_ID'])
+				array_set(@lbPubIDs['servers'], @cfgtype, @loadcfg['Server_Nickname'])
+			} else {
+				array_remove(@lbPubIDs['servers'], @cfgtype)
+			}
+		}
+		export('DiscordBot.LB.Publish.IDs', @lbPubIDs)
 		if(array_size(@prevcfg) == 0) {
 			# Databases Startup
 			export('DiscordBot.'.@cfgtype.'.members.ID', get_value('DiscordBot.'.@cfgtype.'.members.ID'))
@@ -215,14 +233,17 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 				_db_msg_Admins(color(12).'[Chat - Server] Server Config file is still using the default values. Please configure it to your needs!')
 				return(false)
 			}
-		case 'Discord':
 		case 'Bot':
 		case 'App':
-			if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Admins(color(12).'['.@prefix.'] Bot Config is too old, please update.') return('OldConfig') }
-			if(@loadcfg['v'] < import('DiscordBot.cfg.version', array(1,1))[0]) {
-				_db_msg_Admins(color(12).'['.@prefix.'] Bot Config is too old, please update.')
+			if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Admins(color(12).'['.@prefix.'] Bot Config is outdated, please update.') return('OldConfig') }
+			if(@loadcfg['v'] < import('DiscordBot.cfg.version', array(11,11))[0]) {
+				_db_msg_Admins(color(12).'['.@prefix.'] Bot Config is outdated, please update.')
 				return('OldConfig')
 			}
+			if(!is_numeric(@loadcfg['LB_Web_Load_ID'])) { 
+				_db_msg_Admins(color(12).'['.@prefix.'] Leaderboard ID is improperly formatted, please update.')
+				return(false)
+			}	
 			if(!function_exists('discord_connect')) { 
 				_db_msg_Console('CHDiscord extension not installed!', 'none')
 				return(false)
@@ -239,6 +260,10 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 			return(false)
 		}
 	}
+	@loadTimes = import(@prefix.'.config.load.time')
+	if(!is_array(@loadTimes)) { @loadTimes = array() }
+	array_set(@loadTimes, @cfgtype, time())
+	export(@prefix.'.config.load.time', @loadTimes)
 	export(@prefix.'.config.'.@cfgtype, @loadcfg)
 	return(@loadcfg)
 }
@@ -318,8 +343,15 @@ proc _discordBot_db_autosave(string @usekey = '', @option) {
 			if(@saveKey['lastedit'] > (@time - @botconfig['AutoSave_Wait'])) {
 				store_value(@prefix.@gp.@e, @saveKey)
 				@results['saved'][] = @gp.@e;
-				if(@e == 'Leaderboard' && array_index_exists(@saveKey, 'guild')) {
-					_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Leaderboard_'.reg_replace('\\s', '_', @saveKey['guild']['name']).'.json', json_encode(@saveKey), 'OVERWRITE')
+				if(@e == 'Leaderboard') {
+					@guildName = @serverID
+					if(array_index_exists(@saveKey, 'guild')) { @guildName = reg_replace('\\s', '_', @saveKey['guild']['name']) }
+					_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Leaderboard_'.@guildName.'.json', json_encode(@saveKey), 'overwrite')
+					if(array_index_exists(@config, 'LB_Options', 'Web_Publish')) {
+						if(@config['LB_Options']['Web_Publish'] == true) {
+							_write_file(@botconfig['LB_Web_Path'].'/Leaderboard_'.@serverID.'.json', json_encode(@saveKey), 'overwrite')
+						}
+					}
 				}
 			} else {
 				@results['nochange'][] = @gp.@e;
@@ -1343,7 +1375,7 @@ proc _discordBot_update_members(@useguild = 0) {
 					array_insert(@logJointimes[@id], @idInfo['joined_at'], 0)
 				}
 			# pseudo array for functions that expect event array
-				@discord = array('bot': @idInfo['bot'], 'serverid': @serverID, 'userid': @id, 'username': @idInfo['username'])
+				@discord = array('webhook': false, 'bot': @idInfo['bot'], 'serverid': @serverID, 'userid': @id, 'username': @idInfo['username'])
 			# Leaderboard: Avatars, usernames, role color
 				if(@config['LB_Enable'] == true && is_array(@leaderboard) && @idInfo['bot'] == false) {
 					if(array_index_exists(@leaderboard, 'members', @id)) {
@@ -1481,7 +1513,6 @@ proc _discordBot_update_members(@useguild = 0) {
 			array_set(@debugstats['size'], 'au', array_size(@activeUsers))
 			store_value('DiscordBot.'.@serverID.'.log.users.Join.Times', @logJointimes)
 			export('DiscordBot.'.@serverID.'.CacheUpdate', null)
-			export('DiscordBot.'.@serverID.'.returning.users', null)
 			array_set(@alldebugstats, @serverID, @debugstats)
 			export('DiscordBot.debug.stats.last.updatemembers', @alldebugstats)
 			store_value('DiscordBot.debug.'.@serverID.'.rank.stats', @rankstats)
@@ -1503,7 +1534,9 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 	if(!is_array(@discord)) { return('No data') }
 	if(!array_index_exists(@discord, 'userid')) { return('No user') }
 	if(!array_index_exists(@discord, 'serverid')) { return('server?') }
-	if(@discord['webhook'] == true) { return('webhook?')}
+	if(array_index_exists(@discord, 'webhook')) {
+		if(@discord['webhook'] == true) { return('webhook?')}
+	}
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	if(!is_array(@config['Role_Ranks'])) { return('no rank data') }
 	@ranknums = array_sort(array_keys(@config['Role_Ranks']), 'NUMERIC')
@@ -2021,6 +2054,7 @@ proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array(), @
 }
 
 proc _discordBot_lb_levelXP(@serverID = 'default', @preset = 1) {
+	@botconfig = import('DiscordBot.config.Bot')
 	@levelxp = array(0, 100, 250, 450)
 	array_resize(@levelxp, 200)
 	@d1 = 10
@@ -2052,6 +2086,7 @@ proc _discordBot_lb_levelXP(@serverID = 'default', @preset = 1) {
 	}
 	export('DiscordBot.'.@serverID.'.Leaderboard.levelXP', @levelxp)
 	_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Leaderboard_LevelXP.json', json_encode(@levelxp), 'CREATE')
+	_write_file(@botconfig['LB_Web_Path'].'/Leaderboard_'.@serverID.'_LevelXP.json', json_encode(@levelxp), 'Overwrite')
 	return(@levelxp)
 }
 

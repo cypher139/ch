@@ -239,6 +239,7 @@ proc _vc_user_left(@discord, @type, @chan = array(), @vc) {
 						discord_member_move_voice_channel(@discord['serverid'], @userid, null)
 					} catch(InsufficientPermissionException @ex) {
 						_db_msg_Console(color(12).'Disconnecting Bots in VC is enabled - Bot does not have Move members permission!', @discord['serverid'], 'error')
+						break()
 					} catch(Exception @ex) {
 						_db_msg_Console('VC disconnect: failed to remove User <@'.@userid.'> from '.@channel.'\n'.@ex, @discord['serverid'], 'error')
 						continue()

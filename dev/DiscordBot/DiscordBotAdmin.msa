@@ -104,9 +104,29 @@ case 'update':
 	msg(color(3).'Time elapsed: '.@timeElapsed.'ms.')
 case 'memberinfo':
 	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord user ID to view!') }
-	@gmr = discord_member_info(@serverID, @args[0])
-	msg(color(10).'Member info:')
-	msg(@gmr)
+	try {
+		@gmr = discord_member_info(@serverID, @args[0])
+		msg(color(10).'Member info:')
+		msg(@gmr)
+	} catch(NotFoundException @ex) {
+		if(!is_numeric(@args[0])) { die(color(12).'Username was Not Found on Server; to proceed a User ID is required.') }
+		@fr = get_value('DiscordBot.'.@discord['serverid'].'.members.former')
+		if(!is_array(@fr)) { @fr = array() }
+		if(is_array(@fr)) {
+			if(array_index_exists(@fr, @args[0])) {
+				@fromroles = @fr[@args[0]]
+				msg(color(14).'User ID Not Found on Server, loading former data:')
+				@jt = 'Unknown'
+				if(array_index_exists(@fr, @args[0], 'time')) { @jt = simple_date('MM/dd/yyyy HH:mm:ss', @fr[@args[0]]['time']) }
+				@msg = 'Username: '.@fr[@args[0]]['user'].'  Joined: '.@jt.'  Left: '.simple_date('MM/dd/yyyy HH:mm:ss', @fr[@args[0]]['removed'])
+				if(array_index_exists(@fr, @args[0], 'wmid')) { @msg = @msg.'\nWelcome Msg ID: '.@fr[@args[0]]['wmid'] }
+				if(array_index_exists(@fr, @args[0], 'code')) { @msg = @msg.'\nInviter: '.@fr[@args[0]]['inviter'].' Invite: '.@fr[@args[0]]['code'] }
+				die(@msg)
+			} else {
+				die(color(12).'User ID was Not Found on Server or former data!')
+			}
+		} else { die(color(12).'User ID was Not Found on Server; internal storage not initialized!') }
+	}
 case 'viewinvites':
 	discord_retrieve_invites(@serverID, closure(@ex) { 
 		console(@ex) 
@@ -252,8 +272,17 @@ case 'welcomerolesfinder':
 	}
 	msg('['.@name.'] '.color(7).@return['MCCmd']['msg'])
 case 'checkforbots':
-	@checklist = json_decode(read(import('DiscordBot.config.dir').'/'.'botlist.json'))
+	@checklist = array()
+	try {
+		@checklist = json_decode(read(import('DiscordBot.config.dir').'/'.'botlist.json'))
+	} catch(Exception @ex) {
+		msg(color(12).'Known bot IDs file was not found or could not be read.')
+		console(@ex)
+	}
 	@clsize = array_size(@checklist)
+	if(@clsize == 0) {
+		die(color(12).'A list of user IDs to check against known bot IDs was not found.')
+	}	
 	@guildMembers = discord_get_members(@serverID)
 	@results = array()
 	@logjointimes = get_value('DiscordBot.'.@serverID.'.log.users.Join.Times')
@@ -262,6 +291,11 @@ case 'checkforbots':
 	if(!is_array(@membersformer)) { @membersformer = array() }
 	#check #1: Active
 	foreach(@i: @id in @checklist) {
+		if(!is_numeric(@id)) { 
+			msg('ID #'.@i.' is not a numeric ID: '.@id)
+			@clsize--
+			continue()
+		}
 		if(array_contains(@guildMembers, @id)) {
 			array_set(@results, @id, array('type': 'active', 'join': discord_member_info(@serverID, @id)['joined_at']))
 			continue()
@@ -277,7 +311,7 @@ case 'checkforbots':
 	@color = 10
 	if(array_size(@results) > 0) { @color = 12 }
 	msg(color(7).'Found '.color(@color).array_size(@results).color(7).' matches out of '.color(14).@clsize.color(7).' Bot IDs checked.')
-	if(array_index_exists(@results, 0)) {
+	if(array_size(@results) > 0) {
 		@sendMsg = ''
 		foreach(@id: @r in @results) {
 			@msg = 'ID: '.@id.' '
@@ -290,10 +324,11 @@ case 'checkforbots':
 				if(array_index_exists(@membersformer, @id)) {
 					@info = @membersformer[@id]
 				}
+				if(!array_index_exists(@info, 'code')) { array_set(@info, 'code', 'Unknown') }
 				foreach(@k: @date in @r['join']) {
 					@r['join'][@k] = simple_date('MM/dd/yyyy HH:mm:ss.SSS', @date, 'UTC')
 				}
-				@msg = @msg.color(9).'Username: '.@info['user'].color(8).'Last invite code: '.@info['code'].color(11).'(Former '.color(7).'Guild Member)'.color(11).' Joined server: '.array_implode(@r['join'], ', ')
+				@msg = @msg.color(9).'Username: '.@info['user'].color(8).' Last invite code: '.@info['code'].color(11).'(Former '.color(7).'Guild Member)'.color(11).' Joined server: '.array_implode(@r['join'], ', ')
 			}
 			@sendMsg = @sendMsg.'\n'.@msg
 		}
