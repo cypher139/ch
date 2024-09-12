@@ -136,7 +136,7 @@ set_cron('59 23 * * *', closure(){
 		@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' '.@typeName.' IP ping report:'
 		@checktime = (time() - 86400000)
 		foreach(@ipnum: @times in @iplog) {
-			if(@ipnum == 'ip') { continue(); }
+			if(@ipnum == 'ip' || @ipnum == 'isp') { continue(); }
 			if(array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @iplog['ip'][@ipnum])) { continue(); }
 			@count = 0
 			foreach(@data in @times) {
@@ -147,7 +147,11 @@ set_cron('59 23 * * *', closure(){
 				@useMsg = true
 				@s = ''
 				if(@count > 1) { @s = 's' }
-				@Message = @Message.'\n'.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s
+				@isp = ''
+				if(array_index_exists(@iplog, 'isp', @iplog['ip'][@ipnum])) {
+					@isp = '< '.@iplog['isp'][@iplog['ip'][@ipnum]].' >'
+				}
+				@Message = @Message.'\n'.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%  '.@isp.'  '.color(12).@count.color(7).' ping'.@s
 			}
 		}
 		if(@useMsg == true) {
@@ -183,12 +187,12 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 		if(@serverConfig['Ping_Blacklist_Console'] == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist IP: '.@ping['ip'], false) }
 		die();
 	}
-	foreach(@block in @blacklistIP['IP_Block_Blacklist']) {
+	foreach(@block: @ISP in @blacklistIP['IP_Block_Blacklist']) {
 		@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
 		if(string_starts_with(string(@ping['ip']), @startBlock)) {
 			super_cancel();
 			# ^ only affects server listings.
-			_chat_pings_write_log(@ping, 'blacklist');
+			_chat_pings_write_log(@ping, 'blacklist', false, @ISP);
 			if(@serverConfig['Ping_Blacklist_Console'] == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist '.color(5).'Block'.color(8).' IP: '.@ping['ip'], false) }
 			die();
 		}
@@ -234,7 +238,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			if(string_contains(@ping['ip'], ':')) {
 				@url = 'https://dnschecker.org/ipv6-whois-lookup.php'
 			}
-			@lookup = ' [Lookup IP]('.@url.')'
+			@lookup = ' [Lookup IP](<'.@url.'>)'
 		}
 		@adminPingMessage = replace(@adminPingMessage, '%LookupIP%', @lookup)
 		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), '', 'ping') }

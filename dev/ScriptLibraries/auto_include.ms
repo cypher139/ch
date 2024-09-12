@@ -179,6 +179,20 @@ proc _register_sign_command(string @name, string @proc, array @options = array()
 	export('cypher139.sign.Commands', @signCmds)
 }
 
+proc _register_poll_file(string @name, string @proc, string @path, array @options = array()) {
+	if(@name == '' || @name == null) { return(false) }
+	if(@proc == '' || @proc == null) { return(false) }
+	@polls = import('cypher139.poll.files')
+	if(!is_array(@polls)) { @polls = array() }
+	if(is_associative(@options)) { @options = array_normalize(@options) }
+	if(array_index_exists(@polls, @name)) {
+		console(color(14).'[File Poll] File '.@name.' was already registered, re-registering.')
+	}
+	#Register file
+	array_set(@polls, @name, array('proc': @proc, 'last': time(), 'path': @path, 'options': @options))
+	export('cypher139.poll.files', @polls)
+}
+
 
 proc _array_string_contains(array @array, string @needle, string @matchType = 'default', @returnType = 'boolean', @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
