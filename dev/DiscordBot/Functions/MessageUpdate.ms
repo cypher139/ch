@@ -231,24 +231,63 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 
 bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
+	@botconfig = import('DiscordBot.config.Bot')
+	@config = import('DiscordBot.config.'.@discord['serverid'])
+	#Check: Ignore sending messages about Ping log emoji use
+	@isIPemoji = false
+	@logChannel = ''
+	if(array_index_exists(@config, 'Ping_Log_Channel')) { @logChannel = @config['Ping_Log_Channel'] } else { @logChannel = @config['Log_Channel'] }
+	if(@discord['messageuserid'] == @botconfig['Bot_ID']) {
+		if(@discord['channelid'] == @logChannel || @discord['channel'] == @logChannel) {
+			foreach(@act: @em in @config['Special_Emoji']) {
+				if(reg_replace('[<>]', '', @discord['emoji']) == reg_replace('[<>]', '', @em)) {
+					@isIPemoji = true
+					break();
+				}
+			}
+		}
+	}
+	# if(@isIPemoji == false) { console('bind-ra:'.@discord) }
 	array_set(@discord, 'time', time());
 	# Update Recent Messages with current data
 	@saveMsg = _db_update_message_cache(@discord, 'addreaction')
+	if(@isIPemoji == true) { die() }
 	@addindex = ''
 	if(@saveMsg['addui'] == true) { @addindex = color(10).'+ui'.color('r') }
 	if(@saveMsg['addsi'] == true) { @addindex = @addindex.color(10).'+si'.color('r') }
 	#Send to Admin Logs
-	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message. '.@addindex, @discord['serverid'], 'debug')
+	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message in '.@discord['channel'].'  '.@addindex, @discord['serverid'], 'debug')
 }
 
 bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
+	@botconfig = import('DiscordBot.config.Bot')
+	@config = import('DiscordBot.config.'.@discord['serverid'])
+	@isIPemoji = false
+	@logChannel = ''
+	if(array_index_exists(@config, 'Ping_Log_Channel')) { @logChannel = @config['Ping_Log_Channel'] } else { @logChannel = @config['Log_Channel'] }
+	#Due to discord stuff reaction removed can't have messageuserid given without extra work, use cache as workaround:
+	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
+	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
+	if(array_index_exists(@cacheMsgs, 'messages', @discord['messageid'])) {
+		if(@cacheMsgs['messages'][@discord['messageid']]['userid'] == @botconfig['Bot_ID']) {
+			if(@discord['channelid'] == @logChannel || @discord['channel'] == @logChannel) {
+				foreach(@act: @em in @config['Special_Emoji']) {
+					if(reg_replace('[<>]', '', @discord['emoji']) == reg_replace('[<>]', '', @em)) {
+						@isIPemoji = true
+						break();
+					}
+				}
+			}
+		}
+	}
 	array_set(@discord, 'time', time());
 	# Update Recent Messages with current data
 	@saveMsg = _db_update_message_cache(@discord, 'removereaction')
+	if(@isIPemoji == true) { die() }
 	@addindex = ''
 	if(@saveMsg['addui'] == true) { @addindex = color(10).'+ui'.color('r') }
 	if(@saveMsg['addsi'] == true) { @addindex = @addindex.color(10).'+si'.color('r') }
 	#Send to Admin Logs
-	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message. '.@addindex, @discord['serverid'], 'debug')
+	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message in '.@discord['channel'].'  '.@addindex, @discord['serverid'], 'debug')
 }

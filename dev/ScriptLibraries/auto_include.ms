@@ -179,6 +179,20 @@ proc _register_sign_command(string @name, string @proc, array @options = array()
 	export('cypher139.sign.Commands', @signCmds)
 }
 
+proc _register_poll_file(string @name, string @proc, string @path, array @options = array()) {
+	if(@name == '' || @name == null) { return(false) }
+	if(@proc == '' || @proc == null) { return(false) }
+	@polls = import('cypher139.poll.files')
+	if(!is_array(@polls)) { @polls = array() }
+	if(is_associative(@options)) { @options = array_normalize(@options) }
+	if(array_index_exists(@polls, @name)) {
+		console(color(14).'[File Poll] File '.@name.' was already registered, re-registering.')
+	}
+	#Register file
+	array_set(@polls, @name, array('proc': @proc, 'last': time(), 'path': @path, 'options': @options))
+	export('cypher139.poll.files', @polls)
+}
+
 
 proc _array_string_contains(array @array, string @needle, string @matchType = 'default', @returnType = 'boolean', @doKeys) {
 	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
@@ -386,30 +400,28 @@ proc _primus_database_add(@player, @type, @data, @option) {
 		case 'ip':		
 		# Setup Player IP Database
 			@ipdata = import('primus.database.IP')
-			if(!array_index_exists(@ipdata, '_ip')) { array_set(@ipdata, '_ip', array()) }
 			if(!array_index_exists(@ipdata, '_hostname')) { array_set(@ipdata, '_hostname', array()) }
 			#entry found
 			if(@data == '' || @data == null) { @data = pinfo(@player)[3] }
 			if(@option == '' || @option == null) { @option = pinfo(@player)[10] }
-			@ipnumbers = reg_replace('\\.*:*', '', @data)
-			if(array_index_exists(@ipdata, @ipnumbers)) {
+			@ip = reg_replace('[%][0]$', '', @data)
+			if(array_index_exists(@ipdata, @ip)) {
 				#IP entry found
-				if(array_contains(@ipdata[@ipnumbers], @player)) {
+				if(array_contains(@ipdata[@ip], @player)) {
 					#both IP and player found
 					tmsg(@player, color('a').'Welcome back'.color(7).' to the server, glad you are here!')
 				} else {
 					#IP entry found, but player not found
-					array_push(@ipdata[@ipnumbers], @player)
+					array_push(@ipdata[@ip], @player)
 					@update = true
 				}
 			} else {
 				#IP entry not found
-				array_set(@ipdata, @ipnumbers, array(@player))
+				array_set(@ipdata, @ip, array(@player))
 				@update = true
 			}
 			if(@update == true) {
-				array_set(@ipdata['_ip'], @ipnumbers, @data)
-				array_set(@ipdata['_hostname'], @ipnumbers, @option)
+				array_set(@ipdata['_hostname'], @ip, @option)
 				store_value('primus.database.IP', @ipdata)
 				export('primus.database.IP', @ipdata)
 			}

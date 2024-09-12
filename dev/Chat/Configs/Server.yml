@@ -1,3 +1,5 @@
+#version:
+v: 11
 # !!!!!!!!!!!! Remove the following line to remove nag configure message! !!!!!!!!!!!!!!!!!!
 Not_Configured: true
 #
@@ -23,6 +25,13 @@ MOTD_Rainbow_Type: "ps2"
 # Send Ping Notification (includes IP and all players IP has connected with) to:
 Ping_Message_Console: true
 Ping_Message_Discord: true
+# Should the message sent to Discord contain a link to lookup IP in a database?
+Ping_Message_LookupIP_Link: false
+# Should the message sent to Discord contain the IP's country code and ISP in the message?
+Ping_Message_LookupIP_DB: true
+# Currently the IP Database lookup uses a shell call, where is the script located?
+LookupIP_DB_Dir: "/home/minecraft/geoip"
+#
 # Level of Pings: 0 for none, 1 for Console only, 2 for Console and Discord
 Ping_Message_Level: 2
 # This MOTD is given if the last ping was up to 7 seconds ago.
@@ -34,6 +43,7 @@ Ping_Message_Ignore_IP:
 # These IPs should bypass all ping messages and ping recording.
 Ping_Message_Super_Ignore_IP:
 - "127.0.0.1"
+# Write the blacklisted IPs to a file that your firewall can process?
 Write_Blacklist_IP_File: true
 Write_Blacklist_IP_File_Path: "/var/www/html/block.txt"
 # Message console on each attempted ping from a Blacklisted IP?

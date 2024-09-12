@@ -2,13 +2,13 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 	@serverConfig = import('Chat.config.Server')
 	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 	@ipdata = import('primus.database.IP');
-	@ipnumbers = reg_replace('\\.*:*', '', @login['ip']);
+	@ip = reg_replace('[%][0]$', '', @login['ip'])
 	if(!is_array(@ipdata)) { @ipdata = array() }
 	@players = ''
 	@playersMsg = ''
 	@msgPrefix = color(6).'['.color(9).'Server'.color(6).'] '
-	if(array_index_exists(@ipdata, @ipnumbers)) {
-		@players = array_implode(@ipdata[@ipnumbers], ', ')
+	if(array_index_exists(@ipdata, @ip)) {
+		@players = array_implode(@ipdata[@ip], ', ')
 		@playersMsg = '(Account names: %f'.color(3).@players.'%f)'
 	}
 	@kickMsg = ''
@@ -20,8 +20,8 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 	# How many accounts can be connected with the same IP address at any given time?
 		@concurrentList = import('Server.IP.concurrent')
 		if(!is_array(@concurrentList)) { @concurrentList = array() }
-		if(!array_index_exists(@concurrentList, @ipnumbers)) { array_set(@concurrentList, @ipnumbers, 0) }
-		if(@serverConfig['Concurrent_Accs_IP'] == @concurrentList[@ipnumbers]) {
+		if(!array_index_exists(@concurrentList, @ip)) { array_set(@concurrentList, @ip, 0) }
+		if(@serverConfig['Concurrent_Accs_IP'] == @concurrentList[@ip]) {
 			@kickPlayer = true
 			@kickMsg = 'Too many Accounts are using this IP address.'
 			@kickType = @kickType.'1'
@@ -36,8 +36,8 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 		}
 	# If many accounts have previously connected using the same IP address, should we automatically kick joins from this IP?
 		if(@serverConfig['Kick_Multiple_Accs_IP'] == true) {
-			if(array_index_exists(@ipdata, @ipnumbers) && !array_index_exists(@serverConfig['Kick_Multiple_Accs_IP_Whitelist'], @login['ip'])) {
-				if(array_size(@ipdata[@ipnumbers]) > @serverConfig['Allowed_Account_Amount']) {
+			if(array_index_exists(@ipdata, @ip) && !array_index_exists(@serverConfig['Kick_Multiple_Accs_IP_Whitelist'], @login['ip'])) {
+				if(array_size(@ipdata[@ip]) > @serverConfig['Allowed_Account_Amount']) {
 					@kickPlayer = true
 					@kickMsg = 'This server does not allow players to use multiple Alternate Accounts.'
 					@kickType = @kickType.'2'

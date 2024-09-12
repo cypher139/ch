@@ -1,3 +1,30 @@
+# Poll registered files for changes, call loader if changed. Requires CHFiles
+set_cron('2 * * * *', closure(){ 
+	@files = import('cypher139.poll.files')
+	if(!is_array(@files)) { @files = array() }
+	@update = false
+	foreach(@file: @opt in @files) {
+		if(!is_array(@opt)) { continue() }
+		if(function_exists('file_last_modified')) {	
+			if(!is_file(@opt['path'])) {
+				console(color(14).'[File Poll] File '.@file.' was not found.')
+				continue()
+			}
+			# opt: array('proc': @proc, 'last': time(), 'path': @path, 'options': @options))
+			@newedit = file_last_modified(@opt['path'])
+			if(@newedit > @opt['last']) {
+				call_proc(@opt['proc'], @file)
+				@files[@file]['last'] = time()
+				@update = true
+				console(color(3).'[File Poll] Reloading File '.@file)
+			}
+		}
+	} else { continue() }
+	if(@update == true) {
+		export('cypher139.poll.files', @files)
+	}
+	return(true);
+});
 
 # Minecraft only server function:
 if(!in_cmdline_mode()) {

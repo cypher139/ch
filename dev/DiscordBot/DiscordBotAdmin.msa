@@ -34,6 +34,7 @@ case 'getperms':
 	'MESSAGE_HISTORY': 'Any messages I send may not be able to reference another message.',
 	'VIEW_CHANNEL': 'If I can\'t see messages how am I supposed to interact with it?',
 	'MESSAGE_EXT_EMOJI': 'This grants the ability for Cross-Server Chat to use emojis from their servers.',
+	'MESSAGE_ADD_REACTION': 'This grants the ability for the bot to add confirmation reactions to certain messages.',
 	#advanced
 	'MANAGE_SERVER': 'Required for Invite logging. This grants the ability to retrive your server\'s invites.',
 	'MESSAGE_MANAGE': 'Required to delete others messages. Used for: <Anti Spam: remove spam messages> <Showcase: remove chat messages>',

@@ -2,8 +2,7 @@
 bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @login) {
 	@serverConfig = import('Chat.config.Server')
 	@playerID = _getplayerID(player())
-	@ip = pinfo(player())[3]
-	@ipnumbers = reg_replace('\\.*:*', '', @ip)
+	@ip = reg_replace('[%][0]$', '', pinfo(player())[3])
 	@consolemsg = color(3).player().color('r').' connected with'.color(7).' IP: '.color('a').@ip.color(7).' hostname: '.pinfo(player())[10]
 	@jointime = time()
 	export('Server.player.'.@playerID['id'].'.last.join', @jointime)
@@ -46,8 +45,8 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 # IP Check: record number of concurrent players connected
 	@concurrentList = import('Server.IP.concurrent')
 	if(!is_array(@concurrentList)) { @concurrentList = array() }
-	if(!array_index_exists(@concurrentList, @ipnumbers)) { array_set(@concurrentList, @ipnumbers, 0) }
-	@concurrentList[@ipnumbers]++
+	if(!array_index_exists(@concurrentList, @ip)) { array_set(@concurrentList, @ip, 0) }
+	@concurrentList[@ip]++
 	export('Server.IP.concurrent', @concurrentList)
 
 # Send Join Message to Minecraft
@@ -67,17 +66,16 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	@time = time()
 	@serverConfig = import('Chat.config.Server')
 	@playerID = _getplayerID(player())
-	@ip = pinfo(player())[3]
-	@ipnumbers = reg_replace('\\.*:*', '', @ip)
+	@ip = reg_replace('[%][0]$', '', pinfo(player())[3])
 	@sendMsg = true
 	@type = 'none'
 	
 # IP Check: record number of concurrent players connected
 	@concurrentList = import('Server.IP.concurrent')
 	if(!is_array(@concurrentList)) { @concurrentList = array() }
-	if(!array_index_exists(@concurrentList, @ipnumbers)) { array_set(@concurrentList, @ipnumbers, 1) }
-	@concurrentList[@ipnumbers]--
-	if(@concurrentList[@ipnumbers] == 0) { array_remove(@concurrentList, @ipnumbers) }
+	if(!array_index_exists(@concurrentList, @ip)) { array_set(@concurrentList, @ip, 1) }
+	@concurrentList[@ip]--
+	if(@concurrentList[@ip] == 0) { array_remove(@concurrentList, @ip) }
 	export('Server.IP.concurrent', @concurrentList)
 	
 # Setup Quit Message
@@ -135,24 +133,56 @@ set_cron('59 23 * * *', closure(){
 		if(array_size(@iplog) == 0) { continue(); }
 		@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' '.@typeName.' IP ping report:'
 		@checktime = (time() - 86400000)
-		foreach(@ipnum: @times in @iplog) {
-			if(@ipnum == 'ip') { continue(); }
-			if(array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @iplog['ip'][@ipnum])) { continue(); }
+		@IPList = array()
+		foreach(@ip: @times in @iplog) {
+			if(@ip == 'ip' || @ip == 'isp') { continue(); }
+			if(array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @ip)) { continue(); }
 			@count = 0
 			foreach(@data in @times) {
 				if(@checktime > @data) { continue(); }
 				@count++			
 			}
 			if(@count > 0) {
+				@IPList[] = @ip
 				@useMsg = true
 				@s = ''
 				if(@count > 1) { @s = 's' }
-				@Message = @Message.'\n'.'%format%'.color(9).@iplog['ip'][@ipnum].color(7).'%format%   '.color(12).@count.color(7).' ping'.@s
+				@isp = ''
+				if(@serverConfig['Ping_Message_LookupIP_DB'] == true) {
+					@ipdb = _chat_lookup_ip_db(@ip)
+					@listIPData = ''
+					@cnFlag = ''
+					if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
+					if(@ipdb['rcn'] != '') { @cnFlag = @cnFlag.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
+					# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+					if(@ipdb['asn'] != '') { @listIPData = @listIPData.' '.'ASN: '.@ipdb['asn'] }
+					if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
+					if(@listIPData == '') { @isp = '' } else { @isp = '['.@cnFlag.to_lower(@listIPData).']' }
+				}
+				if(@isp == '') {
+					if(array_index_exists(@iplog, 'isp', @ip)) {
+						@isp = '< '.@iplog['isp'][@ip].' >'
+					}
+				}
+				@Message = @Message.'\n'.'%format%'.color(9).@ip.color(7).'%format%  '.color(12).@count.color(7).' ping'.@s.'   '.color(3).@isp
 			}
 		}
 		if(@useMsg == true) {
 			if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
-				if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@Message, '%format%', '`'), '', 'ping') }
+				if(is_proc('_discordBot_send_message')) { 
+					_discordBot_send_message(replace(@Message, '%format%', '`'), '', 'ping', '', '', closure(@msgID){
+						@cacheID = import('DiscordBot.Chat.msg.IP.Review')
+						if(!is_array(@cacheID)) { @cacheID = array() }
+						array_set(@cacheID, @msgID, @IPList)
+						if(array_size(@cacheID) > 400) {
+							@key = array_keys(@cacheID)
+							array_remove(@key, 'c')
+							array_remove(@cacheID, array_sort(@key, 'NUMERIC')[0])
+						}
+						export('DiscordBot.Chat.msg.IP.Review', @cacheID)
+						return(true)
+					});
+				}
 			}
 			if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
 		}
@@ -165,11 +195,11 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	@serverConfig = import('Chat.config.Server')
 	@pinglevel = @serverConfig['Ping_Message_Level']
 	# Repeated pings get special message
-	@ipnumbers = reg_replace('\\.*:*', '', @ping['ip'])
+	@ip = reg_replace('[%][0]$', '', @ping['ip'])
 	@iplastping = import('Chat.ping.IP.times')
 	if(!is_array(@iplastping)) { @iplastping = array() }
-	if(!array_index_exists(@iplastping, @ipnumbers)) {
-		array_set(@iplastping, @ipnumbers, (@time - 10000))
+	if(!array_index_exists(@iplastping, @ip)) {
+		array_set(@iplastping, @ip, (@time - 10000))
 	}
 	@ignore = false
 	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ping['ip']) || array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @ping['ip'])) { @ignore = true }
@@ -183,19 +213,19 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 		if(@serverConfig['Ping_Blacklist_Console'] == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist IP: '.@ping['ip'], false) }
 		die();
 	}
-	foreach(@block in @blacklistIP['IP_Block_Blacklist']) {
+	foreach(@block: @ISP in @blacklistIP['IP_Block_Blacklist']) {
 		@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
 		if(string_starts_with(string(@ping['ip']), @startBlock)) {
 			super_cancel();
 			# ^ only affects server listings.
-			_chat_pings_write_log(@ping, 'blacklist');
+			_chat_pings_write_log(@ping, 'blacklist', false, @ISP);
 			if(@serverConfig['Ping_Blacklist_Console'] == true) { console(color(9).'['.color(12).'Server'.color(9).'] '.color(8).'Ping from Blacklist '.color(5).'Block'.color(8).' IP: '.@ping['ip'], false) }
 			die();
 		}
 	}
 	export('Chat.ping.IP.times', @iplastping);
 # Repeated pings (i.e. quick refreshes)? Yea, don't bother displaying those!
-	if(@time < (@iplastping[@ipnumbers] + 7000)) {
+	if(@time < (@iplastping[@ip] + 7000)) {
 		modify_event('motd', @serverConfig['Repeated_Ping_Message']);
 		die();
 	}
@@ -207,13 +237,13 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	@ipdata = import('primus.database.IP');
 	@msgdisplay = ''
 	if(is_array(@ipdata)) {
-		if(array_index_exists(@ipdata, @ipnumbers)) {
+		if(array_index_exists(@ipdata, @ip)) {
 		# Do not display ping message to admins immediately after player quit
-			foreach(@acc in @ipdata[@ipnumbers]) {
+			foreach(@acc in @ipdata[@ip]) {
 				@checktime = import('Server.player.'._getplayerID(@acc)['id'].'.last.quit', (@time - 20000))
 				if(@time < (@checktime + 10000)) { die(); }
 			}
-			@players = array_implode(@ipdata[@ipnumbers], ', ')
+			@players = array_implode(@ipdata[@ip], ', ')
 			@msgdisplay = ' ('.color(3).@players.color(7).')'
 		}
 	}
@@ -223,20 +253,47 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 		@pinglevel = 0 
 	}
 # Admin Ping Messages:
-	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from %format%'.@ping['ip'].@msgdisplay.'%format%%LookupIP%'
+	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from %format%'.@ping['ip'].@msgdisplay.'%format% %IPDB%%LookupIP%'
+	if(@serverConfig['Ping_Message_LookupIP_DB'] == true) {
+		@ipdb = _chat_lookup_ip_db(@ping['ip'])
+		@listIPData = ''
+		@cnFlag = ''
+		if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
+		if(@ipdb['rcn'] != '') { @cnFlag = @cnFlag.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
+		# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+		# if(@ipdb['asn'] != '') { @listIPData = @listIPData.' '.'ASN: '.@ipdb['asn'] }
+		if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
+		if(@listIPData == '') { @adminPingMessage = replace(@adminPingMessage, '%IPDB%', '') } else {
+			@adminPingMessage = replace(@adminPingMessage, '%IPDB%', @cnFlag.'%format%'.@listIPData.'%format% ')
+		}
+	} else { @adminPingMessage = replace(@adminPingMessage, '%IPDB%', '') }
 	if(@serverConfig['Ping_Message_Console'] == true && @pinglevel > 0) { console(replace(replace(@adminPingMessage, '%format%', ''), '%LookupIP%', ''), false) }
 	if(@serverConfig['Ping_Message_Discord'] == true && @pinglevel > 1) {
-		@showlookup = true
+		@IPList = array()
+		@IPList[] = @ping['ip']
 		@lookup = ''
-		if(array_index_exists(@serverConfig, 'Ping_Message_LookupIP')) { @showlookup = @serverConfig['Ping_Message_LookupIP'] }
+		@showlookup = @serverConfig['Ping_Message_LookupIP_Link']
 		if(@showlookup == true) {
 			@url = 'https://dnschecker.org/ip-location.php?ip='.@ping['ip']
 			if(string_contains(@ping['ip'], ':')) {
 				@url = 'https://dnschecker.org/ipv6-whois-lookup.php'
 			}
-			@lookup = ' [Lookup IP]('.@url.')'
+			@lookup = '[Lookup IP](<'.@url.'>)'
 		}
 		@adminPingMessage = replace(@adminPingMessage, '%LookupIP%', @lookup)
-		if(is_proc('_discordBot_send_message')) { _discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), '', 'ping') }
+		if(is_proc('_discordBot_send_message')) {
+			_discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), '', 'ping', '', '', closure(@msgID){
+				@cacheID = import('DiscordBot.Chat.msg.IP.Review')
+				if(!is_array(@cacheID)) { @cacheID = array() }
+				array_set(@cacheID, @msgID, @IPList)
+				if(array_size(@cacheID) > 400) {
+					@key = array_keys(@cacheID)
+					array_remove(@key, 'c')
+					array_remove(@cacheID, array_sort(@key, 'NUMERIC')[0])
+				}
+				export('DiscordBot.Chat.msg.IP.Review', @cacheID)
+				return(true)
+			});
+		}
 	}	
 }

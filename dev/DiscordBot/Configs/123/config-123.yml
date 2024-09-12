@@ -18,6 +18,16 @@ Console_Messages: true
 Console_Messages_Chat: false
 # Send Bot debug messages for events that occur regarding this server?
 Console_Debug: false
+# Optional Log configs:
+# Used for Chat script integration. Uncomment if needed.
+# Your channel for notification of IP address pings on the Minecraft server.
+# Ping_Log_Channel: bot-logs
+# Certain modules may react to these emojis being used:
+Special_Emoji:
+# What emoji should be used on a ping message to get ISP data from database? (requires shell command)
+  PingGetISP: <no:12345>
+# What emoji should be used on a ping message to add that IP to Chat's IP Blacklist file?
+  PingBlacklist: <no:12345>
 #
 # Member Joins and Leaves
 # Send join or Leave log uypon a member join or leave?
