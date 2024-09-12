@@ -54,28 +54,27 @@ proc _chat_load_config(@cfgtype) {
 	case 'IPBlacklist':
 		@serverConfig = import('Chat.config.Server', array('Write_Blacklist_IP_File': false))
 		export('Chat.config.IPBlacklist.load', time())
+		if(array_index_exists(@loadcfg, 'Obnoxious')) {
+			@loadcfg['IP_Blacklist'] = array_merge(@loadcfg['IP_Blacklist'], array_keys(@loadcfg['Obnoxious']))
+			array_remove(@loadcfg, 'Obnoxious')
+		}
 		#Optional: publish Chat's blacklisted IP list to a file for use by your firewall.
 		if(@serverConfig['Write_Blacklist_IP_File'] == true) {
+			@loadcfg['IP_Blacklist'] = array_sort(array_unique(@loadcfg['IP_Blacklist'], false), 'REGULAR')
 			@ipFileList = array()
 			try {
 				@ipFileList = parse_args(replace(read(@serverConfig['Write_Blacklist_IP_File_Path']), '\n', ' '))
 			} catch(Exception @ex) {
 				console('[Chat] Blacklist IP file: '.@ex['classType'].' '.@ex['message'], false)
 			}
-			if(array_size(@loadcfg['IP_Blacklist']) != array_size(@ipFileList)) {
-				@previp = ''
+			if(sha1(@loadcfg['IP_Blacklist']) != sha1(@ipFileList)) {
+				@newip = 0
 				foreach(@k: @v in @loadcfg['IP_Blacklist']) {
 					if(!array_contains(@ipFileList, @v)) {
-						@ipFileList[] = @v
-					}
-					if(@v == @previp) {
-						array_remove(@ipFileList, @k)
-					} else {
-						@previp = @v
+						@newip++
 					}
 				}
-				@ipFileList = array_sort(@ipFileList, 'REGULAR')
-				if(function_exists('write_file')) { write_file(@serverConfig['Write_Blacklist_IP_File_Path'], array_implode(@ipFileList, '\n'), 'OVERWRITE') }
+				if(function_exists('write_file')) { write_file(@serverConfig['Write_Blacklist_IP_File_Path'], array_implode(@loadcfg['IP_Blacklist'], '\n'), 'OVERWRITE') console('[Chat] Added '.@newip.' IPs to blacklist.', false) }
 			}
 		}
 	case 'Experimental':
@@ -560,7 +559,7 @@ proc _wish_granter(@action, @target, @player, @option1) {
 	return(array('success': true, 'message': @returnmsg))
 }
 
-proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore', boolean @superignore = false) {
+proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore', boolean @superignore = false, string @ISP = 'Unknown') {
 	@time = time();
 	if(array_size(@ping) == 0) { return('no data') }
 	if(@superignore == true) { return('ignored') }
@@ -568,9 +567,14 @@ proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore', boole
 	@ipNumbers = reg_replace('\\.*:*', '', @ping['ip']);
 	@ignoredIPPings = get_value('Server.pings.log.'.@type.'.IP')
 	if(!is_array(@ignoredIPPings)) { @ignoredIPPings = array() }
+	if(!array_index_exists(@ignoredIPPings, 'ip')) { array_set(@ignoredIPPings, 'ip', array()) }
+	if(!array_index_exists(@ignoredIPPings, 'isp')) { array_set(@ignoredIPPings, 'isp', array()) }
 	if(!array_index_exists(@ignoredIPPings, @ipNumbers)) { array_set(@ignoredIPPings, @ipNumbers, array()) }
 	array_push(@ignoredIPPings[@ipNumbers], @time);
 	array_set(@ignoredIPPings['ip'], @ipNumbers, @ping['ip']);
+	if(@ISP != 'Unknown') {
+		array_set(@ignoredIPPings['isp'], @ping['ip'], @ISP);
+	}
 	# array_sort(@ignoredIPPings[@ipNumbers], 'NUMERIC')
 	store_value('Server.pings.log.'.@type.'.IP', @ignoredIPPings);
 	_write_file(import('Chat.logs.dir').'/Ping-Log-'.@type.'-IPs.csv', simple_date('MM-dd-yy HH:mm:ss', @time).','.@ping['ip'].'\n', 'append');

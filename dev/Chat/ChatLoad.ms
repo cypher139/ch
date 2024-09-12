@@ -22,3 +22,4 @@ export('Chat.logs.dir', file_resolve(@path.@pf.'Logs'))
 # Load Chat configs on server start
 _chat_load_config('Server');
 _chat_load_config('IPBlacklist');
+_register_poll_file('IPBlacklist', '_chat_load_config', import('Chat.config.dir').'/IPBlacklist.yml')
