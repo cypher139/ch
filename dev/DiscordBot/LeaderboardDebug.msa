@@ -19,13 +19,53 @@ foreach(@i: @arg in @args) {
 if(@levelxp == null) { 
 	@levelxp = _discordBot_lb_levelXP(@serverID, @config['LB_Options']['XP_Type']);
 }
-msg(@args)
 if(array_index_exists(@args, 0)) { @id = @args[0] }
 
 msg('Server: '.@config['Server_Nickname'])
 
 #Serverwide actions
 switch($action) {
+case 'nowords':
+	foreach(@id in discord_get_members(@serverID)) {
+		if(array_index_exists(@leaderboard, 'members', @id)) {
+			if(!array_index_exists(@leaderboard, 'members', @id, 'words')) {
+				msg(color(9).@leaderboard['members'][@id]['username'].': '.color(12).' no words')
+			}
+		}
+	}
+case 'wordup':
+	@count = 0
+	@newcount = 0
+	@newcountx2 = 0
+	@0count = 0
+	foreach(@id in discord_get_members(@serverID)) {
+		@usermsg = ''
+		if(array_index_exists(@leaderboard, 'members', @id)) {
+			@oldwords = @leaderboard['members'][@id]['words']
+			@usermsg = color(9).@leaderboard['members'][@id]['username'].': '.color(3).@oldwords
+			@count++;
+			if(!array_index_exists(@leaderboard, 'members', @id, 'words')) {
+				array_set(@leaderboard['members'][@id], 'words', 0)
+			}
+			if(@leaderboard['members'][@id]['words'] < @leaderboard['members'][@id]['msg_count']) {
+				@newwords = @leaderboard['members'][@id]['words'] + @leaderboard['members'][@id]['msg_count']
+				@usermsg = @usermsg.color(9).' -> '.color(10).@newwords
+				@leaderboard['members'][@id]['words'] = @newwords
+				@newcount++;
+			}
+			if(@leaderboard['members'][@id]['words'] < @leaderboard['members'][@id]['msg_count'] * 2 && @leaderboard['members'][@id]['msg_count'] > 3) {
+				@newwords2 = @leaderboard['members'][@id]['words'] + @leaderboard['members'][@id]['msg_count']
+				@usermsg = @usermsg.color(9).' -> '.color(14).@newwords2
+				@leaderboard['members'][@id]['words'] = @newwords2
+				@newcountx2++;
+			}
+			if(@usermsg != color(9).@leaderboard['members'][@id]['username'].': '.color(3).@oldwords) { msg(@usermsg) }	
+		} else { @0count++; }
+	}
+	msg('Total members: '.array_size(discord_get_members(@serverID)).color(8).' (No lb entries: '.@0count.')')
+	if(@newcount > 0) { msg(color(9).'Word counts added to '.color(10).@newcount.color(9).' of '.color(7).@count.color(9).' members. ') }
+	if(@newcountx2 > 0) { msg(color(9).'Word counts of at least 2 per message added to '.color(10).@newcountx2.color(9).' of '.color(7).@count.color(9).' members. ') }
+	die()
 case 'xp':
 	foreach(@i: @lvl in @levelxp) {
 		msg('Level '.@i.': '.@lvl)

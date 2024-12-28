@@ -10,7 +10,7 @@
 # ---------------------
 ### App Version Numbers
 #App, Server configs:
-@cfgVersion = array(10,12)
+@cfgVersion = array(10,13)
 # CHDiscord extension
 @requiredVersion = array(2, 15, 0)
 # Types

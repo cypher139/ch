@@ -203,7 +203,7 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 		if(array_index_exists(@loadcfg, 'LB_Options', 'Web_Publish')) {
 			if(@loadcfg['LB_Options']['Web_Publish'] == true) {
 				array_set(@lbPubIDs, 'primary', @botconfig['LB_Web_Load_ID'])
-				array_set(@lbPubIDs['servers'], @cfgtype, @loadcfg['Server_Nickname'])
+				array_set(@lbPubIDs['servers'], @cfgtype, array('n': to_lower(@loadcfg['Server_Nickname']), 'id': @loadcfg['LB_Options']['Web_ShowID'], 'user': @loadcfg['LB_Options']['Web_ShowNickUser'], 'ul': @loadcfg['LB_Options']['Web_ShowLeave']))
 			} else {
 				array_remove(@lbPubIDs['servers'], @cfgtype)
 			}
@@ -349,7 +349,7 @@ proc _discordBot_db_autosave(string @usekey = '', @option) {
 					_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Leaderboard_'.@guildName.'.json', json_encode(@saveKey), 'overwrite')
 					if(array_index_exists(@config, 'LB_Options', 'Web_Publish')) {
 						if(@config['LB_Options']['Web_Publish'] == true) {
-							_write_file(@botconfig['LB_Web_Path'].'/Leaderboard_'.@serverID.'.json', json_encode(@saveKey), 'overwrite')
+							_write_file(@botconfig['LB_Web_Path'].'/'.@serverID.'/Leaderboard_'.@serverID.'.json', json_encode(@saveKey), 'overwrite')
 						}
 					}
 				}
@@ -1385,6 +1385,15 @@ proc _discordBot_update_members(@useguild = 0) {
 						if(array_index_exists(@newavatar, 1)) { array_set(@leaderboard['members'][@id], 'avatar', @newavatar[1]) }
 						array_set(@leaderboard['members'][@id], 'color', @newcolor)
 						array_set(@leaderboard['members'][@id], 'username', @idInfo['username'])
+						if(@idInfo['nickname'] == null || @idInfo['nickname'] == '') {
+							if(@idInfo['displayname'] == null || @idInfo['displayname'] == '') {
+								array_remove(@leaderboard['members'][@id], 'nickname');
+							} else if(@idInfo['displayname'] != @idInfo['username']) {
+								array_set(@leaderboard['members'][@id], 'nickname', @idInfo['displayname']);
+							}
+						} else {
+							array_set(@leaderboard['members'][@id], 'nickname', @idInfo['nickname']);
+						}
 						if(array_index_exists(@leaderboard, 'members', @id, 'last_msg')) {	
 							@idLastMsg = @leaderboard['members'][@id]['last_msg']
 							@idLevel = @leaderboard['members'][@id]['level']
@@ -1755,26 +1764,39 @@ proc _discordBot_lb_process_message(@discord, boolean @noXP = false) {
 		@noXP = true 
 		@xpType = 0 
 	}
-# Setup Level XP
+# Setup Level XP and Guild Infos
+	if(!array_index_exists(@leaderboard, 'guild')) {
+		array_set(@leaderboard, 'guild', array('icon': '', 'name': '', 'members': 0))
+	}
+	@serverInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'], array())
 	@levelxp = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.levelXP')
 	if(@levelxp == null) {
 		@levelxp = _discordBot_lb_levelXP(@discord['serverid'], @config['LB_Options']['XP_Type']);
 		array_set(@leaderboard['options'], 'levelXP', @levelxp)
-		if(array_index_exists(@config, 'LB_Options', 'Custom_Name')) {
-			array_set(@leaderboard, 'Guild_Name', @config['LB_Options']['Custom_Name'])
-		} else {
-			@serverInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'], array('name': null))
-			if(@serverInfo['name'] != null) {
-				array_set(@leaderboard, 'Guild_Name', @serverInfo['name'])
-			}
-		}
-		if(!array_index_exists(@leaderboard, 'averages')) {
-			array_set(@leaderboard, 'averages', array('words': array('msgs': 0, 'count': 0)))
-		}
+	}		
+	if(array_index_exists(@config, 'LB_Options', 'Custom_Name')) {
+		array_set(@leaderboard['guild'], 'name', @config['LB_Options']['Custom_Name'])
+	} else if(array_index_exists(@serverInfo, 'name')) {
+		array_set(@leaderboard['guild'], 'name', @serverInfo['name'])
+	}
+	if(array_index_exists(@serverInfo, 'icon')) {
+		array_set(@leaderboard['guild'], 'icon', @serverInfo['icon'])
+	}
+	if(array_index_exists(@serverInfo, 'approximate_member_count')) {			
+		array_set(@leaderboard['guild'], 'members', @serverInfo['approximate_member_count'])
+		# or count of get members
+	}
+	if(!array_index_exists(@leaderboard, 'averages')) {
+		array_set(@leaderboard, 'averages', array('words': array('msgs': 0, 'count': 0)))
 	}
 # Setup Array entries
 	if(!array_index_exists(@leaderboard, 'members', @userID)) {
-		array_set(@leaderboard['members'], @userID, array('all_xp': array(0, 0, 0), 'last_msg': 0, 'level': 0, 'xp': 0, 'username': @discord['username'], 'msg_count': 0, 'words': 0))
+		array_set(@leaderboard['members'], @userID, array('all_xp': array(0, 0, 0), 'last_msg': 0, 'level': 0, 'xp': 0, 'nickname': '', 'username': @discord['username'], 'msg_count': 0, 'words': 0))
+	}
+	if(array_index_exists(@discord, 'nickname')) {
+		if(@discord['nickname'] != '') {
+			array_set(@leaderboard['members'][@userID], 'nickname', @discord['nickname'])
+		}
 	}
 	if(!array_index_exists(@leaderboard, 'members', @userID, 'all_xp', 2)) { array_set(@leaderboard['members'][@userID], 'all_xp', array(0, 0, @leaderboard['members'][@userID]['xp'])) }
 	if(!array_index_exists(@leaderboard, 'members', @userID, 'words')) { array_set(@leaderboard['members'][@userID], 'words', 0) }
@@ -2086,7 +2108,7 @@ proc _discordBot_lb_levelXP(@serverID = 'default', @preset = 1) {
 	}
 	export('DiscordBot.'.@serverID.'.Leaderboard.levelXP', @levelxp)
 	_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Leaderboard_LevelXP.json', json_encode(@levelxp), 'CREATE')
-	_write_file(@botconfig['LB_Web_Path'].'/Leaderboard_'.@serverID.'_LevelXP.json', json_encode(@levelxp), 'Overwrite')
+	_write_file(@botconfig['LB_Web_Path'].'/'.@serverID.'/Leaderboard_'.@serverID.'_LevelXP.json', json_encode(@levelxp), 'Overwrite')
 	return(@levelxp)
 }
 

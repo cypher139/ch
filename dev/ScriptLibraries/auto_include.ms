@@ -123,42 +123,21 @@ proc _hex_to_rgb(@num, @string = false) {
 	return(@results)
 }
 
-proc _rgb_to_hex(@R, @G, @B, @prefix = '') {
-	if(is_array(@R)) {
-		if(array_size(@R) != 3) {
-			throw('ms.lang.CastException', 'Not enough array elements present.')
-		}
-		if(@G != null) { @prefix = @G }
-		@checkarray = array('r', 'g', 'b')
-		foreach(@k: @v in @R) {
-			if(is_associative(@R) && !array_contains(@checkarray, @k)) { throw('ms.lang.CastException', 'Unsupported array index given.') }
-			if(@v > 255) { throw('ms.lang.CastException', 'Unsupported RGB code given. ('.@k.')') }
-			switch(@k) {
-			case 0:
-			case 'r':
-				@R = @v
-			case 1:
-			case 'g':
-				@G = @v
-			case 2:
-			case 'b':
-				@B = @v
-			}
-		}
+proc _rgb_to_hex(array @rgb, string @prefix = '') {
+	if(array_size(@rgb) < 3) { throw('ms.lang.CastException', 'Not enough array elements present.') }
+	@cast = array()
+	if(is_associative(@rgb)) { 
+		if(!array_index_exists(@rgb, 'r') || !array_index_exists(@rgb, 'g') || !array_index_exists(@rgb, 'b')) { throw('ms.lang.CastException', 'RGB element missing.') }
+		@cast = array(@rgb['r'], @rgb['g'], @rgb['b'])
 	} else {
-		if(@R == null) { @R = 0 @G = 0 @B = 0 }
-		if(reg_count('\\D+', @R) > 0) {
-			@new = reg_split('\\D+', @R)
-			if(array_size(@new) != 3) {	throw('ms.lang.CastException', 'Not enough array elements present. (2)') }
-			@R = @new[0]
-			@G = @new[1]
-			@B = @new[2]
-		}
-		if(@R > 255 || @R == null) { throw('ms.lang.CastException', 'Unsupported RGB code given. (3)') }
-		if(@G > 255 || @G == null) { throw('ms.lang.CastException', 'Unsupported RGB code given. (4)') }
-		if(@B > 255 || @B == null) { throw('ms.lang.CastException', 'Unsupported RGB code given. (5)') }
+		@cast = @rgb
 	}
-	@results = to_radix(@R, 16).to_radix(@G, 16).to_radix(@B, 16)
+	foreach(@k: @v in @cast) {
+		if(@k > 2) { break(); }
+		if(@v > 255) { throw('ms.lang.CastException', 'Unsupported RGB code given. ('.@k.')') }
+	}
+	#order: bgr
+	@results = to_radix(bit_or(@cast[2], lshift(@cast[1], 8), lshift(@cast[0], 16)), 16);
 	if(@prefix != '') { @results = @prefix.@results }
 	return(@results)
 }

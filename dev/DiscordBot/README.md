@@ -51,6 +51,7 @@
     - Action on user who is new and chats on many channels.  
     - Action on user who says the same message many times within a few seconds (more so if on multiple channels)  
     - Delete all recent messages of user who triggers spam protection  
+    - Timeout or nickname user who triggers spam protection  
     - Use asremove command to remove user from spam protection.  
 
 

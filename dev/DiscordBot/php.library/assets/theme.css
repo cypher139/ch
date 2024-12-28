@@ -1,0 +1,135 @@
+body {
+    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+	color: white;
+	background-color: black;
+}
+
+hr {
+	background-color: #00c6ff; height: 2px; border: 0;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+td, th {
+  border: 1px solid #0f0f0f;
+  padding: 8px;
+}
+
+th {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  text-align: center;
+  background-color: #565656;
+  color: #fff;
+}
+a, a:link {
+  background-color: #727272;
+  color: black;
+  padding: 8px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  border-radius: 10px;
+  -moz-border-radius: 10px;
+  -webkit-border-radius: 10px;
+  -khtml-border-radius: 10px;
+}
+
+a:visited {
+  color: #0042ff;
+}
+
+a:hover, a:active {
+  background-color: #00c6ff;
+  color: black;
+}
+
+#dump a:link {
+  background-color: #9200fa;
+}
+#dump a:hover {
+  background-color: #676767;
+  color: white;
+}
+.content td:nth-child(even){
+	background-color: #343434; 
+	color: black;
+}
+.content td:hover {
+	background-color: #232323;
+}
+
+select {
+  background-color: #505050;
+  color: black;
+  padding: 8px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  border-radius: 10px;
+  -moz-border-radius: 10px;
+  -webkit-border-radius: 10px;
+  -khtml-border-radius: 10px;
+}
+
+input {
+  background-color: #727272;
+  color: black;
+  padding: 8px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  border-radius: 10px;
+  -moz-border-radius: 10px;
+  -webkit-border-radius: 10px;
+  -khtml-border-radius: 10px;
+}
+
+option {
+  color: #ad0;
+}
+input:hover {
+  background-color: #ff2919;
+  color: black;
+}
+
+.leaderboard {
+  margin: 10px;
+  padding: 20px;
+}
+
+.avatar {
+	width: 48px;
+	border-radius: 10px;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	-khtml-border-radius: 10px;
+}
+
+.avatar img {
+  max-height: 100%;
+  max-width: 100%;
+}
+
+.info-user {
+    position: relative;
+}
+
+.info-user span {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    background-color: white;
+    border: 2px solid black;
+	border-radius: 10px;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	-khtml-border-radius: 10px;
+    list-style: none;
+}
+
+.info-user:hover span {
+    display: block;
+}

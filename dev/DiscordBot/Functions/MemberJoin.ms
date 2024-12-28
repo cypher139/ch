@@ -470,7 +470,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Leaderboard_Removed.json', json_encode(@oldlb), 'Overwrite')
 			if(array_index_exists(@config, 'LB_Options', 'Web_Publish')) {
 				if(@config['LB_Options']['Web_Publish'] == true) {
-					_write_file(@botconfig['LB_Web_Path'].'/Leaderboard_'.@discord['serverid'].'_Removed.json', json_encode(@oldlb), 'overwrite')
+					_write_file(@botconfig['LB_Web_Path'].'/'.@discord['serverid'].'/Leaderboard_'.@discord['serverid'].'_Removed.json', json_encode(array('guild': @leaderboard['guild'], 'options': @leaderboard['options'], 'members': @oldlb, 'lastedit': time())), 'overwrite')
 				}
 			}
 		}

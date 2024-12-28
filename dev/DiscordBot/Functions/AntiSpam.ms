@@ -73,7 +73,6 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # Duplicate messages (More than 3-4 is typically indicative of spam)
 	# Do not count if previous data not available, or message is blank
 	if(array_index_exists(@lastUserMsgs, 2) && @discord['message'] != '') {
-		# @dcount = import('DiscordBot.'.@discord['serverid'].'.'.@discord['userid'].'.antispam.dupe', 0)
 		@dcount = import('DiscordBot.'.@discord['serverid'].'.antispam.dupecount')
 		if(!is_array(@dcount)) { @dcount = array() }
 		if(!array_index_exists(@dcount, @discord['userid'])) { array_set(@dcount, @discord['userid'], array('f': 0, 'c': 0)) }
@@ -87,7 +86,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		# Last message is the same as current:
 		if(@lastUserMsgs[0]['message'] == @discord['message']) {
 			## Add extra count: Current message is same yet posted on different channel. Can be indicative of spam same message on all available channels.
-			if(@lastUserMsgs[0]['channelid'] != @discord['channelid']) { @dcount++ }
+			if(@lastUserMsgs[0]['channelid'] != @discord['channelid']) { @dcount[@discord['userid']]['c']++ }
 			# Last 2 messages is ... also the same as current:
 			if(@lastUserMsgs[1]['message'] == @discord['message']) {
 				# Previous 2 messages match, highly likely spam event. Increment counter.
@@ -199,7 +198,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 						if(@return == true) { @msgcount++ }
 					}
 				}
-				console(@debug1)
+				console('debug1: '.@debug1)
 			}
 			if(@msgcount > 0) {
 				@actiontaken = @actiontaken.' <Deleted '.@msgcount.' of user\'s recent messages>'
@@ -207,14 +206,14 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		# Timeout user
 			if(@config['AS_Timeout_User'] == true) {
 				discord_request('PATCH', 'guilds/'.@discord['serverid'].'/members/'.@discord['userid'], array('communication_disabled_until': simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', (time() + 86400000), 'UTC')), 
-				closure(@ex) { _discordBot_send_message('Successfully set timeout on user `'.@discord['displayname'].'` for the next 24 hours.', @discord['serverid'], 'admin') }, 
+				closure(@ex) { _discordBot_send_message('Successfully set timeout on user `'.@discord['nickname'].'` for the next 24 hours.', @discord['serverid'], 'admin') }, 
 				closure(@ex) { _db_msg_Console('AntiSpam: Set Timeout failed for '.@discord['username'].'\n'.@ex, @discord['serverid'], 'error') }
 				);
 			}
 		#Brand user?
 			if(@config['AS_Brand_User'] == true) {
 				try {
-					discord_member_set_nickname(@discord['serverid'], @discord['userid'], 'SPAMMER: '.@discord['displayname'])
+					discord_member_set_nickname(@discord['serverid'], @discord['userid'], 'SPAMMER: '.@discord['nickname'])
 					@actiontaken = @actiontaken.' <Set Nickname to spammer>'
 				} catch(InsufficientPermissionException @ex) {
 					_db_msg_Console('AntiSpam: Not allowed to set spam nickname for '.@discord['username'], @discord['serverid'], 'error')
