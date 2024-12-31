@@ -1,0 +1,192 @@
+# These IPs are just bots scanning for servers to grief; useless to send any data to!
+# IPs on this list are mostly obtained via logs of connection attempts on my own or friend's servers. 
+# Most of these IPs were likely just port scanning the open internet, that CommandHelper's server_ping event picked up on when scan found the MC server port. 
+# 1% of IPs are obtained from Reddit reports: https://www.reddit.com/r/Minecraft/comments/12ip3gd/who_is_shepan/
+#
+# Obnoxious Pingers:
+# These IPs keep frequently pinging the server and typically never actually connect in-game. Recommend blocking this section of IPs at the firewall level.
+Obnoxious:
+  51.15.58.25:
+    f: 15-60m
+    i: "Scaleway SAS"
+  109.123.240.84:
+    f: 15-60m
+    i: "Contabo GmbH"
+    u: ServerSeeker
+  164.68.124.86:
+    f: 5-15m
+    i: "Contabo GmbH"
+  77.221.138.182:
+    f: 15m
+    i: "Aeza International"
+  195.201.95.90:
+    f: 1h
+    i: "Hetzner Online GmbH"
+  195.154.199.60:
+    f: 1-4m
+    i: Scaleway
+  51.15.34.47:
+    f: 5h
+    i: "Scaleway SAS"
+  51.158.174.200:
+    f: 24h
+    i: Scaleway
+  5.42.101.164:
+    f: 15m
+    i: "Aeza International"
+  54.36.120.8:
+    f: 18m
+    i: OVH
+  154.213.185.46:
+    f: 15m
+    i: PFCloud
+    u: "Cornbread21xxxx (replace x with randomized numbers)"
+  154.213.187.231:
+    f: 5h
+    i: PFCloud
+  195.226.194.14:
+    f: 20-30m
+    i: "Snowd Security Ou"
+  191.101.31.64:
+    f: 4m
+    i: "Cyber Assets Fzco"
+  193.25.217.28:
+    f: 6m
+    i: "Gravhosting Ltd"
+  84.239.16.162:
+    f: 7m
+    i: "Invite Systems SRL"
+  131.156.156.126:
+    f: 5m
+    i: "Northern Illinois University"
+  87.120.112.234:
+    f: 3-30m
+    i: "Ekabi LLC"
+  131.156.156.127:
+    f: 13-18m
+    i: "Northern Illinois University"
+  87.120.126.53:
+    f: 3-60m
+    i: "Ekabi LLC"
+  62.60.247.100:
+    f: 20m
+    i: "Easy Chain Network"
+  77.68.6.60:
+    f: 5m
+    i: "Fasthosts Internet Limited"
+  156.146.63.144:
+    f: 12-60m
+    i: "DataCamp Limited"
+  132.145.34.181:
+    f: 45m
+    i: "Oracle Public Cloud"
+  154.42.7.39:
+    f: 10-35m
+    i: "New Itime AG"
+#
+Spam_Player_Names:
+# Player names, if an actual connection via Mojang auth was tried, are listed here.
+  149.102.143.151: Shepan
+  132.145.71.44: ServerOverflow
+  176.124.204.168: ServerOverflow
+  154.213.185.46: "Cornbread21xxxx (replace x with randomized numbers)"
+  # Logs on and immediately disconnects once a day with different user each time
+  84.54.51.253: "Varies"
+  # advertised pfcloud and other unwanted spam before immediately disconnecting
+  94.103.124.169: "martusin"
+  3.77.238.21: Bunger
+  3.73.52.141: Bunger
+  109.123.240.84: ServerSeeker
+  # IP has no ASN
+  193.35.18.165: Schesser
+  # IP has no ASN
+  193.35.18.92: ThisIsARobbery
+#
+# Ranges of IPs to disallow access to server:
+# Useful for catching datacenter blocks of IPs
+IP_Block_Blacklist:
+  "3./8": AWS
+  "18.1/16": AWS
+  "45.128/16": AWS
+  "84.54/16": AWS
+  "193.35.18/24": "Neterra Ltd."
+  "151.115.0/18": Scaleway
+  "151.115.64/18": Scaleway
+  "163.172/16": Scaleway
+  "163.172.208/20": Scaleway
+  "195.154/16": Scaleway
+  "212.129.0/18": Scaleway
+  "212.47.224/19": Scaleway
+  "212.83.128/19": Scaleway
+  "212.83.160/19": Scaleway
+  "51.15/16": Scaleway
+  "87.236/16": "Constantine Cybersecurity"
+  "94.103/16": "Constantine Cybersecurity"
+  "2a06:4880/16": "Constantine Cybersecurity"
+  "162.142.125/24": Censys
+  "167.248.133/24": Censys
+  "167.94/16": Censys
+  "199.45/16": Censys
+  "206.168.3/22": Censys
+  "135.84.216/24": CariNet
+  "209.126.128/17": CariNet
+  "216.75.0/18": CariNet
+  "216.98.128/19": CariNet
+  "66.240.192/18": CariNet
+  "71.6./16": CariNet
+  "146.70/16": M247
+  "91.207.57/24": M247
+  "106/8": "Unknown High Risk"
+  "115/8": "Unknown High Risk"
+  "207/8": "Unknown High Risk"
+  "13./8": Microsoft
+  "51.8/9": Microsoft
+  "52.1/9": Microsoft
+  "52.2/9": Microsoft
+  "57.1/9": Microsoft
+  "20./8": Microsoft
+  "4./8": Microsoft
+  "4.1/9": Microsoft
+  "4.2/9": Microsoft
+  "40.1/9": Microsoft
+  "172/8": Microsoft
+  "104.209/16": Microsoft
+  "104.40/16": Microsoft
+  "48.217/16": Microsoft
+  "13.64/16": Microsoft
+  "13.83/16": Microsoft
+  "13.91/16": Microsoft
+  "205.210.31/24": Palo Alto
+  "147.185.132/24": Palo Alto
+  "198.235.24/24": Palo Alto
+  "185.213.15/22": "31173 VPN Services"
+  "185.65.1/17": "31173 VPN Services"
+  "141.98/16": "31173 VPN Services"
+  "193.32/16": "31173 VPN Services"
+  "193.138/16": "31173 VPN Services"
+  "185.195.2/17": "31173 VPN Services"
+  "154.213/16": "PFCloud"
+  "193.138.218/24": Blix
+  "193.138.7/24": Blix
+  "194.127.199/24": Blix
+  "91.90.44/24": Blix
+  "185.2/9": "Oy Creanova"
+  "185.165.44/24": Snakecraft
+  "47/8": Alibaba
+  "81.17.16/24": "Unknown Swiss ISP"
+  "185.142.236/24": "BlackHOST"
+  "185.165.191/24": "BlackHOST"
+  "45.156.128/24": "NSEC - Sistemas Informaticos S.A."
+  "135.125.13/18": OVH
+  "51.81./16": OVH
+  "8.219/16": Unknown
+  "84.239/16": "Invite Systems SRL"
+  "5./8": AWS
+  "94.154.172/24": "ShadowShield Ltd"
+  "131.156.156/24": "Northern Illinois University"
+  "87.120/16": "Ekabi LLC"
+  "191.101/16": "Cyber Assets Fzco"
+#
+# Main IP Blacklist:
+# Player names, if an actual connection via Mojang auth was tried, are listed separately.
+# Most of these IPs are from "security" companies' vulnerable port scanners, or VPN host IPs that the script kiddies were using.

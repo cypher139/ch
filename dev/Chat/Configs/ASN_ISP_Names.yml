@@ -1,0 +1,28 @@
+# Some ASN's listed ISP may not make much sense:
+# Here are manually curated registered ISP or company names to match up with an ASN's registered ISP name.
+# -- Some ASNs (e.g from port scanner companies) have multiple business names!
+#Comments are in []
+#
+ASN_ISP_Names:
+  11417: "Northern Illinois University"
+  14061: "DigitalOcean LLC"
+  16509: "A100 ROW GmbH [AWS]"
+  174: "Cogent Communications, Shodan LLC, BlackHOST Ltd., Cyber Assets Fzco, New Itime AG"
+  202425: "Al Spera, FiberXpress BV"
+  208046: "ShadowShield Ltd"
+  211298: "Constantine Cybersecurity Ltd."
+  21859: "Zenlayer Inc"
+  3215: "Orange S. A."
+  36103: "Centracom Interactive"
+  396982: "Palo Alto Networks Inc"
+  398324: "Censys Inc."
+  398705: "Censys Inc."
+  398722: "Censys Inc."
+  400161: "Academy for Internet Research Limited Liability Company"
+  57043: "Snowd Security Ou, InterLIR Marketplace"
+  58461: "ChinaNet Zhejiang Province Network [Contains Known Abusive IPs]"
+  701: "Verizon Business"
+  8075: "[Microsoft Azure Cloud]"
+  8560: "IONOS SE, Fasthosts Internet Limited"
+  9009: "[VPN provider?]"
+  9808: "Shanghai UCloud Information Technology Company Limited"

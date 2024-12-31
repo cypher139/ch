@@ -1,0 +1,201 @@
+# Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
+admin:/chatgeoip [$] = >>>
+	@raw = false
+	@args = parse_args($)
+	if(array_contains(@args, 'raw')) { 
+		@raw = true
+		array_remove_values(@args, 'raw')
+	}
+	@ipdb = array()
+	@msgIPData = array(color(14).'ISP Database Lookup Results:')
+	foreach(@ip in @args) {
+		if(@ip == 'raw') { continue() }
+		if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
+			msg(color(12).' Not a valid IP: '.@ip)
+			continue()
+		}
+		@listIPData = color(14).'['.@ip.'] '.color(3)
+		if(@raw == true) {
+			@ipdb = _chat_lookup_ip_db(@ip, @raw)
+			msg(color(14).'['.@ip.'] '.color(7).@ipdb['r'])
+			@ipdb = @ipdb['ip']
+		} else {
+			@ipdb = _chat_lookup_ip_db(@ip, @raw)
+		}
+		if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+		if(@ipdb['cn'] != '') { @listIPData = @listIPData.' ('.@ipdb['cn'].') ' }
+		if(@ipdb['rc'] != '') { @listIPData = @listIPData.' '.'Registered Country: '.@ipdb['rc'] }
+		if(@ipdb['rcn'] != '') { @listIPData = @listIPData.' ('.@ipdb['rcn'].') ' }
+		if(@ipdb['asn'] != '') { @listIPData = @listIPData.' '.'ASN: '.@ipdb['asn'] }
+		if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.color(10).'ISP: '.@ipdb['aso'] }
+		if(@listIPData != color(14).'['.@ip.'] '.color(3)) {
+			@msgIPData[] = @listIPData
+		}
+	}
+	msg(array_implode(@msgIPData, '\n'))
+<<<
+# Generate reports about which ASNs and countries are listed in Chat's IP Blacklist file, using the GeoIP shell command lookup.
+# Auto-Generate Blacklist config file for new IPs, for manual review and upload to main IP Blacklist file.
+admin:/chatipasnreport [$] = >>>
+x_new_thread('ChatASNReport'.time(), closure(){
+#threaded due to shell call processing ~25 IPs/second
+	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+	@time = time();
+	@raw = false
+	@args = parse_args($)
+	@scan = true
+	@genipcfg = false
+	foreach(@arg in @args) {
+		switch(@arg) {
+		case 'r':
+		case 'report':
+			@scan = false
+		case 'g':
+		case 'gen':
+		case 'generate':
+			@genipcfg = true
+		}
+	}
+	@ipdb = array()
+	@asnlist = array()
+	@asnc = array()
+	@asnrc = array()
+	@asnip = array()
+	@ipcount = 0
+	@asnnicks = array()
+	try {
+		@asnnicks = yml_decode(read(import('Chat.config.dir').'/ASN_ISP_Names.yml'))
+	} catch(IOException @ex) {
+		_chat_msg_Admins(color(12).'[Chat] ASN ISP Nicknames file could not be read. ', @ex['message'], true)
+	} catch(FormatException @ex) {
+		_chat_msg_Admins(color(12).'[Chat] ASN ISP Nicknames file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true) 
+	} catch(Exception @ex) {
+		_chat_msg_Admins(color(12).'[Chat] There was an error with the ASN ISP Nicknames file. ', @ex['message'], true) 
+	}
+	if(@scan == true) {
+		foreach(@i: @ip in @blacklistIP['IP_Blacklist']) {
+			if(@i % 50 == 0) { msg(color(8).'Processed '.@i.' of '.array_size(@blacklistIP['IP_Blacklist']).' IPs.'); }
+			if(@ip == 'raw') { continue() }
+			if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
+				msg(color(12).' Not a valid IP: '.@ip)
+				continue()
+			}
+			@listIPData = color(14).'['.@ip.'] '.color(3)
+			@ipdb = _chat_lookup_ip_db(@ip)
+			if(@ipdb['asn'] == '') { msg(color(12).@ip.': no ASN!') continue() }
+			if(@ipdb['c'] == '') { msg(color(12).@ip.': no country!') continue() }
+			if(!array_index_exists(@asnc, @ipdb['asn'])) { array_set(@asnc, @ipdb['asn'], array()) }
+			if(!array_index_exists(@asnrc, @ipdb['asn'])) { array_set(@asnrc, @ipdb['asn'], array()) }
+			if(!array_index_exists(@asnip, @ipdb['asn'])) { array_set(@asnip, @ipdb['asn'], array()) }
+			
+			@asnip[@ipdb['asn']][] = @ip;
+			#List all given country codes, in case one entry differs in review
+			@asnc[@ipdb['asn']][] = @ipdb['cn']
+			if(@ipdb['rc'] != '') { 
+				@asnrc[@ipdb['asn']][] = @ipdb['rcn']
+			}
+			array_set(@asnlist, @ipdb['asn'], @ipdb['aso'])
+			@ipcount++
+		}
+	} else {
+		# store_value('Chat.debug.results.asn', array(@ipcount, @asnlist, @asnc, @asnrc, @asnip, @countries, @rcountries))
+		@data = get_value('Chat.debug.results.asn')
+		if(!is_array(@data)) { die(color(12).'No previous scan results.') }
+		@ipcount = @data[0]
+		@asnlist = @data[1]
+		@asnc = @data[2]
+		@asnrc = @data[3]
+		@asnip = @data[4]
+	}
+		
+	@countries = array()
+	@asncnlist = array()
+	@asnrcnlist = array()
+# Computer master list of all countries presented, and which ASNs register with a country.
+	foreach(@asn: @cnarray in @asnc) {
+		foreach(@cn in @cnarray) {
+			if(!array_index_exists(@asncnlist, @cn)) { array_set(@asncnlist, @cn, array()) }
+			@countries[] = @cn
+			if(!array_contains(@asncnlist[@cn], @asn)) { @asncnlist[@cn][] = @asn }
+		}
+	}
+	@countries = array_unique(@countries)
+	array_sort(@countries, 'REGULAR')
+	@rcountries = array()
+# Same list for registered country, differs a lot from normal country depending on cloud platform server locations, etc.
+	foreach(@asn: @cnarray in @asnrc) {
+		foreach(@cn in @cnarray) {
+			if(!array_index_exists(@asnrcnlist, @cn)) { array_set(@asnrcnlist, @cn, array()) }
+			@rcountries[] = @cn
+			if(!array_contains(@asnrcnlist[@cn], @asn)) { @asnrcnlist[@cn][] = @asn }
+		}
+	}
+	@rcountries = array_unique(@rcountries)
+	array_sort(@rcountries, 'REGULAR')
+# Messages: asn found list IP occurences and aso/ISP
+	@reportmsg = array()
+	foreach(@asn: @aso in @asnlist) {
+		@msg = ''
+		@ipcolor = 7
+		if(array_size(@asnc[@asn]) != array_size(@asnip[@asn])) { @ipcolor = 12 }
+		@space = ''
+		if(length(@asn) < 6) { @space = string_multiply(' ', (6 - length(@asn))) }
+		@asnnick = ''
+		if(array_index_exists(@asnnicks, 'ASN_ISP_Names', @asn)) { @asnnick = '\n'.color(14).@asn.@space.': '.color(8).' [AKA: '.@asnnicks['ASN_ISP_Names'][@asn].']' }
+		@msg = color(14).@asn.@space.': '.color(3).@aso.color(7).color(@ipcolor).' <IPs: '.color(10).array_size(@asnip[@asn]).color(7).'>'.@asnnick
+		@rmsg = ''
+		if(array_size(array_unique(@asnrc[@asn])) > 0) { @rmsg = color(14).' Reg Country Codes: '.array_size(array_unique(@asnrc[@asn])) }
+		@msg = @msg.'\n'.color(14).@asn.@space.': '.color(8).' Country codes: '.array_size(array_unique(@asnc[@asn])).@rmsg
+		@reportmsg[] = @msg;
+	}
+
+#List all country Codes
+	@reportmsg[] = color(2).'List of Country Codes: '.array_implode(@countries, ' ')
+	@reportmsg[] = color(5).'List of Registered Country Codes: '.array_implode(@rcountries, ' ')
+#General Stats
+	@ipsizecolor = 3
+	if(array_size(@blacklistIP['IP_Blacklist']) != @ipcount) { @ipsizecolor = 12 }
+	@reportmsg[] = color(3).'IPs: '.color(@ipsizecolor).@ipcount.color(3).', ASNs: '.array_size(@asnlist).','.color(6).' Countries: '.array_size(@countries).','.color(13).' Reg Countries: '.array_size(@rcountries)
+	store_value('Chat.debug.results.asn', array(@ipcount, @asnlist, @asnc, @asnrc, @asnip, @countries, @rcountries))
+	msg(array_implode(@reportmsg, '\n'))
+	_write_file(import('Chat.logs.dir').'/ASNReport.txt', strip_colors(array_implode(@reportmsg, '\n')), 'overwrite');
+# More Detail CSV reports:
+	@asnipreport = 'ASN, IP Addresses'
+	@asncnreport = 'Country Code, ASNs'
+	@asnrcnreport = 'Registerd Country Code, ASNs'
+	@newcfg = 'IP_Blacklist:'
+	foreach(@asn: @iplist in @asnip) {
+		@asnnick = ''
+		if(array_index_exists(@asnnicks, 'ASN_ISP_Names', @asn)) { @asnnick = ' <'.@asnnicks['ASN_ISP_Names'][@asn].'>' }
+		@asnipreport = @asnipreport.'\n'.@asn.@asnnick','.array_implode(@iplist, ',')
+		@newcfg = @newcfg.'\n# ('.@asn.') '.@asnlist[@asn].@asnnick.'\n- '.array_implode(@iplist, '\n- ')
+	}
+	foreach(@cn: @asns in @asncnlist) {
+		@asncnreport = @asncnreport.'\n'.@cn.','.array_implode(@asns, ',')
+	}
+	foreach(@cn: @asns in @asnrcnlist) {
+		@asnrcnreport = @asnrcnreport.'\n'.@cn.','.array_implode(@asns, ',')
+	}
+	_write_file(import('Chat.logs.dir').'/ASNReport-IP.csv', @asnipreport, 'overwrite');
+	_write_file(import('Chat.logs.dir').'/ASNReport-CN.csv', @asncnreport, 'overwrite');
+	_write_file(import('Chat.logs.dir').'/ASNReport-RCN.csv', @asnrcnreport, 'overwrite');
+#Auto_Generate new blacklist for IP_Blacklist config file
+	if(@genipcfg) {
+		@mancfg = ''
+		try {
+			@mancfg = read(import('Chat.config.dir').'/Template-IP.yml')
+		} catch(IOException @ex) {
+			_chat_msg_Admins(color(12).'[Chat] Template-IP Config file could not be read. ', @ex['message'], true)
+			die()
+		} catch(FormatException @ex) {
+			_chat_msg_Admins(color(12).'[Chat] Template-IP Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true) 
+			die()
+		} catch(Exception @ex) {
+			_chat_msg_Admins(color(12).'[Chat] There was an error with the Template-IP Config file. ', @ex['message'], true) 
+			die()
+		}
+		_write_file(import('Chat.logs.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg, 'overwrite');
+		msg('Wrote new IPBlacklist.yml Config file to the Chat logs folder. Please review!')
+	}
+});
+<<<

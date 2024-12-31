@@ -23,39 +23,3 @@ admin:/chatipreport [$] = >>>
 	msg(@count)
 	msg(@Message)
 <<<
-
-admin:/chatgeoip [$] = >>>
-	@raw = false
-	@args = parse_args($)
-	if(array_contains(@args, 'raw')) { 
-		@raw = true
-		array_remove_values(@args, 'raw')
-	}
-	@ipdb = array()
-	@msgIPData = array(color(14).'ISP Database Lookup Results:')
-	foreach(@ip in @args) {
-		if(@ip == 'raw') { continue() }
-		if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
-			msg(color(12).' Not a valid IP: '.@ip)
-			continue()
-		}
-		@listIPData = color(14).'['.@ip.'] '.color(3)
-		if(@raw == true) {
-			@ipdb = _chat_lookup_ip_db(@ip, @raw)
-			msg(color(14).'['.@ip.'] '.color(7).@ipdb['r'])
-			@ipdb = @ipdb['ip']
-		} else {
-			@ipdb = _chat_lookup_ip_db(@ip, @raw)
-		}
-		if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
-		if(@ipdb['cn'] != '') { @listIPData = @listIPData.' ('.@ipdb['cn'].') ' }
-		if(@ipdb['rc'] != '') { @listIPData = @listIPData.' '.'Registered Country: '.@ipdb['rc'] }
-		if(@ipdb['rcn'] != '') { @listIPData = @listIPData.' ('.@ipdb['rcn'].') ' }
-		if(@ipdb['asn'] != '') { @listIPData = @listIPData.' '.'ASN: '.@ipdb['asn'] }
-		if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.color(10).'ISP: '.@ipdb['aso'] }
-		if(@listIPData != color(14).'['.@ip.'] '.color(3)) {
-			@msgIPData[] = @listIPData
-		}
-	}
-	msg(array_implode(@msgIPData, '\n'))
-<<<
