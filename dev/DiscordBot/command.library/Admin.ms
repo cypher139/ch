@@ -180,7 +180,9 @@ proc _discordBot_cmd_whois(@discord, @args) {
 proc _discordBot_cmd_wrf(@discord, @args) {
 		if(!array_index_exists(@args, 0)) { @args = array('welcome') }
 		@type = 'd'
-		if(array_index_exists(@args, 1)) { if(@args[1] == 'mc') { @type = 'mc' } }
+		@sorttype = 'name'
+		if(array_index_exists(@args, 1)) { @sorttype = @args[1] }
+		if(@args[-1] == 'mc') { @type = 'mc' }
 		@msg = ''
 		@amount = 0
 		@config = import('DiscordBot.config.'.@discord['serverid'])
@@ -206,22 +208,37 @@ proc _discordBot_cmd_wrf(@discord, @args) {
 			_discordBot_update_members(@discord['serverid'])
 			return('Role Data not populated yet, try again later.')
 		}
-		@mcreturn = @msg.'  '.color(9).@amount
+		@cSplit = '>'
 		#DM list of IDs:
 		@list = array()
+		@mclist = array()
 		if(@amount > 0 && @discord['admin'] == true) {
 			@membernames = get_value('DiscordBot.'.@discord['serverid'].'.members.names')
 			foreach(@username: @userid in @membernames) {
 				if(array_contains(@roles, @userid)) {
-					@list[] = @username.' <'.@userid.'>'
+					@list[] = array('username': @username, 'id': @userid)
 				}
 			}
+			switch(@sorttype) {
+			case 'id':
+				array_sort(@list, closure(@left, @right){
+					return(@left['id'] > @right['id']);
+				});
+			}		
+			#make List
+			foreach(@i: @entry in @list) {
+				@idmsg = ' <'.@entry['id'].'>'
+				if(array_contains(@args, 'hideid')) { @idmsg = '' @cSplit = '(?<!^)`' }
+				@list[@i] = '`'.@entry['username'].'`'.@idmsg
+				@mclist[] = @entry['username'].@idmsg
+			}
 			if(@type == 'd') {
-				_discordBot_send_message(array('content': '```List of IDs:```\n'.array_implode(@list, '\n'), 'custom_split': '[\\s\\S]{1,1970}(?:>|$)'), @discord['serverid'], 'bot', @discord['userid'], 'dm')
+			# sned to console to check split
+				_discordBot_send_message(array('content': '```List of IDs:```\n'.array_implode(@list, '\n'), 'custom_split': '[\\s\\S]{1,1970}(?:'.@cSplit.'|$)'), @discord['serverid'], 'bot', @discord['userid'], 'dm')
 			}
 		}
 		#Return
-		return(array('MCCmd': array('list': @list, 'msg': @msg.' '.color(9).@amount), 'embeds': array(array('author': array('icon_url': 'https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'.@guildInfo['icon'].'.'.@guildIconType, 'name': @guildInfo['name']),
+		return(array('MCCmd': array('list': @mclist, 'msg': @msg.' '.color(9).@amount), 'embeds': array(array('author': array('icon_url': 'https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'.@guildInfo['icon'].'.'.@guildIconType, 'name': @guildInfo['name']),
 'title': 'Welcome Roles Finder', 'description': @msg.' `'.@amount.'`', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': ' requested by @'.@discord['username'])))))
 }
 

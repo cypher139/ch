@@ -14,6 +14,10 @@ proc _db_update_message_cache(@discord, @updateType) {
 	} else { 
 		return(false)
 	}
+	@idtime = rshift(@discord['id'], 22) + 1420070400000
+	@time = time()
+	@diff = @time - @idtime
+	if(@diff > 2000) { console('updproc: '.@discord) }
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	if(array_index_exists(@discord, 'channeltype')) {
@@ -38,7 +42,7 @@ proc _db_update_message_cache(@discord, @updateType) {
 	if(@discord['bot'] == true || @discord['webhook'] == true || @msgUserisBot == true) { @userType = 'bot' }
 	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
-	if(!array_index_exists(@cacheMsgs, @userType, @msgUserID)) { array_set(@cacheMsgs[@userType], @msgUserID, array()) }
+	if(!array_index_exists(@cacheMsgs, @userType, @msgUserID)) { console(1) array_set(@cacheMsgs[@userType], @msgUserID, array()) }
 	@addSi = false
 	@addUi = false
 	@prevData = 'Not Found'
@@ -116,8 +120,13 @@ proc _db_update_message_cache(@discord, @updateType) {
 
 bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
+	@idtime = rshift(@discord['id'], 22) + 1420070400000
 	@time = time()
+	@diff = @time - @idtime
 	array_set(@discord, 'time', @time);
+	@userType = 'User'
+	if(@discord['bot']) { @userType = 'Bot' }
+	if(@discord['webhook']) { @userType = 'Webhook' }
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username'])
@@ -135,6 +144,12 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 		} catch(NotFoundException @ex) {
 			#but how, you ask can a user update a message while also NOT part of your server? answer: Discord system messages.
 			_db_msg_Console('Message Update from '.@discord['username'].' <'.@discord['userid'].'>: User not Found on server. Channel: '.@discord['channel'].' | Message: ('.@discord['id'].')\n'.@discord['message'], @discord['serverid'], 'debug')
+			discord_request('GET', 'channels/'.@discord['channelid'].'/messages/'.@discord['id'], null, closure(@ex) {
+				@debugupd8 = import('DiscordBot.debug.msg.update.nouser.msgs', array())
+				@debugupd8[] = @ex
+				export('DiscordBot.debug.msg.update.nouser.msgs', @debugupd8)
+				console('Message: \n'.@ex) },
+			closure(@ex) { console('get message: \n'.@ex) });
 		}
 	}
 	#Message Formatting
@@ -155,8 +170,8 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	}
 # Update Recent Messages with current data	
 	@saveMsg = _db_update_message_cache(@discord, 'edit')
-# Remaining items are not relevant if event is consumed, or is a bot
-	if(@discord['bot'] == true || is_consumed() == true) { die() }
+# Remaining items are not relevant if event is consumed.
+	if(is_consumed()) { die() }
 # Find what changed, does not count added content
 	@aSplit = parse_args(@saveMsg['after'])
 	@bSplit = parse_args(@saveMsg['before'])
@@ -173,7 +188,16 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@addSi = ''
 	if(@saveMsg['addui'] == true) { @addUi = color(10).'+'.color('r') }
 	if(@saveMsg['addsi'] == true) { @addSi = color(10).'+'.color('r') }
-	_db_msg_Console(@userDisplay.'\'s Message Edit:  ['.@addUi.'ui: '.@saveMsg['ui'].'  '.@addSi.'si: '.@saveMsg['si'].']\n'.color(9).'B: '.color('r').@saveMsg['before'].'\n'.color(10).'A: '.color('r').@afterDisplay, @discord['serverid'], 'debug')
+	@userDisplayType = ''
+	if(@discord['bot']) { @userDisplayType = color(3).' (Bot)' }
+	if(@discord['webhook']) { @userDisplayType = color(5).' (Webhook)' }
+	if(@saveMsg['before'] != @saveMsg['after']) {
+		if(@diff > 2000) {
+			_db_msg_Console(color(9).@userDisplay.@userDisplayType.color(7).'  Message Edit:  ['.@addUi.'ui: '.@saveMsg['ui'].'  '.@addSi.'si: '.@saveMsg['si'].']\n'.color(9).'B: '.color('r').@saveMsg['before'].'\n'.color(10).'A: '.color('r').@afterDisplay, @discord['serverid'], 'debug')
+		}
+	} else if(@diff < 2000) {
+		_db_msg_Console(color(9).@userDisplay.@userDisplayType.color(7).' Message embed? updated within '.color(12).@diff.'ms'.color(7).' of post'.'  ['.@discord['channel'].'  '.@addUi.'ui: '.@saveMsg['ui'].'  '.@addSi.'si: '.@saveMsg['si'].']', @discord['serverid'], 'debug')
+	}
 	if(@memberInfo['color'] != null) { @embedColor = @memberInfo['color'] }
 	@logMsg = array('author': array('icon_url': @memberInfo['avatar'], 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])),
 	'title': 'Message Edited in <#'.@discord['channelid'].'>',
@@ -185,10 +209,13 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	)
 	if(@saveMsg['before'] == 'Not Found') { array_remove(@logMsg['fields'], 0) }
 	if(@config['Log_Message_Edit'] == true) {
+		@logbot = false
+		if(array_index_exists(@config, 'Log_Message_Edit_Bot')) { @logbot = @config['Log_Message_Edit_Bot'] }
+		if(@userType != 'User' && @logbot != true) { die() }
 		_discordBot_send_message(array('embeds': array(@logMsg)), @discord['serverid'], 'log')
 	}
 #Reply message to User
-	if(@config['Reply_Message_Edit'] == true) {
+	if(@config['Reply_Message_Edit'] == true && @userType == 'User' && @diff > 2000) {
 		if(!is_associative(@config['Reply_Message_Edit_Users'])) { _db_msg_Console('Config "Reply_Message_Edit_Users" is not formatted properly, use format username: message', @discord['serverid'], 'error') die() }
 		if(array_index_exists(@config, 'Reply_Message_Edit_Users', @discord['username']) || array_index_exists(@config, 'Reply_Message_Edit_Users', @discord['userid'])) {
 			@sendReply = true
@@ -215,16 +242,23 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	}
 #check for command
 	@isCmd = false
-	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) == true) {
+	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) || array_contains(@config['CMD_Channels_Receive'], @discord['channelid'])) {
 		@isCmd = _discordBot_iscommand(@discord)
 	}
 	# Action command, all message output is handled from there.
 	if(@isCmd == true) {
-		consume();
-		array_set(@discord, 'time', time())
-		@isMention = _discordBot_ismention(@discord)
-		if(@isMention == true) { @isMention = 'mention' }
-		@return = _discordBot_handlecommand(@discord, 'edit', @isMention)
+		if(@userType == 'User') {
+			consume();
+			array_set(@discord, 'time', time())
+			@isMention = _discordBot_ismention(@discord)
+			if(@isMention == true) { @isMention = 'mention' }
+			@return = _discordBot_handlecommand(@discord, 'edit', @isMention)
+		} else {
+			@botcolor = 15
+			if(@userType == 'Bot') { @botcolor = 3 }
+			if(@userType == 'Webhook') { @botcolor = 5 }
+			_db_msg_Console(color(@botcolor).@userType.': '.color(9).@userDisplay.color(7).' tried using one of my commands!', @discord['serverid'])
+		}
 	}
 }
 

@@ -179,6 +179,7 @@ x_new_thread('ChatASNReport'.time(), closure(){
 	_write_file(import('Chat.logs.dir').'/ASNReport-IP.csv', @asnipreport, 'overwrite');
 	_write_file(import('Chat.logs.dir').'/ASNReport-CN.csv', @asncnreport, 'overwrite');
 	_write_file(import('Chat.logs.dir').'/ASNReport-RCN.csv', @asnrcnreport, 'overwrite');
+	_write_file(import('Chat.logs.dir').'/ASNReport-ASNs.csv', 'Known ASNs\n'.array_implode(array_keys(@asnip), '\n'), 'overwrite');
 #Auto_Generate new blacklist for IP_Blacklist config file
 	if(@genipcfg) {
 		@mancfg = ''
@@ -194,7 +195,7 @@ x_new_thread('ChatASNReport'.time(), closure(){
 			_chat_msg_Admins(color(12).'[Chat] There was an error with the Template-IP Config file. ', @ex['message'], true) 
 			die()
 		}
-		_write_file(import('Chat.logs.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg, 'overwrite');
+		_write_file(import('Chat.logs.dir').'/IPBlacklist.yml', @mancfg.'\n'.yml_encode(array('Discovered_ASNs': array_keys(@asnip)), true).'\n'.@newcfg, 'overwrite');
 		msg('Wrote new IPBlacklist.yml Config file to the Chat logs folder. Please review!')
 	}
 });

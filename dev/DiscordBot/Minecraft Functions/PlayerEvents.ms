@@ -24,7 +24,7 @@ bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), 
 			if(@weapon == null) { 
 				@weapon = 'Hand' 
 			} else {
-				@weapon = _capitalize(string(@weapon['name']), null, null, 'all')
+				@weapon = _capitalize(string(@weapon['name']), true)
 			}
 			@pvpmsg = array(
 				@death['killer'].' killed '.@death['player'].' wielding '.@weapon, 
@@ -42,5 +42,41 @@ bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), 
 	} else {
 		_discordBot_send_mc_chat(@countDisplay.@death['death_message'], 'death')
 	}
+}
+# :people_wrestling: :put_litter_in_its_place:
+
+
+bind('player_advancement_done', array('id': 'DiscordBot.mc.adv', 'priority': 'MONITOR'), null, @event) {
+	console(color(10).@event, false)
+	@botconfig = import('DiscordBot.config.Bot')
+	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
+	@emoji = 'trophy'
+	@title = ''
+	@sentence = 'earned the advancement:'
+	#find Alternate Advancement names
+	if(@event['title'] == '' || @event['title'] == null) { 
+		#Recipes:
+		# {advancement: minecraft:recipes/combat/iron_boots, player: player, title: }
+		if(string_starts_with(@event['advancement'], 'minecraft:recipes')) {
+			@emoji = 'paper'
+			@sentence = 'found the recipe:'	
+			foreach(@i: @word in reg_split('[/]', @event['advancement'])) {
+				if(@word == 'minecraft:recipes') { continue(); }
+				@punc = ':'
+				if(@i == 1) { @punc = '' }
+				@title = @title.@punc.' '._capitalize(@word, true)
+			}
+		}
+	} else {
+	# {advancement: minecraft:story/smelt_iron, player: player, title: Acquire Hardware}
+	# {advancement: minecraft:adventure/sleep_in_bed, player: player, title: Sweet Dreams}
+		@title = @event['title']
+	}
+	if(@title == '') { console(color(12).'Advancement title not given!\n'.@event) die() }
+	
+	@pid = _getplayerID(@event['player'])
+	@msg = @pid['nick'].' '.@sentence.' '.@title
+	# console(@msg, false)
+	_discordBot_send_mc_chat(@msg, @emoji)
 }
 # :people_wrestling: :put_litter_in_its_place:

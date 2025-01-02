@@ -1,4 +1,3 @@
-#version 1.3-tmc
 bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @login) {
 	@serverConfig = import('Chat.config.Server')
 	@playerID = _getplayerID(player())
@@ -125,6 +124,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 #Ignored & Blacklisted IP pings notification
 set_cron('59 23 * * *', closure(){
 	@serverConfig = import('Chat.config.Server')
+	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 	foreach(@type: @typeName in array('ignore': 'Ignored', 'blacklist': 'Blacklisted')) {
 		@count = 0
 		@iplog = get_value('Server.pings.log.'.@type.'.IP')
@@ -155,7 +155,14 @@ set_cron('59 23 * * *', closure(){
 					if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
 					if(@ipdb['rcn'] != '') { @cnFlag = @cnFlag.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
 					# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
-					if(@ipdb['asn'] != '') { @listIPData = @listIPData.' '.'ASN: '.@ipdb['asn'] }
+					if(@ipdb['asn'] != '') { 			
+						@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
+						if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
+							if(!array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
+								@listIPData .= '<New ASN>'
+							}
+						}
+					}
 					if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
 					if(@listIPData == '') { @isp = '' } else { @isp = '['.@cnFlag.to_lower(@listIPData).']' }
 				}
@@ -261,7 +268,14 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 		if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
 		if(@ipdb['rcn'] != '') { @cnFlag = @cnFlag.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
 		# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
-		# if(@ipdb['asn'] != '') { @listIPData = @listIPData.' '.'ASN: '.@ipdb['asn'] }
+		if(@ipdb['asn'] != '') { 
+			@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
+			if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
+				if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
+					@listIPData .= '<ASN has IPs on Blacklist>'
+				}
+			}
+		}
 		if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
 		if(@listIPData == '') { @adminPingMessage = replace(@adminPingMessage, '%IPDB%', '') } else {
 			@adminPingMessage = replace(@adminPingMessage, '%IPDB%', @cnFlag.'%format%'.@listIPData.'%format% ')
@@ -295,5 +309,5 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 				return(true)
 			});
 		}
-	}	
+	}
 }

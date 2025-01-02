@@ -85,7 +85,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 				}
 			}
 			if(!is_numeric(@checkuser)) {
-				_db_msg_Console('view lb: non-numeric target! '.@userID, @discord['serverid'], 'debug')
+				_db_msg_Console('view lb: non-numeric target! '.@checkuser, @discord['serverid'], 'debug')
 				@checkuser = @discord['userid']
 			}
 			if(array_index_exists(@leaderboard, 'members', @checkuser)) {

@@ -114,6 +114,18 @@ switch(@action){
 		}
 		return(@returnmsg)
 		
+	case 'clearexport':
+	case 'ce':
+		if(array_size(@args) == 0) { @args[] = @player }
+		@returnmsg = @prefix.color(6).'Clear RAM export: '.color(13).@args[0]
+		if(import(@args[0]) != null) {
+			export(@args[0], null)
+			if(import(@args[0]) == null) { @returnmsg = @returnmsg.'\n'.@prefix.color(10).'Successfully cleared export.' }
+		} else {
+			@returnmsg = @returnmsg.'\n'.@prefix.color(12).'That export did not exist.'
+		}
+		return(@returnmsg)
+		
 	case 'getvalue':
 	case 'gv':
 		@v = get_value(@args[0])

@@ -24,13 +24,12 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 
 #Chat layout formatting: finalization
 	@groupinfo = import(@name.'.format.groups')
-	if(@groupinfo == '' || @groupinfo == null || is_array(@groupinfo) == false) { @groupinfo = array() }
+	if(!is_array(@groupinfo)) { @groupinfo = array() }
 	
-	@groupinfokeys = array_keys(@groupinfo)
-	if(!array_contains_ic(@groupinfokeys, @group)) { @groupinfo[@group] = array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': '') }
+	if(!array_index_exists(@groupinfo, @group)) { array_set(@groupinfo, @group, array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': '')) }
 	
 	@chatoptions = import(@name.'.format.options')
-	if(@chatoptions == '' || @chatoptions == null || is_array(@chatoptions) == false) { @chatoptions = array('colorize': '', 'randcolor': '', 'capitalizechat': '', 'capitalizegroupname': '') }
+	if(!is_array(@chatoptions)) { @chatoptions = array('colorize': '', 'randcolor': '', 'capitalizechat': '', 'capitalizegroupname': '') }
 	
     #Defaults
 	if(@groupinfo[@group]['showhealth'] == '' || @groupinfo[@group]['showhealth'] == null) { @groupinfo[@group]['showhealth'] = true }
@@ -41,12 +40,12 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	if(@chatoptions['colorize'] == '' || @chatoptions['colorize'] == null, @chatoptions['colorize'] = true)
     #Health
 	@hb = ''
-	if(@groupinfo[@group]['showhealth'] == true) {	@hb = color(0).'('._healthbar(@player['name']).color(0).')' }
+	if(@groupinfo[@group]['showhealth'] == true) { @hb = color(0).'('._healthbar(@player['name']).color(0).')' }
 	
 	#Group options
 	# Set nickname
 	@groupname = @group
-	if(@groupinfo[@group]['nickname'] != '' || @groupinfo[@group]['nickname'] != null) { @groupname = @groupinfo[@group]['nickname'] }
+	if(length(@groupinfo[@group]['nickname']) > 0 && @groupinfo[@group]['nickname'] != null) { @groupname = @groupinfo[@group]['nickname'] }
 	#Capitalize the group name?
 	if(@chatoptions['capitalizegroupname'] == '' || @chatoptions['capitalizegroupname'] == null || @chatoptions['capitalizegroupname'] == true) { @groupname = _capitalize(@groupname) }
 		

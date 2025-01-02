@@ -43,10 +43,10 @@ default:
 						@id = ''
 						@idn = ''
 						if(is_numeric(@bucket['block'])) {
-							@id = _capitalize(data_name(@bucket['block']), '', '', true)
+							@id = _capitalize(data_name(@bucket['block']), true)
 							@idn = color(3).' ('.@bucket['block'].')'
 						} else {
-							@id = _capitalize(@bucket['block'], '', '', true)
+							@id = _capitalize(@bucket['block'], true)
 							if(is_proc('_get_data_values')) {
 								@idn = color(3).' ('._get_data_values(@bucket['block']).')'
 							} else { 

@@ -22,7 +22,6 @@ foreach(@v in @args) {
 if(array_index_exists(@args, 0)) { @option1 = @args[0] } 
 if(array_index_exists(@args, 1)) { @option2 = @args[1] } 
 
-
 if(array_contains(all_players(), @option1)) { @player = @option1 }
 @playerID = _getplayerID(@player)
 
@@ -61,28 +60,31 @@ proc _ch_help(@page) {
 		msg(color(7).'/ch'.color(4).' - '.color('f').'Reloads aliases and reloads dev message settings.')
 	}
 }
-
 @prefix = color(7).'['.color(6).@name.color(7).'] '
 
 switch(@action){
-
 case 'r':
-run_cmd(/recompile)
-
+	run_cmd(/recompile);
 case 'help':
 case '-help':
 case '?':
 case '/?':
-	_ch_help(@option1)
+	_ch_help(@option1);
 case 'version':
 case 'build':
 case 'info':
-	msg(@prefix.engine_build_date())
-	
+	msg(@prefix.'CommandHelper version: '.extension_info()['Core'].' Built: '.engine_build_date())
+	msg(@prefix.color(6).'Installed Extensions:')
+	foreach(@ext: @data in extension_info()) {
+		if(@ext == 'Core') { continue(); }
+		msg(@prefix.color(3).@ext.' '.color(7).'( Version: '.@data['version'].' )')
+	}   	
 case 'export':
 case 'import':
 case 'clearvalue':
 case 'cv':
+case 'clearexport':
+case 'ce':
 case 'getvalue':
 case 'gv':
 case 'clearindex':
@@ -104,7 +106,6 @@ case 'he':
 case 'copy':
 case 'cp':
 case 'ex':
-	# call_alias('/chdb '.@action.' '.$)	
 	include_dir('../Functions.library')
 	@return = _chdb($action, $)
 	msg(@return)
@@ -142,27 +143,14 @@ case 'ev':
 case 'pinfo':
 	msg(@prefix.color(7).'-----')
 	msg(@prefix.color(7).'Player info:')
-	msg(@prefix.color(13).'(0) name: '.color('f').pinfo(@player)[0])
-	msg(@prefix.color(13).'(1) location: '.color('f').pinfo(@player)[1])
-	msg(@prefix.color(13).'(2) cursor: '.color('f').pinfo(@player)[2])
-	msg(@prefix.color(13).'(3) ip: '.color('f').pinfo(@player)[3])
-	msg(@prefix.color(13).'(4) displayname: '.color('f').pinfo(@player)[4])
-	msg(@prefix.color(13).'(5) health: '.color('f').pinfo(@player)[5])
-	msg(@prefix.color(13).'(6) iteminhand: '.color('f').pinfo(@player)[6])
-	msg(@prefix.color(13).'(7) worldname: '.color('f').pinfo(@player)[7])
-	msg(@prefix.color(13).'(8) isop: '.color('f').pinfo(@player)[8])
-	msg(@prefix.color(13).'(9) groups: '.color('f').pinfo(@player)[9])
-	msg(@prefix.color(13).'(10) hostname: '.color('f').pinfo(@player)[10])
-	msg(@prefix.color(13).'(11) sneak: '.color('f').pinfo(@player)[11])
-	msg(@prefix.color(13).'(12) host: '.color('f').pinfo(@player)[12])
-	msg(@prefix.color(13).'(13) entity uuid: '.color('f').pinfo(@player)[13])
-	msg(@prefix.color(13).'(14) vehicle: '.color('f').pinfo(@player)[14])
-	msg(@prefix.color(13).'(15) current slot number: '.color('f').pinfo(@player)[15])
-	msg(@prefix.color(13).'(16) sleeping: '.color('f').pinfo(@player)[16])
-	msg(@prefix.color(13).'(17) blocking: '.color('f').pinfo(@player)[17])
-	msg(@prefix.color(13).'(18) flying: '.color('f').pinfo(@player)[18])
-	msg(@prefix.color(13).'(19) sprinting: '.color('f').pinfo(@player)[19])
-	msg(@prefix.color(13).'(20) Player UUID: '.color('f').pinfo(@player)[20])
+	@pinfokeys = array('Name', 'Location', 'Cursor', 'IP', 'Display Name', 'Health', 'Item in hand', 'World', 'OP', 'Groups', 'Hostname', 'Sneaking', 'Host', '(deprecated) entity uuid', 'In Vehicle', 'Current Slot', 'Asleep', 'Blocking', 'Flying', 'Sprinting', 'Player UUID')
+	foreach(@i: @key in @pinfokeys) {
+		if(@i == 13) { continue(); }
+		msg(@prefix.color(13).'('.@i.') '.@key.': '.color('f').pinfo(@player)[@i])
+	}
+	msg(@prefix.color(7).'-----')
+	msg(@prefix.'First group: '.pgroup(@player)[0])
+	msg(@prefix.'XP: '.ptexp(@player).' ('.plevel(@player).')')
 	msg(@prefix.color(7).'-----')
 
 case 'tolower':
@@ -250,8 +238,23 @@ case 'isproc':
 	if(@ret == true) { @color = 'a' }
 	msg(@prefix.color(6).'is proc: '.color(9).@args[0].' '.color(@color).@ret)
 case 'cap':
-	msg(_capitalize(@args[2..], @args[0], @args[1]))
-
+	@l = true
+	@u = true
+	@a = false
+	foreach(@arg in @args) {
+		if(string_starts_with(@arg, '-') && length(@arg) == 2) {
+			switch(@arg){
+			case '-l':
+				@l = !@l			
+			case '-u':
+				@u = !@u			
+			case '-a':
+				@a = !@a
+			}
+			array_remove_values(@args, @arg)
+		}
+	}
+	msg(_capitalize(@args, @a, @l, @u))
 case 'gc':
 	msg(get_commands())
 case 'rd':
@@ -275,6 +278,8 @@ case 'date':
 case 'time':
 	msg(time())
 	msg(substr(time(), 0, 10))
+case 'ik':
+	msg(sha1('null'.to_upper(@args[0])))
 case '':
 case null:
 	@ds = get_value('ch.player.'.@playerID['id'].'.dev.scripts')

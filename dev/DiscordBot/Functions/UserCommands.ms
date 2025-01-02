@@ -10,7 +10,9 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	@botinfo = import('DiscordBot.Bot.Info')
 	@isCmd = false
 	@isMention = ''
-
+	@userType = 'User'
+	if(@discord['bot']) { @userType = 'Bot' }
+	if(@discord['webhook']) { @userType = 'Webhook' }
 # If channel is not authorized to send to, output to DM instead.
 	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel'])) { @discord['channel'] = @discord['userid'] @ChannelType = 'dm' } else { @ChannelType = 'broadcast' }
 
@@ -66,19 +68,26 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	
 	# Action command, all message output is handled from there.
 	if(@isCmd == true) {
-		consume();
-		array_set(@discord, 'time', time())
-		@isMention = _discordBot_ismention(@discord)
-		/*	
-		Returns:
-		false = no command found or error. (See debug return)
-		true = success
-		NotAdmin
-		NoCmdGiven
-		NotACmd
-		*/
-		if(@isMention == true) { @isMention = 'mention' }
-		@return = _discordBot_handlecommand(@discord, @ChannelType, @isMention)
+		if(@userType == 'User') {
+			consume();
+			array_set(@discord, 'time', time())
+			@isMention = _discordBot_ismention(@discord)
+			/*	
+			Returns:
+			false = no command found or error. (See debug return)
+			true = success
+			NotAdmin
+			NoCmdGiven
+			NotACmd
+			*/
+			if(@isMention == true) { @isMention = 'mention' }
+			@return = _discordBot_handlecommand(@discord, @ChannelType, @isMention)
+		} else {
+			@botcolor = 15
+			if(@userType == 'Bot') { @botcolor = 3 }
+			if(@userType == 'Webhook') { @botcolor = 5 }
+			_db_msg_Console(color(@botcolor).@userType.': '.color(9).@discord['nickname'].color(7).' tried using one of my commands!', @discord['serverid'])
+		}
 	}
 }
 # DM commands

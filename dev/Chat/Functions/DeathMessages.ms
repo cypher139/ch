@@ -23,7 +23,7 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 		if(@weapon == null) { 
 			@weapon = 'Hand' 
 		} else {
-			@weapon = _capitalize(string(@weapon['name']), null, null, 'all')
+			@weapon = _capitalize(string(@weapon['name']), true)
 		}
 	}	
 	if(array_index_exists(@death['cause'], 'damager') && @death['killer'] == null) {
@@ -36,7 +36,7 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 		@entitytype = 'GENERIC'
 	}
 	if(@dev == true) { msg(@entitytype) }
-# @entitytypedisplay = _capitalize(@entitytype, null, null, 'all')
+# @entitytypedisplay = _capitalize(@entitytype, true)
   
 
 # Load master custom messages list

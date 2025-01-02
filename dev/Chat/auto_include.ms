@@ -43,7 +43,7 @@ proc _chat_load_config(@cfgtype) {
 	case 'Server':
 		if(!array_index_exists(@loadcfg, 'v')) { _chat_msg_Admins(color(12).'[Chat] Server Config is too old, please update.') return('OldConfig') }
 		if(@loadcfg['v'] < import('chatmodifier.cfg.version', array(0,0,0))[0]) {
-			_db_msg_Admins(color(12).'['.@prefix.'] Server Config for "'.@cfgtype.'" is outdated, please update.')
+			_db_msg_Admins(color(12).'[Chat] Server Config for "'.@cfgtype.'" is outdated, please update.')
 			return('OldConfig')
 		}
 		if(array_index_exists(@loadcfg, 'Not_Configured')) {
@@ -604,15 +604,15 @@ proc _chat_lookup_ip_db(string @ip, boolean @raw = false) {
 	if(time() > (import('Chat.GeoIP.update.check', 0) + 86400000) && function_exists('file_last_modified')) {
 		foreach(@file in array('GeoLite2-ASN.mmdb', 'GeoLite2-City.mmdb', 'GeoLite2-Country.mmdb')) {
 			if(file_last_modified(@serverConfig['LookupIP_DB_Dir'].'/'.@file) < (time() - 604800000)) {
-				http_request('https://github.com/P3TERX/GeoLite.mmdb/raw/download/'.@file, array('blocking': true, 'success': closure(@data) {
+				http_request('https://github.com/P3TERX/GeoLite.mmdb/raw/download/'.@file, array('binary': true, 'blocking': true, 'success': closure(@data) {
 					export('Chat.GeoIP.update.check', time())
 					if(@data['error'] == true) {
 						if(@data['responseCode'] == 404) { console('File '.@file.' was not found!')	}
 						export('Chat.debug.http.error', @data)
 						return(false)
 					} else {
-						_write_file(@serverConfig['LookupIP_DB_Dir'].'/'.@file, @data['body'], 'OVERWRITE')
-						console('Chat: GeoIP database file updated: '.@file)
+						_write_file(@serverConfig['LookupIP_DB_Dir'].'/'.@file, @data['data'], 'OVERWRITE')
+						console(color(14).'Chat: GeoIP database file '.color(10).'updated: '.color(9).@file, false)
 					}
 				}));
 			}

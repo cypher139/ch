@@ -715,6 +715,8 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 	case 'bot':
 	case 'none':
 	case 'death':
+	case 'trophy':
+	case 'paper':
 	case 'command':
 	case 'confirm':
 		@caller = 'Bot'
@@ -766,6 +768,10 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		switch(to_lower(@from)) {
 		case 'death':
 			@message['content'] = ':skull_crossbones: '.@message['content']
+		case 'trophy':
+			@message['content'] = ':trophy: '.@message['content']
+		case 'paper':
+			@message['content'] = ':page_facing_up: '.@message['content']
 		case 'command':
 			@message['content'] = ':desktop: '.@message['content']
 		case 'confirm':
@@ -2191,47 +2197,53 @@ proc _discordBot_ismention(@discord, @regexPrefix = '^') {
 proc _discordBot_iswebhook(@search) {
 	if(!is_numeric(@search)) {throw('ms.lang.CastException', 'Webhook Search only supports numeric ID searches.')}
 	@return = null
-	@wList = import('DiscordBot.webhooks.list', array(array(), array()))
+	@wList = import('DiscordBot.webhooks.list', array())
+	if(!array_index_exists(@wList, 1)) { @wList = array(array(), array()) }
 	if(array_contains(@wList[0], @search)) { return(true) }	
 	if(array_contains(@wList[1], @search)) { return(false) }
 	discord_request('GET', 'webhooks/'.@search, null,
 		closure(@ex) {
+			console('new')
 			#Valid, and data found
 			@kw = import('DiscordBot.webhooks.list', array(array(), array()))
 			@kw[0][] = @search
 			export('DiscordBot.webhooks.list', @kw)
 			@kwdata = import('DiscordBot.webhooks.data', array())
+			# application_id: , avatar: , channel_id: , guild_id: , id: , name: , type: , user: {accent_color: , avatar: , avatar_decoration_data: , banner: , banner_color: , bot: , clan: , discriminator: , flags: , global_name: , id: , public_flags: , username: }
 			array_set(@kwdata, @search, @ex)
+			array_set(@kwdata[@search], 'retrieved', time())
 			array_set(@kwdata[@search], 'bot', true)
 			array_set(@kwdata[@search], 'color', array('b': 200, 'g': 0, 'r': 0))
 			array_set(@kwdata[@search], 'displayname', @ex['name'])
 			array_set(@kwdata[@search], 'joined_at', rshift(@ex['id'], 22) + 1420070400000)
 			array_set(@kwdata[@search], 'userid', @ex['id'])
-			array_set(@kwdata[@search], 'username', @ex['name'])
-			array_set(@kwdata[@search], 'avatar', 'https://cdn.discordapp.com/avatars/'.@ex['id'].'/'.@ex['avatar'].'.png')
+			array_set(@kwdata[@search], 'username', @ex['user']['username'])
+			array_set(@kwdata[@search], 'avatar', 'https://cdn.discordapp.com/avatars/'.@ex['id'].'/'.@ex['user']['avatar'].'.png')
 			export('DiscordBot.webhooks.data', @kwdata)
-			export('webhooksearch.'.@search, true)
+			_db_msg_Console('Webhook search: '.@search.'\n'.@ex, @ex['guild_id'], 'debug')
 		},
 		closure(@ex) {
+		console(@ex)
 			# 10015: Unknown Webhook - not a valid webhook ID
 			if(string_contains(@ex, '10015')) {
 				@kw = import('DiscordBot.webhooks.list', array(array(), array()))
+				if(!array_index_exists(@kw, @search)) { _db_msg_Console('Webhook search: ID given is not a Webhook.', 'debug') }
 				@kw[1][] = @search
 				export('DiscordBot.webhooks.list', @kw)
-				export('webhooksearch.'.@search, false)
 			}
 			# 50013: Missing Permissions - IS valid, but bot is missing permission to view data.
 			if(string_contains(@ex, '50013')) {
 				@kw = import('DiscordBot.webhooks.list', array(array(), array()))
+				if(!array_index_exists(@kw, @search)) { _db_msg_Console('Webhook search: '.@search.' is a Webhook, however the bot does not have server permissions to view user data.', 'debug') }
 				@kw[0][] = @search
 				export('DiscordBot.webhooks.list', @kw)
-				export('webhooksearch.'.@search, true)
 			}
 		}
 	);
 	#if this proc returns null: data still processing, and this tick is invalid to get this data.
 	return(null)
 }
+
 
 #Handle commands from Discord Users
 proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
@@ -2721,6 +2733,8 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 	@botconfig = import('DiscordBot.config.Bot')
 	if(!array_index_exists(@discord, 'serverid')) { array_set(@discord, 'serverid', @botconfig['Primary_Guild']) }
 	if(!array_index_exists(@discord, 'userid')) { array_set(@discord, 'userid', null) }
+	if(!array_index_exists(@discord, 'channelid')) { array_set(@discord, 'channelid', 0) }
+	if(!array_index_exists(@discord, 'id')) { array_set(@discord, 'id', 0) }
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@membernames = get_value('DiscordBot.'.@discord['serverid'].'.members.names')
 	@membernamesDisplay = get_value('DiscordBot.'.@discord['serverid'].'.members.names.display')
@@ -2728,12 +2742,8 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 	if(!array_index_exists(@discord, 'UseDM')) { array_set(@discord, 'UseDM', 'broadcast') }
 	if(!is_array(@membernames)) { @membernames = array() }
 	if(is_numeric(@target)) {
-		if(@target == @config['Bot_ID']) {
-			return('bot')
-		}
-		if(@target == @discord['userid'] && @discord['UseDM'] != 'dm') {
-			return('self')
-		}	
+		if(@target == @config['Bot_ID']) { return('bot') }
+		if(@target == @discord['userid'] && @discord['UseDM'] != 'dm') { return('self') }	
 		try {
 			@memberroles = discord_member_get_roles(@discord['serverid'], @target)
 		} catch (NotFoundException @ex) {
@@ -2747,8 +2757,32 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 		if(reg_count('^[@]?'.@config['Bot_Name'].'[#]?[0-9]{0,4}?$', @target) > 0) {
 			return('bot')
 		}
+		# Common Names or shorthand
 		if(equals_ic(@botconfig['Bot_Name'], @target)) { return('bot') }
 		if(equals_ic(@config['Bot_Name'], @target)) { return('bot') }
+		switch(to_lower(@target)) {
+		case 'i':
+		case 'me':
+			return('self');
+		case '.':
+		case '^':
+			@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
+			if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
+			@isUser = 0
+			foreach(@sid in @cacheMsgs['server']) {
+				if(@cacheMsgs['messages'][@sid]['channelid'] != @discord['channelid']) { continue(); }
+				if(@cacheMsgs['messages'][@sid]['userid'] == @botconfig['Bot_ID']) { continue(); }
+				if(@cacheMsgs['messages'][@sid]['id'] == @discord['id']) { continue(); }
+				@isUser = @cacheMsgs['messages'][@sid]['userid']
+				# console('break: '.@cacheMsgs['messages'][@sid]['id'])
+				break();
+			}
+			if(@isUser != 0) { return(@isUser) } else { return('notfound') }
+		}
+		if(length(@target) < 2) { 
+			if(@target != '.' && @target != '_') { return('notfound') }
+		}
+		#Check matches
 		@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array')
 		#Recheck with tag, if exists
 		if(reg_count('[#][0-9]{4}$', @target) > 0 && !array_index_exists(@targetmatches, 0)) {

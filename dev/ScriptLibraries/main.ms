@@ -1,3 +1,14 @@
+# Version Check
+if(extension_exists('CHFiles')) {
+	@version = reg_replace('[^0-9.]+', '', extension_info()['CHFiles']['version'])
+	@requiredVersion = array(2, 3, 2)
+		foreach(@place: @num in split('.', @version)) {
+		if(@num < @requiredVersion[@place]) {
+			console(color(12).'Installed CHFiles version is too low. Update to '.color(14).array_implode(@requiredVersion, '.'));
+			die();
+		}
+	}
+}
 # Poll registered files for changes, call loader if changed. Requires CHFiles
 set_cron('2 * * * *', closure(){ 
 	@files = import('cypher139.poll.files')
@@ -71,14 +82,14 @@ bind('player_join', array('id': 'cypher139.login'), null, @login) {
 # Listen for custom sign commands
 bind('player_interact', array('id': 'cypher139.sign.cmd'), null, @event) {
 	if(@event['action'] != 'right_click_block' && @event['action'] != 'left_click_block') { return() }
-
 #Check for Clicking on a sign
 	# Pre 1.13 if(reg_count('(63|68)(:[0-9]*)?', @event['block']) > 0) {
-	if(string_ends_with(@event['block'], '_SIGN')) {
+	if(!is_null(@event['block']) && string_ends_with(@event['block'], '_SIGN')) {
 		@signCmds = import('cypher139.sign.Commands')
 		if(!is_array(@signCmds)) { return() } 
 		@signtext = get_sign_text(@event['location'])
 		@command = reg_replace('\\[\\]', '', to_lower(@signtext[0]))
+	# Run a command if found
 		if(array_index_exists(@signCmds, @command)) {
 			@options = array_deep_clone(@signCmds[@command]['options'])
 			foreach(@index: @option in @options) {

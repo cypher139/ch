@@ -138,6 +138,7 @@ proc _rgb_to_hex(array @rgb, string @prefix = '') {
 	}
 	#order: bgr
 	@results = to_radix(bit_or(@cast[2], lshift(@cast[1], 8), lshift(@cast[0], 16)), 16);
+	if(length(@results) < 6 && @cast[0] < 16) { @results = string_multiply('0', (6 - length(@results))).@results }
 	if(@prefix != '') { @results = @prefix.@results }
 	return(@results)
 }
@@ -208,23 +209,31 @@ proc _array_string_contains(array @array, string @needle, string @matchType = 'd
 }
 
 # String Capitalization or underscore removal features
-proc _capitalize(@string, @lower, @u, @a) {
-	if(!is_string(@string)) { @string = string(@string) }
-	if(@lower == '' || @lower == null || @lower == true) { @string = to_lower(@string) }
-	if(@u == '' || @u == null || @u == true) {
-		if(reg_count('[_]', @string) > 0) {
-			@string = reg_replace('_', ' ', @string)
+proc _capitalize(@string, boolean @a = false, boolean @lower = true, boolean @u = true) {
+	if(is_boolean(@string)) { @string = string(@string) }
+	if(is_array(@string)) { @string = array_implode(@string, ' ') }
+	if(!is_string(@string)) { throw('CastException', 'Expected string in _capitalize(), but received a '.typeof(@string)) }
+	switch(length(@string)) {
+	case 0:
+		return(@string)
+	case 1:
+		return(to_upper(@string))
+	default:	
+		if(@lower) { @string = to_lower(@string) }
+		if(@u) {
+			if(reg_count('[_]', @string) > 0) {
+				@string = replace(@string, '_', ' ')
+			}
 		}
+		if(@a) {
+			@astring = reg_split('\\s', @string)
+			foreach(@k: @v in @astring) { @astring[@k] = to_upper(@v[0]).@v[cslice(1, length(@v) - 1)] }
+			@string = array_implode(@astring, ' ')
+		} else {
+			@string = to_upper(@string[0]).@string[cslice(1, length(@string) - 1)]
+		}
+		return(@string)
 	}
-	if(@a == '' || @a == null || @a == false) {
-		@string = to_upper(@string[0]).@string[cslice(1, length(@string) - 1)]
-	} else {
-		@astring = reg_split('\\s', @string)
-#		console(@astring)
-		foreach(@k: @v in @astring) { @astring[@k] = to_upper(@v[0]).@v[cslice(1, length(@v) - 1)] }
-		@string = array_implode(@astring, ' ')
-	}
-	return(@string)
 }
 
 # Is this a even number?

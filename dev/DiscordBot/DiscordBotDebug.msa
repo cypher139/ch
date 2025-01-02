@@ -19,20 +19,73 @@ foreach(@arg in @args) {
 @discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $)
 msg('Using Server ID: '.@serverID)
 switch(@action) {
+case 'cleancache':
+	_discordBot_clean_cache();
+case 'copyroles':
+	@config = import('DiscordBot.config.'.@serverID)
+	@fromroleAdmin = false
+	@returnmsg = color(10).'Copying Roles of "'.@args[0].'" to User "'.color(3).@args[1].'" '
+	if(!array_index_exists(@args, 0)) { return(color(12).'Specify the Discord user ID to copy from!') }
+	if(!array_index_exists(@args, 1)) { return(color(12).'Specify the Discord user ID to copy to!') }
+	if(!array_index_exists(@args, 2)) { @args[] = 'none' }
+	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
+		return(color(12).'Discord Usernames are not supported in this command.')
+	}
+	
+	# To User check
+	@toroles = array()
+	try {
+		@toroles = discord_member_get_roles(@serverID, @args[0])
+	} catch(Exception @ex) {
+		return(color(12).'from ID Not Found on Server: '.@ex['message'])
+	}
+	
+	if(array_size(@toroles) > 0) {
+		try {
+			discord_member_set_roles(@serverID, @args[1], @toroles)
+		} catch(InsufficientPermissionException @ex) {
+			_db_msg_Console(color(12).'command: transferroles: Bot does not have set Roles permission!', @discord['serverid'])
+			return('NoPerms')
+		} catch(Exception @ex) {
+			_db_msg_Console(color(12).'Transfer roles: set roles failed: '.@ex['classType'].@ex['message'], @discord['serverid'])
+			return('Error')
+		}
+	}
+case 'getperms':
+	msg(discord_get_permissions(@serverID))
 case 'getweb':
 	if(array_index_exists(@args, 0)) {
-		if(!is_numeric(@args[0])) { die('User names are not supported in this command.') }
+		if(!is_numeric(@args[0])) { die('Names are not supported in this command.') }
 	} else {
-		die('User ID required')
+		die('Webhook ID required')
 	}
-	@color = 7
+	@msg = ''
 	@res = _discordBot_iswebhook(@args[0])
-	if(@res == true) { @color = 10 }
-	if(@res == false) { @color = 12 }
-	if(@res == null) { call_alias('/dbdbg getweb '.@args[0]) die() }
-	msg(@args[0].' is a webhook: '.color(@color).@res)	
+	if(@res == true) { @msg = color(10).'is a webhook!' }
+	if(@res == false) { @msg = 'is '.color(12).'NOT'.color('f').' a webhook.' }
+	if(@res == null) { die('Requesting data. Due to tick processing repeat this command in a few seconds to view results.') }
+	msg(@args[0].' '.@msg)
+	@kwdata = import('DiscordBot.webhooks.data', array())
+	if(array_index_exists(@kwdata, @args[0])) { msg(@kwdata[@args[0]]) }
 # 10015: Unknown Webhook
 # 50013: Missing Permissions
+case 'getmsg':
+	if(array_index_exists(@args, 0)) {
+		if(!is_numeric(@args[0])) { die('Channel names are not supported in this command.') }
+	} else {
+		die('Channel ID required')
+	}	
+	if(array_index_exists(@args, 1)) {
+		if(!is_numeric(@args[1])) { die('Message ID must be numeric') }
+	} else {
+		die('Message ID required')
+	}
+	discord_request('GET', 'channels/'.@args[0].'/messages/'.@args[1], null, closure(@ex) {
+			@debugupd8 = import('DiscordBot.debug.msg.update.nouser.msgs', array())
+			@debugupd8[] = @ex
+			export('DiscordBot.debug.msg.update.nouser.msgs', @debugupd8)
+			msg('Message: \n'.@ex) },
+		closure(@ex) { console('get message Failed: \n'.@ex) });
 case 'chmem':
 	@chmem = discord_channel_members(@serverID, @args[0])
 	@bots = 0
@@ -158,6 +211,37 @@ case 'viewinvites':
 		store_value('DiscordBot.debug.invites.save', @ex)
 		_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Raw-Invites.yml', yml_encode(@ex, true), 'overwrite')
 	});
+case 'ndjoinlog':
+	@LogJoinTimes = get_value('DiscordBot.'.@serverID.'.log.users.Join.Times')
+	if(!is_array(@LogJoinTimes)) { @LogJoinTimes = array() }
+	@rm = 0
+	@check = array()
+	foreach(@userid: @userdata in @LogJoinTimes) {
+		if(array_size(@userdata) < 2) { continue() }
+		array_set(@check, @userid, array())
+		foreach(@i: @times in @userdata) {
+			if(!array_index_exists(@check, @userid, substr(@times,0,9))) { array_set(@check[@userid], substr(@times,0,9), 0) }
+			@check[@userid][substr(@times,0,9)]++
+			if(@check[@userid][substr(@times,0,9)] > 1) { 
+				msg(@userid.' has multiple close joins: '.@LogJoinTimes[@userid])	
+				array_remove(@LogJoinTimes[@userid], @i)
+				@rm++
+			}
+		}
+	}
+	foreach(@userid: @ud in @check) {
+		foreach(@i: @tc in @ud) {
+			if(@tc > 1) {
+				msg(@userid.' had multiple close joins: '.@LogJoinTimes[@userid])
+			} else {
+				array_remove(@check, @i)
+			}
+		}
+	}
+	if(@rm > 0) {
+		store_value('DiscordBot.'.@serverID.'.log.users.Join.Times', @LogJoinTimes)
+		export('DiscordBot.'.@serverID.'.debug.Join.Times.dupes', @check)
+	}	
 case 'addformerjoinlog':
 	@LogJoinTimes = get_value('DiscordBot.'.@serverID.'.log.users.Join.Times')
 	if(!is_array(@LogJoinTimes)) { @LogJoinTimes = array() }
@@ -165,13 +249,21 @@ case 'addformerjoinlog':
 	if(!is_array(@membersFormer)) { die('no former info in guild') }
 	@adds = 0
 	foreach(@userid: @userinfo in @membersFormer) {
-		@index = 0
+		@ct = true
 		if(!array_index_exists(@userinfo, 'time')) { continue() }
-		if(array_index_exists(@LogJoinTimes, @userid)) { 
-			if(array_contains(@LogJoinTimes[@userid], @userinfo['time'])) { continue() }		
+		if(array_index_exists(@LogJoinTimes, @userid)) {
+			if(array_contains(@LogJoinTimes[@userid], @userinfo['time'])) { continue() }	
+			foreach(@t in @LogJoinTimes[@userid]) {
+				if(substr(@userinfo['time'],0,9) == substr(@t,0,9)) { 
+					@ct = false
+					msg(@userid.' has join times close by leave time of '.@userinfo['time'].', continuing. '.@LogJoinTimes[@userid])
+					break() 
+				}
+			}				
 		} else { 
 			array_set(@LogJoinTimes, @userid, array())
 		}
+		if(@ct == false) { continue() }
 		@LogJoinTimes[@userid][] = @userinfo['time'];
 		@adds++
 	}
@@ -202,6 +294,12 @@ case 'findmultiplejoins':
 			foreach(@k: @date in @dates) {
 				@displayDates[] = simple_date('MM/dd/yyyy HH:mm:ss.SSS', @date, 'UTC')
 			}
+			if(!array_index_exists(@info, 'code')) { array_set(@info, 'code', '-') }
+			if(!array_index_exists(@info, 'user')) { 
+				@username = '?'
+				try(@username = discord_member_info(@serverID, @id)['username'])
+				array_set(@info, 'user', @username) 
+			}
 			@msg = @msg.color(9).'| Username: '.@info['user'].color(8).' | Last invite code: '.@info['code'].color(11).' | Server joins: '.color(11).array_implode(@displayDates, ', ')
 			@sendMsg = @sendMsg.'\n'.@msg
 		}	
@@ -217,18 +315,33 @@ case 'snowflaketime':
 case 'findoldestdiscord':
 	@serverMembers = discord_get_members(@serverID)
 	array_sort(@serverMembers, 'NUMERIC')
-	msg(color(14).'Top 5 oldest Discord Accounts on this server:')
+	@userType = 'User'
+	if(array_contains(@args, 'bot')) { @userType = 'Bot' }
+	@list = array()
+	@limit = 4
+	foreach(@arg in @args) {
+		if(is_numeric(@arg)) {
+			if(@arg < 30 && @arg > 0) { @limit = @arg - 1 }
+		}
+	}
+	msg(color(5).'Top '.(@limit + 1).' oldest Discord '.@userType.' Accounts on this server:')
 	foreach(@i: @userID in @serverMembers) {
+		@userInfo = discord_member_info(@serverID, @userID)
+		if(@userType == 'User' && @userInfo['bot'] == true) { continue() }
+		if(@userType == 'Bot' && @userInfo['bot'] == false) { continue() }
+		@list[] = @userID
+	}
+	foreach(@i: @userID in @list) {
 		@joined = ''
-		if(@i > 4) { break() }
-		@colors = array(11,10,6,3,9)
+		if(@i > @limit) { break() }
+		@colors = array(11,6,8,10,13)
+		array_resize(@colors, (@limit + 1), 9)
 		@userInfo = discord_member_info(@serverID, @userID)
 		if(array_contains(@args, 'join')) { @joined = '\n Joined server: '.simple_date('MM/dd/yyyy HH:mm:ss', @userInfo['joined_at'], 'UTC') }
 		@lc = 7
 		if(length(@userID) < 18) { @lc = 11 }
 		msg(color(@colors[@i]).'#'.(@i + 1).': '.@userInfo['username'].color(7).' <'.@userID.'> ('.color(@lc).length(@userID).color(7).') Joined: '.simple_date('MM/dd/yyyy HH:mm:ss', rshift(@userID, 22) + 1420070400000, 'UTC').@joined)
 	}
-	
 default:
 msg('Action Not Recognized!')	
 }

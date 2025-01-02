@@ -1,0 +1,16 @@
+# Conversion for the Removed leaderboard after installing commit de67cea, 12/27/24
+# This is only required if you wish to view the removed leaderboard on the website, before an auto update occurs by a listed leaderboard member leaving the server.
+admin:/dbupmj [$serverid] [$] = >>>
+	if(is_numeric($serverid)) { 
+		@serverid = $serverid
+	} else {		
+		die(color(12).'This command requires the server\'s numeric ID.')
+	}
+	@botconfig = import('DiscordBot.config.Bot')
+	@leaderboard = import('DiscordBot.'.@serverid.'.Leaderboard')
+	if(!is_array(@leaderboard)) { die(color(12).'Leaderboard not present for the given server ID.') }
+	@oldlb = get_value('DiscordBot.'.@serverid.'.members.former.leaderboard')
+	_write_file(import('DiscordBot.logs.dir').'/'.@serverid.'/Leaderboard_Removed.json', json_encode(@oldlb), 'Overwrite')
+	_write_file(@botconfig['LB_Web_Path'].'/'.@serverid.'/Leaderboard_'.@serverid.'_Removed.json', json_encode(array('guild': @leaderboard['guild'], 'options': @leaderboard['options'], 'members': @oldlb, 'lastedit': time())), 'overwrite')
+<<<
+	
