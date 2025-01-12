@@ -17,6 +17,7 @@ bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), 
 	}
 
 	if(@death['killer'] != null) {
+		@pvpmsg = ''
 		if(has_bind('Chat.msg.Death')) {
 			@pvpmsg = @death['death_message']
 		} else {
@@ -38,9 +39,9 @@ bind('player_death', array('id': 'DiscordBot.mc.Death', 'priority': 'MONITOR'), 
 			)
 			@pvpmsg = array_get_rand(@pvpmsg)
 		}
-		_discordBot_send_mc_chat(@countDisplay.'\n'.':put_litter_in_its_place: '.@pvpmsg, 'death')
+		_discordBot_send_mc_chat('death', @countDisplay.'\n'.':put_litter_in_its_place: '.@pvpmsg)
 	} else {
-		_discordBot_send_mc_chat(@countDisplay.@death['death_message'], 'death')
+		_discordBot_send_mc_chat('death', @countDisplay.@death['death_message'])
 	}
 }
 # :people_wrestling: :put_litter_in_its_place:
@@ -77,6 +78,5 @@ bind('player_advancement_done', array('id': 'DiscordBot.mc.adv', 'priority': 'MO
 	@pid = _getplayerID(@event['player'])
 	@msg = @pid['nick'].' '.@sentence.' '.@title
 	# console(@msg, false)
-	_discordBot_send_mc_chat(@msg, @emoji)
+	_discordBot_send_mc_chat(@emoji, @msg)
 }
-# :people_wrestling: :put_litter_in_its_place:

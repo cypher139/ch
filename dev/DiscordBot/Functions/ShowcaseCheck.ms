@@ -115,7 +115,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 	#Remove disallowed Post, and message copy to user
 		if(@isAllowed == false) {
 			consume();
-			_discordBot_send_message(':x: '.@reaction.'\n:arrow_right: A copy of your recent message in the Showcase chat is below:\n\n'.@discord['message'], @discord['serverid'], 'bot', @discord['userid'], 'dm');
+			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': ':x: '.@reaction.'\n:arrow_right: A copy of your recent message in the Showcase chat is below:\n\n'.@discord['message']), 'bot');
 			try {
 				discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
 			} catch(Exception @ex) {

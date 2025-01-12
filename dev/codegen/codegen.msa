@@ -1,5 +1,5 @@
 codegen:/codegen [$length] [$type1] [$type2] [$] = >>>
-export('codegen.version', '2.4')
+export('codegen.version', '2.5')
 proc _codegen_help() {
 	msg(color(6).'CodeGen!     Version: '.import('codegen.version'))
 	msg(color(7).'/codegen'.color(3).' - '.color(15).'Prints a randomly generated code. Defaults to a code 7 characters in length using uppercase, lowercase, and numbers.')
@@ -10,10 +10,9 @@ proc _codegen_help() {
 	msg(color(3).' - '.color(15).' Extra character types: 8bit or 16bit for their respective numbers.')
 }
 
+@options = array('length': '7', 'type1': $length, 'type2': $type1)
 if(is_numeric($length)) {
 	@options = array('length': $length, 'type1': $type1, 'type2': $type2)
-} else {
-	@options = array('length': '7', 'type1': $length, 'type2': $type1)
 }
 
 switch($length){

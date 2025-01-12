@@ -375,7 +375,7 @@ clear_value('DiscordBot.'.@discord['serverid'].'.VC.'.@discord['channelid'].'.li
 		@logMsg[] = @ret
 	}
 	if(array_index_exists(@logMsg, 0)) {
-		_discordBot_send_message(array('embeds': @logMsg), @discord['serverid'], 'log');
+		_discordBot_broadcast(@discord['serverid'], '--log', array('embeds': @logMsg));
 	}
 }
 #--------------------------------------------
@@ -395,7 +395,7 @@ bind('discord_voice_left', array('id': 'DiscordBot.VC.Leave'), null, @discord) {
 		}
 	}	
 	if(array_index_exists(@logMsg, 0)) {
-		_discordBot_send_message(array('embeds': @logMsg), @discord['serverid'], 'log');
+		_discordBot_broadcast(@discord['serverid'], '--log', array('embeds': @logMsg));
 	}
 }
 #--------------------------------------------
@@ -430,6 +430,6 @@ bind('discord_voice_moved', array('id': 'DiscordBot.VC.Move'), null, @discord) {
 	)
 	@embeds[] = @ret3
 	if(array_index_exists(@embeds, 0)) {
-		_discordBot_send_message(array('embeds': @embeds), @discord['serverid'], 'log');
+		_discordBot_broadcast(@discord['serverid'], '--log', array('embeds': @embeds));
 	}
 }

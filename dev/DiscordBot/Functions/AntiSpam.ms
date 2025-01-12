@@ -206,7 +206,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		# Timeout user
 			if(@config['AS_Timeout_User'] == true) {
 				discord_request('PATCH', 'guilds/'.@discord['serverid'].'/members/'.@discord['userid'], array('communication_disabled_until': simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', (time() + 86400000), 'UTC')), 
-				closure(@ex) { _discordBot_send_message('Successfully set timeout on user `'.@discord['nickname'].'` for the next 24 hours.', @discord['serverid'], 'admin') }, 
+				closure(@ex) { _discordBot_broadcast(@discord['serverid'], '--admin', 'Successfully set timeout on user `'.@discord['nickname'].'` for the next 24 hours.') }, 
 				closure(@ex) { _db_msg_Console('AntiSpam: Set Timeout failed for '.@discord['username'].'\n'.@ex, @discord['serverid'], 'error') }
 				);
 			}
@@ -279,21 +279,21 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			}
 			if(@asmembers[@discord['userid']]['log'] == false) {
 				_db_msg_Console(color(14).@discord['username'].color(8).' <@'.@discord['userid'].'>'.color(7).' triggered Anti Spam protection. Reason #'.@reasonCode.color(9).'\n'.@codeDesc[@reasonCode], @discord['serverid'])
-				_discordBot_send_message(@logMsg, @discord['serverid'], 'admin');
+				_discordBot_broadcast(@discord['serverid'], '--admin', @logMsg);
 				@announceMsg = @botconfig['AS_General_Announcement']
 				if(array_index_exists(@config, 'AS_Announcement_'.@reasonCode)) {
 					@announceMsg = replace(@config['AS_Announcement_'.@reasonCode], '%UserID%', '<@'.@discord['userid'].'>')
 				} else if(array_index_exists(@config, 'AS_General_Announcement')) {
 					@announceMsg = @config['AS_General_Announcement']
 				}
-				if(@announceMsg != '') { _discordBot_send_message(@announceMsg, @discord['serverid'], 'announce'); }
+				if(@announceMsg != '') { _discordBot_broadcast(@discord['serverid'], '--announce', @announceMsg); }
 				@subMsg = ''
 				if(@reasonCode < 3) {
 					@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times')
 					if(!is_array(@logJointimes)) { @logJointimes = array() }
 					if(!array_index_exists(@logJointimes, @discord['userid'], 1)) { @subMsg = '\n\nIf you have recently rejoined the server with a new account, ask the moderators to use my `transferroles` command to bypass this AntiSpam protection.' }
 				}
-				_discordBot_send_message('Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.'.@subMsg, @discord['serverid'], 'death', @discord['userid'], 'dm')
+				_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('prefix': 'death', 'dm': true, 'content': 'Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.'.@subMsg));
 				@asmembers[@discord['userid']]['log'] = true
 			}
 		}

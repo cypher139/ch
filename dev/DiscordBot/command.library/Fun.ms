@@ -50,7 +50,7 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs, @type) {
 		}
 	}
 	#compute Target
-	if(@discord['UseDM'] == 'dm') {
+	if(@discord['UseDM'] == true) {
 		#DM support: Redirect to "bot <action> DM'er"
 		@fromuser = @botconfig['Bot_ID']
 		@target = @discord['userid']
@@ -206,30 +206,22 @@ proc _discordBot_cmd_cointoss(@discord, @args) {
 proc _discordBot_cmd_fakeadmin(@discord) {	
 	@msg = false
 	@config = import('DiscordBot.config.'.@discord['serverid'])	
-	if(@discord['UseDM'] != 'broadcast') { return('really? This isn\'t a server!') }
+	if(@discord['UseDM'] == true) { return('really? This isn\'t a server!') }
 	@userroles = discord_member_get_roles(@discord['serverid'], @discord['username'])
-# debug		store_value('DiscordBot.test.roles.'.@discord['username'], @userroles)
 	if(@discord['admin'] == true) { discord_private_message(@discord['userid'], 'really? You\'re already a server Admin!') }
-	
+	@botperms = discord_get_permissions(@discord['serverid'])
+	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {	return('<@'.@discord['userid'].'> tried and failed to be a *'.@config['Fake_Admin_Rolename'].'*.'); }
+	@setType = 'add'
 	if(array_contains(@userroles, @config['Fake_Admin_Role'])) {
 		discord_private_message(@discord['userid'], 'really? you trippin. you already a '.@config['Fake_Admin_Rolename'].'. Fine, I\'ll remove your admin status.')
-		foreach(@rolename: @roleid in @userroles) {
-			if(@roleid == @config['Fake_Admin_Role']) {
-				array_remove(@userroles, @rolename)
-				break()
-			}
-		}
+		@setType = 'remove'
 		@msg = true
 	} else {
-		@userroles[] = @config['Fake_Admin_Role']
+		@setType = 'add'
 		@msg = '<@'.@discord['userid'].'> is now a **'.@config['Fake_Admin_Rolename'].'**!'
 	}
-	try {
-		discord_member_set_roles(@discord['serverid'], @discord['userid'], @userroles, 'Fake Admin Role command')
-	} catch(InsufficientPermissionException @ex) {
-		_db_msg_Console(color(12).'command: fakeadmin: Bot does not have set Roles permission!', @discord['serverid'], 'error')
-		@msg = '<@'.@discord['userid'].'> tried and failed to be a *'.@config['Fake_Admin_Rolename'].'*.'
-	}
+	@doSetRoles = _discordBot_set_roles(@discord['serverid'], @discord['userid'], @setType, array(@config['Fake_Admin_Role']), 'Games: Fake Admin Role', 'Fake Admin Role');
+	if(@doSetRoles == false) { @msg = '<@'.@discord['userid'].'> tried and failed to be a *'.@config['Fake_Admin_Rolename'].'*.' }
 	return(@msg)
 }
 

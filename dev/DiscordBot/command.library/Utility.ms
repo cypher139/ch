@@ -113,6 +113,8 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	if(!array_index_exists(@args, 0)) { return(color(12).'Specify the Discord user ID to copy from!') }
 	if(!array_index_exists(@args, 1)) { return(color(12).'Specify the Discord user ID to copy to!') }
 	if(!array_index_exists(@args, 2)) { @args[] = 'none' }
+	@botperms = discord_get_permissions(@discord['serverid'])
+	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {	return('NoPerms'); }
 	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
 		if(@args[0] != 'undo') {
 			return(color(12).'Discord Usernames are not supported in this command.')
@@ -197,15 +199,8 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	# _db_msg_Console(@toroles, @discord['serverid'], 'debug')
 	# _db_msg_Console(@fromroles, @discord['serverid'], 'debug')
 		
-	try {
-		discord_member_set_roles(@discord['serverid'], @args[1], @toroles)
-	} catch(InsufficientPermissionException @ex) {
-		_db_msg_Console(color(12).'command: transferroles: Bot does not have set Roles permission!', @discord['serverid'])
-		return('NoPerms')
-	} catch(Exception @ex) {
-		_db_msg_Console(color(12).'Transfer roles: set roles failed: '.@ex['classType'].@ex['message'], @discord['serverid'])
-		return('Error')
-	}
+	@doSetRoles = _discordBot_set_roles(@discord['serverid'], @discord['userid'], 'set', @toroles, 'Transfer Roles: From: '.@args[0].' To: '.@args[1], 'Transfer Roles');
+	if(@doSetRoles == false) { return('Error') }
 	#Save
 	array_set(@TRlog, @args[1], array('time': time(), 'fromuser': @args[0], 'issuer': @discord['userid']))
 	store_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer', @TRlog)

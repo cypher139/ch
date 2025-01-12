@@ -13,14 +13,14 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 # Setup Join Message
 	@joinmsg = ''
 	@dcChannel = ''
-	if(has_permission(@playerID['name'], 'essentials.silentjoin')) { @dcChannel = 'admin' }
+	if(has_permission(@playerID['name'], 'essentials.silentjoin')) { @dcChannel = '--admin' }
 	switch(@serverConfig['Join_Message']) {
 		case 'default':
 		case 'Default':
 			@joinmsg = @login['join_message']
 		case 'admin':
 			@sendMsg = false
-			if(array_contains(pgroup(@playerID['name']), 'admin') || @dcChannel == 'admin') { 
+			if(array_contains(pgroup(@playerID['name']), 'admin') || @dcChannel == '--admin') { 
 				@type = 'admin'
 				@joinmsg = 'Admin '.@playerID['name'].' joined server'
 				_chat_msg_Admins(@joinmsg)
@@ -55,7 +55,7 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 		if(@sendMsg == true || @serverConfig['Join_Message'] == 'admin') {
 			set_timeout(2000, closure(
 				if(array_contains(all_players(), @playerID['name'])) {
-					_discordBot_send_mc_chat(@playerID['name'], 'none', @dcChannel, 'join') }
+					_discordBot_send_mc_chat('join', '', @playerID['name'], @dcChannel) }
 			));
 		}
 	}
@@ -115,7 +115,7 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 # Send Quit message to Discord as well (if enabled)
 	if(is_proc('_discordBot_send_mc_chat')) { 
 		if(@sendMsg == true || @type == 'admin') {
-			_discordBot_send_mc_chat(@playerID['name'], 'none', @dcChannel, 'leave')
+			_discordBot_send_mc_chat('leave', '', @playerID['name'], @dcChannel)
 		}
 	}
 }
@@ -159,7 +159,7 @@ set_cron('59 23 * * *', closure(){
 						@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
 						if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
 							if(!array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-								@listIPData .= '<New ASN>'
+								@listIPData .= ' <New ASN>'
 							}
 						}
 					}
@@ -176,8 +176,8 @@ set_cron('59 23 * * *', closure(){
 		}
 		if(@useMsg == true) {
 			if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
-				if(is_proc('_discordBot_send_message')) { 
-					_discordBot_send_message(replace(@Message, '%format%', '`'), '', 'ping', '', '', closure(@msgID){
+				if(is_proc('_discordBot_broadcast')) { 
+					_discordBot_broadcast('bot', '--ping', replace(@Message, '%format%', '`'), 'bot', closure(@msgID){
 						@cacheID = import('DiscordBot.Chat.msg.IP.Review')
 						if(!is_array(@cacheID)) { @cacheID = array() }
 						array_set(@cacheID, @msgID, @IPList)
@@ -272,7 +272,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
 			if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
 				if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-					@listIPData .= '<ASN has IPs on Blacklist>'
+					@listIPData .= ' <ASN present on blacklist>'
 				}
 			}
 		}
@@ -295,8 +295,8 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			@lookup = '[Lookup IP](<'.@url.'>)'
 		}
 		@adminPingMessage = replace(@adminPingMessage, '%LookupIP%', @lookup)
-		if(is_proc('_discordBot_send_message')) {
-			_discordBot_send_message(replace(@adminPingMessage, '%format%', '`'), '', 'ping', '', '', closure(@msgID){
+		if(is_proc('_discordBot_broadcast')) {
+			_discordBot_broadcast('bot', '--ping', replace(@adminPingMessage, '%format%', '`'), 'bot', closure(@msgID){
 				@cacheID = import('DiscordBot.Chat.msg.IP.Review')
 				if(!is_array(@cacheID)) { @cacheID = array() }
 				array_set(@cacheID, @msgID, @IPList)

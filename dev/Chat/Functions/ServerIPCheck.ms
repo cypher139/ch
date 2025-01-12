@@ -70,7 +70,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 		modify_event('result', 'KICK_OTHER');
 		if(is_proc('_primus_database_add')) { _primus_database_add(@login['player'], 'ip', @login['ip'], @login['hostname']) }
 		if(@serverConfig['Ping_Message_Discord'] == true) { 
-			if(is_proc('_discordBot_send_message')) { _discordBot_send_message(@msgPrefix.'['.@kickType.'] '.replace(@adminMsg, '%f', '`'), 'bot', 'admin') }
+			if(is_proc('_discordBot_broadcast')) { _discordBot_broadcast('bot', '--admin', @msgPrefix.'['.@kickType.'] '.replace(@adminMsg, '%f', '`')) }
 		}
 		if(@serverConfig['Ping_Message_Console'] == true) { console(@msgPrefix.'['.@kickType.'] '.replace(@adminMsg, '%f', ''), false) }
 	}	

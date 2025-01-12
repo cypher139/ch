@@ -19,6 +19,22 @@ foreach(@arg in @args) {
 @discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $)
 msg('Using Server ID: '.@serverID)
 switch(@action) {
+case 'colorcheck':
+	@0count = 0
+	@count = 0
+	@mmcount = 0
+	foreach(@member in discord_get_members(@serverID)) {
+		@info = discord_member_info(@serverID, @member)
+		@c1 = null
+		@c2 = null
+		if(@info['color'] == null) {
+			@0count++;
+		} else {
+			@count++;
+		}
+	}
+	msg('Total members: '.array_size(discord_get_members(@serverID)))
+	msg('members with color: '.@count.', members no color: '.@0count)
 case 'cleancache':
 	_discordBot_clean_cache();
 case 'copyroles':
@@ -31,7 +47,6 @@ case 'copyroles':
 	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
 		return(color(12).'Discord Usernames are not supported in this command.')
 	}
-	
 	# To User check
 	@toroles = array()
 	try {
@@ -39,18 +54,24 @@ case 'copyroles':
 	} catch(Exception @ex) {
 		return(color(12).'from ID Not Found on Server: '.@ex['message'])
 	}
-	
-	if(array_size(@toroles) > 0) {
-		try {
-			discord_member_set_roles(@serverID, @args[1], @toroles)
-		} catch(InsufficientPermissionException @ex) {
-			_db_msg_Console(color(12).'command: transferroles: Bot does not have set Roles permission!', @discord['serverid'])
-			return('NoPerms')
-		} catch(Exception @ex) {
-			_db_msg_Console(color(12).'Transfer roles: set roles failed: '.@ex['classType'].@ex['message'], @discord['serverid'])
-			return('Error')
+	# Remove Admin roles and/or higher than bot roles
+	@hr = import('DiscordBot.bot.roles.higher', array())
+	@roleAdmin = false
+	@rmmsg = ''
+	foreach(@rn: @rid in @toroles) {
+		@rm = false
+		if(array_index_exists(@hr, @rid) || array_contains(@hr, @rn)) { die('Copied User has roles higher than the bot, Role Copy Failed.') }
+		if(array_contains_ic(@config['Role_Admins'], @rn) || array_contains(@config['Role_Admins'], @rid)) { @rm = true }
+		if(@rm == true) {
+			array_remove(@toroles, @rn)
+			@rmmsg = '[Excluded Admin role(s)!]'
 		}
 	}
+	if(array_size(@toroles) > 0) {
+		@doSetRoles = _discordBot_set_roles(@serverID, @args[1], 'set', @toroles, 'Copying User '.@args[0].' Roles to User: '.@args[1].@rmmsg, 'Copy Roles');
+		if(@doSetRoles == false) { @returnmsg = 'Role Copy Failed.'}
+	} else { @returnmsg = 'Copied User did not have any roles.'}
+	msg(@returnmsg)
 case 'getperms':
 	msg(discord_get_permissions(@serverID))
 case 'getweb':

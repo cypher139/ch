@@ -233,8 +233,8 @@ proc _discordBot_cmd_wrf(@discord, @args) {
 				@mclist[] = @entry['username'].@idmsg
 			}
 			if(@type == 'd') {
-			# sned to console to check split
-				_discordBot_send_message(array('content': '```List of IDs:```\n'.array_implode(@list, '\n'), 'custom_split': '[\\s\\S]{1,1970}(?:'.@cSplit.'|$)'), @discord['serverid'], 'bot', @discord['userid'], 'dm')
+			# send to console to check split
+				_discordBot_broadcast('bot', @discord['userid'], array('dm': true, 'content': '```List of IDs:```\n'.array_implode(@list, '\n'), 'custom_split': '[\\s\\S]{1,1970}(?:'.@cSplit.'|$)'), 'bot')
 			}
 		}
 		#Return

@@ -68,9 +68,9 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 			@cacheID['i'][] = @discord['messageid']
 			export('DiscordBot.Chat.msg.IP.Review', @cacheID)
 			discord_request('PUT', 'channels/'.@discord['channelid'].'/messages/'.@discord['messageid'].'/reactions/%F0%9F%AA%AA/@me', null, closure(@ex) { @react = 1 }, closure(@ex) { console('reaction failed: \n'.@ex) });
-			_discordBot_send_message(array('content': array_implode(@msgIPData, '\n'), 'reference_id': @discord['messageid']), @discord['serverid'], 'bot', @discord['channelid'])
+			_discordBot_broadcast(@discord['serverid'], '--ping', array('content': array_implode(@msgIPData, '\n'), 'reference_id': @discord['messageid']), 'bot');
 		} else {
-			_discordBot_send_message('Sorry, The message selected is no longer in my review list!', @discord['serverid'], 'bot', @discord['userid'], 'dm')
+			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list!', @discord['serverid']), 'bot')
 			@cacheID['i'][] = @discord['messageid']
 			export('DiscordBot.Chat.msg.IP.Review', @cacheID)
 		}
@@ -114,7 +114,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 			_db_msg_Console(color(9).@discord['username'].color(10).' blacklisted IP'.@s.': '.color(7).array_implode(@addip, ', '), @discord['serverid'])
 			@cacheID['c'][] = @discord['messageid']
 			if(array_size(@reviewip) > 0) {
-				_discordBot_send_message(array('content': 'These IPs have connected with a player name; If you wish to confirm blacklisting these IPs, *react to this message*.'.@userdisplay, 'reference_id': @discord['messageid']), '', 'ping', '', '', closure(@msgID){
+				_discordBot_broadcast(@discord['serverid'], '--ping', array('content': 'These IPs have connected with a player name; If you wish to confirm blacklisting these IPs, *react to this message*.'.@userdisplay, 'reference_id': @discord['messageid']), 'bot', closure(@msgID){
 					@cacheID = import('DiscordBot.Chat.msg.IP.Review')
 					if(!is_array(@cacheID)) { @cacheID = array() }
 					if(!array_index_exists(@cacheID, 'r')) { array_set(@cacheID, 'r', array()) }
@@ -137,7 +137,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 			if(!is_array(@polls)) { @polls = array() }
 			if(!array_index_exists(@polls, 'IPBlacklist')) { _register_poll_file('IPBlacklist', '_chat_load_config', import('Chat.config.dir').'/IPBlacklist.yml') }
 		} else {
-			_discordBot_send_message('Sorry, The message selected is no longer in my review list! You\'ll need to manually add the IP address in question to the bot\'s blacklist file.', @discord['serverid'], 'bot', @discord['userid'], 'dm')
+			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list! You\'ll need to manually add the IP address in question to the bot\'s blacklist file.'), 'bot');
 			@cacheID['c'][] = @discord['messageid']
 			export('DiscordBot.Chat.msg.IP.Review', @cacheID)
 		}

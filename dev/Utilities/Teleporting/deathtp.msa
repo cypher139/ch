@@ -69,6 +69,7 @@ proc _msg_count(@count, @player, @pos) {
 		case 'd':
 			@prefix = color(9).'['.color(0).@name.color(9).'] '
 			@dcmsg = 'Reaper is currently suffering memory loss...'
+			console(@prefix.color(8).' Requested Player named "'.@player.'" has not logged on here before!', false)
 		default:
 			@dcmsg = @player.' died a total of '.color('c').@count.color(7).' times!'
 	}
@@ -162,7 +163,7 @@ if(array_size(@args) == 1) {
 		default:
 			#catches valid Minecraft player but never played here.
 			if(!array_contains_ic(get_offline_players(), @player)) {
-				_msg_count('d', @v) 
+				_msg_count('d', @player) 
 				die()
 			}
 			@playerID = _getplayerID(@player)

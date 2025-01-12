@@ -212,7 +212,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 		@logbot = false
 		if(array_index_exists(@config, 'Log_Message_Edit_Bot')) { @logbot = @config['Log_Message_Edit_Bot'] }
 		if(@userType != 'User' && @logbot != true) { die() }
-		_discordBot_send_message(array('embeds': array(@logMsg)), @discord['serverid'], 'log')
+		_discordBot_broadcast(@discord['serverid'], '--log', array('embeds': array(@logMsg)));
 	}
 #Reply message to User
 	if(@config['Reply_Message_Edit'] == true && @userType == 'User' && @diff > 2000) {
@@ -236,7 +236,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 				}
 			}
 			if(@sendReply == true) {
-				_discordBot_send_message(array('reference_id': @discord['id'], 'content': @config['Reply_Message_Edit_Users'][@index]), @discord['serverid'], 'none', @discord['channel'])
+				_discordBot_broadcast(@discord['serverid'], @discord['channel'], array('reference_id': @discord['id'], 'content': @config['Reply_Message_Edit_Users'][@index]));
 			}
 		}
 	}

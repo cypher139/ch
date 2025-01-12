@@ -14,7 +14,7 @@ proc _discordBot_cmd_codegen(@discord, @args) {
 			if(array_index_exists(@args, 0)) {
 				foreach(@i: @arg in @args) {
 					if(reg_count('^[-]?[PpDd]', @arg) > 0) {
-						@dmCode = 'dm'
+						@dmCode = true
 						continue()
 					}
 					#if arg more than 5: set length

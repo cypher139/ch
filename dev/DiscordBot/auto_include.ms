@@ -31,15 +31,17 @@ proc _db_msg_Console(@message, @serverID, string @type = 'prefix') {
 	default:
 		@config = import('DiscordBot.config.'.@serverID)
 	}
-	@prefix = ''
+	@prefix = '['.@config['Server_Nickname'].'] '
 	switch(@type) {
 	case 'pre':
 	case 'prefix':
 		@prefix = '['.@config['Server_Nickname'].'] '
 	case 'debug':
-		@prefix = '['.@config['Server_Nickname'].'] '.color(14).'<debug> '.color('r')
+		@prefix .= color(14).'<debug> '.color('r')
 	case 'error':
-		@prefix = '['.@config['Server_Nickname'].'] '.color(12).'<error> '.color('r')
+		@prefix .= color(12).'<error> '.color('r')
+	case 'warning':
+		@prefix .= color(6).'<Warning> '.color('r')
 	case 'd':
 	case 'bot':
 		@prefix = '[DiscordBot] '
@@ -374,15 +376,45 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 		@stats = array()
 		@VCstats = array()
 		foreach(@serverID in @guildlist) {
+			@serverstats = array()
 			# Clean various RAM values:
-			export('DiscordBot.'.@serverID.'.is.new.member', null)
-			export('DiscordBot.'.@serverID.'.antispam.dupecount', null)
-			# Clean Message Cache:
+			foreach(@nullkey in array('is.new.member', 'antispam.dupecount')) {
+				export('DiscordBot.'.@serverID.'.'.@nullkey, null)
+			}
+			# Clean Command messages cache: (key expected to be message ID)
+			# to add would require array sort by key highest first, get 100 most recent ids then foreach add each index in this order up to limit into new array and svae that
+			foreach(@statkey: @key in array('cmd': 'Cache.Cmd.Messages', 'cmdret': 'Cache.Cmd.Messages.return', 'cmdreply': 'Cache.Messages.Command.Replies', 'bot': 'Cache.Messages.Bot.sent')) {
+				@clean = import('DiscordBot.'.@serverID.'.'.@key)
+				if(!is_array(@clean)) { export('DiscordBot.'.@serverID.'.'.@key, null) continue() }
+				array_set(@serverstats, @statkey, array(array_size(@clean),0,array_size(@clean)))
+				if(array_size(@clean) > @botconfig['Msg_Cache_Cmd']) {
+					@keepkeys = array_sort(array_keys(@clean), closure(@left, @right){ return(@left < @right); });
+					@newclean = array()
+					foreach(@index in @keepkeys[cslice(0, @botconfig['Msg_Cache_Cmd'])]) {
+						array_set(@newclean, @index, @clean[@index])
+					}
+					@serverstats[@statkey][1] = array_size(@clean) - @botconfig['Msg_Cache_Cmd'];
+					@serverstats[@statkey][2] = @botconfig['Msg_Cache_Cmd'];
+					export('DiscordBot.'.@serverID.'.'.@key, @newclean)
+				} else {
+					foreach(@i: @value in @clean) {
+						if(!is_numeric(@value)) { continue() }
+						if(rshift(@value, 22) + 1420070400000 < @exptime) { 
+							array_remove(@clean, @i);
+							@serverstats[@statkey][1]++;
+							@serverstats[@statkey][2]--;
+						}
+					}
+					export('DiscordBot.'.@serverID.'.'.@key, @clean)
+				}
+			}
+			# Clean main Message Cache:
 			@queue = array()
 			if(!array_contains(import('DiscordBot.Servers'), @serverID)) { continue() }
 			@cacheMsgs = import('DiscordBot.'.@serverID.'.Cache.Messages')
 			if(!is_array(@cacheMsgs)) { continue() }
-			@serverstats = array('cacheb': array_size(@cacheMsgs['server']), 'cachea': 0, 'queue': 0)
+			#Before, queue, after
+			array_set(@serverstats, 'msg', array(array_size(@cacheMsgs['server']),0,0))
 			# 1: Check for messages on server cache above Limit. Always sorted highest first on data insert
 			if(array_index_exists(@cacheMsgs['server'], @botconfig['Msg_Cache_Server'])) {
 				array_push_all(@queue, @cacheMsgs['server'][cslice(@botconfig['Msg_Cache_Server'], array_size(@cacheMsgs['server']) - 1)])
@@ -393,9 +425,9 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 					@queue[] = @msg['id']
 				}
 			}
-	_db_msg_Console(array_size(@queue).'\n'.@queue, 'debug')
+			if(array_size(@queue) > 0) { _db_msg_Console(array_size(@queue).'\n'.@queue, 'debug') }
 			@queue = array_unique(@queue)
-			@serverstats['queue'] = array_size(@queue)
+			@serverstats['msg'][1] = array_size(@queue)
 		# For each queue remove message id index in messages & server (Listed first so reaction added messages with no user attached get purged)
 			foreach(@id in @queue) {
 				array_remove(@cacheMsgs['messages'], @id)
@@ -415,31 +447,121 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 			}
 			if(array_size(@queue) > 0) { _db_msg_Console('Cache queue not empty\n'.@queue, @serverID, 'error') }
 			export('DiscordBot.'.@serverID.'.Cache.Messages', @cacheMsgs)
-			@serverstats['cachea'] = array_size(@cacheMsgs['server'])
+			@serverstats['msg'][2] = array_size(@cacheMsgs['server'])
 			array_set(@stats, @serverID, @serverstats)
 		}
-		@displaystats = ''
-		foreach(@sid: @stat in @stats) {
-			@displaystats = @displaystats.'\n'.color(rand(7,11)).import('DiscordBot.Servers.Nicknames')[@sid].': '.@stat['cacheb'].' - '.@stat['queue'].' =  '.@stat['cachea']
+		@displaystats = array()
+		foreach(@sid: @srvstat in @stats) {
+			@msg = ''
+			foreach(@key: @stat in @srvstat) {
+				if(@stat[1] == 0) { continue() }
+				@msg .= '  '.@key.': '.@stat[0].' - '.@stat[1].' =  '.@stat[2]
+			}
+			if(@msg != '') { @displaystats[] = color(rand(7,11)).import('DiscordBot.Servers.Nicknames')[@sid].':'.@msg }
 		}
-		_db_msg_Console(color(3).simple_date('MM/dd', @time).' Msg Cache: '.color(10).'<'.(time() - @time).'ms>'.@displaystats, 'debug')
+		_db_msg_Console(color(3).simple_date('MM/dd', @time).' clean Caches: '.color(10).'<'.(time() - @time).'ms>\n'.array_implode(@displaystats, '\n'), 'debug')
 		return(true);
 	});
 }
+
+proc _discordBot_set_roles(@serverID, @userID, @type, array @roles, string @auditMsg, string @option = 'Command not given') {
+	if(!array_contains(import('DiscordBot.Servers'), @serverID)) {
+		_db_msg_Console('Bot is not running on server given: '.@serverID, @serverID, 'error')
+		return(false);
+	}
+	if(!is_numeric(@userID) || length(@userID) < 16) { return(false) }
+	@nopermsMsg = color(12).@option.': Set Roles for <@'.@userID.'>: Bot does not have permission to manage roles!';
+	if(array_size(@roles) == 0) { return(false) }
+	@botperms = discord_get_permissions(@serverID)
+	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {
+		_discordBot_broadcast(@serverID, '--log', @nopermsMsg);
+		_db_msg_Console(@nopermsMsg, @serverID, 'warning')
+		return(false);
+	}
+#Backup Previous Roles
+	@rolesBackup = get_value('DiscordBot.'.@serverID.'.set.roles.undo')	
+	if(!is_array(@rolesBackup)) { @rolesBackup = array() }
+	@userRoles = array()
+	try {
+		@userRoles = discord_member_get_roles(@serverID, @userID)
+	} catch(Exception @ex) {
+		@checkwebhook = import('DiscordBot.webhooks.list', array(array(), array()))
+		@msg = color(12).'User ID "'.@userID.'" does not exist?\n'.@ex
+		if(array_contains(@checkwebhook[0], @userID)) {
+			@msg = color(12).'"'.@option.'" tried setting permissions on a webhook.'
+		}
+		_db_msg_Console(@msg, @serverID, 'error')
+		return(false);
+	}
+	array_set(@rolesBackup, @userID, @userRoles);
+	array_set(@rolesBackup, 'lastedit', time());
+	store_value('DiscordBot.'.@serverID.'.set.roles.undo', @rolesBackup);
+#Compute New roles
+	switch(string(@type)) {
+	case 'true':
+	case 'add':
+		@userRoles = array_merge(@userRoles, @roles)
+	case 'remove':
+		@userRoles = array_normalize(@userRoles)
+		# subtract does not find if given associative, normal
+		@userRoles = array_subtract(@userRoles, @roles)
+	case 'false':
+	case 'set':
+		@userRoles = @roles
+	default:
+		return(false);
+	}
+	@userRoles = array_normalize(@userRoles)
+#Set New roles
+	try { 
+		discord_member_set_roles(@serverID, @userID, @userRoles, @auditMsg)
+	} catch(InsufficientPermissionException @ex) {
+		if(string_contains(@ex['message'], 'Can\'t modify a role with higher or equal highest role than yourself!')) {
+			@roleID = reg_match('[(]id=(.*)[)]', @ex['message'])[1]
+			@roleName = reg_match('(?>Role:)\\W?(?>Role:)?(.*)[(]', @ex['message'])[1]
+			@hr = import('DiscordBot.bot.roles.higher', array())
+			array_set(@hr, @roleID, @roleName)
+			export('DiscordBot.bot.roles.higher', @hr)
+			@nopermsMsg = 'Set Roles for <@'.@userID.'>: Role "'.@roleName.'" is higher or equal to my highest role, unable to set all of user\'s roles.'
+		}
+		_discordBot_broadcast(@serverID, '--log', @nopermsMsg);
+		_db_msg_Console(@nopermsMsg, @serverID, 'warning');
+		console(@ex)
+		return(false);
+	} catch(NotFoundException @ex) {
+		@id = ''
+		foreach(@word in parse_args(@ex['message'])) {
+			if(string_starts_with(@word, '"')) { @id = replace(@word, '"', '') }
+		}
+		_db_msg_Console(color(14).@option.': Role ID '.color(12).@id.color('r').' given does not exist on the server!', @serverID, 'warning')
+		if(@option == 'retry') { return(false) }
+		array_remove_values(@userRoles, @id)
+		@return = _discordBot_set_roles(@serverID, @userID, 'set', @userRoles, @auditMsg, 'retry')
+		if(@return == false) {
+			_db_msg_Console(color(14).@option.': Multiple non-existent Role IDs given, stopping.', @serverID, 'error')
+		}
+		return(@return);
+	} catch(Exception @ex) {
+		_db_msg_Console(color(12).@option.': Set roles failed for <@'.@userID.'>\n'.@ex['classType'].@ex['message'], @serverID, 'error')
+		return(false);
+	}
+	return(true);
+}
+
 
 ##########################################
 ### Send A Message
 ##########################################
 
-proc _db_sanitize_message(@message, @caller, @serverID, @from, @dm) {
+proc _db_sanitize_message(@message, @userType, @serverID, @from, @dm) {
 	if(@message == null || @message == '') { return(null); }
-	if(@caller == null) { @caller = 'Discord' }
-	@caller = to_lower(@caller)
+	if(@userType == null) { @userType = 'Discord' }
+	@userType = to_lower(@userType)
 	@botconfig = import('DiscordBot.config.Bot')
 	if(@serverID == '' || @serverID == null || @serverID == 'bot') { @serverID = @botconfig['Primary_Guild'] }
 	@config = import('DiscordBot.config.'.@serverID)
 	@sanitize = array('Markdown': false, 'User': false, 'Role': false, 'Everyone': false)
-	switch(@caller) {
+	switch(@userType) {
 	case 'bot':
 		@sanitize['Markdown'] = false
 		@sanitize['Role'] = false
@@ -461,6 +583,7 @@ proc _db_sanitize_message(@message, @caller, @serverID, @from, @dm) {
 			}
 		)
 	case 'minecraft':
+	case 'console':
 		@sanitize['Markdown'] = true
 		@sanitize['User'] = true
 		@sanitize['Role'] = true
@@ -591,48 +714,88 @@ proc _discordBot_find_emoji(string @findEmoji, @originationGuild, @skipGuild) {
 }
 
 
-proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
+proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
 	@prefixErrorMsg = color(6).'['.color(9).'DiscordBot'.color(6).'] '.color(7).'A message queued to send had a problem: '
+	@msgType = 'b'
+	@msgPrefix = ''
+	@msgPrefixes = array('console': ':desktop:', 'mcuser': '`[%p%]`', 'death': array(':skull_crossbones:', ':angel:'), 'trophy': array(':trophy:', ':onion:'), 'paper': ':page_facing_up:', 'command': ':desktop:', 'confirm': array(':white_check_mark:', ':x:', ':question:', ':no_entry:'))
 	@botconfig = import('DiscordBot.config.Bot')
-	if(@guild == '' || @guild == null || @guild == 'bot') {
-		#primary guild
-		@guild = @botconfig['Primary_Guild']
-	}
-	@config = import('DiscordBot.config.'.@guild)
+	# Load Primary Guild if none given
+	if(@serverID == '' || @serverID == null || @serverID == 'bot') { @serverID = @botconfig['Primary_Guild'] }
+	@config = import('DiscordBot.config.'.@serverID)
 	if(!is_array(@config)) {
-		_db_msg_Admins(color(7).'Message not sent to Discord: Guild "'.@guild.'" was not recognized')
+		_db_msg_Admins(color(7).'Message not sent to Discord: Guild "'.@serverID.'" was not recognized')
 		return(false)
 	}
+	@dm = false
+	@player = ''
 	@count = 0
-	@caller = 'Discord'
+	@userType = 'Discord'
 	@splitRegEx = '[\\s\\S]{1,1999}(?:\\s|\\S|$)'
 	@editMsg = 0
-	if(@channel == '') { @channel = @config['Default_Channel'] }
-	if(@channel == 'admin') { @channel = @config['Log_Channel'] }
-	if(@type == '') { @type = 'broadcast' }
-	if(@raw == '') { return(false) }
-	if(@from == '' || is_array(@from)) { 
-		if(function_exists('player')) { 
-			@from = player()
-			@caller = 'Minecraft'
-		} else {
-			@from = 'Discord'
+	#Acquire orginating user
+	#mc, bot, join, leave, discord, cross
+	if(!is_array(@origin)) {
+	#string
+		switch(string(@origin)) {
+		case 'mc':
+		case 'user':
+		case 'join':
+		case 'leave':
+			_db_msg_Admins(color(7).'Message not sent to Discord: Origin did not include player name')
+			return(false)
+		case 'cross':
+		case 'discord':
+		case 'say':
+			@userType = 'Discord'
+		case 'server':
+		case 'console':
+			@userType = 'Console'
+			@player = '~console'
+		default:
+			@userType = 'Bot'
+		}
+	} else {
+	#array
+		if(array_size(@origin) < 2 || is_associative(@origin)) {
+			_db_msg_Admins(color(7).'Message not sent to Discord: Origin did not include all indexes')
+			return(false)
+		}
+		switch(@origin[0]) {
+		case 'mc':
+		case 'user':
+			@userType = 'Minecraft'
+			@player = @origin[1]
+			@msgPrefixes['mcuser'] = replace(@msgPrefixes['mcuser'], '%p%', @player)
+		case 'join':
+		case 'leave':
+			@userType = 'Minecraft'
+			@msgType = @origin[0]
+			@player = strip_colors(@origin[1])
+		case 'cross':
+		case 'discord':
+		case 'say':
+			@userType = 'Discord'
+		case 'server':
+		case 'console':
+			@userType = 'Console'
+			@msgPrefix = @msgPrefixes['console']
+		default:
+			@userType = 'Bot'
 		}
 	}
-	if(is_closure(@option)) {
-		@afterMsg = @option
-	} else {
+	#Default action for actions after message is sent (save message ID, etc)
+	if(!is_closure(@afterMsg)) {
 		@afterMsg = closure(@msgID) {
-		# console(@msgID)
-			@cacheID = import('DiscordBot.'.@guild.'.Cache.Messages.sent.IDs')
+			# console(@msgID)
+			@cacheID = import('DiscordBot.'.@serverID.'.Cache.Messages.Bot.sent')
 			if(!is_array(@cacheID)) { @cacheID = array() }
-			@newData = array()
-			array_set(@newData, @guild, @msgID)
-			array_insert(@cacheID, @newData, 0)
-			if(array_index_exists(@cacheID, 100)) { array_remove(@cacheID, 100) }
-			export('DiscordBot.'.@guild.'.Cache.Messages.sent.IDs', @cacheID)
-			return(true)
+			# @newData = array();
+			# array_set(@newData, @serverID, @msgID);
+			array_insert(@cacheID, @msgID, 0);
+			export('DiscordBot.'.@serverID.'.Cache.Messages.Bot.sent', @cacheID);
+			return(true);
 		}
 	}
 	@message = array()
@@ -641,63 +804,86 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		# Remove unused array datas & format variables
 		@msg3 = 'msg: array: '
 		foreach(@k: @v in @raw) {
-			if(@k == 'content' || string_starts_with(@k, 'embed') || @k == 'allowed_mentions' || @k == 'reference_id' || @k == 'custom_split' || @k == 'message_id') {
-				@msgk = @k
-				if(@k == 'embeds') { 
-					if(!array_index_exists(@v, 1)) {
-						@msgk = reg_replace('s$', '', @msgk)
-					}
+			@msgkcolor = 8
+			@msgk = @k
+			switch(to_lower(@k)) {
+			case 'embeds':
+				if(!is_array(@v)) {
+					_db_msg_Console('A message queued to Discord did not provide an array for use as embeds; Message not sent.', @serverID, 'error')
+					export('DiscordBot.debug.sm.embed', @raw)
+					return(false)
 				}
-				if(@k == 'embed') {
-					if(!array_index_exists(@v, 1)) {
-						@msgk = @msgk.' unsupported'
-						@type = 'admin'
-						_db_msg_Console('A message queued to Discord used too many embeds for the "embed" array. Use "embeds" for multiple embeds. Message not sent.', @guild, 'debug')
-						export('DiscordBot.debug.sm.embed', @raw)
-						die()
-					}
+				if(is_associative(@v)) { @raw['embeds'] = array(@raw['embeds']) } 
+				@msgk .= '('.array_size(@raw['embeds']).')'
+			case 'embed':
+			# lazy embed sending without nesting array fix
+				if(!is_associative(@v)) {
+					@vsize = 0
+					if(is_array(@v)) { @vsize = array_size(@v) }
+					_db_msg_Console('A message queued to Discord used array type "embed" with '.@vsize.' embeds, please update; Message not sent.', @serverID, 'error')
+					export('DiscordBot.debug.sm.embed', @raw)
+					return(false)
 				}
-				if(@k == 'reference_id') {
-					if(!is_numeric(@v)) {
-						@msgk = color(12).@k.color('r')
-						array_remove(@raw, @k)
-					}
-				}
-				if(@k == 'custom_split') {
-					@splitRegEx = @v
-					console(@splitRegEx)
+				if(!array_index_exists(@raw, 'embeds')) { array_set(@raw, 'embeds', array()) }
+				@raw['embeds'][] = @raw['embed'];
+			case 'reference_id':
+				if(!is_numeric(@v)) {
+					@msgkcolor = 12
 					array_remove(@raw, @k)
 				}
-				if(@k == 'message_id') {
-					if(is_numeric(@v)) {
-						@editMsg = @v
-					}
-					array_remove(@raw, @k)
+			case 'custom_split':
+				@splitRegEx = @v
+				array_remove(@raw, @k)
+			case 'message_id':
+				if(is_numeric(@v)) {
+					@editMsg = @v
+				} else { @msgkcolor = 12 }
+# console('edit msg id \n n:'.@v.'\n i:'.integer(@v))
+				array_remove(@raw, @k)
+			case 'dm':
+				if(@v == true) { @dm = true @msgType = 'dm' }
+			case 'debug':
+				if(@v == true) { @msgType = 'debug' }
+			case 'prefix':
+				@check = @v
+				if(is_array(@v)) {
+					@v = array_normalize(@v)
+					if(array_index_exists(@v, 0)) {	@check = @v[0] } else { @check = 'none' }
 				}
-				@msg3 = @msg3.@msgk.' '
-				continue()
+				if(array_index_exists(@msgPrefixes, @check)) {
+					if(is_array(@msgPrefixes[@check])) {
+						@msgPrefix = @msgPrefixes[@check][0];
+						if(is_array(@v)) {
+							if(array_index_exists(@v, 1)) {
+								if(@v[1] == true) {
+									@msgPrefix = @msgPrefixes[@check][0];
+								} else if(is_numeric(@v[1]) && array_index_exists(@msgPrefixes, @check, @v[1])) {
+									@msgPrefix = @msgPrefixes[@check][@v[1]] 
+								} else {
+									@msgPrefix = @msgPrefixes[@check][1] 
+								}
+							}
+						}
+					} else { @msgPrefix = @msgPrefixes[@check] }
+				}
 			}
-			@msg3 = @msg3.color(8).@k.' '.color('r')
-			array_remove(@raw, @k)
+			@msg3 = @msg3.color(@msgkcolor).@msgk.' '.color('r')
+			if(!array_contains(array('content', 'embeds', 'reference_id', 'allowed_mentions'), @k)) { array_remove(@raw, @k) }
 		}
-		if(array_index_exists(@raw, 'embeds') && array_index_exists(@raw, 'embed')) {
-			if(array_index_exists(@raw['embeds'], 0)) {
-				@raw['embeds'][] = @raw['embed'][0]
-			} else {
-				array_remove(@raw, 'embeds')
-			}
-		}
-		if(!array_index_exists(@raw, 'content') && !array_index_exists(@raw, 'embeds')) {
+		if(!array_index_exists(@raw, 'content') && !array_index_exists(@raw, 'embeds') && @msgType != 'join' && @msgType != 'leave') {
 			@msg3 = @msg3.'unsupported'
 			@type = 'admin'
-			_db_msg_Console(@msg3.' A message queued to Discord did not contain any Content or Embeds; nothing to send.', @guild, 'debug')
+			_db_msg_Console(@msg3.' A message queued to Discord did not contain any Content or Embeds; nothing to send.', @serverID, 'debug')
 			export('DiscordBot.debug.sm.array', @raw)
-			die()
+			return(false)
 		}
-		@message = @raw
-		_db_msg_Console(@msg3, @guild, 'debug')
-	} else { 
+		@message = @raw[];
+		_db_msg_Console(@msg3, @serverID, 'debug')
+	} else if(@raw != '' && @raw != null) {
 		@message = array('content': @raw)
+	} else if(@msgType != 'join' && @msgType != 'leave') {
+		#raw: no data
+		return(false)
 	}
 	# Check if a message split is required
 	@split = array()
@@ -706,45 +892,11 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		@count = reg_count(@splitRegEx, @message['content'])
 	}
 
-# Assign Message Origination:
-	switch(to_lower(@from)) {	
-	case 'admin':
-	case 'announce':
-	case 'log':
-	case 'ping':
-	case 'bot':
-	case 'none':
-	case 'death':
-	case 'trophy':
-	case 'paper':
-	case 'command':
-	case 'confirm':
-		@caller = 'Bot'
-	case 'cross':
-	case 'discord':
-	case 'say':
-		@caller = 'Discord'
-	case 'server':
-	case 'console':
-		@caller = 'Minecraft'
-	default:
-	# Minecraft Player chat
-		@caller = 'Minecraft'
-	}
-	
 # Message Formatting: Sanitize mentions, etc.
 	if(array_index_exists(@message, 'content')) {
-		@dm = false
-		switch(@type){
-		case 'pm':
-		case 'dm':
-		case 'message':
-		case 'private':
-			@dm = true
-		}
 	# Sanitize Mentions, Check custom mentions, setup allowed mentions
-		if(@caller != 'Bot') {
-			@sanitize = _db_sanitize_message(@message['content'], @caller, @guild, @from, @dm)
+		if(@userType != 'Bot') {
+			@sanitize = _db_sanitize_message(@message['content'], @userType, @serverID, @player, @dm)
 			@message['content'] = @sanitize['message']
 			if(array_index_exists(@sanitize, 'allowed_mentions') && !array_index_exists(@message, 'allowed_mentions')) {
 				array_set(@message, 'allowed_mentions', array('parse': @sanitize['allowed_mentions']))
@@ -754,33 +906,23 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 		if(@config['Use_Emojis'] == true) {		
 			foreach(@emoji in reg_match_all('[:][^\\s./]+[:]', @message['content'])) {
 				#returns: {{0: :match:}}
-				@emojiID = _discordBot_find_emoji(@emoji[0], @guild)
+				@emojiID = _discordBot_find_emoji(@emoji[0], @serverID)
 				if(array_index_exists(@emojiID, 'NotFound')) { continue() }
 				#Check if emoji belongs to this guild and conversion is allowed:
-				if(@emojiID['guild'] != @guild && @config['Use_Other_Emojis'] == false) { continue() }
+				if(@emojiID['guild'] != @serverID && @config['Use_Other_Emojis'] == false) { continue() }
 				#Convert emoji :emoji: markdown to bot version:
 				@useAnimation = ''
 				if(@emojiID['animated'] == true) { @useAnimation = 'a' }
 				@message['content'] = replace(@message['content'], @emoji[0], '<'.@useAnimation.':'.@emojiID['name'].':'.@emojiID['id'].'>')
 			}
 		}	
-	# Extra type formats:
-		switch(to_lower(@from)) {
-		case 'death':
-			@message['content'] = ':skull_crossbones: '.@message['content']
-		case 'trophy':
-			@message['content'] = ':trophy: '.@message['content']
-		case 'paper':
-			@message['content'] = ':page_facing_up: '.@message['content']
-		case 'command':
-			@message['content'] = ':desktop: '.@message['content']
-		case 'confirm':
-			@message['content'] = ':white_check_mark: '.@message['content']
-		default:
-			if(@caller == 'Minecraft') {
-			# Minecraft Player chat
-				@message['content'] = '`['.@from.']` '.@message['content']
-			}
+	# Add Message prefixes:
+		if(@msgPrefix != '') {
+			@message['content'] = @msgPrefix.' '.@message['content']
+		}
+		#Add MC player name
+		if(@userType == 'Minecraft') {
+			@message['content'] = @msgPrefixes['mcuser'].' '.@message['content']
 		}
 	# Split messages longer than 2000 chars
 		if(reg_count(@splitRegEx, @message['content']) > 1) {
@@ -791,50 +933,39 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 			}
 		}
 	# Send message data to Leaderboard
-		@event = array('bot': true, 'serverid': @guild, 'username': @config['Bot_Name'], 'userid': @config['Bot_ID'], 'message': @message['content'], 'channel': @config['Log_Channel'])
+		@event = array('bot': true, 'serverid': @serverID, 'username': @config['Bot_Name'], 'userid': @config['Bot_ID'], 'message': @message['content'], 'channel': @config['Log_Channel'])
 		_discordBot_lb_process_message(@event, true)
 	}
 # Select Channel Presets:
-	switch(to_lower(@from)) {
-	case 'admin':
-		@channel = @config['Log_Channel']
-	case 'announce':
-		@channel = @config['Announcement_Channel']
-	case 'log':
-		@channel = @config['Server_Log_Channel']
-	case 'debug':
-		@channel = @config['Log_Channel']
-		@type = 'debug'
-	case 'ping':
-		if(array_index_exists(@config, 'Ping_Log_Channel')) { @channel = @config['Ping_Log_Channel'] } else { @channel = @config['Log_Channel'] }
+	if(!is_numeric(@channel)) {
+		switch(to_lower(@channel)) {
+		case '--admin':
+			@channel = @config['Log_Channel']
+		case '--announce':
+			@channel = @config['Announcement_Channel']
+		case '--log':
+			@channel = @config['Server_Log_Channel']
+		case '--debug':
+			@channel = @config['Log_Channel']
+			@msgType = 'debug'
+		case '--ping':
+			if(array_index_exists(@config, 'Ping_Log_Channel')) { @channel = @config['Ping_Log_Channel'] } else { @channel = @config['Log_Channel'] }
+		case '--console':
+			@channel = @config['Log_Channel']
+			_db_msg_Console('[Send Message] '.@message['content'], @serverID)
+		case '':
+		case null:
+			@channel = @config['Default_Channel']
+		}
 	}
-	switch(@type){
-	case 'admin':
-		@channel = @config['Log_Channel']
-	case 'announce':
-		@channel = @config['Announcement_Channel']
-	case 'console':
-		@channel = @config['Log_Channel']
-		_db_msg_Console('[Send Message] '.@message['content'], @guild)
-	case 'log':
-		@channel = @config['Server_Log_Channel']
-	case 'ping':
-		if(array_index_exists(@config, 'Ping_Log_Channel')) { @channel = @config['Ping_Log_Channel'] } else { @channel = @config['Log_Channel'] }
-	}
-	
 # Message Building:
 	try {	
-		switch(@type){
+		switch(@msgType){
 		case 'debug':
-			_db_msg_Console(@message, 'debug')
+			_db_msg_Console(@serverID.', '.@channel.', '.@message, 'debug')
 			return(true);
-		case 'admin':
-		case 'announce':
-		case 'console':
 		case 'broadcast':
 		case 'b':
-		case 'log':
-		case 'ping':
 			if(array_index_exists(@split, 0)) {
 				foreach(@i: @msg in @split) {
 					@splitmsg = array('content': @msg)
@@ -849,21 +980,18 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 					if(array_index_exists(@message, 'reference_id')) {
 						array_set(@splitmsg, 'reference_id', @message['reference_id'])
 					}					
-					discord_broadcast(@guild, @channel, @splitmsg, @afterMsg)
+					discord_broadcast(@serverID, @channel, @splitmsg, @afterMsg)
 				}
 			} else {
 				if(@editMsg == 0) {
-					discord_broadcast(@guild, @channel, @message, @afterMsg)
+					discord_broadcast(@serverID, @channel, @message, @afterMsg)
 				} else {
-# console('sm'.@guild.': '.@channel.' '.@editMsg)
-					_discordBot_edit_message(@message, 'sm', @guild, @channel, @editMsg)
+# console('sm'.@serverID.': '.@channel.' '.@editMsg)
+					_discordBot_edit_message(@message, 'sm', @serverID, @channel, @editMsg)
 				}
 			}
 			return(true);
-		case 'pm':
 		case 'dm':
-		case 'message':
-		case 'private':
 			if(array_index_exists(@split, 0)) {
 				foreach(@i: @msg in @split) {
 					if(@i == (array_size(@split) - 1)) {
@@ -878,49 +1006,37 @@ proc _discordBot_send_message(@raw, @guild, @from, @channel, @type, @option) {
 				if(array_index_exists(@message, 'reference_id')) { array_remove(@message, 'reference_id') }
 				discord_private_message(@channel, @message)
 			}
-			return(true)
-		case 'broadcast_embed':
-		case 'embed':
-			if(@option == '') { @option = 'the cool bot' }
-			@sayicons = array('https://cdn.discordapp.com/emojis/511919341093257266.webp?size=48&quality=lossless', 'https://cdn.discordapp.com/emojis/511919341118160912.webp?size=48&quality=lossless', 'https://cdn.discordapp.com/emojis/511919341281738773.webp?size=48&quality=lossless', 'https://cdn.discordapp.com/emojis/511919340740673536.webp?size=48&quality=lossless', 'https://cdn.discordapp.com/emojis/511919340837404672.webp?size=48&quality=lossless') 
-			if(array_index_exists(@split, 0)) {
-				foreach(@i: @msg in @split) { 
-					@option = @option.' (Message '.(@i + 1).' of '.array_size(@split).')'
-					discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @msg, 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': @option)))), @afterMsg)
-				}
-			} else {
-				discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': array_get_rand(@sayicons), 'description': @message['content']))), @afterMsg)
-			}
-			return(true)	
+			return(true);
 		case 'join':
-			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:join:1066426544387543080> Joined:', 'description': @message['content']))), @afterMsg)
-			return(true)
+			discord_broadcast(@serverID, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:join:1066426544387543080> Joined:', 'description': @message['content']))), @afterMsg)
+			return(true);
 		case 'leave':
 		case 'quit':
-			discord_broadcast(@guild, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:leave:1066426677481197618> Left: ', 'description': @message['content']))), @afterMsg)
-			return(true)
+			discord_broadcast(@serverID, @channel, array('embeds': array(array('thumbnail': 'https://cdn.discordapp.com/emojis/562416478230675456.webp?size=32&quality=lossless', 'title': '<:leave:1066426677481197618> Left: ', 'description': @message['content']))), @afterMsg)
+			return(true);
 		}
 	} catch(InsufficientPermissionException @ex) {
 		@msg = @ex['message']
 		if(string_ends_with(@ex['message'], 'VIEW_CHANNEL')) {
 			@msg = color(12).'Bot cannot view channel: '.@channel
 		}
-		_db_msg_Admins(@prefixErrorMsg.@msg, '[DiscordBot] ['.@guild.'] '.@msg)
-		return(false)
+		_db_msg_Admins(@prefixErrorMsg.@msg, '[DiscordBot] ['.@serverID.'] '.@msg)
+		return(false);
 	} catch(NotFoundException @ex) {
-		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.@ex['message'])
-		return(false)
+		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@serverID.'] '.@ex['message'])
+		return(false);
 	} catch(Exception @ex) {
 		@traceDisplay = ''
 		foreach(@st in @ex['stackTrace']) {
 			@traceDisplay = @traceDisplay.'\n'.@st['id'].'  '.@st['line'].'.'.@st['col']
 		}
-		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@guild.'] '.color(12).@ex['classType'].' '.color(7).@ex['message'].@traceDisplay)
-		return(false)
+		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@serverID.'] '.color(12).@ex['classType'].' '.color(7).@ex['message'].@traceDisplay)
+		return(false);
 	}
 }
 
 proc _discordBot_edit_message(@raw, @from, @serverID, @channel, @msgID, @type, @option) {
+	@prefixErrorMsg = color(6).'['.color(9).'DiscordBot'.color(6).'] '.color(7).'A message queued to edit had a problem: '
 	@botconfig = import('DiscordBot.config.Bot')
 	if(!is_numeric(@channel)) { _db_msg_Console('Edit: Channel ID is not numeric!', @serverID, 'error') return(false) }
 	if(!is_numeric(@msgID)) { _db_msg_Console('Edit: Message ID is not numeric!', @serverID, 'error') return(false) }
@@ -1062,8 +1178,22 @@ proc _db_mc_broadcast(@msg, @args, @cr = false, @checkPermission = null) {
 	return(true)
 }
 
-proc _discordBot_send_mc_chat(@message, @player, @overrideChannel = null, @type = 'b') {
-	if(@message == '' || @message == null) { return(false) }
+proc _discordBot_send_mc_chat(string @prefix, string @message, string @player, string @overrideChannel = null) {
+	@type = 'user'
+	@msgarray = array()
+	switch(@prefix) {
+	case 'join':
+		@type = 'join'
+		@msgarray = ''
+	case 'leave':
+	case 'quit':
+		@type = 'leave'
+		@msgarray = ''
+	default:
+		array_set(@msgarray, 'content', @message)
+		array_set(@msgarray, 'prefix', @prefix)
+		if(@message == '' || @message == null) { return(false) }
+	}
 	if(@player == '' || @player == null) {
 		if(function_exists('player')) { 
 			@player = player()
@@ -1088,8 +1218,9 @@ proc _discordBot_send_mc_chat(@message, @player, @overrideChannel = null, @type 
 			}
 		}
 		#Admin channel override
-		if(@overrideChannel == 'admin') { @channel = @overrideChannel }
-		_discordBot_send_message(@message, @serverID, @player, @channel, @type)
+		if(@overrideChannel == '--admin') { @channel = @overrideChannel }
+		if(@player == '~console') { @type = 'console' }
+		_discordBot_broadcast(@serverID, @channel, @msgarray, array(@type, @player))
 	}
 	return(true);
 }
@@ -1196,7 +1327,7 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 		}
 		if(array_size(@message['embeds'][0]) == 0) { array_remove(@message, 'embeds') }
 		@message['content'] = @userPrefix.@message['content'].@suffix
-		_discordBot_send_message(@message, @serverID, 'cross', @channel)
+		_discordBot_broadcast(@serverID, @channel, @message, 'cross')
 	}
 	return(true);
 }
@@ -1698,13 +1829,7 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 		if(!is_array(@saveoldroles)) { @saveoldroles = array() }
 		array_set(@saveoldroles, @discord['userid'], @userRoles)
 		store_value('DiscordBot.'.@discord['serverid'].'.debug.roles.rank.undo', @saveoldroles)
-		try { 
-			@stats['setRoles'] = true;
-			discord_member_set_roles(@discord['serverid'], @discord['userid'], @newRoles, @logmsg)
-		} catch(Exception @ex) {
-			_db_msg_Console(@ex, @discord['serverid'], 'debug')
-			@stats['setRoles'] = @ex['classType'];
-		}
+		@stats['setRoles'] = _discordBot_set_roles(@discord['serverid'], @discord['userid'], 'set', @newRoles, @logmsg, 'Role Ranks');
 	} else {
 		array_remove(@stats, 'logmsg')
 	}
@@ -1945,11 +2070,7 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 		if(@currentrank != '') {
 			@userRoles[] = @currentrank['RoleID']
 			#Set New roles
-			try { 
-				discord_member_set_roles(@discord['serverid'], @userID, @userRoles, 'Role Rewards: Awarded New Rank '.@currentrank['RoleName'])
-			} catch(Exception @ex) {
-				return(false)
-			}
+			@doSetRoles = _discordBot_set_roles(@discord['serverid'], @userID, 'set', @userRoles, 'Role Rewards: Awarded New Rank '.@currentrank['RoleName'], 'Leaderboard Role Rewards');
 		}
 /*
 		_db_msg_Console(@currentrank, @discord['serverid'], 'debug')
@@ -1980,19 +2101,20 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 			@sendMsg = false
 		}
 		if(@sendMsg == true) {
-			@type = 'broadcast'
+			@dm = false
 			@sendchannel = @discord['channel']
 			switch(string(@config['LB_Options']['Level_Up_Announce'])) {
 			case 'log':
 				@sendchannel = @config['Log_Channel'] 
 			case 'dm':
-				@type = 'dm'
+				@dm = true
 				@sendchannel = @discord['userid']
 			}
-			if(@sendMsgtoLog == true) { @sendchannel = @config['Log_Channel'] @type = 'broadcast' }
-			@outMsg = array('content': @discordMsg)
+			if(@sendMsgtoLog == true) { @sendchannel = @config['Log_Channel'] @dm = false }
+			@outMsg = array('content': @discordMsg, 'prefix': 'confirm')
 			if(@config['LB_Options']['Level_Up_Announce_Reference'] == true) { array_set(@outMsg, 'reference_id', @discord['id']) }
-			_discordBot_send_message(@outMsg, @discord['serverid'], 'confirm', @sendchannel, @type)
+			if(@dm == true) { array_set(@outMsg, 'dm', @dm) }
+			_discordBot_broadcast(@discord['serverid'], @sendchannel, @outMsg);
 		}
 	}
 # Save Edits
@@ -2069,12 +2191,8 @@ proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array(), @
 	}	
 # Set New roles
 	if(@roleMsg != '') {	
-		try { 
-			discord_member_set_roles(@discord['serverid'], @discord['userid'], @userRoles, @roleMsg)
-		} catch(Exception @ex) {
-			_db_msg_Console('['.@discord['username'].'] Active user role: '.@ex['classType'].' '.@ex['message'], @discord['serverid'], 'debug')
-			@ret = 'Failed'
-		}
+		@doSetRoles = _discordBot_set_roles(@discord['serverid'], @discord['userid'], 'set', @userRoles, @roleMsg, 'Active User');
+		if(@doSetRoles == false) { @ret = 'Failed' }
 	}
 # Return Role array if requested, else return status
 	if(@retRoles == true) { return(@userRoles) }
@@ -2256,16 +2374,16 @@ proc _discordBot_process_batchfile(@lines, @discord, @dm, @listonly) {
 			case 'pm':
 			case 'dm':
 			case 'message':
-				@dm = 'dm'
+				@dm = true
 			case 'b':
 			case 'broad':
 			case 'broadcast':
-				@dm = 'broadcast'
+				@dm = false
 				
 			}
 		}
 	}
-	if(@dm == '') { @dm = 'broadcast' }
+	if(@dm == '') { @dm = false }
 	if(is_array(@discord)) {
 		if(!array_index_exists(@discord, 'userid')) {
 			_db_msg_Console('Required data array not given to Command Handler!', @discord['serverid'], 'debug')
@@ -2343,8 +2461,8 @@ proc _discordBot_iscommand(@discord, @returnType = 'a', @regexPrefix = '^') {
 		_db_msg_Console('Required Discord data not given to isCommand!', 'debug')
 		return(false)
 	}
-	if(!array_index_exists(@discord, 'UseDM')) { array_set(@discord, 'UseDM', '') }	
-	if(@discord['UseDM'] != 'dm') {
+	if(!array_index_exists(@discord, 'UseDM')) { array_set(@discord, 'UseDM', false) }	
+	if(@discord['UseDM'] == false) {
 		@config = import('DiscordBot.config.'.@discord['serverid'])
 		# Prefix:
 		if(reg_count(@config['CMD_Command_Prefix'], @discord['message']) > 0) { @isCmd = true }
@@ -2378,14 +2496,15 @@ proc _discordBot_iscommand(@discord, @returnType = 'a', @regexPrefix = '^') {
 	return(@isCmd)
 }
 
-proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
+proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	@StartTime = time()
 	@sendLogMsg = true
 	@botconfig = import('DiscordBot.config.Bot')
 	@botinfo = import('DiscordBot.Bot.Info')
 	@cmdfromdis = ''
 	@editMsg = 0
-	@returnMsg = array('content': 'Debug')
+	@dm = false
+	@returnMsg = array('dm': @discord['UseDM'], 'content': 'Debug', 'prefix': 'command')
 	if(is_array(@discord)) {
 		if(!array_index_exists(@discord, 'time')) {
 			array_set(@discord, 'time', time())
@@ -2429,15 +2548,16 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	}
 	@actions = import('DiscordBot.Command.List', array())
 	@commandList = import('DiscordBot.Command.List.Name', array())
-	switch(@dm) {
+	switch(string(@channelType)) {
 	case 'dm':
 	case 'pm':
 	case 'message':
-		@dm = 'dm'
+	case 'true':
+		@dm = true
 		array_set(@discord, 'SendChannel', @discord['userid'])
 		@cmdfromdis = ' in DM'
 	case 'edit':
-		@commandReplyIDs = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.sent.IDs')
+		@commandReplyIDs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies')
 		if(!is_array(@commandReplyIDs)) { @commandReplyIDs = array() }
 		if(array_index_exists(@commandReplyIDs, @discord['id']) && to_lower(@config['CMD_Message_Action']) != 'delete') {
 			if(@commandReplyIDs[@discord['id']]['time'] > (time() - 86400000)) { 
@@ -2445,30 +2565,31 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 				@cmdfromdis = ' (via message edit)'
 			}
 		}
-		@dm = 'broadcast'
+		@dm = false
 		array_set(@discord, 'SendChannel', @discord['channelid'])
 	case '':
 	default:
-		@dm = 'broadcast'
+		@dm = false
 		array_set(@discord, 'SendChannel', @discord['channelid'])
 	}
 	switch(@cmdfrom) {
 	case 'batch':
 		@cmdfromdis = ' (via Batch file)'
 	default:
-		if(@dm == 'dm') { @cmdfromdis = ' in DM' }
+		if(@dm == true) { @cmdfromdis = ' in DM' }
 	}
 	array_set(@discord, 'UseDM', @dm)
+	array_set(@returnMsg, 'dm', @dm)
 
 	if(@editMsg > 0 && to_lower(@config['CMD_Message_Action']) != 'delete') {
 		array_set(@returnMsg, 'message_id', @editMsg)
 	}
 	@afterMsg = closure(@msgID) {
-		@cacheID = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.sent.IDs')
+		@cacheID = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies')
 		if(!is_array(@cacheID)) { @cacheID = array() }
+		#Sorted by calling id: reply id & time
 		array_set(@cacheID, @discord['id'], array('id': @msgID, 'time': time()))
-		if(array_index_exists(@cacheID, @botconfig['Msg_Cache_Cmd'])) { array_remove(@cacheID, @botconfig['Msg_Cache_Cmd']) }
-		export('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.sent.IDs', @cacheID)
+		export('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies', @cacheID)
 		return(true)
 	}
 #Check User Permissions
@@ -2493,14 +2614,14 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 ###############
 # Extract Command
 	@msgcheck = reg_replace(@config['CMD_Command_Prefix'], '', @discord['message'])
-	if(@dm == 'dm' || @cmdfrom == 'mention') {
+	if(@dm == true || @cmdfrom == 'mention') {
 		@msgcheck = reg_replace('^[@]'.@botconfig['Bot_Name'].'\\s', '', @msgcheck)
 		@msgcheck = reg_replace('^[@]'.@config['Bot_Name'].'\\s', '', @msgcheck)
 	}
 	@command = parse_args(@msgcheck)
 	# No Command Given
 	if(!array_index_exists(@command, 0)) {
-		_discordBot_send_message(array('embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))), @discord['serverid'], 'none', @discord['SendChannel'], @discord['UseDM'])	
+		_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], array('dm': @discord['UseDM'], 'embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))))		
 		return('NoCmdGiven')
 	}
 	# No mentions
@@ -2540,7 +2661,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	if(array_index_exists(@commandList, @command[0])) {
 		if(@actions[@commandList[@command[0]]]['admin'] == true && @userType != 'Admin') {
 			_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfromdis.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid'])
-			_discordBot_send_message(@discord['username'].' tried to use admin command'.@cmdfromdis.': `'.@command[0].'`  '.strip_colors(@commanddisdc), @discord['serverid'], 'admin')
+			_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].' tried to use admin command'.@cmdfromdis.': `'.@command[0].'`  '.strip_colors(@commanddisdc))
 			return('NotAdmin')
 		}
 	}
@@ -2577,80 +2698,86 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		if(@sendUserMessage == true) {
 			@returnMsg['content'] = 'I have no idea what that command is, try ?help'
 			array_set(@returnMsg, 'reference_id', @discord['id'])
-			_discordBot_send_message(@returnMsg, @discord['serverid'], 'command', @discord['SendChannel'], @discord['UseDM'])
+			_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @returnMsg);
 		}		
 		return('NotACmd')
 	}
 # _db_msg_Console('ret: '.@CmdReturn, @discord['serverid'], 'debug')
 # _db_msg_Console('retis: '.is_string(@CmdReturn), @discord['serverid'], 'debug')
-#Save Recent Messages and Returns for reference	
+####
+#DEBUG Save Recent Messages and Returns for reference	
 	array_set(@discord, 'return', @CmdReturn)
-	@cacheCmd = import('DiscordBot.Cache.Cmd.Messages')
+	@cacheCmd = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages')
 	if(!is_array(@cacheCmd)) { @cacheCmd = array() }
-	array_insert(@cacheCmd, @discord, 0)
+	array_set(@cacheCmd, @discord['id'], @discord)
 	if(array_index_exists(@cacheCmd, @botconfig['Msg_Cache_Cmd'])) { array_remove(@cacheCmd, @botconfig['Msg_Cache_Cmd']) }
-	export('DiscordBot.Cache.Cmd.Messages', @cacheCmd)
+	export('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages', @cacheCmd)
 
-	@cacheCmd = import('DiscordBot.Cache.Cmd.Messages.return')
+	@cacheCmd = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.return')
 	if(!is_array(@cacheCmd)) { @cacheCmd = array() }
-	array_insert(@cacheCmd, @CmdReturn, 0)
+	array_set(@cacheCmd, @discord['id'], @CmdReturn)
 	if(array_index_exists(@cacheCmd, @botconfig['Msg_Cache_Cmd'])) { array_remove(@cacheCmd, @botconfig['Msg_Cache_Cmd']) }
-	export('DiscordBot.Cache.Cmd.Messages.return', @cacheCmd)	
+	export('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.return', @cacheCmd)
+####
 #Send Messages
 #return messages final message, unless true/false. multiple messages need to be handled by action
 	if(to_lower(@config['CMD_Message_Action']) == 'reply') {
 		array_set(@returnMsg, 'reference_id', @discord['id'])
 	}
-	@messageType = 'command'
+	@returnMsg['prefix'] = array('confirm', true)
 	if(is_string(@CmdReturn)) {
 		switch(@CmdReturn) {
 		case 'NoCmd':
 			@returnMsg['content'] = 'A required command module is not installed.'
+			@returnMsg['prefix'][1] = 1
 			@return = false
 		case 'NotAdmin':
-			@returnMsg['content'] = ':no_entry: This command is restricted to use by Admin only.'
-			@messageType = 'discord'
+			@returnMsg['content'] = 'This command is restricted to use by Admin only.'
+			@returnMsg['prefix'][1] = 3
 			@return = false
 		case 'NoUserFound':
-			@returnMsg['content'] = ':question: User ID given not found on server.'
-			@messageType = 'discord'
+			@returnMsg['content'] = 'User ID given not found on server.'
+			@returnMsg['prefix'][1] = 2
 			@return = false
 		case 'NoPerms':
-			@returnMsg['content'] = ':question: I did not have permission to finish this command!'
-			@messageType = 'discord'
+			@returnMsg['content'] = 'I did not have permission to finish this command!'
+			@returnMsg['prefix'][1] = 2
 			@discord['SendChannel'] = 'admin'
 			@return = false
 		case 'NotEnabled':
-			@returnMsg['content'] = ':x: This feature is not enabled on this server.' 
+			@returnMsg['content'] = 'This feature is not enabled on this server.'
+			@returnMsg['prefix'][1] = 1
 			@return = false
 		case 'Error':
-			@returnMsg['content'] = ':x: An error occured in the command, see logs.'
+			@returnMsg['content'] = 'An error occured in the command, see logs.'
+			@returnMsg['prefix'][1] = 1
 			@return = false
 		case 'pong':
 			@timeElapsed = (time() - @discord['time'])
 			@returnMsg['content'] = 'Pong! ('.(@timeElapsed / 1000).')'
+			@returnMsg['prefix'] = 'command'
 			@return = true
 		default:
 			@returnMsg['content'] = @CmdReturn
-			@messageType = 'discord'
+			@returnMsg['prefix'] = 'discord'
 			@return = true
 		}
-		_discordBot_send_message(@returnMsg, @discord['serverid'], @messageType, @discord['SendChannel'], @discord['UseDM'], @afterMsg)
+		_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @returnMsg, 'bot', @afterMsg)
 	} else if(is_array(@CmdReturn)) {
 		if(array_index_exists(@CmdReturn, 'content') || array_index_exists(@CmdReturn, 'embeds')) {
 			if(array_index_exists(@CmdReturn, 'dm')) {
 				switch(string(@CmdReturn['dm'])) {
 				case 'true':
 				case 'dm':
-					@discord['UseDM'] = 'dm'
+					@discord['UseDM'] = true
 					@cmdfromdis = @cmdfromdis.' (DM reply)'
 					@discord['SendChannel'] = @discord['userid']
 				case 'false':
 				case 'broadcast':
-					@discord['UseDM'] = 'broadcast'
+					@discord['UseDM'] = false
 					@discord['SendChannel'] = @discord['channelid']
 				}
-				array_remove(@CmdReturn, 'dm')
+				@CmdReturn['dm'] = @discord['UseDM']
 			}
 			if(array_index_exists(@CmdReturn, 'console')) {
 				_db_msg_Console(@CmdReturn['console'], @discord['serverid'])
@@ -2672,10 +2799,10 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 					array_set(@CmdReturn, 'message_id', @editMsg)
 				}
 			}
-			_discordBot_send_message(@CmdReturn, @discord['serverid'], 'discord', @discord['SendChannel'], @discord['UseDM'], @afterMsg)
+			_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @CmdReturn, 'discord', @afterMsg)
 			@return = true
 		} else {
-			_discordBot_send_message(@discord['username'].'\'s command `'.@command[0]'` failed: '.@CmdReturn, @discord['serverid'], 'admin')
+			_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].'\'s command `'.@command[0]'` failed: '.@CmdReturn);
 			@return = false
 		}
 	} else if(is_boolean(@CmdReturn)) {
@@ -2686,7 +2813,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 	@retdisplay = ''
 	if(@return == false) { @colorret = 12 @retdisplay = ' (Failed)' }
 	if(array_index_exists(@config, 'CMD_Message_Action')) {
-		if(to_lower(@config['CMD_Message_Action']) == 'delete' && string(@CmdReturn) != 'NotACmd' && @discord['UseDM'] != 'dm') {
+		if(to_lower(@config['CMD_Message_Action']) == 'delete' && string(@CmdReturn) != 'NotACmd' && @discord['UseDM'] == false) {
 			try {
 				discord_delete_message(@discord['serverid'], @discord['channel'], @discord['id'])
 			} catch(Exception @ex) {
@@ -2699,7 +2826,7 @@ proc _discordBot_handlecommand(@discord, @dm, @cmdfrom) {
 		if(array_contains(@config['CMD_Log_Ignore_Users'], @discord['username']) || array_contains(@config['CMD_Log_Ignore_Users'], @discord['userid'])) { @sendLogMsg = false }
 	}
 	if(@sendLogMsg == true) {
-		_discordBot_send_message(@discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay, @discord['serverid'], 'admin')
+		_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay);
 	}
 	return(@return)
 }
@@ -2739,11 +2866,11 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 	@membernames = get_value('DiscordBot.'.@discord['serverid'].'.members.names')
 	@membernamesDisplay = get_value('DiscordBot.'.@discord['serverid'].'.members.names.display')
 	@useDisplay = false
-	if(!array_index_exists(@discord, 'UseDM')) { array_set(@discord, 'UseDM', 'broadcast') }
+	if(!array_index_exists(@discord, 'UseDM')) { array_set(@discord, 'UseDM', false) }
 	if(!is_array(@membernames)) { @membernames = array() }
 	if(is_numeric(@target)) {
 		if(@target == @config['Bot_ID']) { return('bot') }
-		if(@target == @discord['userid'] && @discord['UseDM'] != 'dm') { return('self') }	
+		if(@target == @discord['userid'] && @discord['UseDM'] == false) { return('self') }	
 		try {
 			@memberroles = discord_member_get_roles(@discord['serverid'], @target)
 		} catch (NotFoundException @ex) {

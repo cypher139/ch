@@ -14,7 +14,8 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	if(@discord['bot']) { @userType = 'Bot' }
 	if(@discord['webhook']) { @userType = 'Webhook' }
 # If channel is not authorized to send to, output to DM instead.
-	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel'])) { @discord['channel'] = @discord['userid'] @ChannelType = 'dm' } else { @ChannelType = 'broadcast' }
+	@dm = false
+	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel'])) { @discord['channel'] = @discord['userid'] @dm = true }
 
 # Command in approved channels:
 # Mentions, via batch, or server's set prefix
@@ -40,7 +41,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 								@commands = reg_split('\r?\n', @data['body'])
 								@commands[0] = reg_replace('^#!Chat_Command_Batch', '', @commands[0])
 								# send to proc
-								@return = _discordBot_process_batchfile(@commands, @discord, @ChannelType)
+								@return = _discordBot_process_batchfile(@commands, @discord, @dm)
 							}
 						} else {
 							_db_msg_Console('Processing Batch file failed: '.@data, @discord['serverid'])
@@ -81,7 +82,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 			NotACmd
 			*/
 			if(@isMention == true) { @isMention = 'mention' }
-			@return = _discordBot_handlecommand(@discord, @ChannelType, @isMention)
+			@return = _discordBot_handlecommand(@discord, @dm, @isMention)
 		} else {
 			@botcolor = 15
 			if(@userType == 'Bot') { @botcolor = 3 }
@@ -93,7 +94,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 # DM commands
 bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'priority': 'HIGH'), null, @discord) {
 	array_set(@discord, 'time', time())
-	array_set(@discord, 'UseDM', 'dm')
+	array_set(@discord, 'UseDM', true)
 	@botconfig = import('DiscordBot.config.Bot')
 	@servers = import('DiscordBot.Servers')
 	@userserver = 0

@@ -25,7 +25,7 @@ proc _db_format_msg_attach(@discord, @url = false) {
 bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notification'), null, @discord) {
 	array_set(@discord, 'time', time())
 	@saveDM = array_deep_clone(@discord)
-	array_set(@discord, 'UseDM', 'dm')
+	array_set(@discord, 'UseDM', true)
 # Command check: #Don't save or notify if this is a command message
 	@isCmd = _discordBot_iscommand(@discord)
 	if(@isCmd == true || is_consumed() == true) { die() }

@@ -20,9 +20,9 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@channel = null
 	@sendmsg = @chat['message']
-	@playerID = _getplayerID(player(), 'id')
+	@playerID = _getplayerID(player())
 	#[Anti Spam] Do not send chat to Discord if player just logged on, avoids insta spam and disconnect bots.
-	@jointime = import('Server.player.'.@playerID.'.last.join', 13000)
+	@jointime = import('Server.player.'.@playerID['id'].'.last.join', 13000)
 	if(@jointime > (time() - 10000)) { 
 		_db_msg_Console(player().' sent a message before the message timeout passed.', 'bot') 
 		die()
@@ -38,7 +38,7 @@ bind('player_chat', array('id': 'DiscordBot.mc.Send'), null, @chat) {
 	# Automatically chat on last channel a message was received on. [Primary Guild only]
 		@channel = _db_get_last_channel(@botconfig['Primary_Guild'], @channel)
 	}
-	_discordBot_send_mc_chat(@sendmsg, player(), @channel)
+	_discordBot_send_mc_chat('', @sendmsg, @playerID['name'], @channel)
 }
 #Send Console chat to Discord
 bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MONITOR'), array('prefix': 'say', 'type': 'console'), @event) {
@@ -57,5 +57,5 @@ bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MO
 	# Automatically chat on last channel a message was received on. [Primary Guild only]
 		@channel = _db_get_last_channel(@botconfig['Primary_Guild'], @channel)
 	}
-	_discordBot_send_mc_chat(@sendmsg, 'Server', @channel)
+	_discordBot_send_mc_chat('console', @sendmsg, '', @channel)
 }	

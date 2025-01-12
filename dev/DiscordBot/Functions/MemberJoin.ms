@@ -128,7 +128,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
 				# Logs
 				if(@sendjoinmsg == true) {
-					_discordBot_send_message(@invMessage, @discord['serverid'], 'log');
+					_discordBot_broadcast(@discord['serverid'], '--log', @invMessage);
 				}
 				_db_msg_Console(@consolejoinMsg.' '.@msgSuffix, @discord['serverid']);
 				_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Invites.yml', yml_encode(@inv, true), 'overwrite');
@@ -147,7 +147,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				} else { 
 					@invMessage = ''
 				}
-				_discordBot_send_message(@invMessage.@msg, @discord['serverid'], 'log')
+				_discordBot_broadcast(@discord['serverid'], '--log', @invMessage.@msg)
 			} else {
 				_db_msg_Console('['.@discord['serverid'].'] '.@ex['message'], @discord['serverid'])
 			}
@@ -161,7 +161,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		@invMessage = replace(@invMessage, '%Inviter%', '')
 		@invMessage = replace(@invMessage, '%InviterID%', '')
 		@invMessage = replace(@invMessage, '%InviterID1%', '')
-		_discordBot_send_message(@invMessage, @discord['serverid'], 'log')
+		_discordBot_broadcast(@discord['serverid'], '--log', @invMessage);
 	}
 # Wait a few milliseconds to see if another bot insta-kicks first.
 	set_timeout(1000, closure(){
@@ -216,43 +216,20 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				}
 			}
 			if(@roleAdmin == true) {
-				_discordBot_send_message('Hello, and welcome back to '.@serverinfo['name'].'! While I was giving you your old roles back I detected a Server Admin role. For security reasons I\'m not awarding that role, Message the server moderation team to reinstate any server access.', @discord['serverid'], 'bot', @discord['userid'], 'dm')
+				_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Hello, and welcome back to '.@serverinfo['name'].'! While I was giving you your old roles back I detected a Server Admin role. For security reasons I\'m not awarding that role, Message the server moderation team to reinstate any server access.'));
 			}
-			try {
-				discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Previous Member Roles Restored')
-				_db_msg_Console(color(2).'Previous roles restored.', @discord['serverid'])
-			} catch(InsufficientPermissionException @ex) {
-				if(string_contains(@ex['message'], 'Can\'t modify a role with higher or equal highest role than yourself!')) {
-					@roleID = reg_match('[(]id=(.*)[)]', @ex['message'])[1]
-					@roleName = reg_match('(?>Role:)\\W?(?>Role:)?(.*)[(]', @ex['message'])[1]
-					@hr = import('DiscordBot.bot.roles.higher', array())
-					array_set(@hr, @roleID, @roleName)
-					export('DiscordBot.bot.roles.higher', @hr)
-					@errmsg = 'Restoring previous roles for <@'.@discord['userid'].'>: Role "'.@roleName.'" is higher or equal to my highest role, unable to issue previous roles.'
-					_discordBot_send_message(@errmsg, @discord['serverid'], 'log')
-					_db_msg_Console(@errmsg, @discord['serverid'], 'error')
-				} else {
-					_db_msg_Console('I do not have permissions to set roles for '.@discord['userid'], @discord['serverid'], 'error')
-					console(@ex)
-				}
-			} catch(NotFoundException @ex) {
-				@id = ''
-				foreach(@word in parse_args(@ex['message'])) {
-					if(string_starts_with(@word, '"')) { @id = replace(@word, '"', '') }
-				}
-				_db_msg_Console('Previous role ID '.color(12).@id.color('r').' does not exist!', @discord['serverid'])
+			@doSetRoles = _discordBot_set_roles(@discord['serverid'], @discord['userid'], 'set', @currentroles, 'Member Rejoined, Previous Roles Restored', 'Join: Restore Previous Roles');
+			if(@doSetRoles == true) {
+				_db_msg_Console(color(2).'Rejoin: Previous roles restored.', @discord['serverid'])
+			} else { 
+				_db_msg_Console(color(12).'Rejoin: Previous roles NOT restored.', @discord['serverid'])
 			}
 		} else {
 			if(is_array(@config['Welcome_Roles']) && @config['Welcome_Roles_Award'] == true) {
 				array_push_all(@currentroles, @config['Welcome_Roles'])
-				try {
-					discord_member_set_roles(@discord['serverid'], @discord['userid'], @currentroles, 'Add Welcome Roles');
-				} catch(NotFoundException @ex) {
-					@id = ''
-					foreach(@word in parse_args(@ex['message'])) {
-						if(string_starts_with(@word, '"')) { @id = replace(@word, '"', '') }
-					}
-					_db_msg_Console('Welcome role ID '.color(12).@id.color('r').' does not exist!', @discord['serverid'])
+				@doSetRoles = _discordBot_set_roles(@discord['serverid'], @discord['userid'], 'set', @currentroles, 'Join: Add Welcome Roles', 'Join: Welcome Roles');
+				if(@doSetRoles == false) {
+					_db_msg_Console(color(12).'New join: Welcome Roles were not saved.', @discord['serverid'])
 				}
 			}
 		}
@@ -456,7 +433,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		@leaveMsg = replace(@leaveMsg, '%Level%', @displays['level'])
 		@leaveMsg = replace(@leaveMsg, '%Inviter%', @displays['inviter'])
 		@leaveMsg = replace(@leaveMsg, '%PrevJoins%', @displays['leaves'])
-		_discordBot_send_message(@leaveMsg, @discord['serverid'], 'log')
+		_discordBot_broadcast(@discord['serverid'], '--log', @leaveMsg);
 	}
 	_db_msg_Console('Member '.color(12).'left: '.color(9).@userDisplay.color(8).' <@'.@discord['userid'].'> '.array_implode(@displays, ' ').color('r').@wmres, @discord['serverid'])
 #Remove Leaderboard entry, save entry if not a new member
