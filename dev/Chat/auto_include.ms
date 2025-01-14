@@ -58,14 +58,24 @@ proc _chat_load_config(@cfgtype) {
 		}
 	case 'IPBlacklist':
 		@serverConfig = import('Chat.config.Server', array('Write_Blacklist_IP_File': false))
-		export('Chat.config.IPBlacklist.load', time())
+		export('Chat.config.IPBlacklist.load', time());
 		if(array_index_exists(@loadcfg, 'Obnoxious')) {
 			@loadcfg['IP_Blacklist'] = array_merge(@loadcfg['IP_Blacklist'], array_keys(@loadcfg['Obnoxious']))
 			array_remove(@loadcfg, 'Obnoxious')
 		}
+		if(array_index_exists(@loadcfg, 'Spam_Player_Names')) {
+			foreach(@name: @IP in @loadcfg['Spam_Player_Names']) {
+				if(is_array(@IP)) {
+					@loadcfg['IP_Blacklist'] = array_merge(@loadcfg['IP_Blacklist'], @IP)
+				} else {
+					@loadcfg['IP_Blacklist'][] = @IP
+				}
+			}
+			array_remove(@loadcfg, 'Spam_Player_Names')
+		}
+		@loadcfg['IP_Blacklist'] = array_sort(array_unique(@loadcfg['IP_Blacklist'], false), 'REGULAR')
 		#Optional: publish Chat's blacklisted IP list to a file for use by your firewall.
 		if(@serverConfig['Write_Blacklist_IP_File'] == true) {
-			@loadcfg['IP_Blacklist'] = array_sort(array_unique(@loadcfg['IP_Blacklist'], false), 'REGULAR')
 			@ipFileList = array()
 			try {
 				@ipFileList = parse_args(replace(read(@serverConfig['Write_Blacklist_IP_File_Path']), '\n', ' '))
@@ -79,7 +89,8 @@ proc _chat_load_config(@cfgtype) {
 						@newip++
 					}
 				}
-				if(function_exists('write_file')) { write_file(@serverConfig['Write_Blacklist_IP_File_Path'], array_implode(@loadcfg['IP_Blacklist'], '\n'), 'OVERWRITE') console('[Chat] Added '.@newip.' IPs to blacklist.', false) }
+				_write_file(@serverConfig['Write_Blacklist_IP_File_Path'], array_implode(@loadcfg['IP_Blacklist'], '\n'), 'OVERWRITE')
+				if(@newip > 0) { console('[Chat] Added '.@newip.' IPs to firewall blacklist.', false) }
 			}
 		}
 	case 'Experimental':
@@ -601,24 +612,36 @@ proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore', boole
 proc _chat_lookup_ip_db(string @ip, boolean @raw = false) {
 	@serverConfig = import('Chat.config.Server')
 	@ip = reg_replace('[%][0]$', '', @ip)
-	if(time() > (import('Chat.GeoIP.update.check', 0) + 86400000) && function_exists('file_last_modified')) {
+	@noip = false
+	#neither.
+	if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) { @noip = true }
+	#v4:
+	if(string_contains(@ip, '.') && !string_contains(@ip, ':')) {
+		if(!is_numeric(replace(@ip, '.', ''))) { @noip = true }
+	} else {
+	#v6:
+		if(reg_count('[G-Zg-z]+', @ip) > 0) { @noip = true }
+	}
+	if(@noip == true) {
+		_chat_msg_Admins('Geo IP lookup: Invalid IP given', color(12).':  '.@ip, true)
+		return('NoIP')
+	}
+	if(function_exists('file_last_modified')) {
 		foreach(@file in array('GeoLite2-ASN.mmdb', 'GeoLite2-City.mmdb', 'GeoLite2-Country.mmdb')) {
-			if(file_last_modified(@serverConfig['LookupIP_DB_Dir'].'/'.@file) < (time() - 604800000)) {
-				http_request('https://github.com/P3TERX/GeoLite.mmdb/raw/download/'.@file, array('binary': true, 'blocking': true, 'success': closure(@data) {
-					export('Chat.GeoIP.update.check', time())
-					if(@data['error'] == true) {
-						if(@data['responseCode'] == 404) { console('File '.@file.' was not found!')	}
-						export('Chat.debug.http.error', @data)
-						return(false)
-					} else {
-						_write_file(@serverConfig['LookupIP_DB_Dir'].'/'.@file, @data['data'], 'OVERWRITE')
-						console(color(14).'Chat: GeoIP database file '.color(10).'updated: '.color(9).@file, false)
-					}
-				}));
-			}
+			@fm = file_last_modified(@serverConfig['LookupIP_DB_Dir'].'/'.@file);
+			if(@fm > 0 && @fm > (time() - 604800000)) { continue() }
+			http_request('https://github.com/P3TERX/GeoLite.mmdb/raw/download/'.@file, array('binary': true, 'blocking': true, 'success': closure(@data) {
+				export('Chat.GeoIP.update.check', time())
+				if(@data['error'] == true) {
+					if(@data['responseCode'] == 404) { console('File '.@file.' was not found!')	}
+					export('Chat.debug.http.error', @data)
+					return(false)
+				} else {
+					_write_file(@serverConfig['LookupIP_DB_Dir'].'/'.@file, @data['data'], 'OVERWRITE')
+					console(color(14).'Chat: GeoIP database file '.color(10).'updated: '.color(9).@file, false)
+				}
+			}));
 		}
-	}	
-	if(function_exists('is_dir')) {
 		if(!file_exists(@serverConfig['LookupIP_DB_Dir'].'/geoip.py')) {
 			http_request('https://raw.githubusercontent.com/cypher139/ch/release/dev/Chat/geoip.py', array('blocking': true, 'success': closure(@data) {
 				if(@data['error'] == true) {
@@ -637,16 +660,16 @@ proc _chat_lookup_ip_db(string @ip, boolean @raw = false) {
 		@shellreturn = json_decode(shell(array('python3', 'geoip.py', @ip), array('workingDir': @serverConfig['LookupIP_DB_Dir'])))
 	} catch(InsufficientPermissionException @ex) {
 		console(color(12).'Chat: GeoIP shell cannot start, make sure you have turned on the allow-shell setting in preferences.ini. \n'.@ex)
-		return(@ipreturn)
+		return('NoPerms')
 	} catch(ShellException @ex) {
 		console(color(12).'Chat: GeoIP: Shell command had an exception:\n'.@ex['message'])
-		return(@ipreturn)
+		return('Error')
 	} catch(IOException @ex) {
 		console('Chat: GeoIP shell: '.@ex)
-		return(@ipreturn)
+		return(false)
 	} catch(Exception @ex) {
 		console('Chat: GeoIP shell: '.@ex)
-		return(@ipreturn)
+		return(false)
 	}
 	# console(color(9).'GeoIP: '.color(14).@ip.' '.color(7).@shellreturn, false)
 	if(array_index_exists(@shellreturn, 'country')) { 
@@ -666,10 +689,9 @@ proc _chat_lookup_ip_db(string @ip, boolean @raw = false) {
 		array_set(@ipreturn, 'aso', @shellreturn['autonomous_system_organization'])
 	}
 	if(@raw == true) {
-		return(array('ip': @ipreturn, 'r': @shellreturn))
-	} else {
-		return(@ipreturn)
+		array_set(@ipreturn, 'raw', @shellreturn)
 	}
+	return(@ipreturn);
 }
 
 

@@ -1,0 +1,84 @@
+#(manual) Ignored & Blacklisted IP pings notification
+admin:/chatipreport [$] = >>>
+	@args = parse_args($)
+	@useMsg = false
+	if(array_contains(@args, 'post')) { 
+		@useMsg = true
+		array_remove_values(@args, 'post')
+	}
+	
+	@serverConfig = import('Chat.config.Server')
+	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+	foreach(@type: @typeName in array('ignore': 'Ignored', 'blacklist': 'Blacklisted')) {
+		@count = 0
+		@iplog = get_value('Server.pings.log.'.@type.'.IP')
+		if(!is_array(@iplog)) { continue(); }
+		if(array_size(@iplog) == 0) { continue(); }
+		@Message = color(6).'['.color(9).'Server'.color(6).'] '.color(14).simple_date('[MM/dd]', time()).color(7).' '.@typeName.' IP ping report:'
+		@checktime = (time() - 86400000)
+		@IPList = array()
+		foreach(@ip: @times in @iplog) {
+			if(@ip == 'ip' || @ip == 'isp') { continue(); }
+			if(array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @ip)) { continue(); }
+			@count = 0
+			foreach(@data in @times) {
+				if(@checktime > @data) { continue(); }
+				@count++			
+			}
+			if(@count > 0) {
+				@IPList[] = @ip
+				@s = ''
+				if(@count > 1) { @s = 's' }
+				@isp = ''
+				if(@serverConfig['Ping_Message_LookupIP_DB'] == true) {
+					@ipdb = _chat_lookup_ip_db(@ip);
+					if(is_array(@ipdb)) {
+						@listIPData = ''
+						@cnFlag = ''
+						if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
+						if(@ipdb['rcn'] != '') { @cnFlag = @cnFlag.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
+						# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+						if(@ipdb['asn'] != '') { 			
+							@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
+							if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
+								if(!array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
+									@listIPData .= ' <New ASN>'
+								}
+							}
+						}
+						if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
+						if(@listIPData == '') { @isp = '' } else { @isp = '['.@cnFlag.to_lower(@listIPData).']' }
+					}
+				}
+				if(@isp == '') {
+					if(array_index_exists(@iplog, 'isp', @ip)) {
+						@isp = '< '.@iplog['isp'][@ip].' >'
+					}
+				}
+				@Message = @Message.'\n'.'%format%'.color(9).@ip.color(7).'%format%  '.color(12).@count.color(7).' ping'.@s.'   '.color(3).@isp
+			}
+		}
+		if(@useMsg == true) {
+			if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
+				if(is_proc('_discordBot_broadcast')) { 
+					_discordBot_broadcast('bot', '--ping', replace(@Message, '%format%', '`'), 'bot', closure(@msgID){
+						@cacheID = import('DiscordBot.bot.msg.IP.Review')
+						if(!is_array(@cacheID)) { @cacheID = array() }
+						array_set(@cacheID, @msgID, @IPList)
+						array_set(@cacheID, 'lastedit', time())
+						if(array_size(@cacheID) > 400) {
+							@key = array_keys(@cacheID)
+							array_remove(@key, 'c')
+							array_remove(@cacheID, array_sort(@key, 'NUMERIC')[0])
+						}
+						export('DiscordBot.bot.msg.IP.Review', @cacheID)
+						return(true)
+					});
+				}
+			}
+			if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) { console(replace(@Message, '%format%', ''), false) }
+		}
+		
+		msg(replace(@Message, '%format%', ''))
+	}
+<<<

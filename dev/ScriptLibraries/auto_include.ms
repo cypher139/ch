@@ -1,5 +1,8 @@
-proc _write_file(@path, @content, @mode, @option) {
-	if(@path == '' || @content == '') { return(false) }
+proc _write_file(string @path, @content, @append, @option) {
+	if(length(@path) < 5) { return(false) }
+	if(!is_bytearray(@content)) {
+		if(length(@content) == 0) { return(false) }
+	}
 	@pf = '/'
 	@notpf = '\\\\'
 	@pathdrive = '/'
@@ -12,19 +15,20 @@ proc _write_file(@path, @content, @mode, @option) {
 	array_remove(@pathsplit, 0)
 	# console(@pathlayout)
 	# 1 = root path, 2 = /parent, 3 = /filename or current dir
-	if(@mode == '') { @mode = 'default' }
-	@mode = to_upper(@mode)
+	if(!@append) { @append = 'default' }
 	@create = false
-	switch(@mode[0]) {
-		case 'C':
-		@mode = 'OVERWRITE'
+	switch(to_lower(string(@append)[0])) {
+	case 'c':
+		@append = 'OVERWRITE'
 		@create = true
-		case 'O':
-		@mode = 'OVERWRITE'
-		case 'A':
-		@mode = 'APPEND'
-		default:
-		@mode = 'OVERWRITE'
+	case 'f':
+	case 'o':
+		@append = 'OVERWRITE'
+	case 't':
+	case 'a':
+		@append = 'APPEND'
+	default:
+		@append = 'OVERWRITE'
 	}
 	if(extension_exists('CHFiles')) {
 		#Create Parent folder(s)
@@ -60,7 +64,7 @@ proc _write_file(@path, @content, @mode, @option) {
 			return(false)
 		}
 		try {
-			write_file(@path, @content, @mode)
+			write_file(@path, @content, @append)
 			return(true)
 		} catch(Exception @ex) {
 			msg('File not written, check console logs.')
@@ -81,8 +85,16 @@ proc _write_file(@path, @content, @mode, @option) {
 			console('Create file: '.@ex)
 			return(false)
 		}
-		try {		
-			chf_write(@path, @content, @mode)
+		try {
+			if(is_bytearray(@content)) {
+				if(@option == 'gzip') {
+					chf_write_gzip_binary(@path, @content, @append)
+				} else {
+					chf_write_binary(@path, @content, @append)
+				}
+			} else {
+				chf_write(@path, @content, @append)
+			}
 			return(true)
 		} catch(Exception @ex) {
 			msg('File not written, check console logs.')
@@ -92,7 +104,7 @@ proc _write_file(@path, @content, @mode, @option) {
 	}
 	if(in_cmdline_mode()) {
 		try {
-			x_write(@path, @content, @mode)  
+			x_write(@path, @content, @append)  
 			return(true)
 		} catch(Exception @ex) {
 			msg('File not written, check console logs.')
@@ -101,7 +113,7 @@ proc _write_file(@path, @content, @mode, @option) {
 		}
 	} else {
 		msg('[Write file] No writing method was found.') 
-		console(color('c').'[Write file] No writing method was found. '.color(6).'Please install the CHFiles or CHFile extension.') 
+		console(color(12).'[Write file] No writing method was found. '.color(6).'Please install the CHFiles or CHFile extension.') 
 		return(false)
 	}
 }

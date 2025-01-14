@@ -1,6 +1,13 @@
-# Add listed IP(s) from cypher139's Chat script's IP ping messages to Chat's IP Blacklist file, upon using the configured emoji.
+# Autosave Keys
+@x8db = import('DiscordBot.db.save.keys', array())
+@x8db[] = 'bot.msg.IP.Review'
+export('DiscordBot.db.save.keys', array_unique(@x8db))
 
+export('DiscordBot.bot.msg.IP.Review', get_value('DiscordBot.bot.msg.IP.Review'))
+
+# Add listed IP(s) from cypher139's Chat script's IP ping messages to Chat's IP Blacklist file, upon using the configured emoji.
 bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority': 'MONITOR'), null, @discord) {
+	# custom emoji given with <>
 	if(is_null(import('Chat.config.dir'))) { die('Chat functions are not loaded, skipping') }
 	array_set(@discord, 'time', time());
 	@serverConfig = import('Chat.config.Server')
@@ -8,27 +15,30 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 # IP ping logs are only sent to the Primary guild.
 	if(@discord['serverid'] != @botconfig['Primary_Guild']) { die() }
 	@config = import('DiscordBot.config.'.@discord['serverid'])
-	if(!array_index_exists(@config, 'Special_Emoji')) { die() }
+	# if(!array_index_exists(@config, 'Special_Emoji')) { die() }
 	if(@discord['messageuserid'] != @botconfig['Bot_ID']) { die() }
 # Check if channel is the ping log channel or log Channel
 	@logChannel = ''
 	if(array_index_exists(@config, 'Ping_Log_Channel')) { @logChannel = @config['Ping_Log_Channel'] } else { @logChannel = @config['Log_Channel'] }
-	if(@discord['channelid'] == @logChannel || @discord['channel'] == @logChannel) {
+	if(@discord['channelid'] != @logChannel && @discord['channel'] != @logChannel) { die() }
 # Check if emoji used if the configured emoji to act upon
 	@doAction = '';
-		# remove encasing <>, in case it is not included in config.
-		foreach(@act: @em in @config['Special_Emoji']) {
-			if(reg_replace('[<>]', '', @discord['emoji']) == reg_replace('[<>]', '', @em)) { 
-				@doAction = @act
-				break();
-			}
-		}
-	} else {
-		die()
-	}
-	@cacheID = import('DiscordBot.Chat.msg.IP.Review')
-	if(!is_array(@cacheID)) { @cacheID = array() }
+	if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji'])) { @doAction = @config['Reaction_Actions'][@discord['emoji']]
+	} else if(array_index_exists(@config, 'Reaction_Actions', reg_replace('[0-9]', '', @discord['emoji']))) { @doAction = @config['Reaction_Actions'][reg_replace('[0-9]', '', @discord['emoji'])]
+	} else { die() }
 	
+		# remove encasing <>, in case it is not included in config.
+		# foreach(@act: @em in @config['Special_Emoji']) {
+			# if(reg_replace('[<>]', '', @discord['emoji']) == reg_replace('[<>]', '', @em)) { 
+				# @doAction = @act
+				# break();
+			# }
+		# }
+	# } else {
+		# die()
+	# }
+	@cacheID = import('DiscordBot.bot.msg.IP.Review')
+	if(!is_array(@cacheID)) { @cacheID = array() }
 #Actions
 	switch(string(@doAction)) {
 	case 'PingGetISP':
@@ -42,23 +52,25 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 		#Get IP datas
 			foreach(@ip in @cacheID[@discord['messageid']]) {
 				if(@serverConfig['Ping_Message_LookupIP_DB'] == true) {
-					@ipdb = _chat_lookup_ip_db(@ip)
-					@listIPData = '`'.@ip.'`: '
-					if(@ipdb['cn'] != '') { @listIPData = @listIPData.':flag_'.to_lower(@ipdb['cn']).':' }
-					if(@ipdb['rcn'] != '') { @listIPData = @listIPData.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
-					# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
-					if(@ipdb['asn'] != '') { 
-						@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
-						if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
-							if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-								@listIPData .= '<ASN has IPs on Blacklist>'
+					@ipdb = _chat_lookup_ip_db(@ip);
+					if(is_array(@ipdb)) {
+						@listIPData = '`'.@ip.'`: '
+						if(@ipdb['cn'] != '') { @listIPData = @listIPData.':flag_'.to_lower(@ipdb['cn']).':' }
+						if(@ipdb['rcn'] != '') { @listIPData = @listIPData.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
+						# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+						if(@ipdb['asn'] != '') { 
+							@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
+							if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
+								if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
+									@listIPData .= '<ASN has IPs on Blacklist>'
+								}
 							}
 						}
-					}
-					if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
-					if(@listIPData != '`'.@ip.'`: ') {
-						@msgIPData[] = @listIPData
-					}
+						if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
+						if(@listIPData != '`'.@ip.'`: ') {
+							@msgIPData[] = @listIPData
+						}
+					} else { @msgIPData[] = array('An error occcured, see bot server logs.') }
 				}
 			}
 		#Log
@@ -66,17 +78,18 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 			if(array_size(@cacheID[@discord['messageid']]) > 1) { @s = 's' }
 			_db_msg_Console(color(9).@discord['username'].color(10).' requested ISP data for IP'.@s.': '.color(7).array_implode(@cacheID[@discord['messageid']], ', '), @discord['serverid'])
 			@cacheID['i'][] = @discord['messageid']
-			export('DiscordBot.Chat.msg.IP.Review', @cacheID)
 			discord_request('PUT', 'channels/'.@discord['channelid'].'/messages/'.@discord['messageid'].'/reactions/%F0%9F%AA%AA/@me', null, closure(@ex) { @react = 1 }, closure(@ex) { console('reaction failed: \n'.@ex) });
 			_discordBot_broadcast(@discord['serverid'], '--ping', array('content': array_implode(@msgIPData, '\n'), 'reference_id': @discord['messageid']), 'bot');
 		} else {
 			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list!', @discord['serverid']), 'bot')
 			@cacheID['i'][] = @discord['messageid']
-			export('DiscordBot.Chat.msg.IP.Review', @cacheID)
 		}
+		array_set(@cacheID, 'lastedit', time())
+		export('DiscordBot.bot.msg.IP.Review', @cacheID)
 	case 'PingBlacklist':
 		if(!array_index_exists(@cacheID, 'c')) { array_set(@cacheID, 'c', array()) }
 		if(!array_index_exists(@cacheID, 'r')) { array_set(@cacheID, 'r', array()) }
+		array_set(@cacheID, 'lastedit', time())
 	# Check if cache reports the message was already acted upon
 		if(array_contains(@cacheID['c'], @discord['messageid'])) { die('c') }
 	# Action IPs
@@ -115,21 +128,22 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 			@cacheID['c'][] = @discord['messageid']
 			if(array_size(@reviewip) > 0) {
 				_discordBot_broadcast(@discord['serverid'], '--ping', array('content': 'These IPs have connected with a player name; If you wish to confirm blacklisting these IPs, *react to this message*.'.@userdisplay, 'reference_id': @discord['messageid']), 'bot', closure(@msgID){
-					@cacheID = import('DiscordBot.Chat.msg.IP.Review')
+					@cacheID = import('DiscordBot.bot.msg.IP.Review')
 					if(!is_array(@cacheID)) { @cacheID = array() }
 					if(!array_index_exists(@cacheID, 'r')) { array_set(@cacheID, 'r', array()) }
 					array_set(@cacheID, @msgID, array_keys(@reviewip))
+					array_set(@cacheID, 'lastedit', time())
 					@cacheID['r'][] = @msgID;
 					if(array_size(@cacheID) > 400) {
 						@key = array_keys(@cacheID)
 						array_remove(@key, 'c')
 						array_remove(@cacheID, array_sort(@key, 'NUMERIC')[0])
 					}
-					export('DiscordBot.Chat.msg.IP.Review', @cacheID)
+					export('DiscordBot.bot.msg.IP.Review', @cacheID)
 					return(true)
 				});
 			}
-			export('DiscordBot.Chat.msg.IP.Review', @cacheID)
+			export('DiscordBot.bot.msg.IP.Review', @cacheID)
 			discord_request('PUT', 'channels/'.@discord['channelid'].'/messages/'.@discord['messageid'].'/reactions/%E2%9C%85/@me', null, closure(@ex) { @react = 1 }, closure(@ex) { console('reaction failed: \n'.@ex) });
 		# Reload file - registers for auto loading.
 		# -- File loading triggers the add to blacklist block file for host system use.
@@ -139,7 +153,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 		} else {
 			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list! You\'ll need to manually add the IP address in question to the bot\'s blacklist file.'), 'bot');
 			@cacheID['c'][] = @discord['messageid']
-			export('DiscordBot.Chat.msg.IP.Review', @cacheID)
+			export('DiscordBot.bot.msg.IP.Review', @cacheID)
 		}
 	default:
 		die()

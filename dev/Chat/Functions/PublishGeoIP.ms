@@ -1,85 +1,16 @@
-# Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
-admin:/geoiplookup [$] = >>>
-	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
-	@raw = false
-	@args = parse_args($)
-	if(array_contains(@args, 'raw')) { 
-		@raw = true
-		array_remove_values(@args, 'raw')
-	}
-	@ipdb = array()
-	@msgIPData = array(color(14).'ISP Database Lookup Results:')
-	foreach(@ip in @args) {
-		if(@ip == 'raw') { continue() }
-		if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
-			msg(color(12).'Not a valid IP: '.@ip)
-			continue()
-		}
-		@listIPData = color(14).'['.@ip.'] '.color(3)
-		@ipdb = _chat_lookup_ip_db(@ip, @raw);
-		if(!is_array(@ipdb)) { 
-			switch(string(@ipdb)) {
-				case 'NoPerms':
-					die(color(12).'This command requires configuration to use, see console logs.')
-				case 'NoIP':
-					msg('Given IP '.@ip.' is invalid.')
-					continue()
-				default:
-					die(color(12).'An error occured, see console logs.')
-				}
-		}
-		if(array_index_exists(@blacklistIP, 'IP_Blacklist')) {
-			if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
-				@listIPData .= ' <<IP present on blacklist>>'
-			}
-		}
-		if(@raw == true) {
-			msg(color(14).'['.@ip.'] '.color(7).@ipdb['raw']);
-		}
-		if(@ipdb['c'] != '') { @listIPData .= ' Country: '.@ipdb['c'] }
-		if(@ipdb['cn'] != '') { @listIPData .= ' ('.@ipdb['cn'].') ' }
-		if(@ipdb['rc'] != '') { @listIPData .= ' '.'Registered Country: '.@ipdb['rc'] }
-		if(@ipdb['rcn'] != '') { @listIPData .= ' ('.@ipdb['rcn'].') ' }
-		# if(@ipdb['asn'] != '') { @listIPData .= ' '.'ASN: '.@ipdb['asn'] }
-		if(@ipdb['asn'] != '') { 
-			@listIPData .= ' '.'ASN: '.@ipdb['asn']
-			if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
-				if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-					@listIPData .= ' <ASN present on blacklist>'
-				}
-			}
-		}
-		if(@ipdb['aso'] != '') { @listIPData .= ' '.color(10).'ISP: '.@ipdb['aso'] }
-		if(@listIPData != color(14).'['.@ip.'] '.color(3)) {
-			@msgIPData[] = @listIPData
-		}
-	}
-	msg(array_implode(@msgIPData, '\n'))
-<<<
 # Generate reports about which ASNs and countries are listed in Chat's IP Blacklist file, using the GeoIP shell command lookup.
-# Auto-Generate Blacklist config file for new IPs, for manual review and upload to main IP Blacklist file.
-admin:/geoipasnreport [$] = >>>
-x_new_thread('ChatASNReport'.time(), closure(){
+# Auto-Generate Blacklist config file for new IPs, for publish to Git
+set_cron('@daily', closure(){
+x_new_thread('ChatGitPublish'.time(), closure(){
 #threaded due to shell call processing ~25 IPs/second
 	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 	@checkIP = array_sort(array_unique(@blacklistIP['IP_Blacklist'], false), 'REGULAR');
+	@serverConfig = import('Chat.config.Server')
+	if(!array_index_exists(@serverConfig, 'Git_Dir')) { die() }
 	@time = time();
 	@raw = false
-	@args = parse_args($)
 	@scan = true
-	@genipcfg = false
-	foreach(@arg in @args) {
-		switch(@arg) {
-		case 'r':
-		case 'report':
-			@scan = false
-		case 'g':
-		case 'gen':
-		case 'generate':
-			@genipcfg = true
-		}
-	}
-	@consoleReport = true
+	@consoleReport = false
 	@ipdb = array()
 	@asnlist = array()
 	@asnc = array()
@@ -97,24 +28,26 @@ x_new_thread('ChatASNReport'.time(), closure(){
 	} catch(Exception @ex) {
 		_chat_msg_Admins(color(12).'[Chat] There was an error with the ASN ISP Nicknames file. ', @ex['message'], true) 
 	}
+	@prevcount = get_value('Chat.IPBlacklist.Publish.count')
+	if(array_size(@checkIP) == @prevcount) { return(false) }
 	if(@scan == true) {
 		foreach(@i: @ip in @checkIP) {
-			if(@i % 100 == 0) { msg(color(8).'[Chat] Processed '.@i.' of '.array_size(@checkIP).' IPs.'); }
+			if(@i % 100 == 0) { console(color(8).'[Chat] Processed '.@i.' of '.array_size(@checkIP).' IPs.', false); }
 			if(@ip == 'raw') { continue() }
 			if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
-				msg(color(12).'[Chat] Not a valid IP: '.@ip)
+				console(color(12).'[Chat] Not a valid IP: '.@ip)
 				continue()
 			}
 			@listIPData = color(14).'['.@ip.'] '.color(3)
 			@ipdb = _chat_lookup_ip_db(@ip);
 			if(!is_array(@ipdb)) { die(color(12).'An error occured with the Geo IP scanner, see logs.') }
 			if(@ipdb['asn'] == '') { 
-				msg(color(12).@ip.': no ASN!')
+				console(color(12).@ip.': no ASN!', false)
 				array_set(@ipdb, 'asn', 'None')
 				array_set(@ipdb, 'aso', 'Unknown: No Data Given')
 				array_set(@ipdb, 'c', '?')
 			}
-			if(@ipdb['c'] == '') { msg(color(12).@ip.': no country!') }
+			if(@ipdb['c'] == '') { console(color(12).@ip.': no country!', false) }
 			if(!array_index_exists(@asnc, @ipdb['asn'])) { array_set(@asnc, @ipdb['asn'], array()) }
 			if(!array_index_exists(@asnrc, @ipdb['asn'])) { array_set(@asnrc, @ipdb['asn'], array()) }
 			if(!array_index_exists(@asnip, @ipdb['asn'])) { array_set(@asnip, @ipdb['asn'], array()) }
@@ -137,6 +70,7 @@ x_new_thread('ChatASNReport'.time(), closure(){
 		@asnrc = @data[3]
 		@asnip = @data[4]
 	}
+	store_value('Chat.IPBlacklist.Publish.count', array_size(@checkIP))
 	@countries = array()
 	@asncnlist = array()
 	@asnrcnlist = array()
@@ -188,7 +122,7 @@ x_new_thread('ChatASNReport'.time(), closure(){
 	if(array_size(@checkIP) != @ipcount) { @ipsizecolor = 12 }
 	@reportmsg[] = color(3).'IPs: '.color(@ipsizecolor).@ipcount.color(3).', ASNs: '.array_size(@asnlist).','.color(6).' Countries: '.array_size(@countries).','.color(13).' Reg Countries: '.array_size(@rcountries)
 	store_value('Chat.debug.results.asn', array(@ipcount, @asnlist, @asnc, @asnrc, @asnip, @countries, @rcountries))
-	if(@consoleReport) { msg(array_implode(@reportmsg, '\n')) }
+	if(@consoleReport) { console(array_implode(@reportmsg, '\n'), false) }
 # More Detail CSV reports:
 	@asnipreport = 'ASN, IP Addresses'
 	@asncnreport = 'Country Code, ASNs'
@@ -210,9 +144,10 @@ x_new_thread('ChatASNReport'.time(), closure(){
 		@asnrcnreport .= '\n'.@cn.','.array_implode(@asns, ',')
 	}
 	array_sort(@jsoncfg['IP_Blacklist'], 'REGULAR');
-#Manual_Generate new blacklist for IP_Blacklist config file
-	if(@genipcfg) {
-		@writeDir = import('Chat.logs.dir')
+#Auto_Generate new blacklist for IP_Blacklist config file
+	@prevhash = get_value('Chat.IPBlacklist.Publish.hash')
+	if(sha1(@jsoncfg['IP_Blacklist']) != @prevhash) {
+		@writeDir = @serverConfig['Git_Dir']
 		_write_file(@writeDir.'/Report.txt', strip_colors(array_implode(@reportmsg, '\n')), 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-IP.csv', @asnipreport, 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-IP-10.csv', 'Known ASNs with over 10 IPs blacklisted\n'.array_implode(@asnipover10, '\n'), 'overwrite');
@@ -232,14 +167,33 @@ x_new_thread('ChatASNReport'.time(), closure(){
 			_chat_msg_Admins(color(12).'[Chat] There was an error with the Template-IP Config file. ', @ex['message'], true) 
 			die()
 		}
+		_write_file(@writeDir.'/Reports/Obnoxious_IPs.yml', yml_encode(yml_decode(@mancfg)['Obnoxious'], true), 'overwrite');
+		_write_file(@writeDir.'/Reports/IP_Block_Blacklist.yml', yml_encode(yml_decode(@mancfg)['IP_Block_Blacklist'], true), 'overwrite');
 		@extracfg = array('Discovered_ASNs': array_keys(@asnip), 'Auto_Blacklist_ASNs': @asnipover10)
 		if(array_index_exists(@asnip, 'None')) { array_set(@extracfg, 'Unknown_ASN_IPs', @asnip['None']) }
 		@jsoncfg = array_merge(@jsoncfg, yml_decode(@mancfg), @extracfg)
 		_write_file(@writeDir.'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
-		# _write_file(import('Chat.config.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
+		_write_file(import('Chat.config.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		_write_file(@writeDir.'/IPBlacklist.json', json_encode(@jsoncfg), 'overwrite');
 		_write_file(@writeDir.'/block.txt', array_implode(@jsoncfg['IP_Blacklist'], '\n'), 'Overwrite');
-		msg(color(8).'[Chat] Wrote report files to Logs folder, please review the new IP Blacklist config.')
+		console(color(8).'[Chat] Wrote report files to Git folder.', false)
+		try {
+			@shellreturn = shell(array('./gitupload.sh'), array('workingDir': @writeDir))
+			console(color(3).'[Chat] Published new Git commit: '.color('r').@shellreturn, false)
+			store_value('Chat.IPBlacklist.Publish.hash', sha1(@jsoncfg['IP_Blacklist']))
+		} catch(InsufficientPermissionException @ex) {
+			console(color(12).'Chat: GeoIP Git shell cannot start, make sure you have turned on the allow-shell setting in preferences.ini. \n'.@ex)
+			return('NoPerms')
+		} catch(ShellException @ex) {
+			console(color(12).'Chat: GeoIP Git Shell command had an exception:\n'.@ex['message'])
+			return('Error')
+		} catch(IOException @ex) {
+			console('Chat: GeoIP Git shell: '.@ex)
+			return(false)
+		} catch(Exception @ex) {
+			console('Chat: GeoIP Git shell: '.@ex)
+			return(false)
+		}
 	}
 });
-<<<
+});

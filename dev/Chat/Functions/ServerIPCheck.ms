@@ -32,35 +32,35 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 				}
 			}
 			@players = '%f'.array_implode(@otherplayers, ', ').'%f'
-			@adminMsg = color(7).'%f'.@login['player'].'%f tried to connect with IP %f'.color(9).@login['ip'].color(7).'%f; however '.@serverConfig['Concurrent_Accs_IP'].' accounts are already connected using the same IP address: '.@players
+			@adminMsg = color(7).'%f'.@login['player'].'%f tried to connect with IP %f'.color(9).@ip.color(7).'%f; however '.@serverConfig['Concurrent_Accs_IP'].' accounts are already connected using the same IP address: '.@players
 		}
 	# If many accounts have previously connected using the same IP address, should we automatically kick joins from this IP?
 		if(@serverConfig['Kick_Multiple_Accs_IP'] == true) {
-			if(array_index_exists(@ipdata, @ip) && !array_index_exists(@serverConfig['Kick_Multiple_Accs_IP_Whitelist'], @login['ip'])) {
+			if(array_index_exists(@ipdata, @ip) && !array_index_exists(@serverConfig['Kick_Multiple_Accs_IP_Whitelist'], @ip)) {
 				if(array_size(@ipdata[@ip]) > @serverConfig['Allowed_Account_Amount']) {
 					@kickPlayer = true
 					@kickMsg = 'This server does not allow players to use multiple Alternate Accounts.'
 					@kickType = @kickType.'2'
-					@adminMsg = color(7).'%f'.@login['player'].'%f tried to connect; this server does not allow more than '.@serverConfig['Allowed_Account_Amount'].' accounts using the same IP address. (IP: %f'.color(9).@login['ip'].'%f) '.color(7).@playersMsg
+					@adminMsg = color(7).'%f'.@login['player'].'%f tried to connect; this server does not allow more than '.@serverConfig['Allowed_Account_Amount'].' accounts using the same IP address. (IP: %f'.color(9).@ip.'%f) '.color(7).@playersMsg
 				}
 			}
 		}
 	}
 # Blacklisted IPs: Disallow Login
 # Note that this does not handle 'lost connection' logins, as CH events do not fire that early in login process
-	if(array_contains(@blacklistIP['IP_Blacklist'], @login['ip'])) {
+	if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
 		@kickPlayer = true
 		@kickMsg = 'You have been Banned.'
 		@kickType = @kickType.'3'
-		@adminMsg = color(7).@login['player'].' tried to connect using '.color(12).'Blacklisted IP address:  '.color(9).@login['ip'].' '.color(7).@playersMsg
+		@adminMsg = color(7).@login['player'].' tried to connect using '.color(12).'Blacklisted IP address:  '.color(9).@ip.' '.color(7).@playersMsg
 	}
 	foreach(@block in @blacklistIP['IP_Block_Blacklist']) {
 		@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
-		if(string_starts_with(string(@login['ip']), @startBlock)) {
+		if(string_starts_with(string(@ip), @startBlock)) {
 			@kickPlayer = true
 			@kickMsg = 'You have been Banned.'
 			@kickType = @kickType.'4'
-			@adminMsg = color(7).@login['player'].' tried to connect using IP address '.color(9).@login['ip'].color(7).' that is part of a '.color(12).'Blacklisted IP Block. '.color(7).@playersMsg
+			@adminMsg = color(7).@login['player'].' tried to connect using IP address '.color(9).@ip.color(7).' that is part of a '.color(12).'Blacklisted IP Block. '.color(7).@playersMsg
 		}
 	}
 #Handle Player Kick and Admin messages
@@ -68,7 +68,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 		consume();
 		modify_event('kickmsg', @kickMsg);
 		modify_event('result', 'KICK_OTHER');
-		if(is_proc('_primus_database_add')) { _primus_database_add(@login['player'], 'ip', @login['ip'], @login['hostname']) }
+		if(is_proc('_primus_database_add')) { _primus_database_add(@login['player'], 'ip', @ip, @login['hostname']) }
 		if(@serverConfig['Ping_Message_Discord'] == true) { 
 			if(is_proc('_discordBot_broadcast')) { _discordBot_broadcast('bot', '--admin', @msgPrefix.'['.@kickType.'] '.replace(@adminMsg, '%f', '`')) }
 		}

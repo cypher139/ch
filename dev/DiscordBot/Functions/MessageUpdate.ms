@@ -1,5 +1,5 @@
 #Notify users of message Updates and reactions, and update bot message caches accordingly.
-proc _db_update_message_cache(@discord, @updateType) {
+proc _db_update_message_cache(@discord, @updateType, @isaction) {
 	@return = array()
 	@msgID = 0
 	@msgUserID = @discord['userid']
@@ -17,7 +17,7 @@ proc _db_update_message_cache(@discord, @updateType) {
 	@idtime = rshift(@discord['id'], 22) + 1420070400000
 	@time = time()
 	@diff = @time - @idtime
-	if(@diff > 2000) { console('updproc: '.@discord) }
+	if(@diff > 2000 && @isaction != true) { console('updproc: '.@discord) }
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	if(array_index_exists(@discord, 'channeltype')) {
@@ -273,18 +273,17 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 	if(array_index_exists(@config, 'Ping_Log_Channel')) { @logChannel = @config['Ping_Log_Channel'] } else { @logChannel = @config['Log_Channel'] }
 	if(@discord['messageuserid'] == @botconfig['Bot_ID']) {
 		if(@discord['channelid'] == @logChannel || @discord['channel'] == @logChannel) {
-			foreach(@act: @em in @config['Special_Emoji']) {
-				if(reg_replace('[<>]', '', @discord['emoji']) == reg_replace('[<>]', '', @em)) {
-					@isIPemoji = true
-					break();
-				}
+			if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji'])) { 
+				@isIPemoji = true
+			} else if(array_index_exists(@config, 'Reaction_Actions', reg_replace('[0-9]', '', @discord['emoji']))) {
+				@isIPemoji = true
 			}
 		}
 	}
 	# if(@isIPemoji == false) { console('bind-ra:'.@discord) }
 	array_set(@discord, 'time', time());
 	# Update Recent Messages with current data
-	@saveMsg = _db_update_message_cache(@discord, 'addreaction')
+	@saveMsg = _db_update_message_cache(@discord, 'addreaction', @isIPemoji)
 	if(@isIPemoji == true) { die() }
 	@addindex = ''
 	if(@saveMsg['addui'] == true) { @addindex = color(10).'+ui'.color('r') }
@@ -306,18 +305,17 @@ bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 
 	if(array_index_exists(@cacheMsgs, 'messages', @discord['messageid'])) {
 		if(@cacheMsgs['messages'][@discord['messageid']]['userid'] == @botconfig['Bot_ID']) {
 			if(@discord['channelid'] == @logChannel || @discord['channel'] == @logChannel) {
-				foreach(@act: @em in @config['Special_Emoji']) {
-					if(reg_replace('[<>]', '', @discord['emoji']) == reg_replace('[<>]', '', @em)) {
-						@isIPemoji = true
-						break();
-					}
+				if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji'])) { 
+					@isIPemoji = true
+				} else if(array_index_exists(@config, 'Reaction_Actions', reg_replace('[0-9]', '', @discord['emoji']))) {
+					@isIPemoji = true
 				}
 			}
 		}
 	}
 	array_set(@discord, 'time', time());
 	# Update Recent Messages with current data
-	@saveMsg = _db_update_message_cache(@discord, 'removereaction')
+	@saveMsg = _db_update_message_cache(@discord, 'removereaction', @isIPemoji)
 	if(@isIPemoji == true) { die() }
 	@addindex = ''
 	if(@saveMsg['addui'] == true) { @addindex = color(10).'+ui'.color('r') }

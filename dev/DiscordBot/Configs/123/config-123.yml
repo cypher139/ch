@@ -1,6 +1,6 @@
 # discordBot Guild Configuration
 # Config version number
-v: 13
+v: 14
 # General admin
 Server_Nickname: "Your Server"
 #
@@ -23,11 +23,14 @@ Console_Debug: false
 # Your channel for notification of IP address pings on the Minecraft server.
 # Ping_Log_Channel: bot-logs
 # Certain modules may react to these emojis being used:
-Special_Emoji:
+Reaction_Actions:
+#Type using the Formats:
+#Default emoji:  🪪: action
+#custom Emoji:  Emoji:numericID: action
 # What emoji should be used on a ping message to get ISP data from database? (requires shell command)
-  PingGetISP: <no:12345>
+   🪪: PingGetISP
 # What emoji should be used on a ping message to add that IP to Chat's IP Blacklist file?
-  PingBlacklist: <no:12345>
+  :Peacemaker:12345: PingBlacklist
 #
 # Member Joins and Leaves
 # Send join or Leave log uypon a member join or leave?

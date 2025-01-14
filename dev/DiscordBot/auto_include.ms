@@ -228,6 +228,17 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 		@guildNick = import('DiscordBot.Servers.Nicknames', array())
 		array_set(@guildNick, @cfgtype, @loadcfg['Server_Nickname'])
 		export('DiscordBot.Servers.Nicknames', @guildNick)
+		# Emojis: add <> to custom if not present
+		if(array_index_exists(@loadcfg, 'Reaction_Actions')) {
+			@set1 = array()
+			foreach(@em: @act in @loadcfg['Reaction_Actions']) {
+				if(string_contains(@em, ':') && reg_count('[<>]', @em) == 0) {
+					@em = '<'.@em.'>'
+				}
+				array_set(@set1, @em, @act)
+			}
+			@loadcfg['Reaction_Actions'] = @set1
+		}
 	} else {
 		switch(string(@cfgtype)) {
 		case 'Server':
@@ -2726,7 +2737,11 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	}
 	@returnMsg['prefix'] = array('confirm', true)
 	if(is_string(@CmdReturn)) {
+		@sendReturnMsg = true
 		switch(@CmdReturn) {
+		case 'NoMsg':
+			@return = true
+			@sendReturnMsg = false
 		case 'NoCmd':
 			@returnMsg['content'] = 'A required command module is not installed.'
 			@returnMsg['prefix'][1] = 1
@@ -2762,9 +2777,9 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 			@returnMsg['prefix'] = 'discord'
 			@return = true
 		}
-		_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @returnMsg, 'bot', @afterMsg)
+		if(@sendReturnMsg) { _discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @returnMsg, 'bot', @afterMsg) }
 	} else if(is_array(@CmdReturn)) {
-		if(array_index_exists(@CmdReturn, 'content') || array_index_exists(@CmdReturn, 'embeds')) {
+		if(array_index_exists(@CmdReturn, 'content') || array_index_exists(@CmdReturn, 'embed') || array_index_exists(@CmdReturn, 'embeds')) {
 			if(array_index_exists(@CmdReturn, 'dm')) {
 				switch(string(@CmdReturn['dm'])) {
 				case 'true':
@@ -2787,9 +2802,13 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 				array_remove(@CmdReturn, 'MCCmd')
 			}
 			if(array_index_exists(@CmdReturn, 'MC')) {
-				_db_mc_broadcast(@CmdReturn['MC'], @CmdReturn['players'])
+				@players = 'players'
+				if(array_index_exists(@CmdReturn, 'players')) {
+					@players = @CmdReturn['players']
+					array_remove(@CmdReturn, 'players')
+				}
+				_db_mc_broadcast(@CmdReturn['MC'], @players)
 				array_remove(@CmdReturn, 'MC')
-				array_remove(@CmdReturn, 'players')
 			}
 			if(array_index_exists(@config, 'CMD_Message_Action')) {
 				if(to_lower(@config['CMD_Message_Action']) == 'reply') {
@@ -2856,7 +2875,7 @@ proc _discordBot_init_cmd_list(@test) {
 }
 
 
-proc _discordBot_cmd_proc_finduserID(@target, @discord) {
+proc _discordBot_cmd_proc_finduserID(@target, @discord, @nodm = false) {
 	@botconfig = import('DiscordBot.config.Bot')
 	if(!array_index_exists(@discord, 'serverid')) { array_set(@discord, 'serverid', @botconfig['Primary_Guild']) }
 	if(!array_index_exists(@discord, 'userid')) { array_set(@discord, 'userid', null) }
@@ -2921,21 +2940,27 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord) {
 			@targetmatches = _array_string_contains(array_keys(@membernamesDisplay), @target, '', 'array')
 			@useDisplay = true
 		}
-		if(array_index_exists(@discord, 'username') && array_index_exists(@discord, 'nickname')) {
-			if(equals_ic(@target, @discord['username']) || equals_ic(@target, @discord['nickname'])) {
-				return('self')
-			}
+		if(array_index_exists(@discord, 'username')) {
+			if(equals_ic(@target, @discord['username'])) { return('self') }
 		}
-		_db_msg_Console('finduserID: matches: '.@targetmatches, @discord['serverid'], 'debug')
+		if(array_index_exists(@discord, 'nickname')) {
+			if(equals_ic(@target, @discord['nickname'])) { return('self') }
+		}
+		if(array_index_exists(@discord, 'displayname')) {
+			if(equals_ic(@target, @discord['displayname'])) { return('self') }
+		}
+		_db_msg_Console('finduserID: matches ('.array_size(@targetmatches).'): '.@targetmatches, @discord['serverid'], 'debug')
 		
 		if(!array_index_exists(@targetmatches, 0)) {
 			_db_msg_Console('Could not find user ID for '.@target.'!', @discord['serverid'])
 			return('notfound')
 		} else if(array_index_exists(@targetmatches, 1)) {
-			if(@discord['userid'] != null) {
-				discord_private_message(@discord['userid'], 'I found multiple users; I\'m not sure which one you meant to apply this command to. Users Matched: \n'.array_implode(@targetmatches, ', '))
+			if(@discord['userid'] != null && @nodm == false) {
+				@dmMsg = 'I found multiple users with that search; I\'m not sure which one you meant to apply this command to.'				
+				if(length(array_implode(@targetmatches, ', ')) < 800) {	@dmMsg .= ' Users Matched ('.array_size(@targetmatches).'):\n'.array_implode(@targetmatches, ', ') }
+				_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': @dmMsg), 'bot')
 			}
-			_db_msg_Console('finduserID: Found multiple users, Users Matched: \n'.array_implode(@targetmatches, ', '), @discord['serverid'])
+			_db_msg_Console('finduserID: Matched Multiple Users ('.array_size(@targetmatches).'):\n'.array_implode(@targetmatches, ', '), @discord['serverid'], 'debug')
 			return('multiple')
 		} else if(@useDisplay == true) {
 			return(@membernamesDisplay[array_implode(@targetmatches, '')])

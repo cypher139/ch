@@ -276,13 +276,93 @@ proc _discordBot_cmd_asremove(@discord, @args) {
 	return('Removed '.@userid.' ('.@username.') from Anti-Spam restrictions.')
 }
 
+# Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
+proc _discordBot_cmd_geoiplookup(@discord, @args) {
+	# Requires Chat script and working shell command.
+	if(!is_proc('_chat_lookup_ip_db')) { return('NoCmd') }
+	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+	@raw = false
+	if(array_contains(@args, 'raw')) { 
+		@raw = true
+		array_remove_values(@args, 'raw')
+	}
+	@ipdb = array()
+	@rawIPData = array()
+	@msgIPData = array('ISP Database Lookup Results:')
+	foreach(@i: @ip in @args) {
+		if(@ip == 'raw') { continue() }
+		if(@i > 5) { @msgIPData[] = 'Sorry, this command only supports a few IP addresses at a time.' break() }
+		@noip = false
+		#contains both or neither octet dividers.
+		if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) { @noip = true }
+		#v4:
+		if(string_contains(@ip, '.') && !string_contains(@ip, ':')) {
+			if(!is_numeric(replace(@ip, '.', ''))) { @noip = true }
+		} 
+		#v6:
+		if(!string_contains(@ip, '.') && string_contains(@ip, ':')) {
+			if(reg_count('[G-Zg-z]+', @ip) > 0) { console(reg_match_all('[G-Zg-z]+', @ip)) @noip = true }
+			@ip = reg_replace('[%][0]$', '', @ip)
+		}
+		if(@noip == true) {
+			@userCheck = 'string'
+			@userCheck = _discordBot_cmd_proc_finduserID(@ip, @discord, true);
+			if(is_numeric(@userCheck) || @userCheck == 'bot' || @userCheck == 'self') { 
+				_db_msg_Console(color(8).'Geo IP lookup: '.color(4).@discord['username'].' tried to doxx fellow Discord user '.@ip.'.', @discord['serverid'], 'warning')
+				@say = array('https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif', 'https://imgs.xkcd.com/comics/wisdom_of_the_ancients.png', 'https://imgs.xkcd.com/comics/second.png', 'https://imgs.xkcd.com/comics/security.png')
+				@footer = 'You thought you had me on that one, didn\'t you? no. XD'
+				if(@userCheck == 'bot') { @footer = 'Haha, I don\'t give up that easily.' }
+				if(@userCheck == 'self') { @footer = 'You were really going to go that far, huh?' }
+				return(array('MC': '[Server] Discordian "'.@discord['username'].'" tried to trick me! It was not effective.', 'embed': array('footer': array('text': @footer), 'image': array_get_rand(@say))))
+			}
+			_db_msg_Console(color(12).'Geo IP lookup: Invalid IP given: '.@ip, @discord['serverid'], 'warning')
+			continue()
+		}
+		@listIPData = '`'.@ip.'` '
+		@ipdb = _chat_lookup_ip_db(@ip, @raw);
+		if(array_index_exists(@blacklistIP, 'IP_Blacklist')) {
+			if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
+				@listIPData .= ' <<IP present on blacklist>>'
+			}
+		}
+		if(!is_array(@ipdb)) { return('Error') }
+		if(@raw == true) {
+			@listIPData .= @ipdb['raw']
+		}
+		if(@raw == true) { @rawIPData[] = @ip.@ipdb['raw'] }
+		if(@ipdb['c'] != '') { @listIPData .= ' Country: '.@ipdb['c'] }
+		if(@ipdb['cn'] != '') { @listIPData .= ' :flag_'.to_lower(@ipdb['cn']).':' }
+		if(@ipdb['rc'] != '') { @listIPData .= ' Registered Country: '.@ipdb['rc'] }
+		if(@ipdb['rcn'] != '') { @listIPData .= ' (:flag_'.to_lower(@ipdb['rcn']).':)' }
+		# if(@ipdb['asn'] != '') { @listIPData .= ' '.'ASN: '.@ipdb['asn'] }
+		if(@ipdb['asn'] != '') { 
+			@listIPData .= ' ASN: '.@ipdb['asn']
+			if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
+				if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
+					@listIPData .= ' <ASN present on blacklist>'
+				}
+			}
+		}
+		if(@ipdb['aso'] != '') { @listIPData .= ' ISP: '.to_lower(@ipdb['aso']) }
+		if(@listIPData != '`'.@ip.'` ') {
+			@msgIPData[] = @listIPData
+		}
+	}
+	if(@raw == true) {
+		_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': array_implode(@rawIPData, '\n')), 'bot')
+	}
+	if(array_size(@msgIPData) < 2) { @msgIPData[] = '`None Found`' }
+	return(array_implode(@msgIPData, '\n'))
+}
+
 
 #Add Commands to list
 @c3lx = import('DiscordBot.Command.List', array())
 @mIu7 = array(	
 	'whois': array('alias': array('who', 'is'), 'admin': false, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_whois(@discord, @args)); }),
 	'welcomerolesfinder': array('alias': array('wrf'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_wrf(@discord, @args)); }),
-	'asremove': array('alias': array('as'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_asremove(@discord, @args)); })
+	'asremove': array('alias': array('as'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_asremove(@discord, @args)); }),
+	'geoiplookup': array('alias': array('geoip'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_geoiplookup(@discord, @args)); })
 );
 @c3lx = array_merge(@c3lx, @mIu7)
 export('DiscordBot.Command.List', @c3lx)
