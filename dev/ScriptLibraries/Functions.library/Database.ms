@@ -60,7 +60,7 @@ switch(@action){
 		export(@args[0], @args[1..])
 		@v = import(@args[0])
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
-		@returnmsg = @returnmsg.'\n'.@prefix.color(6).'Saved '.color(3).@type.color(6).': '.color(7).@v
+		@returnmsg .= '\n'.@prefix.color(6).'Saved '.color(3).@type.color(6).': '.color(7).@v
 		return(@returnmsg)
 
 	case 'import':
@@ -78,7 +78,7 @@ switch(@action){
 				} else if(array_index_exists(@v, @args[1])) {
 					if(is_array(@v[@args[1]])) {
 						@as2 = array_size(@v[@args[1]]);
-						@arraymsg = @arraymsg.color(3).' index size: '.@as2
+						@arraymsg .= color(3).' index size: '.@as2
 					}
 					@v = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
 				} else {
@@ -99,7 +99,7 @@ switch(@action){
 		}
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
 		@return = @prefix.color(6).'Import: '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
-		if(@as > 9 || @as2 > 9) { @return = @return.'\n'.@arraymsg }
+		if(@as > 9 || @as2 > 9) { @return .= '\n'.@arraymsg }
 		return(@return)
 
 	case 'clearvalue':
@@ -108,9 +108,9 @@ switch(@action){
 		@returnmsg = @prefix.color(6).'Clear value: '.color(13).@args[0]
 		if(has_value(@args[0]) == true) {
 			clear_value(@args[0])
-			if(has_value(@args[0]) == false) { @returnmsg = @returnmsg.'\n'.@prefix.color(10).'Successfully cleared value.' }
+			if(has_value(@args[0]) == false) { @returnmsg .= '\n'.@prefix.color(10).'Successfully cleared value.' }
 		} else {
-			@returnmsg = @returnmsg.'\n'.@prefix.color(12).'That value does not exist.'
+			@returnmsg .= '\n'.@prefix.color(12).'That value does not exist.'
 		}
 		return(@returnmsg)
 		
@@ -120,9 +120,9 @@ switch(@action){
 		@returnmsg = @prefix.color(6).'Clear RAM export: '.color(13).@args[0]
 		if(import(@args[0]) != null) {
 			export(@args[0], null)
-			if(import(@args[0]) == null) { @returnmsg = @returnmsg.'\n'.@prefix.color(10).'Successfully cleared export.' }
+			if(import(@args[0]) == null) { @returnmsg .= '\n'.@prefix.color(10).'Successfully cleared export.' }
 		} else {
-			@returnmsg = @returnmsg.'\n'.@prefix.color(12).'That export did not exist.'
+			@returnmsg .= '\n'.@prefix.color(12).'That export did not exist.'
 		}
 		return(@returnmsg)
 		
@@ -158,7 +158,7 @@ switch(@action){
 			}
 		}
 		@return = @prefix.color(6).'Value: '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
-		if(@as > 9) { @return = @return.'\n'.@arraymsg }
+		if(@as > 9) { @return .= '\n'.@arraymsg }
 		return(@return)
 		
 	case 'clearindex':
@@ -246,7 +246,7 @@ switch(@action){
 		if(array_size(@args) < 2) { die(@prefix.color('c').'Not enough arguments provided.') }
 		@new = @args[1..]
 		@returnmsg = @prefix.color(6).'Store value: '.color(13).@args[0]
-		@returnmsg = @returnmsg.'\n'.@prefix.color(6).'Previous: '.color(7).@old
+		@returnmsg .= '\n'.@prefix.color(6).'Previous: '.color(7).@old
 		export('ch.sv.undo', array(@args[0], @old))
 		switch(@args[1]) {
 		case 'aa':
@@ -291,7 +291,7 @@ switch(@action){
 		store_value(@args[0], @new)
 		@v = get_value(@args[0])
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
-		@returnmsg = @returnmsg.'\n'.@prefix.color(6).'Saved '.color(3).@type.color(6).': '.color(7).@v
+		@returnmsg .= '\n'.@prefix.color(6).'Saved '.color(3).@type.color(6).': '.color(7).@v
 		return(@returnmsg)
 
 	case 'getvalues':
@@ -300,9 +300,9 @@ switch(@action){
 		@v = get_values(@args[0])
 		@returnmsg = @prefix.color(6).'Get values: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
-			@returnmsg = @returnmsg.'\n'.color(2).@key.': '.color(7).@data
+			@returnmsg .= '\n'.color(2).@key.': '.color(7).@data
 		}
-		@returnmsg = @returnmsg.'\n'.@prefix.color(3).'Total values found: '.array_size(@v)
+		@returnmsg .= '\n'.@prefix.color(3).'Total values found: '.array_size(@v)
 		return(@returnmsg)
 
 	case 'hasvalues':
@@ -311,9 +311,9 @@ switch(@action){
 		@v = get_values(@args[0])
 		@returnmsg = @prefix.color(6).'Has values: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
-			@returnmsg = @returnmsg.'\n'.color(2).@key
+			@returnmsg .= '\n'.color(2).@key
 		}
-		@returnmsg = @returnmsg.'\n'.@prefix.color(3).'Total values found: '.array_size(@v)
+		@returnmsg .= '\n'.@prefix.color(3).'Total values found: '.array_size(@v)
 		return(@returnmsg)
 		
 	case 'clearvalues':
@@ -336,9 +336,9 @@ switch(@action){
 		@returnmsg = @prefix.color(6).'Clear all values: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
 			clear_value(@key)
-			if(has_value(@key) == false) { @returnmsg = @returnmsg.'\n'.@prefix.color(6).'Cleared value: '.@key }
+			if(has_value(@key) == false) { @returnmsg .= '\n'.@prefix.color(6).'Cleared value: '.@key }
 		}
-		@returnmsg = @returnmsg.'\n'.@prefix.color(1).'Total values cleared: '.array_size(@v)
+		@returnmsg .= '\n'.@prefix.color(1).'Total values cleared: '.array_size(@v)
 		return(@returnmsg)
 
 	case 'hasexport':
@@ -364,12 +364,12 @@ switch(@action){
 				@changedcount++
 				@result = color(14).' changed'
 			}
-			@returnmsg = @returnmsg.'\n'.@key.@result
+			@returnmsg .= '\n'.@key.@result
 		}
 		if(@truecount > 0) { @truemsg = color(2).'True: '.@truecount }
 		if(@changedcount > 0) { @changedmsg = color(14).' Changed: '.@changedcount }
 		if(@falsecount > 0) { @falsemsg = color(12).' False: '.@falsecount }
-		@returnmsg = @returnmsg.'\n'.@prefix.color(7).'Totals: '.@truemsg.@changedmsg.@falsemsg
+		@returnmsg .= '\n'.@prefix.color(7).'Totals: '.@truemsg.@changedmsg.@falsemsg
 		return(@returnmsg)
 
 	case 'copy':

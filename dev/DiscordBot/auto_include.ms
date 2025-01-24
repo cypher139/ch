@@ -869,7 +869,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 								if(@v[1] == true) {
 									@msgPrefix = @msgPrefixes[@check][0];
 								} else if(is_numeric(@v[1]) && array_index_exists(@msgPrefixes, @check, @v[1])) {
-									@msgPrefix = @msgPrefixes[@check][@v[1]] 
+									@msgPrefix = @msgPrefixes[@check][@v[1]]
 								} else {
 									@msgPrefix = @msgPrefixes[@check][1] 
 								}
@@ -878,11 +878,11 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 					} else { @msgPrefix = @msgPrefixes[@check] }
 				}
 			}
-			@msg3 = @msg3.color(@msgkcolor).@msgk.' '.color('r')
+			@msg3 .= color(@msgkcolor).@msgk.' '.color('r')
 			if(!array_contains(array('content', 'embeds', 'reference_id', 'allowed_mentions'), @k)) { array_remove(@raw, @k) }
 		}
 		if(!array_index_exists(@raw, 'content') && !array_index_exists(@raw, 'embeds') && @msgType != 'join' && @msgType != 'leave') {
-			@msg3 = @msg3.'unsupported'
+			@msg3 .= 'unsupported'
 			@type = 'admin'
 			_db_msg_Console(@msg3.' A message queued to Discord did not contain any Content or Embeds; nothing to send.', @serverID, 'debug')
 			export('DiscordBot.debug.sm.array', @raw)
@@ -1039,7 +1039,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 	} catch(Exception @ex) {
 		@traceDisplay = ''
 		foreach(@st in @ex['stackTrace']) {
-			@traceDisplay = @traceDisplay.'\n'.@st['id'].'  '.@st['line'].'.'.@st['col']
+			@traceDisplay .= '\n'.@st['id'].'  '.@st['line'].'.'.@st['col']
 		}
 		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@serverID.'] '.color(12).@ex['classType'].' '.color(7).@ex['message'].@traceDisplay)
 		return(false);
@@ -1248,13 +1248,13 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 		if(@discord['message'] == '') {
 			@suffix = '<Sent a file> '
 		} else {
-			@suffix = @suffix.'\n <Also attached file:> '
+			@suffix .= '\n <Also attached file:> '
 		}
 		foreach(@num: @attach in @discord['attachments']) {
 			@urls[] = array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false)
 			@filenum = 'File: '
 			if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
-			@suffix = @suffix.@filenum.@attach['filename']
+			@suffix .= @filenum.@attach['filename']
 		}
 	}
 	#user avatar
@@ -1571,8 +1571,8 @@ proc _discordBot_update_members(@useguild = 0) {
 							@auType = 'remove'
 						}
 						@auStats = _discordBot_process_activeuserrole(@discord, @auType, @idRoles, false, @idLevel);	
-						if(@auStats == 'Added') { @consoleMsg = @consoleMsg.color(10).'<active>'.color('r') }
-						if(@auStats == 'Removed') { @consoleMsg = @consoleMsg.color(14).'<inactive>'.color('r') }
+						if(@auStats == 'Added') { @consoleMsg .= color(10).'<active>'.color('r') }
+						if(@auStats == 'Removed') { @consoleMsg .= color(14).'<inactive>'.color('r') }
 						if(@auStats != 'No Change') { array_set(@activeuserstats, @idInfo['username'], @auStats); }
 					}
 				}
@@ -1617,10 +1617,10 @@ proc _discordBot_update_members(@useguild = 0) {
 					if(is_array(@rrStats)) {
 						if(@rrStats['setRoles'] == true) { 
 							@rrUpdates++
-							@consoleMsg = @consoleMsg.@rrStats['rrMsg'].color('r')
+							@consoleMsg .= @rrStats['rrMsg'].color('r')
 						}
 					} else {
-						@consoleMsg = @consoleMsg.color(8).'(RR) '.@rrStats.color('r')
+						@consoleMsg .= color(8).'(RR) '.@rrStats.color('r')
 					}
 					array_set(@rankstats, @idInfo['username'], @rrStats)
 				}
@@ -2785,7 +2785,7 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 				case 'true':
 				case 'dm':
 					@discord['UseDM'] = true
-					@cmdfromdis = @cmdfromdis.' (DM reply)'
+					@cmdfromdis .= ' (DM reply)'
 					@discord['SendChannel'] = @discord['userid']
 				case 'false':
 				case 'broadcast':

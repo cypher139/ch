@@ -49,13 +49,13 @@ case 'wordup':
 			}
 			if(@leaderboard['members'][@id]['words'] < @leaderboard['members'][@id]['msg_count']) {
 				@newwords = @leaderboard['members'][@id]['words'] + @leaderboard['members'][@id]['msg_count']
-				@usermsg = @usermsg.color(9).' -> '.color(10).@newwords
+				@usermsg .= color(9).' -> '.color(10).@newwords
 				@leaderboard['members'][@id]['words'] = @newwords
 				@newcount++;
 			}
 			if(@leaderboard['members'][@id]['words'] < @leaderboard['members'][@id]['msg_count'] * 2 && @leaderboard['members'][@id]['msg_count'] > 3) {
 				@newwords2 = @leaderboard['members'][@id]['words'] + @leaderboard['members'][@id]['msg_count']
-				@usermsg = @usermsg.color(9).' -> '.color(14).@newwords2
+				@usermsg .= color(9).' -> '.color(14).@newwords2
 				@leaderboard['members'][@id]['words'] = @newwords2
 				@newcountx2++;
 			}
@@ -90,7 +90,7 @@ case 'top':
 	@message = @config['Server_Nickname'].' Top '.@limit.' Members:'
 	foreach(@i: @mem in @lbTop) {
 		if(@i > @limit - 1) { break() }
-		@message = @message.'\n#'.(@i + 1).': '.@mem['username'].' ('.@mem['xp'].'xp)'
+		@message .= '\n#'.(@i + 1).': '.@mem['username'].' ('.@mem['xp'].'xp)'
 	}
 	msg(@message)
 	die()
@@ -118,10 +118,10 @@ case 'serverstats':
 			}
 		}
 		@message = @config['Server_Nickname'].' Leaderboard: User stats:'
-		if(@debugstats['users'] > 0) { @message = @message.'\n'.color(10).'Total members: '.color('r').@debugstats['users'] }
-		if(@debugstats['nolb'] > 0) { @message = @message.'\n'.color(9).'No entry present: '.color('r').@debugstats['nolb'] }
-		if(@debugstats['nolastmsg'] > 0) { @message = @message.'\n'.color(4).'No last message entry: '.color('r').@debugstats['nolastmsg'] }
-		if(@debugstats['lastmsg0'] > 0) { @message = @message.'\n'.color(6).'Last message timestamp is 0: '.color('r').@debugstats['lastmsg0'] }
+		if(@debugstats['users'] > 0) { @message .= '\n'.color(10).'Total members: '.color('r').@debugstats['users'] }
+		if(@debugstats['nolb'] > 0) { @message .= '\n'.color(9).'No entry present: '.color('r').@debugstats['nolb'] }
+		if(@debugstats['nolastmsg'] > 0) { @message .= '\n'.color(4).'No last message entry: '.color('r').@debugstats['nolastmsg'] }
+		if(@debugstats['lastmsg0'] > 0) { @message .= '\n'.color(6).'Last message timestamp is 0: '.color('r').@debugstats['lastmsg0'] }
 		msg(@message)
 	}
 	die()

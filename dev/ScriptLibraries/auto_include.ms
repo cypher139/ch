@@ -46,7 +46,7 @@ proc _write_file(string @path, @content, @append, @option) {
 					return(false)
 				}
 			}
-			@pathbuild = @pathbuild.@pf.@pathsplit[@i]
+			@pathbuild .= @pf.@pathsplit[@i]
 		}
 		# File check: 
 		#	Append: if file does not exist make an empty file 

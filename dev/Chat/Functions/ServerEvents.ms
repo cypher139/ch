@@ -155,7 +155,7 @@ set_cron('59 23 * * *', closure(){
 						@cnFlag = ''
 						if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
 						if(@ipdb['rcn'] != '') { @cnFlag .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
-						# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+						# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
 						if(@ipdb['asn'] != '') {			
 							@listIPData .= ' ASN: '.@ipdb['asn']
 							@addemoji = ''
@@ -290,7 +290,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			@cnFlag = ''
 			if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
 			if(@ipdb['rcn'] != '') { @cnFlag .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
-			# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+			# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
 			if(@ipdb['asn'] != '') { 
 				@listIPData .= ' ASN: '.@ipdb['asn']
 				@addemoji = ''

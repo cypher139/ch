@@ -287,7 +287,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 	if(@isIPemoji == true) { die() }
 	@addindex = ''
 	if(@saveMsg['addui'] == true) { @addindex = color(10).'+ui'.color('r') }
-	if(@saveMsg['addsi'] == true) { @addindex = @addindex.color(10).'+si'.color('r') }
+	if(@saveMsg['addsi'] == true) { @addindex .= color(10).'+si'.color('r') }
 	#Send to Admin Logs
 	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message in '.@discord['channel'].'  '.@addindex, @discord['serverid'], 'debug')
 }
@@ -319,7 +319,7 @@ bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 
 	if(@isIPemoji == true) { die() }
 	@addindex = ''
 	if(@saveMsg['addui'] == true) { @addindex = color(10).'+ui'.color('r') }
-	if(@saveMsg['addsi'] == true) { @addindex = @addindex.color(10).'+si'.color('r') }
+	if(@saveMsg['addsi'] == true) { @addindex .= color(10).'+si'.color('r') }
 	#Send to Admin Logs
 	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message in '.@discord['channel'].'  '.@addindex, @discord['serverid'], 'debug')
 }

@@ -36,17 +36,17 @@ admin:/chatipreport [$] = >>>
 						@listIPData = ''
 						@cnFlag = ''
 						if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
-						if(@ipdb['rcn'] != '') { @cnFlag = @cnFlag.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
-						# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+						if(@ipdb['rcn'] != '') { @cnFlag .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
+						# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
 						if(@ipdb['asn'] != '') { 			
-							@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
+							@listIPData .= ' '.'ASN: '.@ipdb['asn']
 							if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
 								if(!array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
 									@listIPData .= ' <New ASN>'
 								}
 							}
 						}
-						if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
+						if(@ipdb['aso'] != '') { @listIPData .= ' '.'ISP: '.@ipdb['aso'] }
 						if(@listIPData == '') { @isp = '' } else { @isp = '['.@cnFlag.to_lower(@listIPData).']' }
 					}
 				}
@@ -55,7 +55,7 @@ admin:/chatipreport [$] = >>>
 						@isp = '< '.@iplog['isp'][@ip].' >'
 					}
 				}
-				@Message = @Message.'\n'.'%format%'.color(9).@ip.color(7).'%format%  '.color(12).@count.color(7).' ping'.@s.'   '.color(3).@isp
+				@Message .= '\n'.'%format%'.color(9).@ip.color(7).'%format%  '.color(12).@count.color(7).' ping'.@s.'   '.color(3).@isp
 			}
 		}
 		if(@useMsg == true) {

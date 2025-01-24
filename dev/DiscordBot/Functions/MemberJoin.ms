@@ -24,7 +24,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	if(array_index_exists(@logJointimes, @discord['userid'], 0)) {
 		@prevjoinsMsgC = ' Joins: '.array_implode(@logJointimes[@discord['userid']], ', ').' '
 		@prevjoinsMsgD = '` -Joins: `'
-		foreach(@jt in @logJointimes[@discord['userid']]) { @prevjoinsMsgD = @prevjoinsMsgD.' <t:'.substr(@jt, 0, 10).':f>' }
+		foreach(@jt in @logJointimes[@discord['userid']]) { @prevjoinsMsgD .= ' <t:'.substr(@jt, 0, 10).':f>' }
 	}
 	@consolejoinMsg = replace(@consolejoinMsg, '%PrevJoins%', @prevjoinsMsgC)
 	@discordjoinMsg = replace(@discordjoinMsg, '%PrevJoins%', @prevjoinsMsgD)
@@ -143,7 +143,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					@invMessage = replace(@invMessage, '%Inviter%', '')
 					@invMessage = replace(@invMessage, '%InviterID%', '')
 					@invMessage = replace(@invMessage, '%InviterID1%', '')
-					@invMessage = @invMessage.'\n' 
+					@invMessage .= '\n' 
 				} else { 
 					@invMessage = ''
 				}

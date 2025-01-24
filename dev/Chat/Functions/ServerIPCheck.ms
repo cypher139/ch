@@ -24,7 +24,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 		if(@serverConfig['Concurrent_Accs_IP'] == @concurrentList[@ip]) {
 			@kickPlayer = true
 			@kickMsg = 'Too many Accounts are using this IP address.'
-			@kickType = @kickType.'1'
+			@kickType .= '1'
 			@otherplayers = array()
 			foreach(@accname in all_players()) {
 				if(pinfo(@accname)[3] = @login['ip']) {
@@ -40,7 +40,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 				if(array_size(@ipdata[@ip]) > @serverConfig['Allowed_Account_Amount']) {
 					@kickPlayer = true
 					@kickMsg = 'This server does not allow players to use multiple Alternate Accounts.'
-					@kickType = @kickType.'2'
+					@kickType .= '2'
 					@adminMsg = color(7).'%f'.@login['player'].'%f tried to connect; this server does not allow more than '.@serverConfig['Allowed_Account_Amount'].' accounts using the same IP address. (IP: %f'.color(9).@ip.'%f) '.color(7).@playersMsg
 				}
 			}
@@ -51,7 +51,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 	if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
 		@kickPlayer = true
 		@kickMsg = 'You have been Banned.'
-		@kickType = @kickType.'3'
+		@kickType .= '3'
 		@adminMsg = color(7).@login['player'].' tried to connect using '.color(12).'Blacklisted IP address:  '.color(9).@ip.' '.color(7).@playersMsg
 	}
 	foreach(@block in @blacklistIP['IP_Block_Blacklist']) {
@@ -59,7 +59,7 @@ bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'
 		if(string_starts_with(string(@ip), @startBlock)) {
 			@kickPlayer = true
 			@kickMsg = 'You have been Banned.'
-			@kickType = @kickType.'4'
+			@kickType .= '4'
 			@adminMsg = color(7).@login['player'].' tried to connect using IP address '.color(9).@ip.color(7).' that is part of a '.color(12).'Blacklisted IP Block. '.color(7).@playersMsg
 		}
 	}

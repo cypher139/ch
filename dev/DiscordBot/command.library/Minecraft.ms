@@ -62,12 +62,12 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 	if(array_size(@stats['AlreadyListed']) > 0) {
 		@s = ''
 		if(array_size(@stats['AlreadyListed']) > 1) { @s = 's' }
-		@return = @return.'\n:information_source: User'.@s.' `'.array_implode(@stats['AlreadyListed'], '` `').'` were already Whitelisted!'
+		@return .= '\n:information_source: User'.@s.' `'.array_implode(@stats['AlreadyListed'], '` `').'` were already Whitelisted!'
 	}
 	if(array_size(@stats['NoUsesRemain']) > 0) {
 		@s = ''
 		if(array_size(@stats['NoUsesRemain']) > 1) { @s = 's' }
-		@return = @return.'\n :warning: *You do not have enough remaining whitelist uses!* Contact the admins for assistance in whitelisting User'.@s.': `'.array_implode(@stats['NoUsesRemain'], '` `').'`'
+		@return .= '\n :warning: *You do not have enough remaining whitelist uses!* Contact the admins for assistance in whitelisting User'.@s.': `'.array_implode(@stats['NoUsesRemain'], '` `').'`'
 		@adminmsg = @discord['username'].' does not have any more remaining uses to whitelist User'.@s.' `'.array_implode(@stats['NoUsesRemain'], '`  `').'`'
 		_discordBot_broadcast(@discord['serverid'], '--admin', @adminmsg)
 		_db_msg_Console(color(14).@adminmsg, @discord['serverid'])
@@ -75,7 +75,7 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 	if(array_size(@stats['UserNotFound']) > 0) {
 		@s = ''
 		if(array_size(@stats['UserNotFound']) > 1) { @s = 's' }
-		@return = @return.'\n:information_source: User'.@s.': `'.array_implode(@stats['UserNotFound'], '` `').'` were not found!'
+		@return .= '\n:information_source: User'.@s.': `'.array_implode(@stats['UserNotFound'], '` `').'` were not found!'
 	}
 	return(@return)
 }

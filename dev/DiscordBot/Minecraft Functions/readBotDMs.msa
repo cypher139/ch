@@ -46,12 +46,12 @@ switch($id) {
 					if(@sendmsg == '') {			
 						@sendmsg = '<Sent a file> '
 					} else {
-						@sendmsg = @sendmsg.'\n <Also attached file:> '
+						@sendmsg .= '\n <Also attached file:> '
 					}
 					foreach(@num: @attach in @readDM['attachments']) {
 						@filenum = 'File: '
 						if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
-						@sendmsg = @sendmsg.@filenum.@attach['filename']
+						@sendmsg .= @filenum.@attach['filename']
 					}
 				}
 				msg(color(7).'Recent DM #'.(@msgid + 1))

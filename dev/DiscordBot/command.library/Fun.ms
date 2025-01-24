@@ -145,25 +145,25 @@ proc _discordBot_cmd_1to100(@discord, @args) {
 	foreach(@i in @number) {
 		switch(@i) {
 		case 0:
-			@msg = @msg.':zero: '
+			@msg .= ':zero: '
 		case 1:
-			@msg = @msg.':one: '
+			@msg .= ':one: '
 		case 2:
-			@msg = @msg.':two: '
+			@msg .= ':two: '
 		case 3:
-			@msg = @msg.':three: '
+			@msg .= ':three: '
 		case 4:
-			@msg = @msg.':four: '
+			@msg .= ':four: '
 		case 5:
-			@msg = @msg.':five: '
+			@msg .= ':five: '
 		case 6:
-			@msg = @msg.':six: '			
+			@msg .= ':six: '			
 		case 7:
-			@msg = @msg.':seven: '			
+			@msg .= ':seven: '			
 		case 8:
-			@msg = @msg.':eight: '			
+			@msg .= ':eight: '			
 		case 9:
-			@msg = @msg.':nine: '
+			@msg .= ':nine: '
 		}
 	}
 	return(@msg)
@@ -194,8 +194,8 @@ proc _discordBot_cmd_cointoss(@discord, @args) {
 		if(@tails == 1) { @msg = '**Tails**' }
 	} else {
 		@msg = '**'.@count.'** tosses yielded'
-		if(@heads > 0) { @msg = @msg.'  **'.@heads.'** Heads' }
-		if(@tails > 0) { @msg = @msg.'  **'.@tails.'** Tails' }
+		if(@heads > 0) { @msg .= '  **'.@heads.'** Heads' }
+		if(@tails > 0) { @msg .= '  **'.@tails.'** Tails' }
 	}
 	if(!is_array(@msg)) {
 		return(array('content': ':cd: '.@msg, 'console': @numbers))

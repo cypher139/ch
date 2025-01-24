@@ -348,7 +348,7 @@ proc _vc_user_0_left(@discord, @channel, @chid, @type) {
 			}
 			@usersMsg = ''
 			foreach(@userID: @userName in @stats['channels'][@chid]['users']) {
-				@usersMsg = @usersMsg.'\n<@'.@userID.'>: '._vc_display_duration(@stats['channels'][@chid]['time'][@userID])
+				@usersMsg .= '\n<@'.@userID.'>: '._vc_display_duration(@stats['channels'][@chid]['time'][@userID])
 			}
 			@return['fields'][] = array('name': 'All Users:' , 'value': @usersMsg, 'inline': true)
 		}

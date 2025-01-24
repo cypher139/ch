@@ -201,7 +201,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				console('debug1: '.@debug1)
 			}
 			if(@msgcount > 0) {
-				@actiontaken = @actiontaken.' <Deleted '.@msgcount.' of user\'s recent messages>'
+				@actiontaken .= ' <Deleted '.@msgcount.' of user\'s recent messages>'
 			}
 		# Timeout user
 			if(@config['AS_Timeout_User'] == true) {
@@ -214,7 +214,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			if(@config['AS_Brand_User'] == true) {
 				try {
 					discord_member_set_nickname(@discord['serverid'], @discord['userid'], 'SPAMMER: '.@discord['nickname'])
-					@actiontaken = @actiontaken.' <Set Nickname to spammer>'
+					@actiontaken .= ' <Set Nickname to spammer>'
 				} catch(InsufficientPermissionException @ex) {
 					_db_msg_Console('AntiSpam: Not allowed to set spam nickname for '.@discord['username'], @discord['serverid'], 'error')
 				} catch(Exception @ex) {

@@ -16,7 +16,7 @@ proc _db_format_msg_attach(@discord, @url = false) {
 			@filenum = 'File: '
 			if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
 			if(@attach['description'] != '') { @adesc = color(3).'('.@attach['description'].')'.color('r') }
-			@ret = @ret.@filenum.@attach['filename'].@adesc
+			@ret .= @filenum.@attach['filename'].@adesc
 		}
 	}
 	return(@ret)
@@ -159,9 +159,9 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			if(@serverID != @isAS['active'][@discord['userid']]) { @oserver = ' on another server' }
 			@dcMsg = '<<<Anti Spam protection is active for this user'.@oserver.'.>>>'
 			if(array_contains(@isAS['msgs'][@discord['userid']], sha1(@discord['message']))) {
-				@dcMsg = @dcMsg.'\nThe same spam that triggered Anti Spam was just DMed to me.'
+				@dcMsg .= '\nThe same spam that triggered Anti Spam was just DMed to me.'
 			} else {
-				@dcMsg = @dcMsg.'\nTo avoid repeating spam their message is not displayed here.'
+				@dcMsg .= '\nTo avoid repeating spam their message is not displayed here.'
 			}
 		} else if(@userConfig[@discord['userid']]['NotifyContent'] == true) {	
 		#Yes, include Urls if present
@@ -170,7 +170,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		# No, don't display content as requested
 			@msgtype = 'message content'
 			if(array_index_exists(@discord, 'attachments', 0, 'filename') && @saveDM['message'] == '') { @msgtype = 'attachment' }
-			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype = @msgtype.'s' }
+			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype .= 's' }
 			@dcMsg = '<<<user '.@msgtype.' not displayed>>>'
 		}
 		@dm1 = 'I received a DM!'

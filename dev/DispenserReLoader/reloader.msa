@@ -611,7 +611,7 @@ case '-a':
 				}
 				@color = '7'
 				if(_is_even_number(@i) == true) { @color = '9' }
-				@filledinfo = @filledinfo.color(@color).@ftdisplay.': '.@filled['type'][@ftkeys[@i]].' '
+				@filledinfo .= color(@color).@ftdisplay.': '.@filled['type'][@ftkeys[@i]].' '
 			}
 		}
 		if(@filled['blocks'] > 1) {

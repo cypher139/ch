@@ -117,7 +117,7 @@ proc _discordBot_cmd_whois(@discord, @args) {
 			if(!is_array(@logJointimes)) { @logJointimes = array() }
 			if(array_index_exists(@logJointimes, @userID, 1)) {
 				@joins = ''
-				foreach(@jt in @logJointimes[@userID]) { @joins = @joins.'\n<t:'.substr(@jt, 0, 10).':f>' }
+				foreach(@jt in @logJointimes[@userID]) { @joins .= '\n<t:'.substr(@jt, 0, 10).':f>' }
 				@embedsAdmin[] = array('name': 'All Server Join Times', 'value': @joins, 'inline': true) 
 			}
 		}

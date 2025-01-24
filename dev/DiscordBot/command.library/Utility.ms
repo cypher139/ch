@@ -99,7 +99,7 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 					@vd = ':x:'
 				}
 			}
-			@ret = @ret.'`'.@set.':` '.@vd.'  '
+			@ret .= '`'.@set.':` '.@vd.'  '
 		}
 		return(@ret)
 	}

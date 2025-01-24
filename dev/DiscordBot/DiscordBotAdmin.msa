@@ -120,8 +120,8 @@ case 'memberinfo':
 				@jt = 'Unknown'
 				if(array_index_exists(@fr, @args[0], 'time')) { @jt = simple_date('MM/dd/yyyy HH:mm:ss', @fr[@args[0]]['time']) }
 				@msg = 'Username: '.@fr[@args[0]]['user'].'  Joined: '.@jt.'  Left: '.simple_date('MM/dd/yyyy HH:mm:ss', @fr[@args[0]]['removed'])
-				if(array_index_exists(@fr, @args[0], 'wmid')) { @msg = @msg.'\nWelcome Msg ID: '.@fr[@args[0]]['wmid'] }
-				if(array_index_exists(@fr, @args[0], 'code')) { @msg = @msg.'\nInviter: '.@fr[@args[0]]['inviter'].' Invite: '.@fr[@args[0]]['code'] }
+				if(array_index_exists(@fr, @args[0], 'wmid')) { @msg .= '\nWelcome Msg ID: '.@fr[@args[0]]['wmid'] }
+				if(array_index_exists(@fr, @args[0], 'code')) { @msg .= '\nInviter: '.@fr[@args[0]]['inviter'].' Invite: '.@fr[@args[0]]['code'] }
 				die(@msg)
 			} else {
 				die(color(12).'User ID was Not Found on Server or former data!')
@@ -202,7 +202,7 @@ case 'vc':
 		if(array_index_exists(@stat, 'time')) {
 			@message = 'Users joined: '.color(10).array_size(@stat['users']).color('r').' ('.color(11)
 			foreach(@userID: @userName in @stat['users']) {
-				@message = @message.@userName.color(8).' ['._vc_display_duration(@stat['time'][@userID]).'], '.color(11)
+				@message .= @userName.color(8).' ['._vc_display_duration(@stat['time'][@userID]).'], '.color(11)
 			}
 			msg(@message.color('r').')')
 		} else { 
@@ -318,7 +318,7 @@ case 'checkforbots':
 			@msg = 'ID: '.@id.' '
 			if(@r['type'] == 'active') {
 				@info = discord_member_info(@serverID, @id)
-				@msg = @msg.color(9).'Username: '.@info['username'].color(14).' (Current '.color(7).'Guild Member)'.color(11).' Joined server: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @r['join'], 'UTC')
+				@msg .= color(9).'Username: '.@info['username'].color(14).' (Current '.color(7).'Guild Member)'.color(11).' Joined server: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @r['join'], 'UTC')
 			}			
 			if(@r['type'] == 'log') {
 				@info = array('user': '', 'code': '')
@@ -329,9 +329,9 @@ case 'checkforbots':
 				foreach(@k: @date in @r['join']) {
 					@r['join'][@k] = simple_date('MM/dd/yyyy HH:mm:ss.SSS', @date, 'UTC')
 				}
-				@msg = @msg.color(9).'Username: '.@info['user'].color(8).' Last invite code: '.@info['code'].color(11).'(Former '.color(7).'Guild Member)'.color(11).' Joined server: '.array_implode(@r['join'], ', ')
+				@msg .= color(9).'Username: '.@info['user'].color(8).' Last invite code: '.@info['code'].color(11).'(Former '.color(7).'Guild Member)'.color(11).' Joined server: '.array_implode(@r['join'], ', ')
 			}
-			@sendMsg = @sendMsg.'\n'.@msg
+			@sendMsg .= '\n'.@msg
 		}
 		msg(@sendMsg)
 	}

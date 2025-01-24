@@ -156,12 +156,12 @@ case 'he':
 			@changedcount++
 			@result = color(14).' changed'
 		}
-		@returnmsg = @returnmsg.'\n'.@key[cslice(@slice1, length(@key) - 1)].@result
+		@returnmsg .= '\n'.@key[cslice(@slice1, length(@key) - 1)].@result
 	}
 	if(@truecount > 0) { @truemsg = color(2).'RAM: '.@truecount }
 	if(@changedcount > 0) { @changedmsg = color(14).' Changed: '.@changedcount }
 	if(@falsecount > 0) { @falsemsg = color(12).' Stored: '.@falsecount }
-	@returnmsg = @returnmsg.'\n'.color(7).'Totals: '.@truemsg.@changedmsg.@falsemsg
+	@returnmsg .= '\n'.color(7).'Totals: '.@truemsg.@changedmsg.@falsemsg
 	msg(@returnmsg)
 case 'allservers':
 	msg(discord_get_servers())
@@ -321,8 +321,8 @@ case 'findmultiplejoins':
 				try(@username = discord_member_info(@serverID, @id)['username'])
 				array_set(@info, 'user', @username) 
 			}
-			@msg = @msg.color(9).'| Username: '.@info['user'].color(8).' | Last invite code: '.@info['code'].color(11).' | Server joins: '.color(11).array_implode(@displayDates, ', ')
-			@sendMsg = @sendMsg.'\n'.@msg
+			@msg .= color(9).'| Username: '.@info['user'].color(8).' | Last invite code: '.@info['code'].color(11).' | Server joins: '.color(11).array_implode(@displayDates, ', ')
+			@sendMsg .= '\n'.@msg
 		}	
 	}
 	msg(@sendMsg)

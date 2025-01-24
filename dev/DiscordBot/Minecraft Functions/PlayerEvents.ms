@@ -65,7 +65,7 @@ bind('player_advancement_done', array('id': 'DiscordBot.mc.adv', 'priority': 'MO
 				if(@word == 'minecraft:recipes') { continue(); }
 				@punc = ':'
 				if(@i == 1) { @punc = '' }
-				@title = @title.@punc.' '._capitalize(@word, true)
+				@title .= @punc.' '._capitalize(@word, true)
 			}
 		}
 	} else {

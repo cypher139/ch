@@ -61,7 +61,7 @@ foreach(@i: @arg in @args) {
 	if(@i == 0) {
 		@msg = color(array_get_rand(@color)).@arg
 	} else {
-		@msg = @msg.' '.color(array_get_rand(@color)).@arg
+		@msg .= ' '.color(array_get_rand(@color)).@arg
 	}
 }
 msg(color(array_get_rand(@color)).@msg)

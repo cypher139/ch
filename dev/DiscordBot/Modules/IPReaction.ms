@@ -55,18 +55,18 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 					@ipdb = _chat_lookup_ip_db(@ip);
 					if(is_array(@ipdb)) {
 						@listIPData = '`'.@ip.'`: '
-						if(@ipdb['cn'] != '') { @listIPData = @listIPData.':flag_'.to_lower(@ipdb['cn']).':' }
-						if(@ipdb['rcn'] != '') { @listIPData = @listIPData.'(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
-						# if(@ipdb['c'] != '') { @listIPData = @listIPData.' '.'Country: '.@ipdb['c'] }
+						if(@ipdb['cn'] != '') { @listIPData .= ':flag_'.to_lower(@ipdb['cn']).':' }
+						if(@ipdb['rcn'] != '') { @listIPData .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
+						# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
 						if(@ipdb['asn'] != '') { 
-							@listIPData = @listIPData.' '.'ASN: '.@ipdb['asn']
+							@listIPData .= ' '.'ASN: '.@ipdb['asn']
 							if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
 								if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
 									@listIPData .= '<ASN has IPs on Blacklist>'
 								}
 							}
 						}
-						if(@ipdb['aso'] != '') { @listIPData = @listIPData.' '.'ISP: '.@ipdb['aso'] }
+						if(@ipdb['aso'] != '') { @listIPData .= ' '.'ISP: '.@ipdb['aso'] }
 						if(@listIPData != '`'.@ip.'`: ') {
 							@msgIPData[] = @listIPData
 						}
@@ -112,7 +112,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 					@userdisplay = ''
 					if(array_index_exists(@ipuserdata, @ip) && !array_index_exists(@cacheID, 'r', @discord['messageid'])) {
 						array_set(@reviewip, @ip, @ipuserdata[@ip]);
-						@userdisplay = @userdisplay.'\n'.@ip.': `'.array_implode(@ipuserdata[@ip], ', ').'`'
+						@userdisplay .= '\n'.@ip.': `'.array_implode(@ipuserdata[@ip], ', ').'`'
 						continue();
 					}
 					@blacklistIP['IP_Blacklist'][] = @ip

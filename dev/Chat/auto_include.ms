@@ -52,6 +52,7 @@ proc _chat_load_config(@cfgtype) {
 		}
 	case 'Discord':
 	case 'Bot':
+	case 'App':
 		if(!is_proc('db_msg_Admins')) { 
 			_chat_msg_Admins(color(12).'[Chat] To interact with Discord server install the DiscordBot script!')
 			return(false)
@@ -97,9 +98,6 @@ proc _chat_load_config(@cfgtype) {
 	case 'ex':
 		@servercfg = import('Chat.config.Server')
 		@loadcfg = array_merge(@loadcfg, @servercfg)
-		if(array_contains(@loadcfg['CS_Server_1_Channels'], 'default')) {
-			_chat_msg_Admins(color(14).'[Chat - Discord] Cross server Config is still using default values. Please configure it in order to use Cross-Server chat features.') 
-		}
 	default:
 		_chat_msg_Admins(color(14).'[Chat] config file given not recognized.') 
 		return(false)
@@ -111,44 +109,6 @@ proc _chat_load_config(@cfgtype) {
 	export('Chat.config.'.@cfgtype, @loadcfg)
 	return(@loadcfg)
 }
-
-/*
-proc _getplayer(@name) {
-	@chars = length(@name)
-#returns the real player's name
-	@isfound = false
-	foreach(all_players(), @player,
-		#if(@chars < length(@player),
-			if(equals_ic(@name, substr(@player, 0, @chars)),
-				@isfound = true
-				# broadcast(1)
-			)
-		#)
-		if(pinfo(@player)[4] != @player,
-			@nick = pinfo(@player)[4]
-			if(equals_ic(@nick, substr(@name, 0, @chars)),
-				@isfound = true
-				@return = @player 
-				# broadcast(2)	
-			)
-		)
-		if(@isfound == true,
-			return(@player)
-		,
-			if(ponline(@name) == false, return(null))
-			return(pinfo(@name)[0])
-		)
-	)
-}
-
-proc _getnick(@player) {
-	
-	@player = pinfo(@player)[0]
-	@nick = pinfo(@player)[4]
-
-	if(@player == @nick, return(@player), return(@nick))
-}
-*/	
 
 proc _rainbow(@msg, @type, @returntype) {
 	if(@msg == '') { return(color('c').'You didn\'t say anything!!') }
@@ -192,7 +152,7 @@ proc _rainbow(@msg, @type, @returntype) {
 		}
 		#Not an approved color change character, save and continue
 		if(reg_count(@regc, @char) > 0) {
-			@string = @string.@char
+			@string .= @char
 			continue()
 		}
 
@@ -207,7 +167,7 @@ proc _rainbow(@msg, @type, @returntype) {
 			@colortype = color(@color)
 		}
 #		msg('"'.@char.'" :'.@i.'    c: <'.@color.'>')
-		@string = @string.@colortype.@char
+		@string .= @colortype.@char
 		#counter for actual characters encountered, for doubles
 		@i++
 	}
