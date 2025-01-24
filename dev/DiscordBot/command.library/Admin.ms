@@ -355,6 +355,54 @@ proc _discordBot_cmd_geoiplookup(@discord, @args) {
 	return(array_implode(@msgIPData, '\n'))
 }
 
+proc _discordBot_cmd_getperms(@discord, @args) {
+	@serverID = @discord['serverid']
+	foreach(@arg in @args) {
+		if(array_contains(import('DiscordBot.Servers'), @arg)) {
+			@serverID = @arg
+			array_remove_values(@args, @arg);
+			break();
+		}
+	}
+	@perms = discord_get_permissions(@serverID);
+	@requiredPerms = array(
+	# basics:
+	'MESSAGE_SEND': 'I Cannot post *any* messages! How will users interact with me?',
+	'MESSAGE_SEND_IN_THREADS': 'I can\'t post messages in threads, users will need to use regular channels then.',
+	'MESSAGE_HISTORY': 'Any messages I send may not be able to reference another message.',
+	'VIEW_CHANNEL': 'If I can\'t see messages how am I supposed to interact with it?',
+	'MESSAGE_EXT_EMOJI': 'This grants the ability for Cross-Server Chat to use emojis from their servers.',
+	'MESSAGE_ADD_REACTION': 'This grants the ability for the bot to add confirmation reactions to certain messages.',
+	#advanced
+	'MANAGE_SERVER': 'Required for Invite logging. This grants the ability to retrive your server\'s invites.',
+	'MESSAGE_MANAGE': 'Required to delete others messages. Used for: <Anti Spam: remove spam messages> <Showcase: remove chat messages>',
+	'MODERATE_MEMBERS': 'Required to issue a timeout to a user upon their triggering Anti Spam protections.',
+	'MANAGE_WEBHOOKS': 'Required to retrive data about webhooks. Used in various embeds to show the webhook\'s avatar, if a webhook updates a message.',
+	'VOICE_MOVE_OTHERS': '\"MOVE_MEMBERS\" grants the ability for Voice Chat features to disconnect any bots still in voice channel when all users leave.',
+	'NICKNAME_MANAGE': '\"MANAGE_NICKNAMES\" grants the ability for Anti Spam to add \"spammer\" to those who trigger Anti Spam protections.',
+	'MANAGE_ROLES': 'Setting roles grants the ability for various role related functions to operate: <Leaderboards: Active User, Role Ranks> <Commands: Fakeadmin, transferroles> <Restore previous roles upon user rejoin> <Welcome roles on user join>'
+	)
+	@results = array('true': array(), 'false': '', 'notreq': array())
+	@return = array()
+	if(array_contains(@perms, 'ADMINISTRATOR')) {
+		@return[] = color(10).'Administrator permissions detected, therefore the bot has the permissions it needs!'
+	} else {
+		foreach(@p: @desc in @requiredPerms) {
+			if(array_contains(@perms, @p)) {
+				@results['true'][] = @p
+			} else {
+				@results['false'] = @results['false'].'\n'.color(12).@p.': '.color(7).@desc
+			}
+		}
+		@return[] = color(10).'Required and Granted Permissions: '.color(9).array_implode(@results['true'], '  ')
+		if(@results['false'] != '') { @return[] = color(4).'Permissions **Not** Found:'.@results['false'] }
+	}
+	return(array('console': array_implode(@return, '\n'), 'csid': @serverID, 'content': strip_colors(array_implode(@return, '\n')), 'dm': true));
+}
+
+proc _discordBot_cmd_error(@discord, @args) {
+	return('Error')
+}
 
 #Add Commands to list
 @c3lx = import('DiscordBot.Command.List', array())
@@ -362,7 +410,9 @@ proc _discordBot_cmd_geoiplookup(@discord, @args) {
 	'whois': array('alias': array('who', 'is'), 'admin': false, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_whois(@discord, @args)); }),
 	'welcomerolesfinder': array('alias': array('wrf'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_wrf(@discord, @args)); }),
 	'asremove': array('alias': array('as'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_asremove(@discord, @args)); }),
-	'geoiplookup': array('alias': array('geoip'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_geoiplookup(@discord, @args)); })
+	'geoiplookup': array('alias': array('geoip'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_geoiplookup(@discord, @args)); }),
+	'getperms': array('alias': array('checkpermissions'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_getperms(@discord, @args)); }),
+	'errdebug': array('alias': array('error'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_error(@discord, @args)); })
 );
 @c3lx = array_merge(@c3lx, @mIu7)
 export('DiscordBot.Command.List', @c3lx)

@@ -109,31 +109,70 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 proc _discordBot_cmd_transferroles(@discord, @args) {
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@fromroleAdmin = false
-	@returnmsg = color(10).'Roles transfer for Discord User "'.color(3).@args[1].'" '
+	@returnmsg = color(10).'Completed Roles transfer'
+	@undo = false
+	@fromroles = array()
+	@toroles = array()
 	if(!array_index_exists(@args, 0)) { return(color(12).'Specify the Discord user ID to copy from!') }
 	if(!array_index_exists(@args, 1)) { return(color(12).'Specify the Discord user ID to copy to!') }
-	if(!array_index_exists(@args, 2)) { @args[] = 'none' }
+	@id0 = @args[0]
+	@id1 = @args[1]
+	if(array_index_exists(@args, 2)) { 
+		if(!string_contains(array_implode(@args, ''), '@')) { return(color(12).'Cannot parse user IDs given.') }
+		@test = split('@', array_implode(@args, ' '))
+		if(!@test[0]) { array_remove(@test, 0) }
+		if(array_size(@test) != 2) { return(color(12).'Cannot parse user IDs given ('.array_size(@test).')') }
+		@id0 = @test[0]
+		@id1 = @test[1]
+	}
 	@botperms = discord_get_permissions(@discord['serverid'])
 	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {	return('NoPerms'); }
-	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
-		if(@args[0] != 'undo') {
-			return(color(12).'Discord Usernames are not supported in this command.')
+	@fromID = @id0
+	if(@id0 != 'undo') {
+		@fromID = _discordBot_cmd_proc_finduserID(@id0, @discord)
+	}
+	if(!is_numeric(@fromID)) {
+		switch(@fromID) {
+		case 'bot':
+			return(array('embeds': array(array('footer': array('text': 'Sorry, my roles are my roles.'), 'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
+		case 'self':
+			@fromID = @discord['userid']
+		case 'notfound':
+			return('NoUserFound')
+		case 'multiple':
+			return('Error')
+		case 'undo':
+			@undo = true
 		}
 	}
+	@toID = _discordBot_cmd_proc_finduserID(@id1, @discord)
+	if(!is_numeric(@toID)) {
+		switch(@toID) {
+		case 'bot':
+			return('Thanks for the compliment, but I\'m happy with my roles.')
+		case 'self':
+			@toID = @discord['userid']
+		case 'notfound':
+			return('NoUserFound')
+		case 'multiple':
+			return('Error')
+		}
+	}
+	if(@fromID == @toID) { return(array('embeds': array(array('footer': array('text': 'Wait, whut? you wanna transfer roles to the same person?'), 'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif')))) }
 	@TRlog = get_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer')
 	if(!is_array(@TRlog)) { @TRlog = array() }
 	
 	# To User check
 	try {
-		@toroles = discord_member_get_roles(@discord['serverid'], @args[1])
+		@toroles = discord_member_get_roles(@discord['serverid'], @toID)
 	} catch(Exception @ex) {
 		return(color(12).'To ID Not Found on Server: '.@ex['message'])
 	}
 	
 	# One transfer per user
-	if(array_index_exists(@TRlog, @args[1]) && @args[2] != 'undo' && @args[0] != 'undo') {
+	if(array_index_exists(@TRlog, @toID) && @undo == false) {
 		#ignore if admin and yourself
-		if(@discord['admin'] == true && @discord['userid'] == @args[1]) { @selfadmin = 1 } else {
+		if(@discord['admin'] == true && @discord['userid'] == @toID) { @selfadmin = 1 } else {
 			return(color(12).'Only one roles transfer is allowed per user account.')
 		}
 	}
@@ -145,33 +184,32 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	}
 	@rolesFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former.roles')
 	if(!is_array(@rolesFR)) { @rolesFR = array() }
-	@fromroles = ''
-	@toroles = ''
-	@saveoldroles = get_value('DiscordBot.'.@discord['serverid'].'.debug.roles.Transfer.undo')
-	if(!is_array(@saveoldroles)) { @saveoldroles = array() }
+	@undoroles = get_value('DiscordBot.'.@discord['serverid'].'.set.roles.undo.Transfer')
+	if(!is_array(@undoroles)) { @undoroles = array() }
 
 	# From User check
-	try {
-		@fromroles = discord_member_get_roles(@discord['serverid'], @args[0])
-	} catch(Exception @ex) {
-		if(is_array(@roles)) {
-			if(array_index_exists(@roles, @args[0])) {
-				@fromroles = @roles[@args[0]]
-				_db_msg_Console(color(14).'From ID: Not Found on Server, using internal cache.', @discord['serverid'])
-			} else if(array_index_exists(@rolesFR, @args[0])) {
-				@fromroles = @rolesFR[@args[0]]
-				_db_msg_Console(color(14).'From ID: Not Found on Server, using internal storage.', @discord['serverid'])
-			} else {
-				return(color(12).'From ID was Not Found on Server or internal cache!')
-			}
-		} else { return(color(12).'From ID was Not Found on Server; internal storage not initialized!') }
+	if(@undo == false) {
+		try {
+			@fromroles = discord_member_get_roles(@discord['serverid'], @fromID)
+		} catch(Exception @ex) {
+			if(is_array(@roles)) {
+				if(array_index_exists(@roles, @fromID)) {
+					@fromroles = @roles[@fromID]
+					_db_msg_Console(color(14).'From ID: Not Found on Server, using internal cache.', @discord['serverid'])
+				} else if(array_index_exists(@rolesFR, @fromID)) {
+					@fromroles = @rolesFR[@fromID]
+					_db_msg_Console(color(14).'From ID: Not Found on Server, using internal storage.', @discord['serverid'])
+				} else {
+					return(color(12).'From ID was Not Found on Server or internal cache!')
+				}
+			} else { return(color(12).'From ID was Not Found on Server; internal storage not initialized!') }
+		}
 	}
-	
 	# Admin roles nag
 	foreach(@rn: @rid in @fromroles) {
 		if(array_contains_ic(@config['Role_Admins'], @rn) || array_contains(@config['Role_Admins'], @rid)) {
 			#ignore if admin and yourself
-			if(@discord['admin'] == true && @discord['userid'] == @args[1]) { continue() }
+			if(@discord['admin'] == true && @discord['userid'] == @toID) { continue() }
 			@fromroleAdmin = true
 			array_remove(@fromroles, @rn)
 		}
@@ -179,38 +217,42 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	if(@fromroleAdmin == true) {
 		@suffix = 'Message the server moderation team to reinstate any server access.'
 		if(@discord['admin'] == true) { @suffix = 'Please verify this person before awarding any admin roles.' }
-		@returnmsg = 'A Server Admin role was detected! For security reasons I\'m not awarding that role, '.@suffix.'\n'.@returnmsg
+		@returnmsg = color(14).'A Server Admin role was detected! For security reasons I\'m not awarding that role. '.@suffix.'\n'.color(10).@returnmsg
 	}
-		
+	
+	@logMsg = 'Transfer Roles: From: '.@id0.'('.@fromID.') To: '.@id1.'('.@toID.')'
 	#Undo support
-	if(@args[0] == 'undo' || @args[2] == 'undo') {
+	if(@undo == true) {
 	#does not add from roles.
-		if(array_index_exists(@saveoldroles, @args[1])) {
-			@toroles = @saveoldroles[@args[1]]
+		if(array_index_exists(@undoroles, @toID)) {
+			@toroles = @undoroles[@toID]
+			@logMsg = 'Transfer Roles: Undid role transfer for '.@id1.'('.@toID.')'
+			@returnmsg = 'Undid Roles transfer'
 		} else {
 			return(color(12).'That user does not have previous data to undo!')
 		}
 	} else {
 	# adds from roles, not sets to!
-		array_set(@saveoldroles, @args[1], @toroles)
-		store_value('DiscordBot.'.@discord['serverid'].'.debug.roles.Transfer.undo', @saveoldroles)
+		array_set(@undoroles, @toID, @toroles)
+		store_value('DiscordBot.'.@discord['serverid'].'.set.roles.undo.Transfer', @undoroles)
 		@toroles = array_merge(@toroles, @fromroles)
 	}
 	# _db_msg_Console(@toroles, @discord['serverid'], 'debug')
 	# _db_msg_Console(@fromroles, @discord['serverid'], 'debug')
 		
-	@doSetRoles = _discordBot_set_roles(@discord['serverid'], @discord['userid'], 'set', @toroles, 'Transfer Roles: From: '.@args[0].' To: '.@args[1], 'Transfer Roles');
+	@doSetRoles = _discordBot_set_roles(@discord['serverid'], @toID, 'set', @toroles, @logMsg, 'Transfer Roles');
 	if(@doSetRoles == false) { return('Error') }
 	#Save
-	array_set(@TRlog, @args[1], array('time': time(), 'fromuser': @args[0], 'issuer': @discord['userid']))
+	array_set(@TRlog, @toID, array('time': time(), 'fromuser': @fromID, 'issuer': @discord['userid']))
+	if(@undo == true) { array_remove(@TRlog, @toID) }
 	store_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer', @TRlog)
 	@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
-	if(array_index_exists(@joininfo, @args[1])) {
-		array_set(@joininfo[@args[1]], 'return', 'true')
+	if(array_index_exists(@joininfo, @toID)) {
+		array_set(@joininfo[@toID], 'return', 'true')
 		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)
 	}
-	@msgrolesreturn = color(10).'Discord User '.color(3).@args[1].color(10).' had their Roles set to:\n'.color('r').array_keys(@toroles)
-	return(array('content': @returnmsg.color(10).'successful.', 'console': @msgrolesreturn))
+	@msgrolesreturn = color(10).@returnmsg.' for user '.color(3).@id1.color(10).'('.@toID.'), Roles set to:\n'.color('r').array_keys(@toroles)
+	return(array('content': @returnmsg.' for user "'.color(3).@id1.'" ('.@toID.')', 'console': @msgrolesreturn))
 }
 
 

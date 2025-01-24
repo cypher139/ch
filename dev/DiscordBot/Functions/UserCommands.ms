@@ -22,47 +22,10 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) || array_contains(@config['CMD_Channels_Receive'], @discord['channelid'])) {
 		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true)
 	# Attachment: batch
-	/* cut
-		if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
-			@returns = array()
-			foreach(@i: @attach in @discord['attachments']) {
-				if(reg_count('[.][Tt][Xx][Tt]$', @attach['filename']) > 0) {
-					#istxt
-					#make http call
-					# variables scoped, does not provide edits back.
-					http_request(@attach['url'], array('blocking': true, 'success': closure(@data) {
-						export('debug_data_'.@i, @data);
-						if(@data['error'] == false) {
-						#is first line approved batch #!Chat_Command_Batch
-						
-						# CMD_Default_Channel for broadcast option
-						
-							if(reg_count('^#!Chat_Command_Batch', @data['body']) > 0) {
-								@commands = reg_split('\r?\n', @data['body'])
-								@commands[0] = reg_replace('^#!Chat_Command_Batch', '', @commands[0])
-								# send to proc
-								@return = _discordBot_process_batchfile(@commands, @discord, @dm)
-							}
-						} else {
-							_db_msg_Console('Processing Batch file failed: '.@data, @discord['serverid'])
-						}
-					}));
 
-	# return array of returns?
-
-	# returns array:
-					# error: false, reponseCode: 200, responseText: OK, body: all attachment file's lines
-					# variables scoped, does not provide edits back.
-					# crashes server if closure returns commands
-					
-				}
-			}
-		} else {
-		*/
 	# Normal Message
 		
-		
-	#Wish support here
+	# Wish support here
 	
 		@isCmd = _discordBot_iscommand(@discord)
 	}
@@ -91,6 +54,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 		}
 	}
 }
+#
 # DM commands
 bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'priority': 'HIGH'), null, @discord) {
 	array_set(@discord, 'time', time())
@@ -112,7 +76,6 @@ bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'prio
 		@userserver = @isCmd
 		@isCmd = true
 	}
-
 	if(@isCmd == true) {
 		consume();
 		array_set(@discord, 'channel', @discord['userid']);

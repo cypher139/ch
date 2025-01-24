@@ -1,7 +1,6 @@
 # Autosave Keys
 @x8db = import('DiscordBot.db.save.keys', array())
 @x8db[] = 'Leaderboard'
-@x8db[] = 'debug.roles.Leaderboard.undo'
 export('DiscordBot.db.save.keys', array_unique(@x8db))
 
 # Receive messages from Discord users, pass data to Leaderboard and Minecraft server, save message for future reference.

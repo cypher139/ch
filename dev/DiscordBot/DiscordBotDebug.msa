@@ -6,12 +6,20 @@ admin:/dbdbg [$action] [$] = >>>
 @action = to_lower(string($action))
 @botconfig = import('DiscordBot.config.Bot')
 @servers = import('DiscordBot.Servers')
+@servernicks = import('DiscordBot.Servers.Nicknames')
 @serverID = @botconfig['Primary_Guild']
 foreach(@arg in @args) {
 	if(array_contains(@servers, @arg)) {
 		@serverID = @arg
 		array_remove_values(@args, @arg)
 		break()
+	}	
+	if(string_starts_with(@arg, '--')) {
+		if(array_contains(@servernicks, replace(@arg, '--', ''))) {
+			@serverID = array_index(@servernicks, replace(@arg, '--', ''))
+			array_remove_values(@args, @arg)
+			break()
+		}
 	}
 }
 #pseudo array for actions that require event array
@@ -328,8 +336,9 @@ case 'findmultiplejoins':
 	msg(@sendMsg)
 case 'snowflaketime':
 	if(!array_index_exists(@args, 0)) { @args[] = @botconfig['Bot_ID'] }
+	if(!is_numeric(@args[0])) { die(color(12).'Snowflakes must be a number.') }
 	msg('Snowflake: '.@args[0])
-	@snowtime = _db_get_snowflake_time(@args[0])
+	@snowtime = rshift(integer(@args[0]), 22) + 1420070400000
 	msg('Timestamp: '.@snowtime)
 	msg(color(10).'Date: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @snowtime, 'UTC'))
 	msg(color(11).'ISO8601: '.simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', @snowtime, 'UTC'))
