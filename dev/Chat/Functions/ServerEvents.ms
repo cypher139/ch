@@ -13,7 +13,7 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 # Setup Join Message
 	@joinmsg = ''
 	@dcChannel = ''
-	if(has_permission(@playerID['name'], 'essentials.silentjoin')) { @dcChannel = '--admin' }
+	try(if(has_permission(@playerID['name'], 'essentials.silentjoin')) { @dcChannel = '--admin' })
 	switch(@serverConfig['Join_Message']) {
 		case 'default':
 		case 'Default':
@@ -156,23 +156,21 @@ set_cron('59 23 * * *', closure(){
 						if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
 						if(@ipdb['rcn'] != '') { @cnFlag .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
 						# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
-						if(@ipdb['asn'] != '') {			
+						if(@ipdb['asn'] != '') {		
 							@listIPData .= ' ASN: '.@ipdb['asn']
 							@addemoji = ''
-							if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
-								if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-									@addemoji .= '%a0%'
-								}
+							if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
+								if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@addemoji = '%a0%' } else { @addemoji = '%a2%'}
 							}
 							if(array_index_exists(@blacklistIP, 'Auto_Blacklist_ASNs')) {
 								if(array_contains(@blacklistIP['Auto_Blacklist_ASNs'], @ipdb['asn'])) {
-									@addemoji .= '%a1%'
+									@addemoji = '%a1%'
 									@blacklistIP['IP_Blacklist'][] = @ip
 									export('Chat.config.IPBlacklist', @blacklistIP);
 								}
 							}
-							if(@addemoji != '') { @listIPData .= @addemoji }
-						}
+							if(@addemoji != '') { @listIPData .= ' '.@addemoji }
+						}  else { @listIPData = 'No ASN Found' }
 						if(@ipdb['aso'] != '') { @listIPData .= ' ISP: '.@ipdb['aso'] }
 						if(@listIPData == '') { @isp = '' } else { @isp = '['.@cnFlag.to_lower(@listIPData).']' }
 					}
@@ -182,14 +180,16 @@ set_cron('59 23 * * *', closure(){
 						@isp = '< '.@iplog['isp'][@ip].' >'
 					}
 				}
-				@Message .= '\n%fs%'.color(9).@ip.color(7).'%fe%  %fb%'.color(12).@count.color(7).'%fb% ping'.@s.'   '.color(3).@isp;
+				@rp = ''
+				if(@times[0] < @checktime) { @rp = ' %rp%' }
+				@Message .= '\n%fs%'.color(9).@ip.color(7).'%fe%  %fb%'.color(12).@count.color(7).'%fb% ping'.@s.@rp.'   '.color(3).@isp;
 			}
 		}
 		if(@useMsg == true) {
 			if(@serverConfig['Ping_Message_Discord'] == true && @serverConfig['Ping_Message_Level'] > 1) {
 				if(is_proc('_discordBot_broadcast')) { 
 					@dMsg = @Message
-					foreach(@key: @rep in array('fs': '`', 'fe': '`', 'fb': '**', 'a0': ':exclamation:', 'a1': ':no_entry_sign:')) {
+					foreach(@key: @rep in array('rp': ':repeat:', 'fs': '`', 'fe': '`', 'fb': '**', 'a0': ':exclamation:', 'a1': ':no_entry_sign:', 'a2': ':recycle:')) {
 						@dMsg = replace(@dMsg, '%'.@key.'%', @rep)
 					}
 					_discordBot_broadcast('bot', '--ping', @dMsg, 'bot', closure(@msgID){
@@ -209,7 +209,7 @@ set_cron('59 23 * * *', closure(){
 			}
 			if(@serverConfig['Ping_Message_Console'] == true && @serverConfig['Ping_Message_Level'] > 0) {
 				@cMsg = @Message
-				foreach(@key: @rep in array('fs': '', 'fe': '', 'fb': '', 'a0': ' <ASN Known>', 'a1': ' <Auto Added IP to Blacklist>')) {
+				foreach(@key: @rep in array('rp': '!', 'fs': '', 'fe': '', 'fb': '', 'a0': ' <ASN Known>', 'a1': ' <Auto Added IP to Blacklist>', 'a2': ' <Past ASN>')) {
 					@cMsg = replace(@cMsg, '%'.@key.'%', @rep)
 				}
 				console(@cMsg, false)
@@ -219,7 +219,8 @@ set_cron('59 23 * * *', closure(){
 });
 
 bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
-	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+	@blacklistIP = import('Chat.config.IPBlacklist')
+	if(!is_array(@blacklistIP)) { @blacklistIP = array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()) }
 	@time = time();
 	@serverConfig = import('Chat.config.Server')
 	@pinglevel = @serverConfig['Ping_Message_Level']
@@ -291,23 +292,21 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 			if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
 			if(@ipdb['rcn'] != '') { @cnFlag .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
 			# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
-			if(@ipdb['asn'] != '') { 
+			if(@ipdb['asn'] != '') {
 				@listIPData .= ' ASN: '.@ipdb['asn']
 				@addemoji = ''
-				if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
-					if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-						@addemoji .= '%a0%'
-					}
+				if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
+					if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@addemoji = '%a0%' } else { @addemoji = '%a2%'}
 				}
 				if(array_index_exists(@blacklistIP, 'Auto_Blacklist_ASNs')) {
 					if(array_contains(@blacklistIP['Auto_Blacklist_ASNs'], @ipdb['asn'])) {
-						@addemoji .= '%a1%'
+						@addemoji = '%a1%'
 						@blacklistIP['IP_Blacklist'][] = @ip
 						export('Chat.config.IPBlacklist', @blacklistIP);
 					}
 				}
 				if(@addemoji != '') { @listIPData .= '%fe%'.@addemoji.'%fs%' }
-			}
+			} else { @listIPData = 'No ASN Found' }
 			if(@ipdb['aso'] != '') { @listIPData .= ' ISP: '.@ipdb['aso'] }
 			if(@listIPData == '') { @adminPingMessage = replace(@adminPingMessage, '%IPDB%', '') } else {
 				@adminPingMessage = replace(@adminPingMessage, '%IPDB%', '  '.@cnFlag.'%fs%'.to_lower(@listIPData).'%fe%')
@@ -318,7 +317,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	} else { @adminPingMessage = replace(@adminPingMessage, '%IPDB%', '') }
 	if(@serverConfig['Ping_Message_Console'] == true && @pinglevel > 0) {
 		@cMsg = @adminPingMessage
-		foreach(@key: @rep in array('fi': '', 'fs': '', 'fe': '', 'links': '', 'a0': ' <ASN Known>', 'a1': ' <Auto Added IP to Blacklist>')) {
+		foreach(@key: @rep in array('fi': '', 'fs': '', 'fe': '', 'links': '', 'a0': ' <ASN Known>', 'a1': ' <Auto Added IP to Blacklist>', 'a2': ' <Past ASN>')) {
 			@cMsg = replace(@cMsg, '%'.@key.'%', @rep)
 		}
 		console(@cMsg, false)
@@ -336,7 +335,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 		}
 		if(is_proc('_discordBot_broadcast')) {
 			@dMsg = @adminPingMessage
-			foreach(@key: @rep in array('fi': '`', 'fs': '[', 'fe': ']', 'links': @lookup, 'a0': ':exclamation:', 'a1': ':no_entry_sign:')) {
+			foreach(@key: @rep in array('fi': '`', 'fs': '[', 'fe': ']', 'links': @lookup, 'a0': ':exclamation:', 'a1': ':no_entry_sign:', 'a2': ':recycle:')) {
 				@dMsg = replace(@dMsg, '%'.@key.'%', @rep)
 			}
 			_discordBot_broadcast('bot', '--ping', @dMsg, 'bot', closure(@msgID){

@@ -41,7 +41,7 @@ admin:/chatipreport [$] = >>>
 						if(@ipdb['asn'] != '') { 			
 							@listIPData .= ' '.'ASN: '.@ipdb['asn']
 							if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
-								if(!array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
+								if(!array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
 									@listIPData .= ' <New ASN>'
 								}
 							}
@@ -81,4 +81,173 @@ admin:/chatipreport [$] = >>>
 		
 		msg(replace(@Message, '%format%', ''))
 	}
+<<<
+
+#IP ping time averages
+admin:/chatiptimeavg [$] = >>>
+	@time = time();
+	@raw = false
+	@curate = false
+	@args = parse_args($)
+	@type = 'blacklist'
+	@allprefix = 'these'
+	@filecurate = ''
+	@serverConfig = import('Chat.config.Server')
+	proc _display_duration(@time) {
+		@time = ceil(@time)
+		@dateType = 'HH\'h\' mm\'m\' ss\'s\''
+		@dl = ''
+		if(@time < 60000) {
+		#less than min
+			@dateType = 'ss\'s\''
+		} else if(@time >= 60000 && @time < 3600000) {
+		#over 1 min
+			@dateType = 'mm\'m\' ss\'s\''
+		} else if(@time >= 3600000 && @time < 86400000) {
+		#over 1 hour - uses above default.
+			@dateType = 'HH\'h\' mm\'m\' ss\'s\''
+		} else if(@time >= 86400000) {
+		#over 1 day
+			@dl = (simple_date('D', @time) - 1).'d '
+		} 
+		return(@dl.simple_date(@dateType, @time));
+	}
+	if(array_contains(@args, 'raw')) { 
+		@raw = true
+		@filecurate = ' (All)'
+		@allprefix = 'All Known';
+		array_remove_values(@args, 'raw')
+	}
+	if(array_contains(@args, 'curate')) { 
+		@curate = true
+		@filecurate = ' (Curated)'
+		array_remove_values(@args, 'curate')
+	}
+	if(array_contains(@args, 'ignore')) { 
+		@type = 'ignore'
+		array_remove_values(@args, 'ignore')
+	}	
+	if(array_contains(@args, 'blacklist')) { 
+		@type = 'blacklist'
+		array_remove_values(@args, 'blacklist')
+	}
+	if(array_contains(@args, 'obnoxious')) { 
+		@type = 'obnoxious'
+		array_remove_values(@args, 'obnoxious')
+	}
+	@usearray = @args[];
+	@types = array('ignore': 'Ignored', 'blacklist': 'Blacklisted', 'obnoxious': 'Obnoxious')
+	@ipdb = array()
+	switch(@type) {
+	case 'obnoxious':
+		@odb = import('Chat.config.IPBlacklist')
+		if(!is_array(@odb)) { die('Chat config not loaded.') }
+		if(!array_index_exists(@odb, 'Obnoxious')) { die('Chat config not loaded..') }
+		@usearray = array_keys(@odb['Obnoxious'])
+		@allprefix = 'All Listed'
+		@ipdb = get_value('Server.pings.log.blacklist.IP')
+	default:
+		@ipdb = get_value('Server.pings.log.'.@type.'.IP')
+		if(!is_array(@ipdb)) { die('No data of type '.@types[@type]) }
+	}
+	if(@raw) { @usearray = array_keys(@ipdb); }
+	@msgIPData = array(color(14).'Average Ping Times observed for '.color(9).@allprefix.' '.@types[@type].color(14).' IPs:'.@filecurate)
+	@allavg = array()
+	@sortedIPData = array()
+	@IPsorteddata = array()
+	@obnoxData = array()
+	@jsoncfg = array()
+	if(array_size(@usearray) == 0) { die(color(12).'No IPs were provided.') }
+	foreach(@arg in @usearray) {
+		@ip = reg_replace('[%][0]$', '', @arg);
+		if(@ip == 'raw' || @ip == 'isp' || @ip == 'ip') { continue() }
+		if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
+			msg(color(12).'Not a valid IP: '.@ip)
+			continue()
+		}
+		@listIPData = color(14).'['.@ip.'] '.color(3)
+		if(!array_index_exists(@ipdb, @ip)) {
+			@listIPData .= color(10).'Not present'
+			array_set(@obnoxData, @ip, 'Not Present')
+			continue()
+		}
+		@asize = array_size(@ipdb[@ip])
+		if(!array_index_exists(@sortedIPData, @asize)) { array_set(@sortedIPData, @asize, array()) }
+		@avgtime = 0
+		if(@asize == 1) { 
+			@listIPData .= color(8).' 1 ping'
+			if(@curate) { continue() }
+		} else {	
+			@listIPData .= ' Total Pings: '.color(9).@asize
+			@sumtime = array()
+			foreach(@i: @p in @ipdb[@ip]) {
+				if(@i < 1) { continue() }
+				@sumtime[] = @p - @ipdb[@ip][(@i - 1)]
+				# msg(@i.': '.@p.'  '.@sumtime)
+			}
+			@avgtime = ceil(average(@sumtime))
+			if(@avgtime < 3000) {
+				@listIPData .= color(8).' Average below 3 second threshold'
+				if(@curate) { continue() }
+			} else {
+				@allavg[] = @avgtime
+				@listIPData .= color(6).' Average Time between pings: '.color(9).@avgtime.' ('._display_duration(@avgtime).')'
+			}
+			array_set(@jsoncfg, @ip, array('t': @avgtime, 'f': _display_duration(@avgtime), 'p': @asize))
+		}
+		if(@listIPData != color(14).'['.@ip.'] '.color(3)) {
+			@IPsorteddata[] = @listIPData
+			array_set(@sortedIPData[@asize], @ip, @listIPData)
+		}
+		if(@asize > 9 && @avgtime < 86400000 && @avgtime > 0) {
+			array_set(@obnoxData, @ip, array('f': _display_duration(@avgtime), 'p': @asize))
+		}
+	}
+	@ipcount = 0
+	foreach(@size: @datas in @sortedIPData) {
+		@ipcount += array_size(@datas)
+		@msgIPData[] = color(13).'IPs with '.@size.' Total Pings: '.color(8).array_size(@datas)
+		@msgIPData[] = array_implode(@datas, '\n')
+	}
+	@allavgtime = ceil(average(@allavg))
+	@msgIPData[] = color(6).'Total IPs listed: '.color(9).@ipcount.color(6).' | Total Average Time between pings: '.color(9).@allavgtime.' ('._display_duration(@allavgtime).')'
+	msg(array_implode(@msgIPData, '\n'))
+	_write_file(import('Chat.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.txt', strip_colors(array_implode(@msgIPData, '\n')), 'overwrite');
+	_write_file(import('Chat.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.json', json_encode(@jsoncfg), 'overwrite');
+	_write_file(import('Chat.logs.dir').'/Average obnoxious IP Ping times'.@filecurate.'.yml', yml_encode(@obnoxData, true), 'overwrite');
+	msg(color(14).'Obnoxious: IPs with average times below 1 day and over 10 pings: ('.array_size(@obnoxData).')\n'.color(8).map_implode(@obnoxData, color(9).': ', '\n'.color(8)))
+<<<
+
+#Check if a given IP is already in IP Blacklist config
+admin:/chatiponbl [$] = >>>
+	@time = time();
+	@raw = false
+	@args = parse_args($)
+	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+	@msgIPData = array(color(14).'is IPs on Chat IP Blacklist: ')
+	@listIPData = ''
+	foreach(@arg in @args) {
+		@listIPData = ''
+		@ip = reg_replace('[%][0]$', '', @arg);
+		if(@ip == 'raw' || @ip == 'isp' || @ip == 'ip') { continue() }
+		if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
+			msg(color(12).'Not a valid IP: '.@ip)
+			continue()
+		}
+		@listIPData = color(8).'['.color(9).@ip.color(8).'] '.color(3)
+		if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
+			@listIPData .= color(12).'In Blacklist'
+		} else {
+			@listIPData .= color(10).'Not present'
+		}
+		foreach(@block: @ISP in @blacklistIP['IP_Block_Blacklist']) {
+			@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
+			if(string_starts_with(string(@ip), @startBlock)) {
+				@listIPData .= color(8).', '.color(14).'Found On Block Blacklist: '.color(7).@block
+				break()
+			}
+		}
+		@msgIPData[] = @listIPData
+	}
+	msg(array_implode(@msgIPData, '\n'))
 <<<

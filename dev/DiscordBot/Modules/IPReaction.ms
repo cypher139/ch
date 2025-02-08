@@ -60,10 +60,8 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 						# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
 						if(@ipdb['asn'] != '') { 
 							@listIPData .= ' '.'ASN: '.@ipdb['asn']
-							if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
-								if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-									@listIPData .= '<ASN has IPs on Blacklist>'
-								}
+							if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
+								if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@listIPData .= '<ASN has IPs on Blacklist>' } else { @listIPData .= '<Past ASN>' }
 							}
 						}
 						if(@ipdb['aso'] != '') { @listIPData .= ' '.'ISP: '.@ipdb['aso'] }

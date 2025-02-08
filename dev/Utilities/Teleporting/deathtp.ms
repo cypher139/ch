@@ -1,28 +1,28 @@
-#version 1.3-tmc
-
 #Console Deaths = amount of times server started / alias reloads
 store_value('DeathCount.console.death.counter', get_value('DeathCount.console.death.counter')++)
 
-#Player Deaths
+#Player Deaths: save various infos.
 bind('player_death', array('id': 'DeathTP.event', 'priority': 'MONITOR'), null, @death) {
 	x_new_thread('DeathStats.'.@death['player'], closure(@player = @death['player'], @drops = @death['drops']){
 		@uuid = puuid(@player, 'dashless')
 		@dev = import('ch.player.'.@uuid.'.developer')
-		
-	# Save death point for /back
+		@mode = string(pmode(@player))[0]
+	# Save death point for /back [per mode]
 		@here = ploc(@player)
 		@pdloc = get_value('player.'.@uuid.'.last.death.location')
-		if(!is_array(@pdloc)) { @pdloc = array(@here) }
-		array_insert(@pdloc, @here, 0)
-		if(array_index_exists(@pdloc, 10)) { array_remove(@pdloc, 10) }
+		if(!is_array(@pdloc)) { @pdloc = array() }
+		if(!array_index_exists(@pdloc, @mode)) { array_set(@pdloc, @mode, array(@here)) }
+		array_insert(@pdloc[@mode], @here, 0)
+		if(array_index_exists(@pdloc, @mode, 10)) { array_remove(@pdloc[@mode], 10) }
 		store_value('player.'.@uuid.'.last.death.location', @pdloc)
-		tmsg(@player, color(7).'Use the '.color('c').'/back'.color(7).' command to return to your death point.')
+		tmsg(@player, color(7).'Use the '.color(12).'/back'.color(7).' command to return to your death point.')
 		
-	# Save inventory
+	# Save inventory [per mode]
 		@pddrops = get_value('player.'.@uuid.'.last.death.drops')
-		if(!is_array(@pddrops)) { @pddrops = array(@drops) }
-		array_insert(@pddrops, @drops, 0)
-		if(array_index_exists(@pddrops, 10)) { array_remove(@pddrops, 10) }
+		if(!is_array(@pddrops)) { @pddrops = array() }
+		if(!array_index_exists(@pddrops, @mode)) { array_set(@pddrops, @mode, array(@drops)) }
+		array_insert(@pddrops[@mode], @drops, 0)
+		if(array_index_exists(@pddrops, @mode, 10)) { array_remove(@pddrops[@mode], 10) }
 		store_value('player.'.@uuid.'.last.death.drops', @pddrops)
 		
 	# Save number of times died

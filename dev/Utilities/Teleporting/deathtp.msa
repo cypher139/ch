@@ -1,54 +1,60 @@
-#version 1.3-tmc
-#requires ScriptLibraries - getplayerID and UUID database
-deathtp:/back [$id=1] = >>>
+#Version 1.4 - requires ScriptLibraries - getplayerID and UUID database
+deathtp:/back [$id=1] [$mode=''] = >>>
 @name = 'DeathTP'
 @id = 1
+@mode = string(pmode(player()))[0]
+if($mode != '') { @mode = to_upper($mode)[0] }
 if(is_numeric($id)) {
 	if(integer($id) < 0) { @id = 1 }
 	if($id - 1 > 9) { @id = 9 } else { @id = $id - 1 }
 } else {
-	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+	die(color(12).'['.color(9).@name.color(12).'] '.color(7).'Sorry, please specify a supported option!')
 }
 
 @here = get_value('player.'._getplayerID(player())['id'].'.last.death.location')
 if(!is_array(@here)) { @here = array() }
 
-if(array_index_exists(@here, @id, 'world')) {
-	set_ploc(@here[@id])
-	msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'You were teleported to your death point.')
+if(array_index_exists(@here, @mode, @id, 'world')) {
+	set_ploc(@here[@mode][@id])
+	@s = 'last death point'
+	if($id > 1) { @s = 'previous death point #'.$id }
+	msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Teleported to your '.@s.'.')
 } else {
-	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but you don\'t have a saved death point to teleport to!')
+	die(color(8).'['.color(6).@name.color(8).'] '.color(7).'You don\'t have a saved death point #'.$id.' to teleport to!')
 }
 <<<
 
-deathitems:/backitems [$id=1] = >>>
-@name = 'DeathTP - GarbageManagement'
+deathitems:/backitems [$id=1] [$mode=''] = >>>
+@name = 'DeathTP: ItemManagement'
 @id = 1
+@mode = string(pmode(player()))[0]
+if($mode != '') { @mode = to_upper($mode)[0] }
 if(is_numeric($id)) {
 	if(integer($id) < 0) { @id = 1 }
 	if($id - 1 > 9) { @id = 9 } else { @id = $id - 1 }
 } else {
-	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, please specify a supported option!')
+	die(color(12).'['.color(9).@name.color(12).'] '.color(7).'Sorry, please specify a supported option!')
 }
 
 @bi = get_value('player.'._getplayerID(player())['id'].'.last.death.drops')
 if(!is_array(@bi)) { @bi = array() }
-
-if(array_index_exists(@bi, @id, 0, 'name')) {
-	foreach(@item in @bi[@id]) {
+@s = 'the last death'
+if($id > 1) { @s = 'previous death #'.$id }
+if(array_index_exists(@bi, @mode, @id, 0, 'name')) {
+	foreach(@item in @bi[@mode][@id]) {
 	#array: meta, qty, name
 		pgive_item(player(), @item)
 	}
-	msg(color('e').'['.color(6).@name.color('e').'] '.color(7).'Respawning your items.')
+	msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Respawning your items from '.@s.'.')
 } else {
-	die(color('e').'['.color(6).@name.color('e').'] '.color(7).'Sorry, but your inventory was empty!')
+	die(color(8).'['.color(6).@name.color(8).'] '.color(7).@s.'\'s inventory was empty!')
 }
 <<<
 
 deathtp:/deathcounter [$] = >>>
 proc _msg_count(@count, @player, @pos) {
 	@name = 'DeathCount'
-	@prefix = color('e').'['.color(6).@name.color('e').'] '
+	@prefix = color(14).'['.color(6).@name.color(14).'] '
 	@posmsg = ' ('.color(4).'#'.@pos.' on leaderboard'.color(7).')'
 	@dcmsg = ''
 	if(@pos == '' || @pos == null) { @posmsg = ''}
@@ -71,15 +77,15 @@ proc _msg_count(@count, @player, @pos) {
 			@dcmsg = 'Reaper is currently suffering memory loss...'
 			console(@prefix.color(8).' Requested Player named "'.@player.'" has not logged on here before!', false)
 		default:
-			@dcmsg = @player.' died a total of '.color('c').@count.color(7).' times!'
+			@dcmsg = @player.' died a total of '.color(12).@count.color(7).' times!'
 	}
 	msg(@prefix.color(7).@dcmsg.@posmsg)
 }
 
 proc _msg_leaderboard(@board, @max) {
 	@name = 'DeathCount'
-	@prefix = color('e').'['.color(6).@name.color('e').'] '
-	msg(@prefix.color(7).' Top '.color('c').@max.color(7).' Deaths Leaderboard:')
+	@prefix = color(14).'['.color(6).@name.color(14).'] '
+	msg(@prefix.color(7).' Top '.color(12).@max.color(7).' Deaths Leaderboard:')
 	for(@i = 0, @i < @max, @i++){
 		if(array_index_exists(@board, @i)) {
 			@numcolor = 4
@@ -93,7 +99,7 @@ proc _msg_leaderboard(@board, @max) {
 			case 3:
 				@numcolor = '#ba3e39'
 			}
-			msg(color(@numcolor).'# '.(@i + 1).color(7).':  '.color(@numcolor).@board[@i][0].color(7).' -- '.color('c').@board[@i][1].color(7).' deaths')
+			msg(color(@numcolor).'# '.(@i + 1).color(7).':  '.color(@numcolor).@board[@i][0].color(7).' -- '.color(12).@board[@i][1].color(7).' deaths')
 		} else {
 			msg(@prefix.color(9).' ------ End of Leaderboard ------')
 			break()
@@ -106,7 +112,7 @@ proc _msg_leaderboard(@board, @max) {
 @args = parse_args($)
 @countdata = get_value('DeathCount.players.death.counter')
 @oplayer = get_offline_players()
-@prefix = color('e').'['.color(6).@name.color('e').'] '
+@prefix = color(14).'['.color(6).@name.color(14).'] '
 @boardpos = 'Unlisted'
 
 if(array_size(@args) == 0) {
@@ -139,7 +145,7 @@ if(array_size(@args) == 1) {
 		if(has_permission('commandhelper.alias.'.@name.'.console')) {
 			_msg_count(get_value('DeathCount.console.death.counter'), 'Console')
 		} else {
-			msg(@prefix.color('c').'You do not have permission to view Console stats.')
+			msg(@prefix.color(12).'You do not have permission to view Console stats.')
 		}
 		case 'leader':
 		case 'leaderboard':
@@ -155,10 +161,10 @@ if(array_size(@args) == 1) {
 				}
 				if(@v == 0) {continue()}
 				array_remove_values(@oplayer, @name)
-				msg(color(9).@name.color(7).' -- '.color('c').@v.color(7).' deaths')
+				msg(color(9).@name.color(7).' -- '.color(12).@v.color(7).' deaths')
 			}
 			if(array_size(@oplayer) > 0) {
-				msg(@prefix.color(9).'Reaper'.color(7).' forgot about '.color('c').array_size(@oplayer).color(7).' players!')
+				msg(@prefix.color(9).'Reaper'.color(7).' forgot about '.color(12).array_size(@oplayer).color(7).' players!')
 			}
 		default:
 			#catches valid Minecraft player but never played here.

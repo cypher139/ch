@@ -1,14 +1,16 @@
 #commandbook: quick kit replacement
 everyone:/powerup = >>>
 #array: meta, qty, name
-assign(@player, player())
+@player = player();
 #278
-pgive_item(@player, array('name': 'DIAMOND_PICKAXE', 'qty': '1'))
+#normal: pgive_item(@player, array('name': 'DIAMOND_PICKAXE', 'qty': 1))
+pgive_item(@player, array('meta': array('damage': 0, 'display': null, 'enchants': array('efficiency': array('elevel': 5), 'fortune': array('elevel': 3), 'unbreaking': array('elevel': 3)), 'flags': array(), 'lore': null, 'model': null, 'modifiers': null, 'repair': 0, 'tags': null, 'unbreakable': false), 'name': 'DIAMOND_PICKAXE', 'qty': 1))
 #50
-pgive_item(@player, array('name': 'WALL_TORCH', 'qty': '64'))
+pgive_item(@player, array('name': 'TORCH', 'qty': 64))
 #314
-set_pinv(@player, array(103: array('name': 'GOLDEN_HELMET', 'qty': 1)))
+#normal: set_pinv(@player, array(103: array('name': 'GOLDEN_HELMET', 'qty': 1)))
+set_pinv(@player, array(103: array('meta': array('damage': 0, 'display': 'ReBreather', 'enchants': array('aqua_affinity': array('elevel': 1), 'respiration': array('elevel': 3)), 'flags': array(), 'lore': null, 'model': null, 'modifiers': null, 'repair': 0, 'tags': null, 'unbreakable': false), 'name': 'GOLDEN_HELMET', 'qty': 1)))
 #317
 set_pinv(@player, array(100: array('name': 'GOLDEN_BOOTS', 'qty': 1)))
-msg(color(14).'Kit \'powerup\' given!')
+msg(color(14).'Kit '.color(9).'powerup'.color(14).' given!')
 <<<

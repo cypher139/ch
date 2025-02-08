@@ -1,5 +1,5 @@
 #Random Code Generation
-#version 2.4.1
+#version 2.5
 proc _codegen(@codelength, @codetype, @codetype2) {
 #How to use:
 # call _codegen(NUMBER, character type 1, character type 2)
@@ -67,6 +67,12 @@ proc _codegen(@codelength, @codetype, @codetype2) {
 	case 'a':
 	case 5:
 		@chars = array_get(@all)
+	case 'read':
+	case 6:
+		@chars = array_merge(@lower, @number)
+		array_remove_values(@chars, 'i')
+		array_remove_values(@chars, 'l')
+		array_remove_values(@chars, 'o')
 	case 'n8':
 	case '8bit':
 		@number[] = 0
@@ -116,6 +122,12 @@ proc _codegen(@codelength, @codetype, @codetype2) {
 		case 'a':
 		case 5:
 			@chars2 = array_get(@all)
+		case 'read':
+		case 6:
+			@chars2 = array_merge(@lower, @number)
+			array_remove_values(@chars2, 'i')
+			array_remove_values(@chars2, 'l')
+			array_remove_values(@chars2, 'o')
 		case 'n8':
 		case '8bit':
 		case 'n16':

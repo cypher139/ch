@@ -181,7 +181,7 @@ proc _vc_user_left(@discord, @type, @chan = array(), @vc) {
 	} else if(array_index_exists(@config, 'VC_Options', @channel)) {
 		@vc = @config['VC_Options'][@channel]
 	} else {
-		@vc = array('VC_Logs': array('Join', 'Leave', 'Completed'), 'VC_DM_Thanks': false)
+		@vc = array('VC_Logs': array('Join', 'Leave', 'Completed'), 'VC_DM_Thanks': false, 'VC_DC_Bots': false)
 	}
 	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.Live')
 	if(!is_array(@stats)) { @stats = array('users': array(), 'channels': array()) }

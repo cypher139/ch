@@ -337,10 +337,8 @@ proc _discordBot_cmd_geoiplookup(@discord, @args) {
 		# if(@ipdb['asn'] != '') { @listIPData .= ' '.'ASN: '.@ipdb['asn'] }
 		if(@ipdb['asn'] != '') { 
 			@listIPData .= ' ASN: '.@ipdb['asn']
-			if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
-				if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-					@listIPData .= ' <ASN present on blacklist>'
-				}
+			if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
+				if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@listIPData .= ' <ASN present on blacklist>' } else { @listIPData .= ' <Past ASN>' }
 			}
 		}
 		if(@ipdb['aso'] != '') { @listIPData .= ' ISP: '.to_lower(@ipdb['aso']) }

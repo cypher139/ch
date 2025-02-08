@@ -211,6 +211,7 @@ case 'player':
 #	msg(vault_pgroup(@player, prefix))
 	try(
 		msg(puuid(@args[0], 'dashless'))
+		msg(puuid(@args[0]))
 	,@fail, 
 		msg('no puuid()')
 	)

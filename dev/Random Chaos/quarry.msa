@@ -1,0 +1,80 @@
+#mine a square bowl shaped quarry area, leaving all ores exposed
+#uses WorldEdit heavily, may lag server
+admin:/quarry [$level] = >>>
+@heightLimit = 63
+@player = player()
+@world = pinfo(@player)[7]
+@mask = array('deepslate', 'tuff', 'gravel', 'granite', 'stone', 'cobblestone', 'andesite', 'diorite', 'water', 'lava', 'cobbled_deepslate', 'sand', 'dirt', 'kelp_plant', 'seagrass', 'tall_seagrass', 'clay', 'glow_lichen', 'kelp')
+@initp1 = sk_pos1(@player)
+@initp2 = sk_pos2(@player)
+if(!is_array(@initp1) || !is_array(@initp2)) { die(color(12).'Make a WorldEdit selection 1 block in height first!') }
+if(@initp1['y'] != @initp2['y']) { die(color(12).'Your WorldEdit selection must be only 1 block in height!') }
+if(@initp1['y'] > @heightLimit || @initp2['y'] > @heightLimit) { die(color(12).'Your WorldEdit selection is too high for mining! Try digging deeper into the world.') }
+@levels = integer(@heightLimit - @initp1['y'])
+if(is_numeric($level)) { @levels = integer($level) }
+@blockCounts = array()
+@vblockCounts = array()
+@valuableBlocks = array('chest', 'spawner', 'emerald', 'diamond')
+# run('//gmask '.array_implode(@mask, ','))
+for(@i = 1, @i <= @levels, @i++) {
+	#check height
+	if(@initp1['y'] + @i > @heightLimit) { @levels = (@i - 1).color(8).' (Height Limit reached.)'; break() }
+	#block replaces
+	sk_replace_blocks(@player, array_implode(@mask, ','), 'air')
+	run('//walls 50%magenta_concrete,5%glowstone,45%light_gray_concrete')
+	#lighting
+	run('//center glowstone')
+	#Counts
+	@pos1 = sk_pos1(@player)
+	@pos2 = sk_pos2(@player)
+	for(@x = min(@pos1[0], @pos2[0]), @x <= max(@pos1[0], @pos2[0]), @x++) {
+		for(@y = min(@pos1[1], @pos2[1]), @y <= max(@pos1[1], @pos2[1]), @y++) {
+			for(@z = min(@pos1[2], @pos2[2]), @z <= max(@pos1[2], @pos2[2]), @z++) {
+				@xyz = array(@x, @y, @z, @world)
+				@getblock = to_lower(get_block(@xyz))
+				if(!array_index_exists(@blockCounts, @getblock)) { array_set(@blockCounts, @getblock, 0) }
+				@blockCounts[@getblock]++
+				if(array_contains_ic(@valuableBlocks, @getblock)) { 
+					if(!array_index_exists(@vblockCounts, @getblock)) { array_set(@vblockCounts, @getblock, array()) }
+					@vblockCounts[@getblock][] = @xyz
+				}
+			}
+		}
+	}
+	#move up
+	sleep(0.1)
+	run('//expand 1 up,north,west,east,south')
+	run('//contract 1 up')
+	run('/clearhistory')
+	msg(color(7).'Level '.color(9).@i.color(7).' of '.color(13).@levels.color(7).' mined!')
+}
+sk_pos1(@player, @initp1)
+sk_pos2(@player, @initp2)
+# run('//gmask')
+msg(color(10).'Quarry mining completed!'.color(14).' Levels: '.color(9).@levels)
+store_value('player.'.puuid(@player, 'dashless').'.quarry.block.Counts', @blockCounts)
+store_value('player.'.puuid(@player, 'dashless').'.quarry.block.valued.Counts', @vblockCounts)
+@vMsg = color(13).'Valuables: '
+foreach(@block: @coords in @vblockCounts) {
+	@size = array_size(@coords)
+	@vMsg .= '\n'.color(9).@block.': '.color(3).@size
+}
+msg(@vMsg)
+<<<
+#count each row for chests, spawner, emerald ore, diamond ore,
+admin:/quarrystats [$level] = >>>
+@player = player()
+@blockCounts = get_value('player.'.puuid(@player, 'dashless').'.quarry.block.Counts')
+@vblockCounts = get_value('player.'.puuid(@player, 'dashless').'.quarry.block.valued.Counts')
+if(!is_array(@blockCounts) || !is_array(@vblockCounts)) { die(color(12).'You have not generated a quarry yet.') }
+msg(color(3).map_implode(@blockCounts, color(10).': ', '\n'.color(3)))
+@vMsg = color(13).'Valuables: '
+foreach(@block: @coords in @vblockCounts) {
+	@size = array_size(@coords)
+	@vMsg .= '\n'.color(9).@block.': '.color(3).@size
+}
+msg(@vMsg)
+if(is_proc('_discordBot_send_mc_chat')) {
+	_discordBot_send_mc_chat('trophy', @player.' mined a quarry that contained:\n`'.map_implode(@blockCounts, '`: ', '\n`'))
+}
+<<<

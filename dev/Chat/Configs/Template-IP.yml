@@ -1,42 +1,52 @@
 # These IPs are just bots scanning for servers to grief; useless to send any data to!
 # IPs on this list are mostly obtained via logs of connection attempts on my own or friend's servers. 
 # Most of these IPs were likely just port scanning the open internet, that CommandHelper's server_ping event picked up on when scan found the MC server port. 
-# 1% of IPs are obtained from Reddit reports: https://www.reddit.com/r/Minecraft/comments/12ip3gd/who_is_shepan/
+# Some IPs are also obtained from Reddit reports: https://www.reddit.com/r/Minecraft/comments/12ip3gd/who_is_shepan/ ; https://www.reddit.com/r/admincraft/comments/134m8gu/random_users_constantly_fake_disconnecting_from/ ; https://www.reddit.com/r/admincraft/comments/18qh0op/i_get_why_im_being_scanned_but_why_is_the_same/
 #
 # Obnoxious Pingers:
 # These IPs keep frequently pinging the server and typically never actually connect in-game. Recommend blocking this section of IPs at the firewall level.
+# format: f: Frequency, i: ISP, u: Minecraft Username, p: Number of pings observed.
 Obnoxious:
   51.15.58.25:
     f: 15-60m
     i: "Scaleway SAS"
+    p: 83
   109.123.240.84:
     f: 15-60m
     i: "Contabo GmbH"
+    p: 500
     u: ServerSeeker
   164.68.124.86:
-    f: 5-15m
+    f: 11m
     i: "Contabo GmbH"
+    p: 147
   77.221.138.182:
-    f: 15m
+    f: 12m
     i: "Aeza International"
+    p: 273
   195.201.95.90:
     f: 1h
     i: "Hetzner Online GmbH"
+    p: 953
   195.154.199.60:
     f: 1-4m
     i: Scaleway
+    p: 6067
   51.15.34.47:
     f: 5h
     i: "Scaleway SAS"
+    p: 192
   51.158.174.200:
     f: 24h
     i: Scaleway
   5.42.101.164:
     f: 15m
     i: "Aeza International"
+    p: 228
   54.36.120.8:
-    f: 18m
+    f: 14m
     i: OVH
+    p: 469
   154.213.185.46:
     f: 15m
     i: PFCloud
@@ -50,63 +60,177 @@ Obnoxious:
   191.101.31.64:
     f: 4m
     i: "Cyber Assets Fzco"
+    p: 344
   193.25.217.28:
     f: 6m
     i: "Gravhosting Ltd"
+    p: 103
   84.239.16.162:
     f: 7m
     i: "Invite Systems SRL"
+    p: 48
   131.156.156.126:
-    f: 5m
+    f: 3m
     i: "Northern Illinois University"
+    p: 287
   87.120.112.234:
-    f: 3-30m
+    f: 10m
     i: "Ekabi LLC"
+    p: 16
   131.156.156.127:
-    f: 13-18m
+    f: 7-13m
     i: "Northern Illinois University"
+    p: 174
   87.120.126.53:
     f: 3-60m
     i: "Ekabi LLC"
+    p: 87
   62.60.247.100:
     f: 20m
     i: "Easy Chain Network"
+    p: 42
   77.68.6.60:
-    f: 5m
+    f: 3m
     i: "Fasthosts Internet Limited"
+    p: 214
   156.146.63.144:
     f: 12-60m
     i: "DataCamp Limited"
+    p: 33
   132.145.34.181:
-    f: 45m
+    f: 25m
     i: "Oracle Public Cloud"
+    p: 23
   154.42.7.39:
     f: 10-35m
     i: "New Itime AG"
+    p: 22
   156.146.63.160:
     f: 12-60m
     i: "DataCamp Limited"
+    p: 40
+  188.126.94.91:
+    f: 30m
+    i: "GleSYS AB"
+    p: 35
+  131.156.156.134:
+    f: 13m
+    i: "Northern Illinois University"
+    p: 43
+  37.46.113.164:
+    f: 50m
+    i: "AltusHost B.V."
+    p: 25
+  94.131.100.102:
+    f: 7-9m
+    i: "Stark Industries Solutions Ltd."
+    p: 70
+    u: ServerOverflow1
+  45.135.194.8:
+    f: 4m
+    i: PFCloud
+    p: 59
+  156.253.227.129:
+    f: 10m
+    i: Rekade International
+    p: 89
+  191.101.217.28:
+    f: 15m
+    i: "Cyber Assets Fzco"
+    p: 59
+  156.146.63.199:
+    f: 12m
+    i: "DataCamp Limited"
+    p: 47
 #
 Spam_Player_Names:
 # Player names, if an actual connection via Mojang auth was tried, are listed here.
+# Any relevant comments to that specific entry are listed above each entry.
   Bunger: 
     - 3.77.238.21
     - 3.73.52.141
-  # Cornbread21xxxx (replace x with randomized numbers)" 
-  Cornbread21xxxx: "154.213.185.46"
-  # advertised pfcloud and other unwanted spam before immediately disconnecting
-  martusin: "94.103.124.169"
-  Schesser: "193.35.18.165"
-  # Once discovered keeps checking every 15m
-  ServerSeeker: "109.123.240.84"
-  ServerSeekerV2: "46.101.233.169"
+  # Cornbread21xxxx (replace x with randomized numbers) ping:30m
+  # Cornbread numbers seen: 210010,210016,210021,210022,210024,210028,210029,210030,210032,210036,210040,210044,210046,210047,21005,210065,210070,210076,210079,21008,210081,210096,2100_
+  Cornbread21: 
+    - 154.213.185.46
+    - 97.87.116.251
+  ImamAlBuhari: 193.233.134.155
+  ItsMassiveWink: 94.103.124.169
+  JohnPorkkkkkk: 94.103.124.169
+  JustAScanner: 156.253.227.141
+  kinho_fsc: 170.233.250.30
+  # martusin connected, advertised pfcloud and other unwanted spam before immediately disconnecting. Same IP also tried logging in with other usernames:
+  martusin: 94.103.124.169
+  NotABot: 195.226.194.14
+  Notch: 131.156.156.12
+  Schesser: 193.35.18.165
+  # Server Seeker and variants: Once discovered keeps checking every 5-15m via 1 second connection through mojang auth, causing "com.mojang.authlib.GameProfile....lost connection: Disconnected" console spam
+  ServerSeeker: 
+    # many many attempts seen
+    - 109.123.240.84
+    #reddit also reports:
+    - 68.235.44.254
+    - 68.235.43.185
+    - 66.63.167.243
+    - 46.19.136.249
+    - 45.134.142.203
+    - 37.19.221.153
+    - 198.54.132.121
+    - 198.44.136.217
+    - 185.254.75.53
+    - 185.254.75.53
+    - 185.254.75.42
+    - 185.254.75.31
+    - 185.248.85.60
+    - 185.156.46.166
+    - 185.156.46.153
+    - 178.249.214.25
+    - 178.249.211.89
+    - 169.150.201.12
+    - 169.150.196.38
+    - 149.88.22.165
+    - 149.40.50.122
+    - 149.102.240.89
+    - 146.70.225.115
+    - 146.70.211.115
+    - 146.70.198.243
+    - 146.70.198.179
+    - 146.70.193.115
+    - 146.70.189.115
+    - 146.70.171.179
+    - 146.70.166.243
+    - 146.70.134.57
+    - 146.70.133.121
+    - 146.70.132.217
+    - 146.70.124.217
+    - 146.70.116.185
+    - 138.199.60.25
+    - 138.199.6.204
+    - 138.199.34.140
+    - 138.199.21.249
+    - 103.136.147.11
+    - 103.125.233.15
+  ServerSeekerV2: 
+    - 46.101.233.169
+    - 45.135.194.65
+  ServerOverflow1: 94.131.100.102
+  # UUID of player ServerOverflow6 is ebbdeeb3-5d9f-40c0-bbe0-ff1e56170d72
+  ServerOverflow6: 94.131.100.102
   ServerOverflow:
+    - 91.92.43.1
     - 132.145.71.44
     - 176.124.204.168
-  Shepan: "149.102.143.151"
-  ThisIsARobbery: "193.35.18.92"
+  Shadow_loll: 94.103.124.169
+  Shepan: 149.102.143.151
+  test: 209.38.102.131
+  ThisIsARobbery: 193.35.18.92
   # Logs on and immediately disconnects once a day with different user each time
-  Various: "84.54.51.253"
+  # Users: Chaosgurke46, Hellsend17, Kysggggg, MegaMagikarp, Naiwd_Gmerr, PriceZamm, ThaRealDx1, Tightt, josh3231, martusin, notoofy, nutties_nuts
+  Various: 84.54.51.253
+  # Sent bad login packets
+  Various_Bad: 45.95.147.247
+  # Login is clearly trying to use hacked item tags & overflow server with IndexOutOfBoundsException
+  Various_Hack: 156.253.227.129 
 #
 # Ranges of IPs to disallow access to server:
 # Useful for catching datacenter blocks of IPs
@@ -128,7 +252,7 @@ IP_Block_Blacklist:
   "51.15/16": Scaleway
   "87.236/16": "Constantine Cybersecurity"
   "94.103/16": "Constantine Cybersecurity"
-  "2a06:4880/16": "Constantine Cybersecurity"
+  "2a06:488/16": "Constantine Cybersecurity"
   "162.142.125/24": Censys
   "167.248.133/24": Censys
   "167.94/16": Censys
@@ -193,6 +317,8 @@ IP_Block_Blacklist:
   "87.120/16": "Ekabi LLC"
   "191.101/16": "Cyber Assets Fzco"
   "156.146.63/24": "DataCamp Limited"
+  "156.253.227/24": "Rekade International"
+  "104.245.241/24": Railnet LLC
 #
 # Main IP Blacklist:
 # Player names, if an actual connection via Mojang auth was tried, are listed separately.

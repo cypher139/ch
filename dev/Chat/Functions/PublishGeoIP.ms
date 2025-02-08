@@ -19,6 +19,7 @@ x_new_thread('ChatGitPublish'.time(), closure(){
 	@ipcount = 0
 	@asnnicks = array()
 	@asnipover10 = array()
+	@v6ip = array()
 	try {
 		@asnnicks = yml_decode(read(import('Chat.config.dir').'/ASN_ISP_Names.yml'))
 	} catch(IOException @ex) {
@@ -60,6 +61,7 @@ x_new_thread('ChatGitPublish'.time(), closure(){
 			}
 			array_set(@asnlist, @ipdb['asn'], @ipdb['aso'])
 			@ipcount++
+			if(string_contains(@ip, ':')) { @v6ip[] = @ip; }
 		}
 	} else {
 		@data = get_value('Chat.debug.results.asn')
@@ -128,7 +130,19 @@ x_new_thread('ChatGitPublish'.time(), closure(){
 	@asncnreport = 'Country Code, ASNs'
 	@asnrcnreport = 'Registerd Country Code, ASNs'
 	@newcfg = 'IP_Blacklist:'
-	@jsoncfg = array('Discovered_ASNs': array_keys(@asnip), 'IP_Blacklist': array())
+	@kASN = get_value('Chat.server.bl.known.ASNs');
+	if(!is_array(@kASN)) { @kASN = array() }
+	array_push_all(@kASN, array_keys(@asnip));
+	@kASN = array_unique(@kASN, false);
+	array_sort(@kASN, 'REGULAR');
+	@dASN = array()
+	foreach(@asn in @kASN) {
+		array_set(@dASN, @asn, 0);
+		if(array_index_exists(@asnip, @asn)) {
+			array_set(@dASN, @asn, array_size(@asnip[@asn]));
+		}
+	}
+	@jsoncfg = array('Discovered_ASNs': @dASN, 'IP_Blacklist': array())
 	foreach(@asn: @iplist in @asnip) {
 		@asnnick = ''
 		if(array_index_exists(@asnnicks, 'ASN_ISP_Names', @asn)) { @asnnick = ' <'.@asnnicks['ASN_ISP_Names'][@asn].'>' }
@@ -153,7 +167,9 @@ x_new_thread('ChatGitPublish'.time(), closure(){
 		_write_file(@writeDir.'/Reports/ASN-IP-10.csv', 'Known ASNs with over 10 IPs blacklisted\n'.array_implode(@asnipover10, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-CN.csv', @asncnreport, 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-RCN.csv', @asnrcnreport, 'overwrite');
-		_write_file(@writeDir.'/Reports/Known-ASNs.csv', 'Known ASNs\n'.array_implode(array_keys(@asnip), '\n'), 'overwrite');
+		_write_file(@writeDir.'/Reports/Current-ASNs.csv', 'Current ASNs\n'.array_implode(array_keys(@asnip), '\n'), 'overwrite');
+		store_value('Chat.server.bl.known.ASNs', @kASN);
+		_write_file(@writeDir.'/Reports/Known-ASNs.csv', 'Known ASNs\n'.array_implode(@kASN, '\n'), 'overwrite');
 		@mancfg = ''
 		try {
 			@mancfg = read(import('Chat.config.dir').'/Template-IP.yml')
@@ -169,17 +185,18 @@ x_new_thread('ChatGitPublish'.time(), closure(){
 		}
 		_write_file(@writeDir.'/Reports/Obnoxious_IPs.yml', yml_encode(yml_decode(@mancfg)['Obnoxious'], true), 'overwrite');
 		_write_file(@writeDir.'/Reports/IP_Block_Blacklist.yml', yml_encode(yml_decode(@mancfg)['IP_Block_Blacklist'], true), 'overwrite');
-		@extracfg = array('Discovered_ASNs': array_keys(@asnip), 'Auto_Blacklist_ASNs': @asnipover10)
+		@extracfg = array('Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @asnipover10)
 		if(array_index_exists(@asnip, 'None')) { array_set(@extracfg, 'Unknown_ASN_IPs', @asnip['None']) }
 		@jsoncfg = array_merge(@jsoncfg, yml_decode(@mancfg), @extracfg)
 		_write_file(@writeDir.'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		_write_file(import('Chat.config.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		_write_file(@writeDir.'/IPBlacklist.json', json_encode(@jsoncfg), 'overwrite');
 		_write_file(@writeDir.'/block.txt', array_implode(@jsoncfg['IP_Blacklist'], '\n'), 'Overwrite');
+		_write_file(@writeDir.'/Reports/v6.txt', array_implode(@v6ip, '\n'), 'Overwrite');
 		console(color(8).'[Chat] Wrote report files to Git folder.', false)
 		try {
 			@shellreturn = shell(array('./gitupload.sh'), array('workingDir': @writeDir))
-			console(color(3).'[Chat] Published new Git commit: '.color('r').@shellreturn, false)
+			console(color(3).'[Chat] Git push results: '.color('r').@shellreturn, false)
 			store_value('Chat.IPBlacklist.Publish.hash', sha1(@jsoncfg['IP_Blacklist']))
 		} catch(InsufficientPermissionException @ex) {
 			console(color(12).'Chat: GeoIP Git shell cannot start, make sure you have turned on the allow-shell setting in preferences.ini. \n'.@ex)

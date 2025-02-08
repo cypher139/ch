@@ -41,12 +41,10 @@ admin:/geoiplookup [$] = >>>
 		if(@ipdb['rc'] != '') { @listIPData .= ' '.'Registered Country: '.@ipdb['rc'] }
 		if(@ipdb['rcn'] != '') { @listIPData .= ' ('.@ipdb['rcn'].') ' }
 		# if(@ipdb['asn'] != '') { @listIPData .= ' '.'ASN: '.@ipdb['asn'] }
-		if(@ipdb['asn'] != '') { 
+		if(@ipdb['asn'] != '') {
 			@listIPData .= ' '.'ASN: '.@ipdb['asn']
-			if(array_index_exists(@blacklistIP, 'Discovered_ASNs')) {
-				if(array_contains(@blacklistIP['Discovered_ASNs'], @ipdb['asn'])) {
-					@listIPData .= ' <ASN present on blacklist>'
-				}
+			if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
+				if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@listIPData .= ' <ASN present on blacklist>' } else { @listIPData .= ' <Past ASN>'}
 			}
 		}
 		if(@ipdb['aso'] != '') { @listIPData .= ' '.color(10).'ISP: '.@ipdb['aso'] }
@@ -194,7 +192,19 @@ x_new_thread('ChatASNReport'.time(), closure(){
 	@asncnreport = 'Country Code, ASNs'
 	@asnrcnreport = 'Registerd Country Code, ASNs'
 	@newcfg = 'IP_Blacklist:'
-	@jsoncfg = array('Discovered_ASNs': array_keys(@asnip), 'IP_Blacklist': array())
+	@kASN = get_value('Chat.server.bl.known.ASNs');
+	if(!is_array(@kASN)) { @kASN = array() }
+	array_push_all(@kASN, array_keys(@asnip));
+	@kASN = array_unique(@kASN, false);
+	array_sort(@kASN, 'REGULAR');
+	@dASN = array()
+	foreach(@asn in @kASN) {
+		array_set(@dASN, @asn, 0);
+		if(array_index_exists(@asnip, @asn)) {
+			array_set(@dASN, @asn, array_size(@asnip[@asn]));
+		}
+	}
+	@jsoncfg = array('Discovered_ASNs': @dASN, 'IP_Blacklist': array())
 	foreach(@asn: @iplist in @asnip) {
 		@asnnick = ''
 		if(array_index_exists(@asnnicks, 'ASN_ISP_Names', @asn)) { @asnnick = ' <'.@asnnicks['ASN_ISP_Names'][@asn].'>' }
@@ -218,7 +228,9 @@ x_new_thread('ChatASNReport'.time(), closure(){
 		_write_file(@writeDir.'/Reports/ASN-IP-10.csv', 'Known ASNs with over 10 IPs blacklisted\n'.array_implode(@asnipover10, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-CN.csv', @asncnreport, 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-RCN.csv', @asnrcnreport, 'overwrite');
-		_write_file(@writeDir.'/Reports/Known-ASNs.csv', 'Known ASNs\n'.array_implode(array_keys(@asnip), '\n'), 'overwrite');
+		_write_file(@writeDir.'/Reports/Current-ASNs.csv', 'Current ASNs\n'.array_implode(array_keys(@asnip), '\n'), 'overwrite');
+		store_value('Chat.server.bl.known.ASNs', @kASN);
+		_write_file(@writeDir.'/Reports/Known-ASNs.csv', 'Known ASNs\n'.array_implode(@kASN, '\n'), 'overwrite');
 		@mancfg = ''
 		try {
 			@mancfg = read(import('Chat.config.dir').'/Template-IP.yml')
@@ -232,7 +244,7 @@ x_new_thread('ChatASNReport'.time(), closure(){
 			_chat_msg_Admins(color(12).'[Chat] There was an error with the Template-IP Config file. ', @ex['message'], true) 
 			die()
 		}
-		@extracfg = array('Discovered_ASNs': array_keys(@asnip), 'Auto_Blacklist_ASNs': @asnipover10)
+		@extracfg = array('Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @asnipover10)
 		if(array_index_exists(@asnip, 'None')) { array_set(@extracfg, 'Unknown_ASN_IPs', @asnip['None']) }
 		@jsoncfg = array_merge(@jsoncfg, yml_decode(@mancfg), @extracfg)
 		_write_file(@writeDir.'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
