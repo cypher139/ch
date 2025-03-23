@@ -142,6 +142,22 @@ Obnoxious:
     f: 12m
     i: "DataCamp Limited"
     p: 47
+  61.75.78.40:
+    f: 14m
+    i: "Korea Telecom"
+    p: 30
+  156.229.233.237:
+    f: 13m
+    i: "Netiface Limited"
+    p: 49
+  112.171.19.96:
+    f: 30m
+    i: "Korea Telecom"
+    p: 27
+  23.176.184.152:
+    f: 33m
+    i: "Netiface Limited"
+    p: 34
 #
 Spam_Player_Names:
 # Player names, if an actual connection via Mojang auth was tried, are listed here.
@@ -149,7 +165,7 @@ Spam_Player_Names:
   Bunger: 
     - 3.77.238.21
     - 3.73.52.141
-  # Cornbread21xxxx (replace x with randomized numbers) ping:30m
+  # Cornbread------ <Replace - with randomized numbers> ping:30m
   # Cornbread numbers seen: 210010,210016,210021,210022,210024,210028,210029,210030,210032,210036,210040,210044,210046,210047,21005,210065,210070,210076,210079,21008,210081,210096,2100_
   Cornbread21: 
     - 154.213.185.46
@@ -213,7 +229,12 @@ Spam_Player_Names:
   ServerSeekerV2: 
     - 46.101.233.169
     - 45.135.194.65
-  ServerOverflow1: 94.131.100.102
+    - 198.54.132.56
+    - 198.54.132.37
+    - 149.102.246.43
+  ServerOverflow1: 
+    - 94.131.100.102
+    - 95.164.113.194
   # UUID of player ServerOverflow6 is ebbdeeb3-5d9f-40c0-bbe0-ff1e56170d72
   ServerOverflow6: 94.131.100.102
   ServerOverflow:
@@ -228,7 +249,9 @@ Spam_Player_Names:
   # Users: Chaosgurke46, Hellsend17, Kysggggg, MegaMagikarp, Naiwd_Gmerr, PriceZamm, ThaRealDx1, Tightt, josh3231, martusin, notoofy, nutties_nuts
   Various: 84.54.51.253
   # Sent bad login packets
-  Various_Bad: 45.95.147.247
+  Various_Bad: 
+  - 45.95.147.247
+  - 151.115.75.240
   # Login is clearly trying to use hacked item tags & overflow server with IndexOutOfBoundsException
   Various_Hack: 156.253.227.129 
 #

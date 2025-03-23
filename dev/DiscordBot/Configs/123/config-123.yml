@@ -1,16 +1,43 @@
 # discordBot Guild Configuration
 # Config version number
-v: 14
+v: 15
 # General admin
 Server_Nickname: "Your Server"
 #
-# Logs:
-# Log channel for misc. messages, such as Discord command usage, LB level updates, MC server silent admin joins, Bot DM messages, etc.
-Log_Channel: bot-logs
-# Your server's main logs channel. Member join / invite used messages are sent here.
-Server_Log_Channel: bot-logs
-# Your server's announcements channel. Anti Spam general alerts are sent here.
-Announcement_Channel: announcements
+#
+# Channels: 
+# List of which channels should receive certain messages from the bot.
+Channels:
+  # Log channel for misc. messages, such as Discord command usage, LB level updates, MC server silent admin joins, Bot DM messages, etc.
+  Log: bot-logs
+  # Your server's main logs channel. Member join / invite used messages are sent here.
+  Server_Log: bot-logs
+  # Your server's announcements channel. Anti Spam general alerts are sent here.
+  Announcement: announcements
+  #Leaderboard Level Up message: Type in channel ID to use that channel, or use shortcuts:  --current to use current channel, --log to use the log channel, --dm to redirect to user DM.
+  LB_Level_Up: --current
+  # Default Minecraft server channel. All Minecraft player messages, death messages, join/leave messages are sent here.
+  Minecraft: minecraft
+  Default: minecraft
+  CS: optional
+  # Default channel to use bot commands in, usually a "botspam" channel meant to keep spam away from other channels.
+  CMD_Default_Channel: botspam
+  # This channel will have the Welcome message placed here. Channel ID required
+  Welcome_Message: default
+  # This channel is to post join/leave embeds for a user facing log
+  Join_Log: join-log
+  # Your channel for notification of IP address pings on the Minecraft server. 
+  # Used for Chat script integration. Uncomment if needed.
+  Ping_Log: bot-logs
+  # Showcase Channel
+  # Intended as a place to show your server community's art projects, latest game achievements, etc., and ward off chat to another channel.
+  # To enable the Showcase channel chat protection feature place the channel's ID below: <channel ID only!>
+  # Uncomment channel to enable
+  #Showcase: 123235346
+  # Showcase: What channel should users be redirected to in order to keep chatting about the project?
+  #Showcase_Talk: 987654213
+
+
 # Send message to Console: Includes logs such as Member joins, voice chat joins, Bot DM notifications, and Discord Command usage.
 # Note: Error messages are always sent.
 Console_Messages: true
@@ -18,10 +45,7 @@ Console_Messages: true
 Console_Messages_Chat: false
 # Send Bot debug messages for events that occur regarding this server?
 Console_Debug: false
-# Optional Log configs:
-# Used for Chat script integration. Uncomment if needed.
-# Your channel for notification of IP address pings on the Minecraft server.
-# Ping_Log_Channel: bot-logs
+
 # Certain modules may react to these emojis being used:
 Reaction_Actions:
 #Type using the Formats:
@@ -33,7 +57,10 @@ Reaction_Actions:
   :Peacemaker:12345: PingBlacklist
 #
 # Member Joins and Leaves
-# Send join or Leave log uypon a member join or leave?
+# Upon Member join or Leave, Send embed message to server facing join log?
+Msg_Member_Join: true
+Msg_Member_Leave: true
+# Upon Member join or Leave, Send more detailed log to server's log channel?
 Log_Member_Join: true
 Log_Member_Leave: true
 # Log the invites used on server?
@@ -76,13 +103,12 @@ AS_Log_ShowUserInfo: true
 # **Optional, uncomment to customize**
 # AS_General_Announcement: "Another member got hacked or just chose to spam sketchy invites. I removed those messages, sorry for the unread notifications! Remember if you get your account back feel free to DM one of us or someone from the server so that you can be unbanned."
 #
-# Showcase Channel
+#
+# Showcase
 # Intended as a place to show your server community's art projects, latest game achievements, etc., and ward off chat to another channel.
-# To enable the Showcase channel chat protection feature place the channel's ID below:
-Showcase_Channel: 123235346
-#What channel should users be redirected to if they are talking about project?
-Showcase_Channel_Talk: 987654213
-# What replies should we say to users who were chatting?
+### To enable the Showcase channel chat protection feature place the channel's ID in the channel list.
+#
+# Showcase: What replies should we say to users who were chatting?
 # **Optional, uncomment to customize**
 #Showcase_Reactions:
   # Chat was not allowed, as it did not fit the posting requirements
@@ -139,9 +165,6 @@ Channels_Send:
 - voice-chat
 - other
 - botspam
-# Default Minecraft server channel. All Minecraft player messages, death messages, join/leave messages are sent here.
-Minecraft_Channel: minecraft
-Default_Channel: minecraft
 # Should we Convert emoji markdown into actual emoji?
 Use_Emojis: true
 # Should we only convert emoji if the emoji is from your server?
@@ -212,6 +235,8 @@ Whitelist_Allowed_Uses: 5
 #Admin
 #Send Message edited logs to server log channel?
 Log_Message_Edit: false
+#Send Message edited logs from Bots or Webhooks to server log channel?
+Log_Message_Edit_Bot: false
 #Send a reply to the user who edited their message? (only replies to thsoe listed below)
 Reply_Message_Edit: true
 # List of users to reply to and the message to reply with
@@ -268,12 +293,7 @@ VC_Options:
     VC_DC_Bots: false
 #
 #
-# Discord New Member welcome
-# Welcome Message channel. Case sensitive!
-# This channel will have the Welcome message placed here.
-Welcome_Text_Channel_Name: general
-# Voice Chat text Channel ID. (Right click channel, Copy ID)
-Welcome_Text_Channel_ID: 123456789
+# Server New Member welcome and setup
 # What roles, if any, do new joins need to be equipped with?
 # Only role IDs are supported.
 Welcome_Roles_Award: false
@@ -282,15 +302,17 @@ Welcome_Roles:
 - 456
 # If a previous member rejoins, restore their roles they had?
 Welcome_Roles_Restore: true
-# Ping Timeout
+# Welcome Message: Post a message upon member join.
+Welcome_Send_Message: true
+Welcome_Send_DM: false
+# Channel to post message is configured under the Channels list
+#
 # How long (in milliseconds) should we wait before we don't delete the welcome message on new joiner's leave?
 # Default: 4 days hours = 345600000
 Welcome_Message_Timeout: 345600000
 # What should we say to the new Discord members?
-Welcome_Send_Message: true
 Welcome_Message: "Welcome %UserID% to *our server*! \n Come introduce yourself by chatting below."
 # What should we DM the new Discord member?
-Welcome_Send_DM: false
 Welcome_DM_Message: "Welcome to *our server*! \n\n We would like to get to know you! Come introduce yourself in the %WelcomeChannel% channel."
 #
 #
@@ -315,6 +337,7 @@ LB_Options:
 # Role Rewards: when a user reaches a certain rank number, the corresponding role is given to them. 
 # -- This is typically used to award a "member" status to users who have chatted a lot.
 # -- Useful for unlocking server channels for those who have been on server for a long time, etc.
+  Use_Role_Rewards: true
   Role_Rewards:
     #Format: <to disable leave Role ID as a 3 digit number>
     #  Rank Number:
@@ -346,7 +369,7 @@ LB_Options:
 # variables: %UserID%  %Level%  %MsgCount%  %LevelDisplay%
 # %LevelDisplay% changes from "Level (level number)" to "Rank Name! (level number)" if a rank is awarded.
   Level_Up_Message: "%UserID% just leveled up to %Level%"
-# - Level up message type: Set to true for current channel, false to disable, log to send to log channel, dm to dm user instead
+# - Announce level up messages on server? (Channel configurable under main Channels list)
   Level_Up_Announce: true
 # - Only Start announcing when level reaches this start threshold:
   Level_Up_Announce_Start: 0

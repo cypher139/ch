@@ -107,12 +107,17 @@ proc _vc_user_joined(@discord, @type, @chan = array(), @vc) {
 			@timeout = 20000
 	# :angrypingemoji: 1 ping every 12 hours only!
 			if(time() > (@lastping[@vc['VC_Role_ID']] + @vc['VC_Ping_Timeout'])) {
-				@discordMsg = replace(@vc['VC_Ping_Message'], '%RoleID%', '<@&'.@vc['VC_Role_ID'].'>')
+				@discordMsg = @botconfig['VC_Ping_Message'];
+				if(array_index_exists(@vc, 'VC_Ping_Message')) { @discordMsg = @vc['VC_Ping_Message'] }
+				@mcMsg = @botconfig['VC_Ping_Message_MC'];
+				if(array_index_exists(@vc, 'VC_Ping_Message_MC')) { @mcMsg = @vc['VC_Ping_Message_MC'] }
+				@discordMsg = replace(@discordMsg, '%RoleID%', '<@&'.@vc['VC_Role_ID'].'>')
 				@discordMsg = replace(@discordMsg, '%UserID%', '<@'.@discord['userid'].'>')
 				@discordMsg = replace(@discordMsg, '%ChannelName%', @channel)
 				@discordMsg = replace(@discordMsg, '%Channel%', '<#'.@chid.'>')
-				@mcMsg = replace(@vc['VC_Ping_Message_MC'], '%User%', @discord['username'])
+				@mcMsg = replace(@mcMsg, '%User%', @discord['username'])
 				@mcMsg = replace(@mcMsg, '%Channel%', @channel)
+				@mcMsg = replace(@mcMsg, '%Server%', @config['Server_Nickname'])
 				export('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress', true)
 			#If user is still in specific channel after 60 seconds (avoid ping on accidental connects)
 				set_timeout(@timeout, closure(){
@@ -132,7 +137,7 @@ proc _vc_user_joined(@discord, @type, @chan = array(), @vc) {
 								}
 							}
 						}					
-						discord_broadcast(@discord['serverid'], @vc['VC_Text_Channel_ID'], array('content': @discordMsg, 'allowed_mentions': array('parse': array('ROLE'))))
+						_discordBot_broadcast(@discord['serverid'], @vc['VC_Text_Channel_ID'], array('content': @discordMsg, 'allowed_mentions': array('parse': array('ROLE'))), 'bot');
 						_db_mc_broadcast(@mcMsg, 'player')
 						@lastping[@vc['VC_Role_ID']] = time()
 						store_value('DiscordBot.VC.last.pings', @lastping)
@@ -238,7 +243,11 @@ proc _vc_user_left(@discord, @type, @chan = array(), @vc) {
 					try {
 						discord_member_move_voice_channel(@discord['serverid'], @userid, null)
 					} catch(InsufficientPermissionException @ex) {
-						_db_msg_Console(color(12).'Disconnecting Bots in VC is enabled - Bot does not have Move members permission!', @discord['serverid'], 'error')
+						@nopermsMsg = 'Disconnecting Bots in VC is enabled - Bot does not have Move members permission!'
+						_db_msg_Console(color(12).@nopermsMsg, @discord['serverid'], 'error')
+						if(array_index_exists(@config, 'Nag_Server')) {
+							_discordBot_broadcast(@discord['serverid'], @config['Nag_Server'], array('dm': true, 'content': @nopermsMsg, 'prefix': array('confirm', false)), 'Bot')
+						}
 						break()
 					} catch(Exception @ex) {
 						_db_msg_Console('VC disconnect: failed to remove User <@'.@userid.'> from '.@channel.'\n'.@ex, @discord['serverid'], 'error')
@@ -302,7 +311,9 @@ proc _vc_user_0_left(@discord, @channel, @chid, @type) {
 					}
 				}					
 				if(@isAdmin == true || @userinfo['bot'] == true) { continue() }
-				@dmMsg = replace(@vc['VC_DM_Thanks_Message'], '%User%', @username)
+				@dmMsg = @botconfig['VC_DM_Thanks_Message']
+				if(array_index_exists(@vc, 'VC_DM_Thanks_Message')) { @dmMsg = @vc['VC_DM_Thanks_Message'] }
+				@dmMsg = replace(@dmMsg, '%User%', @username)
 				if(array_size(@otherVCUsers) < 2) {
 					@dmMsg = replace(@dmMsg, '%OtherUsers%', array_implode(@otherVCUsers, ''))
 				} else {

@@ -15,8 +15,10 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	if(@discord['webhook']) { @userType = 'Webhook' }
 # If channel is not authorized to send to, output to DM instead.
 	@dm = false
-	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel'])) { @discord['channel'] = @discord['userid'] @dm = true }
-
+	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel']) && !array_contains(@config['CMD_Channels_Send'], @discord['channelid'])) { 
+		@discord['channel'] = @discord['userid'] 
+		@dm = true 
+	}
 # Command in approved channels:
 # Mentions, via batch, or server's set prefix
 	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) || array_contains(@config['CMD_Channels_Receive'], @discord['channelid'])) {

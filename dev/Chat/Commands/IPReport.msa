@@ -215,7 +215,7 @@ admin:/chatiptimeavg [$] = >>>
 	_write_file(import('Chat.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.txt', strip_colors(array_implode(@msgIPData, '\n')), 'overwrite');
 	_write_file(import('Chat.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.json', json_encode(@jsoncfg), 'overwrite');
 	_write_file(import('Chat.logs.dir').'/Average obnoxious IP Ping times'.@filecurate.'.yml', yml_encode(@obnoxData, true), 'overwrite');
-	msg(color(14).'Obnoxious: IPs with average times below 1 day and over 10 pings: ('.array_size(@obnoxData).')\n'.color(8).map_implode(@obnoxData, color(9).': ', '\n'.color(8)))
+	if(array_size(@obnoxData) > 0) { msg(color(14).'Obnoxious: IPs with average times below 1 day and over 10 pings: ('.array_size(@obnoxData).')\n'.color(8).map_implode(@obnoxData, color(9).': ', '\n'.color(8))) }
 <<<
 
 #Check if a given IP is already in IP Blacklist config

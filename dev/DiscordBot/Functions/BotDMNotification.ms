@@ -44,7 +44,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		@cfg = import('DiscordBot.config.'.@serverID)
 		if(@cfg['DM_Notify'] == true) {	@guildcfgNotify[] = @serverID }
 		array_set(@guildcfgCmd, @serverID, @cfg['CMD_Command_Prefix']);
-		array_set(@guildcfgChannel, @serverID, @cfg['Log_Channel']);
+		array_set(@guildcfgChannel, @serverID, @cfg['Channels']['Log']);
 		array_set(@guildcfgURL, @serverID, @cfg['URL_Broadcast']);
 		if(array_index_exists(@cfg, 'DM_Notify_NonMember')) { array_set(@guildcfgNM, @serverID, @cfg['DM_Notify_NonMember']) } else { array_set(@guildcfgNM, @serverID, false) }
 		if(array_contains(discord_get_members(@serverID), @discord['userid'])) {
@@ -178,16 +178,6 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 			@dm1 = 'I received my first DM from '.@discord['username'].'!  `'.@discord['userid'].'`'
 		}
 		@msgembed[0]['description'] = @dcMsg
-		try {
-			discord_broadcast(@serverID, @guildcfgChannel[@serverID], array('content': ':envelope_with_arrow:  '.@dm1, 'embeds': @msgembed))
-		} catch(InsufficientPermissionException @ex) {
-			@msg = @ex['message']
-			if(string_ends_with(@ex['message'], 'VIEW_CHANNEL')) {
-				@msg = 'Bot cannot view Log Channel! ('.@guildcfgChannel[@serverID].')'
-			}
-			_db_msg_Console('['.@serverID.'] '.@msg, 'bot')
-		} catch(Exception @ex) {
-			_db_msg_Console('['.@serverID.'] '.@ex['message'], 'bot')
-		}
+		_discordBot_broadcast(@serverID, @guildcfgChannel[@serverID], array('content': ':envelope_with_arrow:  '.@dm1, 'embeds': @msgembed), 'bot');
 	}
 }

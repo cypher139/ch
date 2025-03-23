@@ -5,20 +5,26 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 	@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard');
 	@levelxp = import('DiscordBot.'.@discord['serverid'].'.Leaderboard.levelXP')
 	@serverInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'])
+	@serverIconType = 'png'
+	if(string_starts_with(@serverInfo['icon'], 'a_')) { @serverIconType = 'gif' }
+	@lbURL = 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @leaderboard['Guild_Name'])
+	if(array_index_exists(@config, 'LB_Options', 'URL')) { @lbURL = @config['LB_Options']['URL'] }
 	@showExtraInfo = false
+	@showRoles = false
 	@userIDs = array()
-	if(@leaderboard == null) { 
-		_db_msg_Console('Leaderboard data not initialized, exiting', @discord['serverid']) 
-		return(false)
+	@return = array('embeds': array())
+	if(@leaderboard == null) {
+		_db_msg_Console('Leaderboard data not initialized, exiting', @discord['serverid']);
+		return(false);
 	}
 	if(!is_array(@discord)) {
 		_db_msg_Console('No data given to Leaderboard system, exiting', @discord['serverid'])
-		return(false)
+		return(false);
 	}
-	if(@levelxp == null) { 
+	if(@levelxp == null) {
 		@levelxp = _discordBot_lb_levelXP(@discord['serverid'], @config['LB_Options']['XP_Type']);
 	}
-	if(@serverInfo == null) { 
+	if(@serverInfo == null) {
 		_discordBot_get_server_info(@discord['serverid'])
 		@serverInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'])
 		# @serverIcon = 'https://cdn.discordapp.com/embed/avatars/0.png'
@@ -40,6 +46,31 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			@showExtraInfo = true
 		case 'all':
 			@Placeholder = true
+		case 'roles':
+			if(@showRoles || @config['LB_Options']['Use_Role_Rewards'] == false) { continue() }
+			@index = array_keys(@config['LB_Options']['Role_Rewards'])
+			array_sort(@index, 'NUMERIC')
+			@uInfo = discord_member_info(@discord['serverid'], @discord['userid']);
+			@uDisplay = _db_get_user_nick(@discord['serverid'], @discord['userid'], @uInfo['username'])
+			@uLevel = 0
+			if(array_index_exists(@leaderboard['members'], @discord['userid'])) { @uLevel = @leaderboard['members'][@discord['userid']]['level'] }
+			@roles = array(
+			# 'author': array('icon_url': 'https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'.@serverInfo['icon'].'.'.@serverIconType, 'name': @leaderboard['Guild_Name'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @leaderboard['Guild_Name'])),
+			'author': array('icon_url': @uInfo['avatar'].'?size=40', 'name': @uDisplay, 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @uDisplay.' '.@leaderboard['Guild_Name'])),
+			'title': @leaderboard['Guild_Name'].' Level Roles',
+			'color': @uInfo['color'],
+			'thumbnail':'https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'.@serverInfo['icon'].'.'.@serverIconType.'?size=48',
+			'description': '<@'.@discord['userid'].'>\'s Level:‎ ‎ ‎ ‎ ‎ ‎‎‎‎‎**'.@leaderboard['members'][@discord['userid']]['level'].'**',
+			'fields': array(),
+			'footer': array('text': array_size(@index).' Entries')
+			)
+			foreach(@i: @num in @index) {
+				@unlocked = ''
+				if(@uLevel >= @num) { @unlocked = 'UN' }
+				@roles['fields'][] = array('name': 'Level '.@num, 'value': '***'.@unlocked.'LOCKED***\n**|** <@&'.@config['LB_Options']['Role_Rewards'][@num]['RoleID'].'>', 'inline': true);
+			}
+			@return['embeds'][] = @roles
+			@showRoles = true
 		case 'top':
 		case 'first':
 			@userIDs[] = @lbTop[0]['id']
@@ -59,7 +90,6 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			}
 		}
 	}
-		
 		
 	# Check remaining options for user IDs, add to list of IDs to display
 	#Note: Skipped if an ID was already provided
@@ -96,16 +126,20 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 #No IDs found: view yourself
 	if(!array_index_exists(@userIDs, 0)) {
 		if(array_index_exists(@usercheckargs, 0)) {
-			#All checked users did not have an lb entry.
-			return('Leaderboard entry not found for this User.')
-		} else {
-			#No arguments, or no IDs found: view yourself
+		# All checked users did not have an lb entry.
+			#Level roles requested
+			if(array_size(@return['embeds']) != 0 || @showRoles) {
+				return(@return)
+			} else {
+				return('Leaderboard entry not found for this User.')
+			}
+		} else if(!@showRoles) {
+		# No arguments, or no IDs found: view yourself
 			@userIDs[] = @discord['userid']
 		}
 	}
 
 # Format display
-	@return = array('embeds': array())
 	foreach(@userID in @userIDs) {
 		if(!array_index_exists(@leaderboard['members'], @userID)) { continue() }
 		@userInfo = discord_member_info(@discord['serverid'], @userID);
@@ -130,10 +164,6 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			@remainXP = 'Max'
 			@totalXP = @leaderboard['members'][@userID]['xp']
 		}
-		@serverIconType = 'png'
-		if(string_starts_with(@serverInfo['icon'], 'a_')) { @serverIconType = 'gif' }
-		@lbURL = 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @leaderboard['Guild_Name'])
-		if(array_index_exists(@config, 'LB_Options', 'URL')) { @lbURL = @config['LB_Options']['URL'] }
 		@embed = array(
 		# https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'guild_icon.'.png'
 		'author': array('icon_url': 'https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'.@serverInfo['icon'].'.'.@serverIconType, 'name': @leaderboard['Guild_Name'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @leaderboard['Guild_Name'])),
@@ -185,7 +215,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 #Add Commands to List
 @c3lx = import('DiscordBot.Command.List', array())
 @mIu7 = array(	
-	'viewleaderboard': array('alias': array('viewlb', 'lb'), 'admin': false, 'category': 'Leaderboard', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_viewlb(@discord, @args)); })
+	'viewleaderboard': array('alias': array('viewlb', 'lb', 'rank'), 'admin': false, 'category': 'Leaderboard', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_viewlb(@discord, @args)); })
 );
 @c3lx = array_merge(@c3lx, @mIu7)
 export('DiscordBot.Command.List', @c3lx)

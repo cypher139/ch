@@ -4,7 +4,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 	array_set(@discord, 'time', time());
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
-	if(!array_index_exists(@config, 'Showcase_Channel') || !array_index_exists(@config, 'Showcase_Channel_Talk')) { die() }
+	if(!array_index_exists(@config, 'Channels', 'Showcase') || !array_index_exists(@config, 'Channels', 'Showcase_Talk')) { die() }
 	@reactionList = array(
 		# Chat was not allowed, as it did not fit the posting requirements
 		'Not_Allowed': 'To show your cool project please include a picture!\n To react, add a reaction and talk in %TalkChannel%',
@@ -21,7 +21,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 	}
 	@ytregex = '^https:[/]{2}[w]{0,3}[.]?youtu[.]?be[./](?:com[/]watch[?]v=)?[A-z0-9]{11}(?:[?]?si=[A-z0-9-]{16})?$'
 	
-	if(@discord['channelid'] == @config['Showcase_Channel']) {
+	if(@discord['channelid'] == @config['Channels']['Showcase']) {
 		@cacheShowcases = get_value('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Showcase')
 		@isUser = false
 		@isOtherUser = false
@@ -32,7 +32,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 			@checkIndex = @discord['time']
 			if(is_array(@cacheShowcases)) {
 				foreach(@i: @msg in @cacheShowcases) {
-					if(@msg['channelid'] != @config['Showcase_Channel']) {
+					if(@msg['channelid'] != @config['Channels']['Showcase']) {
 						continue()
 					} 
 					#Check for picture, or description if same user
@@ -96,7 +96,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 			@isAllowed = true
 		}
 		@reaction = replace(@reaction, '%UserID%', '<@'.@discord['userid'].'>')
-		@reaction = replace(@reaction, '%TalkChannel%', '<#'.@config['Showcase_Channel_Talk'].'>')
+		@reaction = replace(@reaction, '%TalkChannel%', '<#'.@config['Channels']['Showcase_Talk'].'>')
 		if(@isAllowed == true) {
 		# Save recent messages (persistently, not ram)
 			@cacheShowcases = get_value('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Showcase')
@@ -121,7 +121,7 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 			} catch(Exception @ex) {
 				_db_msg_Console('  ['.@discord['serverid'].'] [Showcase] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
 			}
-			discord_broadcast(@discord['serverid'], @discord['channelid'], @reaction, closure(@reactionID){
+			_discordBot_broadcast(@discord['serverid'], @discord['channelid'], @reaction, closure(@reactionID){
 				set_timeout(300000, closure(){
 					try {
 						discord_delete_message(@discord['serverid'], @discord['channelid'], @reactionID);

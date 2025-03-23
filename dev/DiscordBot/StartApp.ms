@@ -10,7 +10,7 @@
 # ---------------------
 ### App Version Numbers
 #App, Server configs:
-@cfgVersion = array(10,14)
+@cfgVersion = array(11,15)
 # CHDiscord extension
 @requiredVersion = array(2, 15, 0)
 # Types
@@ -83,6 +83,9 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 				set_cron('0 1 * * 0,3', closure(){ _discordBot_update_members() });
 				set_cron('7 0 * * 0', closure(){ _discordBot_backup_guild_data() });
 				set_cron('1 0 * * *', closure(){ _discordBot_clean_cache() });
+				set_cron('@daily', closure(){
+					_db_msg_Console(color(14).simple_date('[MM/dd]', time()).color(7).' Today\'s starting snowflake: '.color(5).lshift((time() - 1420070400000), 22), 'debug')
+				});
 				@ret8902 = discord_member_info(@return8762['Bot_ID'])
 				export('DiscordBot.Bot.Info', @ret8902)
 				_write_file(import('DiscordBot.logs.dir').'/Bot-Started.txt', simple_date('MM-dd-yy_HHmm', time()).'\n', 'append');
@@ -104,12 +107,12 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 				_db_mc_broadcast(@connectmsg, '', true);
 			} else {
 				discord_disconnect();
-				_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] '.color(14).'Guild Configurations were not found.'.color(8).'Disconnected from Discord')
+				_db_msg_Console(color(4).'['.color(9).'Server'.color(4).'] '.color(14).'Guild Configurations were not found.'.color(8).'Disconnected from Discord', 'bot');
 				die();
 			}
 		});
 	} catch(Exception @ex) {
-		_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] '.color(4).'NOT Connected to Discord: '.color('r').@ex['message'])
+		_db_msg_Console(color(4).'['.color(9).'Server'.color(4).'] '.color(4).'NOT Connected to Discord! ', 'bot', 'error', color('r').@ex['message']);
 		die();
 	}
 # Command Line: Start rest of script

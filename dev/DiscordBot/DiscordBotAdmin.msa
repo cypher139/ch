@@ -84,6 +84,9 @@ case 'update':
 	}
 	@timeElapsed = time() - @startTime;
 	msg(color(3).'Time elapsed: '.@timeElapsed.'ms.')
+case 'getmembercount':
+	@gmr = discord_get_members(@serverID)
+	msg('Total members on server: '.@serverID.':  '.color(10).array_size(@gmr))
 case 'memberinfo':
 	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord user ID to view!') }
 	try {

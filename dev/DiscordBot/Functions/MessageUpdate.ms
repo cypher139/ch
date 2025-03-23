@@ -270,7 +270,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 	#Check: Ignore sending messages about Ping log emoji use
 	@isIPemoji = false
 	@logChannel = ''
-	if(array_index_exists(@config, 'Ping_Log_Channel')) { @logChannel = @config['Ping_Log_Channel'] } else { @logChannel = @config['Log_Channel'] }
+	if(array_index_exists(@config, 'Channels', 'Ping_Log')) { @logChannel = @config['Channels']['Ping_Log'] } else { @logChannel = @config['Channels']['Log'] }
 	if(@discord['messageuserid'] == @botconfig['Bot_ID']) {
 		if(@discord['channelid'] == @logChannel || @discord['channel'] == @logChannel) {
 			if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji'])) { 
@@ -298,7 +298,7 @@ bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@isIPemoji = false
 	@logChannel = ''
-	if(array_index_exists(@config, 'Ping_Log_Channel')) { @logChannel = @config['Ping_Log_Channel'] } else { @logChannel = @config['Log_Channel'] }
+	if(array_index_exists(@config, 'Channels', 'Ping_Log')) { @logChannel = @config['Channels']['Ping_Log'] } else { @logChannel = @config['Channels']['Log'] }
 	#Due to discord stuff reaction removed can't have messageuserid given without extra work, use cache as workaround:
 	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }

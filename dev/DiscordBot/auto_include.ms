@@ -2,40 +2,33 @@
 ### Bot Admin Functions
 ##########################################
 
-proc _db_msg_Admins(@msg, @consolemsg, @cmconcat, @hideplayer) {
-	if(@consolemsg == '' || @consolemsg == null || @consolemsg == 'msg') { @consolemsg = @msg }
-	if(@cmconcat != '') { @consolemsg = @msg.@consolemsg }
-	console(@consolemsg, false)
-	#Broadcast to MC server, if available
-	if(function_exists('all_players')) {
-		foreach(@p in all_players()) {
-			if(has_permission(@p, 'commandhelper.alias.admin.message') && @p != @hideplayer) { tmsg(@p, @msg) }
-		}
-	}
-	_write_file(import('DiscordBot.logs.dir').'/Log-Admin-Messages.txt', simple_date('MM-dd-yy HH:mm:ss', time()).': '.@consolemsg.'\n', 'Append')
-}
-
-proc _db_msg_Console(@message, @serverID, string @type = 'prefix') {
+proc _db_msg_Console(@message, @serverID, string @type = 'info', @consoleData) {
 	if(@serverID == '' || @serverID == null || @serverID == false) {
 		@serverID = import('DiscordBot.config.Bot')['Primary_Guild']
 		console(color(14).'Nag: No guild given at: '.get_stack_trace());
 	}
 	@config = array()
+	@sendConsole = true
+	@sendPlayer = true
+	@logPath = 'Bot'
 	switch(string(@serverID)) {
+	case '':
 	case 'none':
+		@config = array('Server_Nickname': 'Server', 'Console_Messages': true, 'Console_Debug': true)
 	case 'bot':
 	case 'false': 
 		@config = array('Server_Nickname': 'DiscordBot', 'Console_Messages': true, 'Console_Debug': true)
 	case 'debug': 
 		@config = array('Server_Nickname': 'DiscordBot '.color(14).'<debug>'.color('r'), 'Console_Messages': true, 'Console_Debug': true)
 	default:
+		@logPath = @serverID
 		@config = import('DiscordBot.config.'.@serverID)
 	}
-	@prefix = '['.@config['Server_Nickname'].'] '
+	@prefix = color(8).'['.color(3).@config['Server_Nickname'].color(8).'] '.color('r')
 	switch(@type) {
-	case 'pre':
 	case 'prefix':
-		@prefix = '['.@config['Server_Nickname'].'] '
+	case 'info':
+		@nc = 1
 	case 'debug':
 		@prefix .= color(14).'<debug> '.color('r')
 	case 'error':
@@ -44,28 +37,33 @@ proc _db_msg_Console(@message, @serverID, string @type = 'prefix') {
 		@prefix .= color(6).'<Warning> '.color('r')
 	case 'd':
 	case 'bot':
-		@prefix = '[DiscordBot] '
+		@prefix = color(8).'['.color(5).'DiscordBot'.color(8).'] '.color('r')
 	}
 	@message = @prefix.@message
-	@sendConsole = false
 	if(array_index_exists(@config, 'Console_Messages')) {
-		if(@config['Console_Messages'] == true) { 
-			@sendConsole = true
-		}
+		if(@config['Console_Messages'] != true) { @sendConsole = false }
 	}
 	if(@serverID == 'debug' || @type == 'debug') {
 		@sendConsole = false
+		@sendPlayer = false
 		if(array_index_exists(@config, 'Console_Debug')) {
-			if(@config['Console_Debug'] == true) { 
-				@sendConsole = true 
-			}
+			if(@config['Console_Debug'] == true) { @sendConsole = true }
 		}
 	}
-	if(@serverID == 'error' || @type == 'error') { @sendConsole = true }
+	if(@serverID == 'error' || @type == 'error') { 
+		_write_file(import('DiscordBot.logs.dir').'/'.@logPath.'/Log-Error-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.@consoleData.'\n', 'Append')
+		@sendConsole = true;
+	}
 	if(@sendConsole == true) {
-		console(@message, false)
+		console(@message.@consoleData, false)
 	} else {
-		_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Log-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.'\n', 'Append')
+		_write_file(import('DiscordBot.logs.dir').'/'.@logPath.'/Log-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.@consoleData.'\n', 'Append')
+	}
+	# Broadcast to MC server Admins, if available
+	if(function_exists('all_players') && @sendPlayer == true) {
+		foreach(@p in all_players()) {
+			if(has_permission(@p, 'DiscordBot.messages.receive.'.@type)) { tmsg(@p, color(8).'[DiscordBot] '.color('r').@message) }
+		}
 	}
 }
 
@@ -82,12 +80,12 @@ proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
 		try {
 			discord_set_activity(to_upper(@type), string(@message), @url);
 		} catch(NotFoundException @ex) {
-			_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] '.color(7).'Activity Message not set, connection to Discord server lost.', true)
+			_db_msg_Console('Activity Message not set, connection to Discord server lost.', 'none', 'error');
 		} catch(Exception @ex) {
-			_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: '.color('r').@ex['message'], color(12).' ('.@ex['classType'].')', true)
+			_db_msg_Console(color(4).'Bot Activity Message: '.color('r').@ex['message'], 'none', 'error', color(12).' ('.@ex['classType'].')');
 		}
 	} else {
-		_db_msg_Admins(color(4).'['.color(9).'Server'.color(4).'] Bot Activity Message: Type "'.@config['Activity_Type'].'" is not supported!')
+		_db_msg_Console(color(4).'Bot Activity Message: Type "'.@config['Activity_Type'].'" is not supported!', 'none');
 	}
 }
 
@@ -165,28 +163,28 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 			@msg2 = ' ...'
 			@color = 9
 		}			
-		_db_msg_Admins(color(@color).'['.@prefix.'] '.@msg1, @msg2, true)
-		return(false)
+		_db_msg_Console(color(@color).@msg1, 'bot', 'error', @msg2);
+		return(false);
 	} catch(FormatException @ex) {
-		_db_msg_Admins(color(12).'['.@prefix.'] '.@cfgtype.' Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true) 
-		return(false)
+		_db_msg_Console(color(12).@cfgtype.' Config file is improperly formatted.', 'bot', 'error', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message'])); 
+		return(false);
 	} catch(Exception @ex) {
-		_db_msg_Admins(color(12).'['.@prefix.'] There was an error with the '.@cfgtype.' Config file. ', @ex['message'], true) 
-		return(false)
+		_db_msg_Console(color(12).' There was an error with the '.@cfgtype.' Config file. ', 'bot', 'error', @ex['message']); 
+		return(false);
 	}
 # Checks and Startup Init
 	if(is_numeric(@cfgtype)) {
-		if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is too old, please update.') return('OldConfig') }
+		if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Console(color(12).' Guild Config for "'.@cfgtype.'" is too old, please update.', 'bot', 'error') return('OldConfig') }
 		if(@loadcfg['v'] < import('DiscordBot.cfg.version', array(11,11))[1]) {
-			_db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is outdated, please update.')
+			_db_msg_Console(color(12).' Guild Config for "'.@cfgtype.'" is outdated, please update.', 'bot', 'error');
 			return('OldConfig')
 		}
 		@botconfig = import('DiscordBot.config.Bot')
 		@botInfo = discord_member_info(@cfgtype, @botconfig['Bot_ID'])
 		if(@botInfo['nickname'] != '') { array_set(@loadcfg, 'Bot_Name', @botInfo['nickname']) } else { array_set(@loadcfg, 'Bot_Name', @botInfo['displayname']) }
 		array_set(@loadcfg, 'Bot_ID', @botconfig['Bot_ID'])
-		if(array_contains(@loadcfg['Channels_Receive'], 'default') || array_index_exists(@loadcfg, 'VC_Options', '987654321') || @loadcfg['Welcome_Text_Channel_Name'] == 'default') {
-			_db_msg_Admins(color(12).'['.@prefix.'] Guild Config for "'.@cfgtype.'" is still using default values. Configuration is required to use many of the bot\'s features for this Guild.') 
+		if(array_contains(@loadcfg['Channels_Receive'], 'default') || array_index_exists(@loadcfg, 'VC_Options', '987654321') || @loadcfg['Channels']['Welcome_Message'] == 'default') {
+			_db_msg_Console(color(12).' Guild Config for "'.@cfgtype.'" is still using default values. Configuration is required to use many of the bot\'s features for this Guild.', 'bot', 'error'); 
 			return('Defaults')
 		}
 		if(@loadcfg['LB_Options']['Use_Active_User_Role'] == true) {
@@ -241,24 +239,19 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 		}
 	} else {
 		switch(string(@cfgtype)) {
-		case 'Server':
-			if(array_index_exists(@loadcfg, 'Not_Configured')) {
-				_db_msg_Admins(color(12).'[Chat - Server] Server Config file is still using the default values. Please configure it to your needs!')
-				return(false)
-			}
 		case 'Bot':
 		case 'App':
-			if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Admins(color(12).'['.@prefix.'] Bot Config is outdated, please update.') return('OldConfig') }
+			if(!array_index_exists(@loadcfg, 'v')) { _db_msg_Console(color(12).' Bot Config is outdated, please update.', 'bot', 'error') return('OldConfig') }
 			if(@loadcfg['v'] < import('DiscordBot.cfg.version', array(11,11))[0]) {
-				_db_msg_Admins(color(12).'['.@prefix.'] Bot Config is outdated, please update.')
+				_db_msg_Console(color(12).'Bot Config is outdated, please update.', 'bot', 'error');
 				return('OldConfig')
 			}
 			if(!is_numeric(@loadcfg['LB_Web_Load_ID'])) { 
-				_db_msg_Admins(color(12).'['.@prefix.'] Leaderboard ID is improperly formatted, please update.')
+				_db_msg_Console(color(12).'Leaderboard ID is improperly formatted, please update.', 'bot', 'error');
 				return(false)
 			}	
 			if(!function_exists('discord_connect')) { 
-				_db_msg_Console('CHDiscord extension not installed!', 'none')
+				_db_msg_Console('CHDiscord extension not installed!', 'none', 'error');
 				return(false)
 			}
 			if(array_size(@prevcfg) > 0 && @init == false) {
@@ -269,7 +262,7 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 			@dcfg = import('DiscordBot.config.Bot')
 			@loadcfg = array_merge(@loadcfg, @dcfg)
 		default:
-			_db_msg_Admins(color(12).'[DiscordBot] Config type given not supported.')
+			_db_msg_Console(color(12).'Config type given not supported.', 'bot', 'error');
 			return(false)
 		}
 	}
@@ -545,10 +538,12 @@ proc _discordBot_set_roles(@serverID, @userID, @type, array @roles, string @audi
 			@hr = import('DiscordBot.bot.roles.higher', array())
 			array_set(@hr, @roleID, @roleName)
 			export('DiscordBot.bot.roles.higher', @hr)
-			@nopermsMsg = 'Set Roles for <@'.@userID.'>: Role "'.@roleName.'" is higher or equal to my highest role, unable to set all of user\'s roles.'
+			@nopermsMsg = 'Set Roles for <@'.@userID.'>: Role "'.@roleName.'" is higher or equal to my highest role. I\'m unable to set all of user\'s roles.'
 		}
 		_discordBot_broadcast(@serverID, '--log', @nopermsMsg);
 		_db_msg_Console(@nopermsMsg, @serverID, 'warning');
+		@config = import('DiscordBot.config.'.@serverID)
+		if(array_index_exists(@config, 'Nag_Server')) {	_discordBot_broadcast(@serverID, @config['Nag_Server'], array('prefix': array('confirm', false), 'dm': true, 'content': @nopermsMsg), 'Bot') }
 		console(@ex)
 		return(false);
 	} catch(NotFoundException @ex) {
@@ -739,7 +734,7 @@ proc _discordBot_find_emoji(string @findEmoji, @originationGuild, @skipGuild) {
 
 proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false) }
-	@prefixErrorMsg = color(6).'['.color(9).'DiscordBot'.color(6).'] '.color(7).'A message queued to send had a problem: '
+	@prefixErrorMsg = 'A Message to send encountered an issue: '
 	@msgType = 'b'
 	@msgPrefix = ''
 	@msgPrefixes = array('console': ':desktop:', 'mcuser': '`[%p%]`', 'death': array(':skull_crossbones:', ':angel:'), 'trophy': array(':trophy:', ':onion:'), 'paper': ':page_facing_up:', 'command': ':desktop:', 'confirm': array(':white_check_mark:', ':x:', ':question:', ':no_entry:'))
@@ -748,7 +743,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 	if(@serverID == '' || @serverID == null || @serverID == 'bot') { @serverID = @botconfig['Primary_Guild'] }
 	@config = import('DiscordBot.config.'.@serverID)
 	if(!is_array(@config)) {
-		_db_msg_Admins(color(7).'Message not sent to Discord: Guild "'.@serverID.'" was not recognized')
+		_db_msg_Console(color(7).'Message not sent to Discord: Guild "'.@serverID.'" was not recognized', 'bot', 'error');
 		return(false)
 	}
 	@dm = false
@@ -759,31 +754,10 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 	@editMsg = 0
 	#Acquire orginating user
 	#mc, bot, join, leave, discord, cross
-	if(!is_array(@origin)) {
-	#string
-		switch(string(@origin)) {
-		case 'mc':
-		case 'user':
-		case 'event':
-		case 'join':
-		case 'leave':
-			_db_msg_Admins(color(7).'Message not sent to Discord: Origin did not include player name')
-			return(false)
-		case 'cross':
-		case 'discord':
-		case 'say':
-			@userType = 'Discord'
-		case 'server':
-		case 'console':
-			@userType = 'Console'
-			@player = '~console'
-		default:
-			@userType = 'Bot'
-		}
-	} else {
+	if(is_array(@origin)) {
 	#array
 		if(array_size(@origin) < 2 || is_associative(@origin)) {
-			_db_msg_Admins(color(7).'Message not sent to Discord: Origin did not include all indexes')
+			_db_msg_Console(color(7).'Message not sent to Discord: Origin did not include all indexes', 'debug', 'error')
 			return(false)
 		}
 		switch(@origin[0]) {
@@ -807,6 +781,31 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 		case 'console':
 			@userType = 'Console'
 			@msgPrefix = @msgPrefixes['console']
+		# cases: 'admin' 'announce' 'log' 'ping' 'bot' 'none' 'death' 'trophy' 'paper' 'command' 'confirm'
+		default:
+			@userType = 'Bot'
+		}
+	} else if(is_closure(@origin)) {
+		@afterMsg = @origin;
+		@userType = 'Bot';	
+	} else {
+	#string
+		switch(string(@origin)) {
+		case 'mc':
+		case 'user':
+		case 'event':
+		case 'join':
+		case 'leave':
+			_db_msg_Console(color(7).'Message not sent to Discord: Origin did not include player name', 'bot', 'error');
+			return(false)
+		case 'cross':
+		case 'discord':
+		case 'say':
+			@userType = 'Discord'
+		case 'server':
+		case 'console':
+			@userType = 'Console'
+			@player = '~console'
 		default:
 			@userType = 'Bot'
 		}
@@ -843,7 +842,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 					export('DiscordBot.debug.sm.embed', @message)
 					return(false)
 				}
-				if(is_associative(@v)) { @dbgcolor = 5; @message['embeds'] = array(@message['embeds']) } 
+				if(is_associative(@v)) { @dbgcolor = 4; @message['embeds'] = array(@message['embeds']) } 
 				@msgk .= color(8).'('.array_size(@message['embeds']).')'
 			case 'embed':
 			# lazy embed sending without nesting array fix
@@ -871,15 +870,15 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 # console('edit msg id \n n:'.@v.'\n i:'.integer(@v))
 				array_remove(@message, @k)
 			case 'dm':
-				@dbgcolor = 4
+				@dbgcolor = 3
 				if(@v == true) { 
 					@dm = true 
 					@msgType = 'dm'
-					@dbgcolor = 3
+					@dbgcolor = 2
 				}
 			case 'debug':
 				@dbgcolor = 4
-				if(@v == true) { @dbgcolor = 3; @msgType = 'debug' }
+				if(@v == true) { @dbgcolor = 2; @msgType = 'debug' }
 			case 'prefix':
 				@check = @v
 				if(is_array(@v)) {
@@ -893,6 +892,8 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 							if(array_index_exists(@v, 1)) {
 								if(@v[1] == true) {
 									@msgPrefix = @msgPrefixes[@check][0];
+								} else if(@v[1] == false) {
+									@msgPrefix = @msgPrefixes[@check][1];
 								} else if(is_numeric(@v[1]) && array_index_exists(@msgPrefixes, @check, @v[1])) {
 									@msgPrefix = @msgPrefixes[@check][@v[1]]
 								} else {
@@ -977,29 +978,29 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 			}
 		}
 	# Send message data to Leaderboard
-		@event = array('bot': true, 'serverid': @serverID, 'username': @config['Bot_Name'], 'userid': @config['Bot_ID'], 'message': @message['content'], 'channel': @config['Log_Channel'])
+		@event = array('bot': true, 'serverid': @serverID, 'username': @config['Bot_Name'], 'userid': @config['Bot_ID'], 'message': @message['content'], 'channel': @config['Channels']['Log'])
 		_discordBot_lb_process_message(@event, true)
 	}
 # Select Channel Presets:
 	if(!is_numeric(@channel)) {
 		switch(to_lower(@channel)) {
 		case '--admin':
-			@channel = @config['Log_Channel']
+			@channel = @config['Channels']['Log']
 		case '--announce':
-			@channel = @config['Announcement_Channel']
+			@channel = @config['Channels']['Announcement']
 		case '--log':
-			@channel = @config['Server_Log_Channel']
+			@channel = @config['Channels']['Server_Log']
 		case '--debug':
-			@channel = @config['Log_Channel']
+			@channel = @config['Channels']['Log']
 			@msgType = 'debug'
 		case '--ping':
-			if(array_index_exists(@config, 'Ping_Log_Channel')) { @channel = @config['Ping_Log_Channel'] } else { @channel = @config['Log_Channel'] }
+			if(array_index_exists(@config, 'Channels', 'Ping_Log')) { @channel = @config['Channels']['Ping_Log'] } else { @channel = @config['Channels']['Log'] }
 		case '--console':
-			@channel = @config['Log_Channel']
+			@channel = @config['Channels']['Log']
 			_db_msg_Console('[Send Message] '.@message['content'], @serverID)
 		case '':
 		case null:
-			@channel = @config['Default_Channel']
+			@channel = @config['Channels']['Default']
 		}
 	}
 # Message Building:
@@ -1074,21 +1075,25 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 			return(true);
 		}
 	} catch(InsufficientPermissionException @ex) {
-		@msg = @ex['message']
+		@msg = @prefixErrorMsg.color(12).'Permission: '.color(6).@ex['message']
 		if(string_ends_with(@ex['message'], 'VIEW_CHANNEL')) {
-			@msg = color(12).'Bot cannot view channel: '.@channel
+			@msg = color(12).'Bot cannot view the channel: '.color(3).@channel
 		}
-		_db_msg_Admins(@prefixErrorMsg.@msg, '[DiscordBot] ['.@serverID.'] '.@msg)
+		if(string_ends_with(@ex['message'], 'MESSAGE_SEND')) {
+			@msg = color(12).'Bot cannot send messages to channel: '.color(3).@channel
+		}
+		_db_msg_Console(@msg, @serverID, 'error');
+		if(array_index_exists(@config, 'Nag_Server')) { _discordBot_broadcast(@serverID, @config['Nag_Server'], array('prefix': array('confirm', 1), 'dm': true, 'content': 'Permission: '.@msg), 'Bot') }
 		return(false);
 	} catch(NotFoundException @ex) {
-		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@serverID.'] '.@ex['message'])
+		_db_msg_Console(@prefixErrorMsg.@ex['classType'], @serverID, 'error', @ex['message']);
 		return(false);
 	} catch(Exception @ex) {
 		@traceDisplay = ''
 		foreach(@st in @ex['stackTrace']) {
 			@traceDisplay .= '\n'.@st['id'].'  '.@st['line'].'.'.@st['col']
 		}
-		_db_msg_Admins(@prefixErrorMsg.@ex['message'], '[DiscordBot] ['.@serverID.'] '.color(12).@ex['classType'].' '.color(7).@ex['message'].@traceDisplay)
+		_db_msg_Console(@prefixErrorMsg.@ex['classType'], 'bot', 'error', '<'.@serverID.'> '.color(12).@ex['classType'].' '.color(7).@ex['message'].@traceDisplay);
 		return(false);
 	}
 }
@@ -1274,7 +1279,7 @@ proc _discordBot_send_mc_chat(string @prefix, string @message = '', string @play
 		@config = import('DiscordBot.config.'.@serverID);
 # Send message to guild's MC channel, if configured
 		if(@config['Minecraft_Messages'] == false) { continue() }
-		@channel = @config['Minecraft_Channel']
+		@channel = @config['Channels']['Minecraft']
 		# Primary Guild only: Accept channel overrides, if channel is in approved list
 		if(@serverID == @botconfig['Primary_Guild']) {
 			if(@overrideChannel != '' && @overrideChannel != null) {
@@ -1324,9 +1329,9 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 		if(@discord['serverid'] == @serverID) { continue() }
 		@config = import('DiscordBot.config.'.@serverID);
 		if(@config['Cross_Server_Messages'] == false) { continue() }
-		if(!array_index_exists(@config, 'Minecraft_Channel')) { continue() }
-		@channel = @config['Minecraft_Channel']
-		if(array_index_exists(@config, 'CS_Channel')) { @channel = @config['CS_Channel'] }
+		if(!array_index_exists(@config, 'Channels', 'Minecraft')) { continue() }
+		@channel = @config['Channels']['Minecraft']
+		if(array_index_exists(@config, 'Channels', 'CS')) { @channel = @config['Channels']['CS'] }
 		@message = array('content': @discord['message'], 'embeds': array(array()))
 		#Message Formatting
 		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @message['content']) > 0 && @config['CS_URL_Broadcast'] == false) {
@@ -1425,7 +1430,7 @@ proc _discordBot_dc_add_member(@discord) {
 	}
 }
 
-proc _discordBot_backup_guild_data(@args) {
+proc _discordBot_backup_guild_data(@prefix = 'DiscordBot') {
 	@botconfig = import('DiscordBot.config.Bot')
 	@servers = import('DiscordBot.Servers', array())
 	if(array_size(@servers) == 0) { return(false) }
@@ -1439,26 +1444,27 @@ proc _discordBot_backup_guild_data(@args) {
 		if(array_index_exists(@lastBackupTime, @serverID) && array_index_exists(@lastUpdateTime, @serverID)) {
 			if(@lastBackupTime[@serverID] > @lastUpdateTime[@serverID]) { continue() }
 		}
-		@data = array(
-		'membersID': get_value('DiscordBot.'.@serverID.'.members.ID'),
-		'membersNames': get_value('DiscordBot.'.@serverID.'.members.names'),
-		'membersRoles': get_value('DiscordBot.'.@serverID.'.members.roles'),
-		'membersInfo': get_value('DiscordBot.'.@serverID.'.members.info'),
-		'membersWR': get_value('DiscordBot.'.@serverID.'.members.roles.welcomeroles'),
-		'membersNoRoles': get_value('DiscordBot.'.@serverID.'.members.roles.none'),
-		'rolesTotal': get_value('DiscordBot.'.@serverID.'.roles.total'),
-		'rolesMembers': get_value('DiscordBot.'.@serverID.'.roles.members'),
-		'Leaderboard': import('DiscordBot.'.@serverID.'.Leaderboard'),
-		'Invites': get_value('DiscordBot.'.@serverID.'.Invites'),
-		'GuildInfo': get_value('DiscordBot.'.@serverID.'.guild.Info'),
-		'JoinInfo': get_value('DiscordBot.'.@serverID.'.Join.info'),
-		'LogJoinTimes': get_value('DiscordBot.'.@serverID.'.log.users.Join.Times')
+		@indexes = array(
+		'membersID': 'members.ID',
+		'membersNames': 'members.names',
+		'membersRoles': 'members.roles',
+		'membersInfo': 'members.info',
+		'membersWR': 'members.roles.welcomeroles',
+		'membersNoRoles': 'members.roles.none',
+		'rolesTotal': 'roles.total',
+		'rolesMembers': 'roles.members',
+		'Leaderboard': 'Leaderboard',
+		'Invites': 'Invites',
+		'GuildInfo': 'guild.Info',
+		'JoinInfo': 'Join.info',
+		'LogJoinTimes': 'log.users.Join.Times'
 		)
 		@time = time();
-		foreach(@k: @v in @data) {
-			if(@v == '' || @v == null) { continue() }
-			if(is_array(@v) && array_size(@v) == 0) { continue() }
-			_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/'.simple_date('MMyy', @time).'/'.@serverID.'_'.simple_date('MM-dd-yy_HHmm_', @time).@k.'.json', json_encode(@v), 'CREATE')
+		foreach(@filename: @key in @indexes) {
+			@data = get_value(@prefix.'.'.@serverID.'.'.@key);
+			if(@data == '' || @data == null) { continue() }
+			if(is_array(@data) && array_size(@data) == 0) { continue() }
+			_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/'.simple_date('MMyy', @time).'/'.@serverID.'_'.simple_date('MM-dd-yy_HHmm_', @time).@filename.'.json', json_encode(@data), 'CREATE');
 			@writes++
 		}
 		array_set(@lastBackupTime, @serverID, @time)
@@ -1495,7 +1501,7 @@ proc _discordBot_update_members(@useguild = 0) {
 				@membersID = discord_get_members(@serverID);
 			} catch(NotFoundException @ex) {
 				array_remove_values(@servers, @serverID);
-				_db_msg_Admins('[DiscordBot] Bot is not a member of guild "'.@serverID.'"! Removed from active guild list.')
+				_db_msg_Console('Bot seems to not be a member of guild "'.@serverID.'"!? Guild has been removed from the active Guild List.', 'bot', 'warning');
 				continue();
 			}
 			@membersNames = array();
@@ -1531,7 +1537,11 @@ proc _discordBot_update_members(@useguild = 0) {
 				} catch(InsufficientPermissionException @ex) {
 					if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
 						array_set(@config, 'NoInvites', true)
-						_db_msg_Console(color(12).'Invite Logging is Enabled, but bot does not have permission to view invites!', @serverID)
+						@nopermsMsg = 'Invite Logging is Enabled, but bot does not have permission to view invites!';
+						_db_msg_Console(color(12).@nopermsMsg, @serverID)
+						if(array_index_exists(@config, 'Nag_Server')) {
+							_discordBot_broadcast(@serverID, @config['Nag_Server'], array('prefix': array('confirm', false), 'dm': true, 'content': @nopermsMsg.'\n Even just to view invites the bot must have "Manage Server" Permission.'), 'Bot')
+						}
 					} else {
 						_db_msg_Console(@ex['message'], @serverID)
 					}
@@ -1542,7 +1552,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			# @rankstats = get_value('DiscordBot.debug.'.@serverID.'.rank.stats')
 			# @activeuserstats = get_value('DiscordBot.debug.'.@serverID.'.activeuser.stats')
 			# if(!is_array(@rankstats)) { @rankstats = array() }
-			# if(!is_array(@activeuserstats)) { @activeuserstats = array() }	
+			# if(!is_array(@activeuserstats)) { @activeuserstats = array() }
 			@rankstats = array()
 			@activeuserstats = array()
 	# Process each User ID
@@ -2070,7 +2080,7 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 # Level UP
 	if(@leaderboard['members'][@userID]['xp'] > @levelxp[@leaderboard['members'][@userID]['level'] + 1] && @noXP == false) {
 		@newrankname = ''
-		@currentrank = ''
+		@currentRankData = array('nc': 1, 'RoleID': 123, 'RoleName': 'None')
 		@oldlevel = @leaderboard['members'][@userID]['level']
 		@newlevel = @leaderboard['members'][@userID]['level'] + 1
 		if(@leaderboard['members'][@userID]['xp'] > @levelxp[@newlevel + 1]) {
@@ -2099,7 +2109,7 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 				@lastrank = @ranknums[(@i - 1)]
 			}
 			if(@newlevel == @rank) {
-				@currentrank = @config['LB_Options']['Role_Rewards'][@rank]
+				@currentRankData = @config['LB_Options']['Role_Rewards'][@rank]
 				@newrankname = @config['LB_Options']['Role_Rewards'][@rank]['RoleName']
 				@rankup = true
 				break()
@@ -2110,13 +2120,13 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 				if(@lastrank == 0) { 
 					break()
 				} else {
-					@currentrank = @config['LB_Options']['Role_Rewards'][@lastrank]
+					@currentRankData = @config['LB_Options']['Role_Rewards'][@lastrank]
 					break()
 				}
 			}
 			#Has highest rank
 			if(array_size(@ranknums) - 1 == @i && @newlevel > @rank) {
-				@currentrank = @config['LB_Options']['Role_Rewards'][@rank]
+				@currentRankData = @config['LB_Options']['Role_Rewards'][@rank]
 				break()
 			}
 		}
@@ -2128,14 +2138,14 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 			}
 		}
 	# Place and Set new role
-		# _db_msg_Console(@currentrank, @discord['serverid'], 'debug')
-		if(length(@currentrank['RoleID']) < 17) { @setRoles = false }
-		if(@currentrank != '' && @setRoles == true) {
-			@userRoles[] = @currentrank['RoleID']
-			@doSetRoles = _discordBot_set_roles(@discord['serverid'], @userID, 'set', @userRoles, 'Role Rewards: Awarded New Rank '.@currentrank['RoleName'], 'Leaderboard Role Rewards');
+		# _db_msg_Console(@currentRankData, @discord['serverid'], 'debug')
+		if(length(@currentRankData['RoleID']) < 17) { @setRoles = false }
+		if(!array_index_exists(@currentRankData, 'nc') && @setRoles == true) {
+			@userRoles[] = @currentRankData['RoleID']
+			@doSetRoles = _discordBot_set_roles(@discord['serverid'], @userID, 'set', @userRoles, 'Role Rewards: Awarded New Rank '.@currentRankData['RoleName'], 'Leaderboard Role Rewards');
 		}
 ###DEBUG
-		# _db_msg_Console(@currentrank, @discord['serverid'], 'debug')
+		# _db_msg_Console(@currentRankData, @discord['serverid'], 'debug')
 		# _db_msg_Console(@oldroles, @discord['serverid'], 'debug')
 		# _db_msg_Console(@userRoles, @discord['serverid'], 'debug')
 ###
@@ -2165,14 +2175,19 @@ _db_msg_Console(@levelxp[@leaderboard['members'][@userID]['level'] + 1], @discor
 		if(@sendMsg == true) {
 			@dm = false
 			@sendchannel = @discord['channel']
-			switch(string(@config['LB_Options']['Level_Up_Announce'])) {
-			case 'log':
-				@sendchannel = @config['Log_Channel'] 
-			case 'dm':
-				@dm = true
-				@sendchannel = @discord['userid']
+			if(array_index_exists(@config, 'Channels', 'LB_Level_Up')) {
+				@sendchannel = @config['Channels']['LB_Level_Up']
+				switch(string(@config['Channels']['LB_Level_Up'])) {
+				case '--current':
+					@sendchannel = @discord['channel']
+				case '--log':
+					@sendchannel = @config['Channels']['Log'] 
+				case '--dm':
+					@dm = true
+					@sendchannel = @discord['userid']
+				}
 			}
-			if(@sendMsgtoLog == true) { @sendchannel = @config['Log_Channel'] @dm = false }
+			if(@sendMsgtoLog == true) { @sendchannel = @config['Channels']['Log'] @dm = false }
 			@outMsg = array('content': @discordMsg, 'prefix': 'confirm')
 			if(@config['LB_Options']['Level_Up_Announce_Reference'] == true) { array_set(@outMsg, 'reference_id', @discord['id']) }
 			if(@dm == true) { array_set(@outMsg, 'dm', @dm) }
@@ -2685,7 +2700,7 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 # _db_msg_Console('ret: '.@CmdReturn, @discord['serverid'], 'debug')
 # _db_msg_Console('retis: '.is_string(@CmdReturn), @discord['serverid'], 'debug')
 ####
-#DEBUG Save Recent Messages and Returns for reference	
+#DEBUG Save Recent Messages and Returns for reference
 	array_set(@discord, 'return', @CmdReturn)
 	@cacheCmd = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages')
 	if(!is_array(@cacheCmd)) { @cacheCmd = array() }
@@ -2762,6 +2777,8 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 					@discord['SendChannel'] = @discord['channelid']
 				}
 				@CmdReturn['dm'] = @discord['UseDM']
+			} else {
+				array_set(@CmdReturn, 'dm', @returnMsg['dm'])
 			}
 			if(array_index_exists(@CmdReturn, 'console')) {
 				@sid = @discord['serverid']

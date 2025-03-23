@@ -46,7 +46,7 @@ bind('server_command', array('id': 'DiscordBot.mc.Send.Console', 'priority': 'MO
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@botconfig['Primary_Guild'])
 	@sendmsg = reg_replace('^[Ss][Aa][Yy]\\s', '', @event['command'])
-	@channel = @config['Minecraft_Channel']
+	@channel = @config['Channels']['Minecraft']
 	# Specify a channel name as first word in chat - Channel override
 	if(reg_count('^(#+[a-zA-Z0-9-_]{1,})', @sendmsg) == 1) {
 		# returns 'channel' in '#channel message text'

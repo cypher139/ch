@@ -113,6 +113,9 @@ proc _discordBot_cmd_whois(@discord, @args) {
 				if(is_array(@joininfo[@userID]['code'])) { @code = array_implode(@joininfo[@userID]['code'], ', ') }
 				if(@code != '') { @embedsAdmin[] = array('name': 'Invite', 'value': @code, 'inline': true) }
 			}
+			if(array_index_exists(@joininfo, @userID, 'position')) {
+				@embedsAdmin[] = array('name': 'Join Position', 'value': @joininfo[@userID]['position'], 'inline': true);
+			}
 			@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times')
 			if(!is_array(@logJointimes)) { @logJointimes = array() }
 			if(array_index_exists(@logJointimes, @userID, 1)) {

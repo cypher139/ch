@@ -8,8 +8,10 @@ Bot_ID: 1000000
 Bot_Name: bot
 Log_Channel: bot-logs
 # Which server should your bot primarly listen to? This server will have extra functionality related to your Minecraft server.
+# Server's numeric ID must be used below:
 Primary_Guild: 2313
 URL_Broadcast: true
+#
 # Autosave:
 # Wait how long (in ms) between each autosave of certain database keys?
 AutoSave_Wait: 600000
@@ -58,8 +60,27 @@ LB_Web_Load_ID: 123456
 # Default System Messages
 # If a server does not specify a message in their config, the default listed here is used.
 #Member Joins and Leaves
+Messages_Member_Join: 
+#%Welcome% = Welcome or Welcome back, %User%
+  title: "%Welcome% %User% to the server"
+# %User%, %Inviter% %UserID% %InviterID%
+  description: "enjoy your stay"
+Messages_Member_Leave: 
+  title: "%User% left the server"
+  # %User% %UserID% %Level%
+  description: "see you around"
 Log_Messages_Member_Join: ":join: **%User%**  [%UserID%] joined using invite **%InviteCode%** %PrevJoins%\n `Invite: -Use #%Uses%  -From: %Inviter% %InviterID%`"
 Log_Messages_Member_Leave: ":leave: **%User%** left the server. `%Level% %PrevJoins% %Inviter%`"
+# Voice Chat Ping Messages:
+# What should we say to the Discord members?
+# Variables: %Channel%  %ChannelName%  %UserID%  %RoleID%
+VC_Ping_Message: "We are Live in %Channel% with %UserID%, come join! %RoleID%"
+# What should we say to the Minecraft server players?
+# Variables: %User% %Channel% %Server%
+VC_Ping_Message_MC: "%User% is ready to voice chat on the %Server% Discord!!"
+# What should we say to thank all the users who chatted in completed VC call??
+VC_DM_Thanks_Message: "Thanks %User% for joining the voice chat today! See you again soon next time we are online and chatting!"
+
 #General Alert to all server members. Useful to tell users to keep their accounts safe, and to inform users of why many channels may have missing unread messages.
 #Leave blank to disable sending an announcement
 AS_General_Announcement: "oof a member got hacked and spammed the same message a lot. I've removed those messages; sorry for the unread notifications!\nRemember if you get your account back feel free to DM one of us or someone from the server so that you can be unbanned."

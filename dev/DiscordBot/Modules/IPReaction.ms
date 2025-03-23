@@ -19,7 +19,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 	if(@discord['messageuserid'] != @botconfig['Bot_ID']) { die() }
 # Check if channel is the ping log channel or log Channel
 	@logChannel = ''
-	if(array_index_exists(@config, 'Ping_Log_Channel')) { @logChannel = @config['Ping_Log_Channel'] } else { @logChannel = @config['Log_Channel'] }
+	if(array_index_exists(@config, 'Channels', 'Ping_Log')) { @logChannel = @config['Channels']['Ping_Log'] } else { @logChannel = @config['Channels']['Log'] }
 	if(@discord['channelid'] != @logChannel && @discord['channel'] != @logChannel) { die() }
 # Check if emoji used if the configured emoji to act upon
 	@doAction = '';

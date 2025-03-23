@@ -15,10 +15,10 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username'])
 	@sendtoMC = false
 	@sendtoCS = false
-	if(@discord['channel'] == @config['Minecraft_Channel'] || @discord['channelid'] == @config['Minecraft_Channel']) { @sendtoMC = true @sendtoCS = true }
-	if(array_index_exists(@config, 'CS_Channel')) {
+	if(@discord['channel'] == @config['Channels']['Minecraft'] || @discord['channelid'] == @config['Channels']['Minecraft']) { @sendtoMC = true @sendtoCS = true }
+	if(array_index_exists(@config, 'Channels', 'CS')) {
 		@sendtoCS = false
-		if(@discord['channel'] == @config['CS_Channel'] || @discord['channelid'] == @config['CS_Channel']) { @sendtoCS = true }
+		if(@discord['channel'] == @config['Channels']['CS'] || @discord['channelid'] == @config['Channels']['CS']) { @sendtoCS = true }
 	}
 
 # Console: List bot reference mention

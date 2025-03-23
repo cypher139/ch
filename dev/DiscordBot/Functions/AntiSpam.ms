@@ -22,7 +22,11 @@ proc _db_as_dm(@discord, @isFirst = false) {
 		}
 		return(true)
 	} catch(InsufficientPermissionException @ex) {
-		_db_msg_Console('AntiSpam: Not allowed to delete '.@discord['username'].'\'s messages.', @discord['serverid'], 'error')
+		@nopermsMsg = 'AntiSpam: Not allowed to delete '.@discord['username'].'\'s spam messages.'
+		_db_msg_Console(@nopermsMsg, @discord['serverid'], 'error')
+		@config = import('DiscordBot.config.'.@discord['serverid'])
+		if(array_index_exists(@config, 'Nag_Server')) { _discordBot_broadcast(@discord['serverid'], @config['Nag_Server'], array('prefix': array('confirm', false), 'dm': true, 'content': @nopermsMsg), 'Bot') }
+		return(false)
 	} catch(Exception @ex) {
 		_db_msg_Console('  ['.@discord['serverid'].'] [AntiSpam] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
 		return(false)
@@ -37,9 +41,12 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
 	@guildInfo = import('DiscordBot.Servers.Info.'.@discord['serverid'], array('name': @config['Server_Nickname']));
-	@codeDesc = array(0: 'Unknown', 1: '*New* user has talked on more than the limit of '.@config['AS_New_User_Channel_Limit'].' different channels.', 2: '*New* user used a global mention: `%word%`', 3: 'Duplicated same message', 4: 'Duplicated same message across 3 or more channels')
-	# 0: not selected, 1: New user: channel limit, 2: New user used here/everyone, 3: Dupe messages, 4: dupe messages over 3 channels
+	# 0: not selected, 1: New user: channel limit, 2: New user used here/everyone, 3: Dupe messages
+	@codeDesc = array(0: 'Unknown', 1: '*New* user has talked on more than the limit of '.@config['AS_New_User_Channel_Limit'].' different channels.', 2: '*New* user used a global mention: `%word%`', 3: 'Duplicated same message')
+	# Sub code (dupe messages) 0: not selected, 1: dupe messages over 3 channels, 2: dupe messages contains URL
+	@subcodeDesc = array(0: 'Unknown', 1: 'across 3 or more channels', 2: 'which contains a URL')
 	@reasonCode = 0
+	@reasonSubCode = 0
 	@dmtimeout = 60000
 	@asmembers = import('DiscordBot.'.@discord['serverid'].'.antispam.members');
 	if(!is_array(@asmembers)) { 
@@ -85,16 +92,23 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		}
 		# Last message is the same as current:
 		if(@lastUserMsgs[0]['message'] == @discord['message']) {
-			## Add extra count: Current message is same yet posted on different channel. Can be indicative of spam same message on all available channels.
+			## <<Add extra count>>: Current message is same yet posted on different channel. Can be indicative of spam same message on all available channels.
 			if(@lastUserMsgs[0]['channelid'] != @discord['channelid']) { @dcount[@discord['userid']]['c']++ }
+			## <<Add extra count>>: Message contains a URL link. Can be indicative of spam same message on all available channels.
+			if(reg_count('([\\w+]+\\:\\/\\/)?([\\w\\d-]+\\.)*[\\w-]+[\\.\\:]\\w+([\\/\\?\\=\\&\\#.]?[\\w-]+)*\\/?', @discord['message']) > 0) {
+				@dcount[@discord['userid']]['c']++
+				@reasonCode = 3
+				@reasonSubCode .= 2
+			}
 			# Last 2 messages is ... also the same as current:
 			if(@lastUserMsgs[1]['message'] == @discord['message']) {
 				# Previous 2 messages match, highly likely spam event. Increment counter.
 				@dcount[@discord['userid']]['c']++
-				## Add extra count x2: Current message posted on channel that isn't either of the previous 2 channels. Highly likely spam event! (or someone legitly replying "lol" to everything)
+				## <<Add extra count>>: Current message posted on channel that isn't either of the previous 2 channels. Highly likely spam event! (or someone legitly replying "lol" to everything)
 				if(@lastUserMsgs[0]['channelid'] != @discord['channelid'] && @lastUserMsgs[1]['channelid'] != @discord['channelid'] && @lastUserMsgs[0]['channelid'] != @lastUserMsgs[1]['channelid']) {
 					@dcount[@discord['userid']]['c']++
-					@reasonCode = 4
+					@reasonCode = 3
+					@reasonSubCode .= 1
 				}
 			}
 		}
@@ -144,6 +158,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				}
 			}
 			array_set(@asmembers, @discord['userid'], array('rt': @reasonCode, 'log': false, 'rtime': @time, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0))
+			if(@reasonSubCode > 0) { array_set(@asmembers[@discord['userid']], 'rts', @reasonSubCode) }
 		}
 	}
 	
@@ -205,6 +220,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			}
 		# Timeout user
 			if(@config['AS_Timeout_User'] == true) {
+				@actiontaken .= ' <24 Hour Timeout set for user>'
 				discord_request('PATCH', 'guilds/'.@discord['serverid'].'/members/'.@discord['userid'], array('communication_disabled_until': simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', (time() + 86400000), 'UTC')), 
 				closure(@ex) { _discordBot_broadcast(@discord['serverid'], '--admin', 'Successfully set timeout on user `'.@discord['nickname'].'` for the next 24 hours.') }, 
 				closure(@ex) { _db_msg_Console('AntiSpam: Set Timeout failed for '.@discord['username'].'\n'.@ex, @discord['serverid'], 'error') }
@@ -223,7 +239,13 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			}
 		# Message Admins, and DM user.
 			if(@actiontaken == '\n- *Actions taken:*') { @actiontaken = '' }
-			@logMsg = array('content': '__**Anti Spam alert**__\nUser <@'.@discord['userid'].'> [`'.@discord['username'].'`  `'.@discord['userid'].'`] triggered Anti Spam protection!\n- *Protection Reason:* '.@codeDesc[@reasonCode].@actiontaken)
+			@subCodeDisplay = ''
+			if(@reasonSubCode > 0) {
+				foreach(@r in split('', @reasonSubCode)) {
+					@subCodeDisplay .= ' '.@subcodeDesc[@r]
+				}
+			}
+			@logMsg = array('content': '__**Anti Spam alert**__\nUser <@'.@discord['userid'].'> [`'.@discord['username'].'`  `'.@discord['userid'].'`] triggered Anti Spam protection!\n- *Protection Reason:* '.@codeDesc[@reasonCode].@subCodeDisplay.@actiontaken)
 			@userinfo = array()
 			try {
 				@userinfo = discord_member_info(@discord['serverid'], @discord['userid']);

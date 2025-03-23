@@ -27,6 +27,17 @@ foreach(@arg in @args) {
 @discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $)
 msg('Using Server ID: '.@serverID)
 switch(@action) {
+case 'latestsnowflake':
+	@colorPicker = array(6,9,13,2,14,11)
+	msg(color(13).'Latest Message Snowflakes:')
+	msg(color(14).simple_date('[MM/dd]', time()).color(7).' Current snowflake: '.color(5).lshift((time() - 1420070400000), 22))
+	foreach(@guild in @servers) {
+		@cacheMsgs = import('DiscordBot.'.@guild.'.Cache.Messages')
+		if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
+		if(array_index_exists(@cacheMsgs, 'server', 0)) {
+			msg(color(8).'['.color(3).@servernicks[@guild].color(8).'] : '.color(array_get_rand(@colorPicker)).@cacheMsgs['server'][0])
+		}
+	}
 case 'colorcheck':
 	@0count = 0
 	@count = 0

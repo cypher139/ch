@@ -105,6 +105,9 @@ http_request('https://mee6.xyz/api/plugins/levels/leaderboard/'.@serverID.'?limi
 		if(@data['responseCode'] == 404) {
 			die('Guild "'.@serverID.'" was not found.')
 		}
+		if(@data['responseCode'] == 401) {
+			die(color(12).'Could not access data for Guild "'.@serverID.'": 401. '.color(5).'Check if your guild\'s leaderboard data is set to public.')
+		}
 		msg('No relevant data received from server, did you typo the server ID?')
 		export('DiscordBot.debug.http.error', @data)
 		return(false)

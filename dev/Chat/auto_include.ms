@@ -43,7 +43,7 @@ proc _chat_load_config(@cfgtype) {
 	case 'Server':
 		if(!array_index_exists(@loadcfg, 'v')) { _chat_msg_Admins(color(12).'[Chat] Server Config is too old, please update.') return('OldConfig') }
 		if(@loadcfg['v'] < import('chatmodifier.cfg.version', array(0,0,0))[0]) {
-			_db_msg_Admins(color(12).'[Chat] Server Config for "'.@cfgtype.'" is outdated, please update.')
+			_chat_msg_Admins(color(12).'[Chat] Server Config for "'.@cfgtype.'" is outdated, please update.')
 			return('OldConfig')
 		}
 		if(array_index_exists(@loadcfg, 'Not_Configured')) {
@@ -53,7 +53,7 @@ proc _chat_load_config(@cfgtype) {
 	case 'Discord':
 	case 'Bot':
 	case 'App':
-		if(!is_proc('db_msg_Admins')) { 
+		if(!is_proc('db_msg_Console')) { 
 			_chat_msg_Admins(color(12).'[Chat] To interact with Discord server install the DiscordBot script!')
 			return(false)
 		}
