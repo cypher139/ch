@@ -15,7 +15,7 @@ if(!is_numeric($id) || length($id) < 17) {
 foreach(@num: @filename in @filelist) {
 	if(@filename == @resultsfile) { continue() }
 	if(reg_count('[.]ms[a]?$', @filename) > 0) { continue() } 
-	if(reg_count('[.]json$', @filename) == 0) { msg('Ignoring non-JSON file: '.@filename) continue() } 
+	if(reg_count('[.]json$', @filename) <= 0) { msg('Ignoring non-JSON file: '.@filename) continue() } 
 	@filedata = json_decode(read(@filename))
 	if(!array_index_exists(@filedata, 'messages', 0, 'content')) { msg('Cannot find required data, not a valid chat export JSON. ('.@filename.')') continue() }
 	# data[messages][0....][content]

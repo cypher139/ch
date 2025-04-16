@@ -1,0 +1,71 @@
+# Shim for teleport command, to allow coordinate matching or back / death Teleporting features.
+
+teleport:/tp [$] = >>>
+@uuid = puuid(player(),'dashless')
+@dev = import('ch.player.'.@uuid.'.dev.scripts.tp')
+#if , and no space, add a space
+@args = reg_replace('[,]\\b', ' ', $)
+#if, and space remove comma
+@args = reg_replace('\\s?[,]\\s', ' ', @args)
+if(@dev == true) {
+	msg($);
+	msg(@args);
+}
+@args = parse_args(@args);
+
+if(array_index_exists(@args, 0)) {
+	switch(to_lower(@args[0])) {
+	case 'back':
+	case 'death':
+	case 'items':
+		@id = 1
+		if(array_index_exists(@args, 1)) {
+			if(is_numeric(@args[1])) {
+				if(@args[1] < 10) { @id = @args[1] }
+			}
+		}
+		run('/back '.@args[0].' '.@id);
+		die();
+	case 'return':
+		run('/back '.@args[0]);
+		die();
+	}
+	#tp player, allow for partial matching
+	if(!is_numeric(@args[0])) {
+		run('/tp '.$)
+		die();
+	}
+} else {
+	die(color(12).'To teleport somewhere you need to specify either X, Y, Z coordinates, or a player!');
+}
+
+if(!array_index_exists(@args, 1)) { die(color(12).'You need to specify the Y coordinates to teleport to!') }
+if(!array_index_exists(@args, 2)) { die(color(12).'You need to specify the Z coordinates to teleport to!') }
+if(array_index_exists(@args, 3)) {
+	if(!array_contains(get_worlds(), @args[3])) { @args[3] = pworld() }
+} else {
+	@args[] = pworld()
+}
+if(@dev == true) {msg(@args)}
+
+#valid location check
+try{
+	@check = get_block(@args);
+} catch(Exception @ex) {
+	die(color(12).'Error: '.color(4).'The coordinates given were not valid.');
+}
+	
+if(@dev == true) {
+	msg(get_block_info(@args));
+	msg(get_block(@args));
+	msg(get_highest_block_at(@args));
+}
+
+if(!array_contains(array('AIR', 'WATER'), get_block(@args))) {
+	@args[1] = get_highest_block_at(@args)['y']
+	msg(color(12).'Coordinates given is located in solid matter!'.color(7).' Auto-correcting Y to highest block found: '.integer(@args[1]));
+}
+
+msg(color(6).'Teleporting to '.color(9).array_implode(@args, ', '));
+set_ploc(@args);
+<<<

@@ -99,7 +99,7 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 		}			
 		if(@updateType == 'removereaction') {
 			array_remove_values(@newData['reactions'][@discord['emoji']], @discord['userid'])
-			if(array_size(@newData['reactions'][@discord['emoji']]) == 0) {
+			if(array_size(@newData['reactions'][@discord['emoji']]) <= 0) {
 				array_remove(@newData['reactions'], @discord['emoji'])
 			}
 		}

@@ -537,7 +537,7 @@ proc _wish_granter(@action, @target, @player, @option1) {
 
 proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore', boolean @superignore = false, string @ISP = 'Unknown') {
 	@time = time();
-	if(array_size(@ping) == 0) { return('no data') }
+	if(array_size(@ping) <= 0) { return('no data') }
 	if(@superignore == true) { return('ignored') }
 	@serverConfig = import('Chat.config.Server')
 	@ip = reg_replace('[%][0]$', '', @ping['ip']);

@@ -155,7 +155,7 @@ case 'pinfo':
 
 case 'tolower':
 case 'lower':
-	if(array_size(@args) == 0) { die(color('c').'['.color(6).@name.color('c').'] '.color('c').'You have to say something!') }
+	if(array_size(@args) <= 0) { die(color('c').'['.color(6).@name.color('c').'] '.color('c').'You have to say something!') }
 	@text = array_implode(@args)
 	@r = to_lower(@text)
 	msg(@prefix.color(6).'Convert to lowercase:')
@@ -164,7 +164,7 @@ case 'lower':
 
 case 'toupper':
 case 'upper':
-	if(array_size(@args) == 0) { die(color('c').'['.color(6).@name.color('c').'] '.color('c').'You have to say something!') }
+	if(array_size(@args) <= 0) { die(color('c').'['.color(6).@name.color('c').'] '.color('c').'You have to say something!') }
 	@text = array_implode(@args)
 	@r = to_upper(@text) 
 	msg(@prefix.color(6).'Convert to uppercase:')

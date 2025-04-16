@@ -30,7 +30,7 @@ foreach(@v in @args) {
 	}
 }
 
-if(array_size(@args) == 0) {
+if(array_size(@args) <= 0) {
 	msg(color('red').'['.color(6).@name.color('red').'] '.color('red').'No action specified.')
 	_help()
 	die()
@@ -97,7 +97,7 @@ case 'update':
 					@noarraycount++
 					continue()
 				}
-				if(array_size(@memberroles) == 0) { 
+				if(array_size(@memberroles) <= 0) { 
 					@norolescount++
 					continue()
 				}

@@ -97,7 +97,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 						@msgSuffix = 'Invite: '.color(3).@data['code'].color('r').' <'.color(10).'New invite'.color('r').'>'
 					}
 				}	
-				if(array_size(@matches) == 0) {
+				if(array_size(@matches) <= 0) {
 					@invMessage = 'I could not figure out how **%User%** [%UserID%] joined!'
 					@msgSuffix = 'No invite code match found!'			
 				}

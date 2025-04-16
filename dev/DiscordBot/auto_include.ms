@@ -90,8 +90,8 @@ proc _discordBot_set_activity(@type = '', @message = '', @url = '') {
 }
 
 proc _db_load_guilds(array @servers = array(), @prefix = 'DiscordBot') {
-	if(array_size(@servers) == 0) { @servers = discord_get_servers() }
-	if(array_size(@servers) == 0) { return(false) }
+	if(array_size(@servers) <= 0) { @servers = discord_get_servers() }
+	if(array_size(@servers) <= 0) { return(false) }
 	@botconfig = import('DiscordBot.config.Bot')
 	@guildList = array()
 	@consoleChats = array()
@@ -131,7 +131,7 @@ proc _db_load_guilds(array @servers = array(), @prefix = 'DiscordBot') {
 		}
 		@guildList[] = @serverID
 	}
-	if(array_size(@guildList) == 0) { return(false) }
+	if(array_size(@guildList) <= 0) { return(false) }
 	if(array_size(@consoleChats) > 0) { 
 		@s = ''
 		if(array_size(@consoleChats) > 1) { @s = 's' }
@@ -209,7 +209,7 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 			}
 		}
 		export('DiscordBot.LB.Publish.IDs', @lbPubIDs)
-		if(array_size(@prevcfg) == 0) {
+		if(array_size(@prevcfg) <= 0) {
 			# Databases Startup
 			export('DiscordBot.'.@cfgtype.'.members.ID', get_value('DiscordBot.'.@cfgtype.'.members.ID'))
 			export('DiscordBot.'.@cfgtype.'.members.names', get_value('DiscordBot.'.@cfgtype.'.members.names'))
@@ -230,7 +230,7 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 		if(array_index_exists(@loadcfg, 'Reaction_Actions')) {
 			@set1 = array()
 			foreach(@em: @act in @loadcfg['Reaction_Actions']) {
-				if(string_contains(@em, ':') && reg_count('[<>]', @em) == 0) {
+				if(string_contains(@em, ':') && reg_count('[<>]', @em) <= 0) {
 					@em = '<'.@em.'>'
 				}
 				array_set(@set1, @em, @act)
@@ -324,7 +324,7 @@ proc _discordBot_db_autosave(string @usekey = '', @option) {
 	@time = time()
 	@results = array('null': array(), 'na': array(), 'noTS': array(), 'nolb': array(), 'saved': array(), 'nochange': array())
 	if(@usekey != '') { @allKeys = array(@usekey) }
-	if(array_size(@allKeys) == 0) { return(false) }
+	if(array_size(@allKeys) <= 0) { return(false) }
 	@botSaved = array()
 	foreach(@serverID in import('DiscordBot.Servers')) {
 		@config = import(@prefix.'config.'.@serverID)
@@ -435,7 +435,7 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 		# For each user's messages check if id is in queue. If so remove ID from user, and queue.
 			foreach(@type in array('user', 'bot')) {
 				foreach(@userid: @usermsgs in @cacheMsgs[@type]) {
-					if(array_size(@queue) == 0) { break(2) }
+					if(array_size(@queue) <= 0) { break(2) }
 					foreach(@index: @msgID in @usermsgs) {
 						if(array_contains(@queue, @msgID)) {
 							array_remove_values(@cacheMsgs[@type][@userid], @msgID)
@@ -470,7 +470,7 @@ proc _discordBot_set_roles(@serverID, @userID, @type, array @roles, string @audi
 	}
 	if(!is_numeric(@userID) || length(@userID) < 17) { return(false) }
 	@nopermsMsg = color(12).@cmd.': Set Roles for <@'.@userID.'>: Bot does not have permission to manage roles!';
-	if(array_size(@roles) == 0) { return(false) }
+	if(array_size(@roles) <= 0) { return(false) }
 	@botperms = discord_get_permissions(@serverID)
 	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {
 		_discordBot_broadcast(@serverID, '--log', @nopermsMsg);
@@ -1271,7 +1271,7 @@ proc _discordBot_send_mc_chat(string @prefix, string @message = '', string @play
 	}
 	@botconfig = import('DiscordBot.config.Bot')
 	@servers = import('DiscordBot.Servers', array());
-	if(array_size(@servers) == 0) { return(false) }
+	if(array_size(@servers) <= 0) { return(false) }
 	foreach(@serverID in @servers) {
 		@msg = array('content': @message, 'prefix': @prefix)
 		if(!@prefix) { array_remove(@msg, 'prefix') }
@@ -1291,7 +1291,7 @@ proc _discordBot_send_mc_chat(string @prefix, string @message = '', string @play
 		#Admin channel override
 		if(@overrideChannel == '--admin') { @channel = @overrideChannel }
 		if(@player == '~console') { @type = 'console' }
-		if(array_size(@msg) == 0 && @nm == false) { throw('NotFoundException', 'MC chat Message array had no data to send.') }
+		if(array_size(@msg) <= 0 && @nm == false) { throw('NotFoundException', 'MC chat Message array had no data to send.') }
 		_discordBot_broadcast(@serverID, @channel, @msg, array(@type, @player))
 	}
 	return(true);
@@ -1301,7 +1301,7 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 	if(!is_array(@discord)) { return(false) }
 	@botconfig = import('DiscordBot.config.Bot')
 	@servers = import('DiscordBot.Servers', array());
-	if(array_size(@servers) == 0) { return(false) }
+	if(array_size(@servers) <= 0) { return(false) }
 	#Message Formatting & File links
 	@urls = array()
 	@suffix = ''
@@ -1397,7 +1397,7 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 				array_set(@message['embeds'][0], 'fields', @urls)
 			}
 		}
-		if(array_size(@message['embeds'][0]) == 0) { array_remove(@message, 'embeds') }
+		if(array_size(@message['embeds'][0]) <= 0) { array_remove(@message, 'embeds') }
 		@message['content'] = @userPrefix.@message['content'].@suffix
 		_discordBot_broadcast(@serverID, @channel, @message, 'cross')
 	}
@@ -1433,7 +1433,7 @@ proc _discordBot_dc_add_member(@discord) {
 proc _discordBot_backup_guild_data(@prefix = 'DiscordBot') {
 	@botconfig = import('DiscordBot.config.Bot')
 	@servers = import('DiscordBot.Servers', array())
-	if(array_size(@servers) == 0) { return(false) }
+	if(array_size(@servers) <= 0) { return(false) }
 	@writes = 0
 	@lastUpdateTime = get_value('DiscordBot.last.CacheUpdate')
 	if(!is_array(@lastUpdateTime)) { @lastUpdateTime = array() }
@@ -1463,7 +1463,7 @@ proc _discordBot_backup_guild_data(@prefix = 'DiscordBot') {
 		foreach(@filename: @key in @indexes) {
 			@data = get_value(@prefix.'.'.@serverID.'.'.@key);
 			if(@data == '' || @data == null) { continue() }
-			if(is_array(@data) && array_size(@data) == 0) { continue() }
+			if(is_array(@data) && array_size(@data) <= 0) { continue() }
 			_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/'.simple_date('MMyy', @time).'/'.@serverID.'_'.simple_date('MM-dd-yy_HHmm_', @time).@filename.'.json', json_encode(@data), 'CREATE');
 			@writes++
 		}
@@ -1480,7 +1480,7 @@ proc _discordBot_update_members(@useguild = 0) {
 		if(@useguild != 0 && is_numeric(@useguild)) {
 			@servers = array(@useguild)
 		}
-		if(array_size(@servers) == 0) { return(false) }
+		if(array_size(@servers) <= 0) { return(false) }
 		@lastUpdateTime = get_value('DiscordBot.last.CacheUpdate')
 		if(!is_array(@lastUpdateTime)) { @lastUpdateTime = array() }
 		foreach(@serverID in @servers) {
@@ -1620,7 +1620,7 @@ proc _discordBot_update_members(@useguild = 0) {
 					@debugstats['af']++
 					continue()
 				}
-				if(array_size(@idRoles) == 0) {
+				if(array_size(@idRoles) <= 0) {
 					@membersNoRoles[] = @id;
 					continue()
 				}
@@ -1655,7 +1655,7 @@ proc _discordBot_update_members(@useguild = 0) {
 				if(array_contains(@idRoles2, @config['LB_Options']['Active_User_Role'])) { array_remove_values(@idRoles2, @config['LB_Options']['Active_User_Role']) }	
 				# if(@idInfo['color'] == null) { _db_msg_Console(@id.' i '.@idInfo, @serverID, 'debug') }
 			# Check no roles again, count users who just have active role
-				if(array_size(@idRoles2) == 0) {
+				if(array_size(@idRoles2) <= 0) {
 					@membersNoRoles[] = @id;
 					continue()
 				}	
@@ -1776,7 +1776,7 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 		}
 	}
 # Get current rank
-	if(array_size(@userRoles) == 0) { @userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid']) }
+	if(array_size(@userRoles) <= 0) { @userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid']) }
 	@userRoles = array_sort(array_normalize(@userRoles), 'NUMERIC')
 	if(is_array(@config['Role_Ranks_IgnoreRole'])) {
 		foreach(@irole in @config['Role_Ranks_IgnoreRole']) {
@@ -2220,7 +2220,7 @@ proc _discordBot_process_activeuserrole(@discord, @type, @userRoles = array(), @
 	} catch(Exception @ex) {
 		return('NoMember')
 	}
-	if(array_size(@userCheck) > 0 && array_size(@userRoles) == 0) { @userRoles = @userCheck }
+	if(array_size(@userCheck) > 0 && array_size(@userRoles) <= 0) { @userRoles = @userCheck }
 	if(@config['LB_Options']['Use_Active_User_Role'] != true) {
 		if(@retRoles == true) {
 			return(@userRoles)

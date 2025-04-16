@@ -95,7 +95,7 @@ case 'top':
 	msg(@message)
 	die()
 case 'serverstats':
-	if(array_size(@servers) == 0) { die() }
+	if(array_size(@servers) <= 0) { die() }
 	foreach(@serverID in @servers) {
 		@debugstats = array('users': 0, 'nolastmsg': 0, 'nolb': 0, 'lastmsg0': 0);
 		@membersID = array();

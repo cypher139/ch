@@ -1,0 +1,51 @@
+# If you used back tp, death tp, death tp item management before a format change on 4/2025:
+# this Converts last location, death drops, death location keys to the new format used going forward.
+admin:/convertbacktp [$] = >>>
+	// Convert old data before 4/25
+	@changeKeys = array('location', 'death.location', 'death.drops')
+	@v = get_values('player.')
+	@stats = array('keys': 0, 'old': 0, 'new': 0, 'oldnew': 0, 'indexes': 0)
+	foreach(@key: @data in @v) {
+		if(!string_ends_with(@key, 'last.'.@changeKeys[0]) && !string_ends_with(@key, 'last.'.@changeKeys[1]) && !string_ends_with(@key, 'last.'.@changeKeys[2])) { continue() }
+		@newData = array()
+		@old = false
+		@new = false
+		@oc = array(12, '--')
+		@nc = array(12, '--')
+		if(array_index_exists(@data, 0)) { 
+			@old = true
+			@oc = array(10, 'Old')
+		}
+		if(array_index_exists(@data, 'S')) { 
+			@new = true
+			@nc = array(10, 'New')
+		}
+		msg(color(1).@key.': '.color(9).array_keys(@data).'  '.color(@oc[0]).@oc[1].' '.color(@nc[0]).@nc[1])
+		if(@old == false && @new == true) {
+			@stats['new']++
+			continue()
+		}
+		#add old to end of new
+		if(@old == true && @new == true) {
+			@newData = array_deep_clone(@data['S'])
+			@stats['oldnew']++
+		}
+		if(@old == true) {
+			@stats['old']++
+			for(@i = 0, @i <= 9, @i++) {
+				if(array_size(@newData) < 10) {
+					if(!array_index_exists(@data, @i)) { break() }
+					@newData[] = @data[@i];
+					@stats['indexes']++
+				}
+			}
+		}
+		@savearray = array('S': @newData)
+		if(array_index_exists(@data, 'C')) { array_set(@savearray, 'C', @data['C']) }
+		if(array_index_exists(@data, 'A')) { array_set(@savearray, 'A', @data['A']) }
+		store_value(@key, @savearray)
+		@stats['keys']++
+	}
+	msg(color(14).'Converted last location, death drops, death location data. Stats:')
+	msg(color(3).map_implode(@stats, color(10).': ', '\n'.color(3)))
+<<<

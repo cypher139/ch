@@ -1,4 +1,5 @@
-#version 1.2-tmc
+#Cake Chaos: 
+#If player has the right permissions Cake heals, but if they don't ... it lies.
 bind('player_interact', array('id': 'cake', 'priority': 'HIGH'), array('block': 'CAKE'), @cake) {
   	if(@cake['action'] == 'right_click_block' || @cake['action'] == 'left_click_block') {
 		@here = ploc(@cake['player']) 
@@ -9,15 +10,16 @@ bind('player_interact', array('id': 'cake', 'priority': 'HIGH'), array('block': 
 			set_ponfire(@cake['player'], 0)
 			set_peffect(@cake['player'], 'POISON', 1, 0)
 			set_peffect(@cake['player'], 'WATER_BREATHING', 3, 120, false, false)
-			msg(color(8).'['.color(6).'Cake'.color(8).'] '.color('a').' Health restored.')
+			msg(color(8).'['.color(6).'Cake'.color(8).'] '.color(10).' Health restored.')
 		} else {
 		# Can't use :P
 			@puuid = puuid(@cake['player'], 'dashless')
-			export('player.'.@puuid.'.cake.nocake.used', true)
+			export('player.'.@puuid.'.cake.nocake.used', true);
 			@taskid = import('player.'.@puuid.'.cake.task.id', 0)
 			if(@taskid != 0) { clear_task(@taskid) }
 			@newtask = set_timeout(10000, closure(){
-				export('player.'.@puuid.'.cake.nocake.used', false)
+				export('player.'.@puuid.'.cake.nocake.used', null);
+				export('player.'.@puuid.'.cake.task.id', null);
 			});
 			export('player.'.@puuid.'.cake.task.id', @newtask)
 			cancel()
@@ -44,7 +46,7 @@ bind('player_interact', array('id': 'cake', 'priority': 'HIGH'), array('block': 
 bind('player_death', array('id': 'cake.message', 'priority': 'HIGH'), null, @death) {
 	if(import('player.'.puuid(@death['player'], 'dashless').'.cake.nocake.used') == true) {
 		modify_event('death_message', color(8).@death['player'].color(7).' just learned that the cake is a '.color(12).'lie!!')
-		export('player.'.puuid(@death['player'], 'dashless').'.cake.nocake.used', false)
+		export('player.'.puuid(@death['player'], 'dashless').'.cake.nocake.used', null);
 		consume()
 	}
 }

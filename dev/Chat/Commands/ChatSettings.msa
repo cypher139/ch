@@ -55,17 +55,17 @@ case 'format':
 	switch(length(@color)) {
 	case 1:
 	#0-9, a-f, k-o, r
-		if(reg_count('^[0-9a-fk-or]$', to_lower(@color)) == 0) { die(_chat_msg_invalid_color()) }
+		if(reg_count('^[0-9a-fk-or]$', to_lower(@color)) <= 0) { die(_chat_msg_invalid_color()) }
 	case 2:
 	#10-15
-		if(reg_count('^1[0-5]$', @color) == 0) { die(_chat_msg_invalid_color()) }
+		if(reg_count('^1[0-5]$', @color) <= 0) { die(_chat_msg_invalid_color()) }
 	case 3:
 	#short html, expand to 6
-		if(reg_count('^[0-9a-f]{3}$', to_lower(@color)) == 0) { die(_chat_msg_invalid_color()) }
+		if(reg_count('^[0-9a-f]{3}$', to_lower(@color)) <= 0) { die(_chat_msg_invalid_color()) }
 		@color = '#'.@color[0].@color[0].@color[1].@color[1].@color[2].@color[2]
 	case 6:
 	#html
-		if(reg_count('^[0-9a-f]{6}$', to_lower(@color)) == 0) { die(_chat_msg_invalid_color()) }
+		if(reg_count('^[0-9a-f]{6}$', to_lower(@color)) <= 0) { die(_chat_msg_invalid_color()) }
 		@color = '#'.@color
 	default:
 		die(_chat_msg_invalid_color())

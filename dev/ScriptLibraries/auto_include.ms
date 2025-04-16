@@ -1,7 +1,7 @@
 proc _write_file(string @path, @content, @append, @option) {
 	if(length(@path) < 5) { return(false) }
 	if(!is_bytearray(@content)) {
-		if(length(@content) == 0) { return(false) }
+		if(length(@content) <= 0) { return(false) }
 	}
 	@pf = '/'
 	@notpf = '\\\\'

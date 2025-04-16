@@ -2,6 +2,6 @@
 	strict: off;
 	author: CypherNova139;
 	created: 1/5/2016;
-	description: Repeat commands and other misc. functions;
+	description: Utility commands and functions for better gameplay user experience;
 	suppressWarnings: UseBareStrings;
 >

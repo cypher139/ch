@@ -104,3 +104,31 @@ bind('player_interact', array('id': 'cypher139.sign.cmd'), null, @event) {
 		}
 	}
 }
+
+#Unload player-specific memory items
+bind('player_quit', array('id': 'cypher139.logout'), null, @quit) {
+	@removeKeys = array(
+		'ch.player.%u%.developer',
+		'ch.player.%u%.dev.scripts',
+		'player.%u%.cmd.repeat.show',
+		'player.%u%.last.command',
+		'player.%u%.cmd.back.active',
+		'player.%u%.cmd.back.default',
+		'player.%u%.last.return.location',
+		'bucket.info.%u%',
+		'gameMode.player.%u%.lock'
+	);
+	@time = time()
+	@player = player()
+	@puuid = puuid(@player, 'dashless')
+	# removes dev message settings.
+	@ds = get_value('ch.player.'.@puuid.'.dev.scripts')
+	if(!is_array(@ds)) { @ds = array() }
+	foreach(@script in @ds) {
+		export('ch.player.'.@puuid.'.dev.scripts.'.@script, null)
+	}
+	foreach(@key in @removeKeys) {
+		@rk = replace(@key, '%u%', @puuid);
+		export(@rk, null);
+	}
+}

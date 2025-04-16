@@ -14,7 +14,7 @@ if(!is_array(@args)) {
 msg(@action.', a: '.@args)
 @option1 = ''
 @option2 = ''
-if(array_size(@args) == 0) {
+if(array_size(@args) <= 0) {
 	if(function_exists('player')) {
 		@args[] = player()
 	} else {
@@ -48,7 +48,7 @@ switch(@action){
 		@returnmsg = @prefix.color(6).'Export: '.color(13).@args[0]
 		if(@args[0] == 'undo') {
 			@undo = import('ch.export.undo', array())
-			if(array_size(@undo) == 0) {
+			if(array_size(@undo) <= 0) {
 				msg(@prefix.color(6).'There is no data to restore.')
 			} else {
 				export(@undo[0], @undo[1])
@@ -104,7 +104,7 @@ switch(@action){
 
 	case 'clearvalue':
 	case 'cv':
-		if(array_size(@args) == 0) { @args[] = @player }
+		if(array_size(@args) <= 0) { @args[] = @player }
 		@returnmsg = @prefix.color(6).'Clear value: '.color(13).@args[0]
 		if(has_value(@args[0]) == true) {
 			clear_value(@args[0])
@@ -116,7 +116,7 @@ switch(@action){
 		
 	case 'clearexport':
 	case 'ce':
-		if(array_size(@args) == 0) { @args[] = @player }
+		if(array_size(@args) <= 0) { @args[] = @player }
 		@returnmsg = @prefix.color(6).'Clear RAM export: '.color(13).@args[0]
 		if(import(@args[0]) != null) {
 			export(@args[0], null)
@@ -163,7 +163,7 @@ switch(@action){
 		
 	case 'clearindex':
 	case 'ci':
-		if(array_size(@args) == 0) { @args[] = @player }
+		if(array_size(@args) <= 0) { @args[] = @player }
 		if(!array_index_exists(@args, 0)) { return(@prefix.'Specify a value with an array!') }
 		if(!array_index_exists(@args, 1)) { return(@prefix.'Specify index to remove!') }
 		@v = get_value(@args[0])
@@ -189,7 +189,7 @@ switch(@action){
 	case 'exportvalue':
 	case 'ex':
 		@time = time()
-		if(array_size(@args) == 0) { @args[] = @player }
+		if(array_size(@args) <= 0) { @args[] = @player }
 		@v = get_value(@args[0])
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
 		if(!array_index_exists(@args, 1)) { @args[] = 'yml' }
@@ -219,7 +219,7 @@ switch(@action){
 	case 'hasvalue':
 	case 'hv':
 		@hv = ''
-		if(array_size(@args) == 0) { 
+		if(array_size(@args) <= 0) { 
 			@hv = color(14).'eh, what value?!'
 		} else if(has_value(@args[0]) == true) {
 			@hv = color(10).'That value exists!'
@@ -235,7 +235,7 @@ switch(@action){
 		@old = get_value(@args[0])
 		if(@args[0] == 'undo') {
 			@undo = import('ch.sv.undo', array())
-			if(array_size(@undo) == 0) {
+			if(array_size(@undo) <= 0) {
 				@returnmsg = @prefix.color(6).'There is no data to restore.'
 			} else {
 				store_value(@undo[0], @undo[1])
@@ -296,7 +296,7 @@ switch(@action){
 
 	case 'getvalues':
 	case 'gvs':
-		if(array_size(@args) == 0) { @args[] = @player }
+		if(array_size(@args) <= 0) { @args[] = @player }
 		@v = get_values(@args[0])
 		@returnmsg = @prefix.color(6).'Get values: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
@@ -307,7 +307,7 @@ switch(@action){
 
 	case 'hasvalues':
 	case 'hvs':
-		if(array_size(@args) == 0) { @args[] = @player }
+		if(array_size(@args) <= 0) { @args[] = @player }
 		@v = get_values(@args[0])
 		@returnmsg = @prefix.color(6).'Has values: '.color(13).@args[0]
 		foreach(@key: @data in @v) {
@@ -318,10 +318,10 @@ switch(@action){
 		
 	case 'clearvalues':
 	case 'cvs':
-		if(array_size(@args) == 0) { die(@prefix.color('c').'Not enough arguments provided.') }
+		if(array_size(@args) <= 0) { die(@prefix.color('c').'Not enough arguments provided.') }
 		if(@args[0] == 'undo') {
 			@undo = import('ch.cvs.undo', array())
-			if(array_size(@undo) == 0) {
+			if(array_size(@undo) <= 0) {
 				@returnmsg = @prefix.color(6).'There is no data to restore.'
 			} else {
 				foreach(@key: @data in @undo) {

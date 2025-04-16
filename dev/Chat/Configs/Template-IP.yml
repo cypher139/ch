@@ -253,7 +253,10 @@ Spam_Player_Names:
   - 45.95.147.247
   - 151.115.75.240
   # Login is clearly trying to use hacked item tags & overflow server with IndexOutOfBoundsException
-  Various_Hack: 156.253.227.129 
+  Various_Hack: 
+  - 156.253.227.129
+  - 104.28.196.199
+  xerub: 104.28.196.198
 #
 # Ranges of IPs to disallow access to server:
 # Useful for catching datacenter blocks of IPs
