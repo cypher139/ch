@@ -187,19 +187,19 @@ register_command('chatip', array(
 								if(is_array(@ipdb)) {
 									@listIPData = ''
 									@cnFlag = ''
-									if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
-									if(@ipdb['rcn'] != '') { @cnFlag .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
-									# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
-									if(@ipdb['asn'] != '') {		
-										@listIPData .= ' ASN: '.@ipdb['asn']
-										if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
-											if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@addemoji = 1 } else { @addemoji = 3 }
+									if(@ipdb[@ip]['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb[@ip]['cn']).':' }
+									if(@ipdb[@ip]['rcn'] != '') { @cnFlag .= '(reg: :flag_'.to_lower(@ipdb[@ip]['rcn']).':)' }
+									# if(@ipdb[@ip]['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb[@ip]['c'] }
+									if(@ipdb[@ip]['asn'] != '') {		
+										@listIPData .= ' ASN: '.@ipdb[@ip]['asn']
+										if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb[@ip]['asn'])) {
+											if(@blacklistIP['Discovered_ASNs'][@ipdb[@ip]['asn']] > 0) {	@addemoji = 1 } else { @addemoji = 3 }
 										}
 										if(array_index_exists(@blacklistIP, 'Spam_Player_ASNs')) {
-											if(array_contains(@blacklistIP['Spam_Player_ASNs'], @ipdb['asn'])) { @addemoji = 4 }
+											if(array_contains(@blacklistIP['Spam_Player_ASNs'], @ipdb[@ip]['asn'])) { @addemoji = 4 }
 										}
 										if(array_index_exists(@blacklistIP, 'Auto_Blacklist_ASNs')) {
-											if(array_contains(@blacklistIP['Auto_Blacklist_ASNs'], @ipdb['asn'])) {
+											if(array_contains(@blacklistIP['Auto_Blacklist_ASNs'], @ipdb[@ip]['asn'])) {
 												@addemoji = 2
 												@blacklistIP['IP_Blacklist'][] = @ip;
 												export('Chat.config.IPBlacklist', @blacklistIP);
@@ -207,7 +207,7 @@ register_command('chatip', array(
 										}
 										if(@addemoji > 0) { @listIPData .= ' %a'.@addemoji.'%' }
 									}  else { @listIPData = 'No ASN Found' }
-									if(@ipdb['aso'] != '') { @listIPData .= ' ISP: '.@ipdb['aso'] }
+									if(@ipdb[@ip]['aso'] != '') { @listIPData .= ' ASO: '.@ipdb[@ip]['aso'] }
 									if(@listIPData == '') { @isp = '' } else { @isp = '['.@cnFlag.to_lower(@listIPData).']' }
 								}
 							}
@@ -411,45 +411,46 @@ register_command('chatip', array(
 				}
 				@ipdb = array()
 				@results[] = color(14).'ISP Database Lookup Results:';
+				@checkIPs = array();
 				foreach(@ip in @args) {
 					if(@ip == 'raw') { continue() }
 					if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
 						msg(color(12).'Not a valid IP: '.@ip);
 						continue()
 					}
-					@listIPData = color(14).'['.@ip.'] '.color(3)
-					@ipdb = _chat_lookup_ip_db(@ip, @raw);
-					if(!is_array(@ipdb)) { 
-						switch(string(@ipdb)) {
-							case 'NoPerms':
-								die(color(12).'This command requires configuration to use, see console logs.');
-							case 'NoIP':
-								msg('Given IP '.@ip.' is invalid.');
-								continue()
-							default:
-								die(color(12).'An error occured, see console logs.');
-							}
+					@checkIPs[] = @ip;
+				}
+				@ipdb = _chat_lookup_ip_db(@checkIPs, @raw);
+				if(!is_array(@ipdb)) {
+					switch(string(@ipdb)) {
+					case 'NoPerms':
+						die(color(12).'This command requires configuration to use, see console logs.');
+					case 'NoIP':
+						msg('A Given IP was invalid.');
+						die()
+					default:
+						die(color(12).'An error occured, see console logs.');
 					}
+				}
+				foreach(@ip in @checkIPs) {
+					@listIPData = color(14).'['.@ip.'] '.color(3)
 					if(array_index_exists(@blacklistIP, 'IP_Blacklist')) {
 						if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
 							@listIPData .= ' <<IP present on blacklist>>'
 						}
 					}
 					if(@raw == true) {
-						msg(color(14).'['.@ip.'] '.color(7).@ipdb['raw']);
+						msg(color(14).'['.@ip.'] '.color(7).@ipdb[@ip]['raw']);
 					}
-					if(@ipdb['c'] != '') { @listIPData .= ' Country: '.@ipdb['c'] }
-					if(@ipdb['cn'] != '') { @listIPData .= ' ('.@ipdb['cn'].') ' }
-					if(@ipdb['rc'] != '') { @listIPData .= ' '.'Registered Country: '.@ipdb['rc'] }
-					if(@ipdb['rcn'] != '') { @listIPData .= ' ('.@ipdb['rcn'].') ' }
-					# if(@ipdb['asn'] != '') { @listIPData .= ' '.'ASN: '.@ipdb['asn'] }
-					if(@ipdb['asn'] != '') {
-						@listIPData .= ' '.'ASN: '.@ipdb['asn']
-						if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
-							if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@listIPData .= ' <ASN present on blacklist>' } else { @listIPData .= ' <Past ASN>'}
-						}
+					if(@ipdb[@ip]['c'] != '') { @listIPData .= ' Country: '.@ipdb[@ip]['c'] }
+					if(@ipdb[@ip]['cn'] != '') { @listIPData .= ' ('.@ipdb[@ip]['cn'].') ' }
+					if(@ipdb[@ip]['rc'] != '') { @listIPData .= ' '.'Registered Country: '.@ipdb[@ip]['rc'] }
+					if(@ipdb[@ip]['rcn'] != '') { @listIPData .= ' ('.@ipdb[@ip]['rcn'].') ' }
+					if(@ipdb[@ip]['asn'] != '') { @listIPData .= ' ASN: '.@ipdb[@ip]['asn'] }
+					if(@ipdb[@ip]['aso'] != '') { @listIPData .= color(10).' | '.@ipdb[@ip]['aso'] }
+					if(@ipdb[@ip]['asn'] != '' && array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb[@ip]['asn'])) {
+						if(@blacklistIP['Discovered_ASNs'][@ipdb[@ip]['asn']] > 0) { @listIPData .= ' <ASN present on blacklist>' } else { @listIPData .= ' <Past ASN>' }
 					}
-					if(@ipdb['aso'] != '') { @listIPData .= ' '.color(10).'ISP: '.@ipdb['aso'] }
 					if(@listIPData != color(14).'['.@ip.'] '.color(3)) {
 						@results[] = @listIPData;
 					}

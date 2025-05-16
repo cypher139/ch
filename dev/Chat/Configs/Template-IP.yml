@@ -158,6 +158,10 @@ Obnoxious:
     f: 33m
     i: "Netiface Limited"
     p: 34
+  156.146.63.209:
+    f: 32
+    i: "Datacamp Limited"
+    p:
 #
 Spam_Player_Names:
 # Player names, if an actual connection via Mojang auth was tried, are listed here.
@@ -175,6 +179,7 @@ Spam_Player_Names:
   JohnPorkkkkkk: 94.103.124.169
   JustAScanner: 156.253.227.141
   kinho_fsc: 170.233.250.30
+  kons0las: 199.58.83.10
   # martusin connected, advertised pfcloud and other unwanted spam before immediately disconnecting. Same IP also tried logging in with other usernames:
   martusin: 94.103.124.169
   NotABot: 195.226.194.14
@@ -235,6 +240,7 @@ Spam_Player_Names:
   ServerOverflow1: 
     - 94.131.100.102
     - 95.164.113.194
+    - 95.141.241.193
   # UUID of player ServerOverflow6 is ebbdeeb3-5d9f-40c0-bbe0-ff1e56170d72
   ServerOverflow6: 94.131.100.102
   ServerOverflow:
@@ -256,6 +262,7 @@ Spam_Player_Names:
   Various_Hack: 
   - 156.253.227.129
   - 104.28.196.199
+  - 156.146.63.209
   xerub: 104.28.196.198
 #
 # Ranges of IPs to disallow access to server:

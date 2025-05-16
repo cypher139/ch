@@ -131,7 +131,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	@serverConfig = import('Chat.config.Server')
 	@pinglevel = @serverConfig['Ping_Message_Level']
 	# Repeated pings get special message
-	@ip = reg_replace('[%][0]$', '', @ping['ip'])
+	@ip = reg_replace('[%][0]$', '', @ping['ip']);
 	@iplastping = import('Chat.ping.IP.times')
 	if(!is_array(@iplastping)) { @iplastping = array() }
 	if(!array_index_exists(@iplastping, @ip)) {
@@ -195,20 +195,20 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 		if(is_array(@ipdb)) {
 			@listIPData = ''
 			@cnFlag = ''
-			if(@ipdb['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb['cn']).':' }
-			if(@ipdb['rcn'] != '') { @cnFlag .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
-			# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
-			if(@ipdb['asn'] != '') {
-				@listIPData .= ' ASN: '.@ipdb['asn']
+			if(@ipdb[@ip]['cn'] != '') { @cnFlag = ':flag_'.to_lower(@ipdb[@ip]['cn']).':' }
+			if(@ipdb[@ip]['rcn'] != '') { @cnFlag .= ', reg: :flag_'.to_lower(@ipdb[@ip]['rcn']).': ' }
+			# if(@ipdb[@ip]['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb[@ip]['c'] }
+			if(@ipdb[@ip]['asn'] != '') {
+				@listIPData .= ' ASN: '.@ipdb[@ip]['asn']
 				@addemoji = 0
-				if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
-					if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) { @addemoji = 1 } else { @addemoji = 3 }
+				if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb[@ip]['asn'])) {
+					if(@blacklistIP['Discovered_ASNs'][@ipdb[@ip]['asn']] > 0) { @addemoji = 1 } else { @addemoji = 3 }
 				}
 				if(array_index_exists(@blacklistIP, 'Spam_Player_ASNs')) {
-					if(array_contains(@blacklistIP['Spam_Player_ASNs'], @ipdb['asn'])) { @addemoji = 4 }
+					if(array_contains(@blacklistIP['Spam_Player_ASNs'], @ipdb[@ip]['asn'])) { @addemoji = 4 }
 				}
 				if(array_index_exists(@blacklistIP, 'Auto_Blacklist_ASNs')) {
-					if(array_contains(@blacklistIP['Auto_Blacklist_ASNs'], @ipdb['asn'])) {
+					if(array_contains(@blacklistIP['Auto_Blacklist_ASNs'], @ipdb[@ip]['asn'])) {
 						@addemoji = 2
 						@blacklistIP['IP_Blacklist'][] = @ip
 						export('Chat.config.IPBlacklist', @blacklistIP);
@@ -216,12 +216,12 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 				}
 				if(@addemoji > 0) { @listIPData .= '%fe%%a'.@addemoji.'%%fs%' }
 			} else { @listIPData = 'No ASN Found' }
-			if(@ipdb['aso'] != '') { @listIPData .= ' ISP: '.@ipdb['aso'] }
+			if(@ipdb[@ip]['aso'] != '') { @listIPData .= ' | '.@ipdb[@ip]['aso'] }
 			if(@listIPData == '') { @adminPingMessage = replace(@adminPingMessage, '%IPDB%', '') } else {
-				@adminPingMessage = replace(@adminPingMessage, '%IPDB%', '  '.@cnFlag.'%fs%'.to_lower(@listIPData).'%fe%')
+				@adminPingMessage = replace(@adminPingMessage, '%IPDB%', '  '.@cnFlag.'%fs%'.to_lower(@listIPData).'%fe%');
 			}
 		} else {
-			@adminPingMessage = replace(@adminPingMessage, '%IPDB%', '')
+			@adminPingMessage = replace(@adminPingMessage, '%IPDB%', '');
 		}
 	} else { @adminPingMessage = replace(@adminPingMessage, '%IPDB%', '') }
 	if(@serverConfig['Ping_Message_Console'] == true && @pinglevel > 0) {
@@ -255,7 +255,9 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 				if(array_size(@cacheID) > 400) {
 					@key = array_keys(@cacheID)
 					array_remove(@key, 'c')
-					array_remove(@cacheID, array_sort(@key, 'NUMERIC')[0])
+					array_sort(@key, 'NUMERIC')
+					console('picked: '.@key[0])
+					array_remove(@cacheID, @key[0])
 				}
 				export('DiscordBot.bot.msg.IP.Review', @cacheID)
 				return(true)

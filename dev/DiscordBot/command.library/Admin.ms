@@ -285,75 +285,73 @@ proc _discordBot_cmd_geoiplookup(@discord, @args) {
 	if(!is_proc('_chat_lookup_ip_db')) { return('NoCmd') }
 	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 	@raw = false
-	if(array_contains(@args, 'raw')) { 
-		@raw = true
-		array_remove_values(@args, 'raw')
+	if(array_contains(@args, 'raw')) {
+		@raw = true;
+		array_remove_values(@args, 'raw');
 	}
-	@ipdb = array()
+	@checkIPs = array()
 	@rawIPData = array()
 	@msgIPData = array('ISP Database Lookup Results:')
-	foreach(@i: @ip in @args) {
-		if(@ip == 'raw') { continue() }
-		if(@i > 5) { @msgIPData[] = 'Sorry, this command only supports a few IP addresses at a time.' break() }
+	# Validate IPs
+	foreach(@i: @v in @args) {
+		if(@v == 'raw') { continue() }
+		if(@i > 5) { @msgIPData[] = 'Sorry, this command only supports a few IP addresses at a time.'; break(); }
+		@arg = reg_replace('[%][0]$', '', @v)
 		@noip = false
 		#contains both or neither octet dividers.
-		if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) { @noip = true }
+		if(xor(string_contains(@arg, '.'), string_contains(@arg, ':')) == false) { @noip = true }
 		#v4:
-		if(string_contains(@ip, '.') && !string_contains(@ip, ':')) {
-			if(!is_numeric(replace(@ip, '.', ''))) { @noip = true }
+		if(string_contains(@arg, '.') && !string_contains(@arg, ':')) {
+			if(!is_numeric(replace(@arg, '.', ''))) { @noip = true }
 		} 
 		#v6:
-		if(!string_contains(@ip, '.') && string_contains(@ip, ':')) {
-			if(reg_count('[G-Zg-z]+', @ip) > 0) { console(reg_match_all('[G-Zg-z]+', @ip)) @noip = true }
-			@ip = reg_replace('[%][0]$', '', @ip)
+		if(!string_contains(@arg, '.') && string_contains(@arg, ':')) {
+			if(reg_count('[G-Zg-z]+', @arg) > 0) { console(reg_match_all('[G-Zg-z]+', @arg)) @noip = true }
 		}
 		if(@noip == true) {
 			@userCheck = 'string'
-			@userCheck = _discordBot_cmd_proc_finduserID(@ip, @discord, true);
-			if(is_numeric(@userCheck) || @userCheck == 'bot' || @userCheck == 'self') { 
-				_db_msg_Console(color(8).'Geo IP lookup: '.color(4).@discord['username'].' tried to doxx fellow Discord user '.@ip.'.', @discord['serverid'], 'warning')
-				@say = array('https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif', 'https://imgs.xkcd.com/comics/wisdom_of_the_ancients.png', 'https://imgs.xkcd.com/comics/second.png', 'https://imgs.xkcd.com/comics/security.png')
-				@footer = 'You thought you had me on that one, didn\'t you? no. XD'
+			@userCheck = _discordBot_cmd_proc_finduserID(@arg, @discord, true);
+			if(is_numeric(@userCheck) || @userCheck == 'bot' || @userCheck == 'self') {
+				_db_msg_Console(color(8).'Geo IP lookup: '.color(4).@discord['username'].' tried to doxx fellow Discord user '.@arg.'.', @discord['serverid'], 'warning');
+				@say = array('https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif', 'https://imgs.xkcd.com/comics/wisdom_of_the_ancients.png', 'https://imgs.xkcd.com/comics/second.png', 'https://imgs.xkcd.com/comics/security.png');
+				@footer = 'You thought you had me on that one, didn\'t you? no. XD';
 				if(@userCheck == 'bot') { @footer = 'Haha, I don\'t give up that easily.' }
 				if(@userCheck == 'self') { @footer = 'You were really going to go that far, huh?' }
 				return(array('MC': '[Server] Discordian "'.@discord['username'].'" tried to trick me! It was not effective.', 'embed': array('footer': array('text': @footer), 'image': array_get_rand(@say))))
 			}
-			_db_msg_Console(color(12).'Geo IP lookup: Invalid IP given: '.@ip, @discord['serverid'], 'warning')
+			_db_msg_Console(color(12).'Geo IP lookup: Invalid IP given: '.@arg, @discord['serverid'], 'warning');
 			continue()
 		}
+		@checkIPs[] = @arg;
+	}
+	# Get IP data
+	@ipdb = array()
+	@ipdb = _chat_lookup_ip_db(@checkIPs, @raw);
+	if(!is_array(@ipdb)) { return('Error') }
+	# Parse
+	foreach(@ip in @checkIPs) {
 		@listIPData = '`'.@ip.'` '
-		@ipdb = _chat_lookup_ip_db(@ip, @raw);
 		if(array_index_exists(@blacklistIP, 'IP_Blacklist')) {
 			if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
 				@listIPData .= ' <<IP present on blacklist>>'
 			}
 		}
-		if(!is_array(@ipdb)) { return('Error') }
-		if(@raw == true) {
-			@listIPData .= @ipdb['raw']
+		if(@raw == true) { @rawIPData[] = @ip.@ipdb[@ip]['raw'] }
+		if(@ipdb[@ip]['c'] != '') { @listIPData .= ' Country: '.@ipdb[@ip]['c'] }
+		if(@ipdb[@ip]['cn'] != '') { @listIPData .= ' :flag_'.to_lower(@ipdb[@ip]['cn']).':' }
+		if(@ipdb[@ip]['rc'] != '') { @listIPData .= ' Registered Country: '.@ipdb[@ip]['rc'] }
+		if(@ipdb[@ip]['rcn'] != '') { @listIPData .= ' :flag_'.to_lower(@ipdb[@ip]['rcn']).':' }
+		if(@ipdb[@ip]['asn'] != '') { @listIPData .= ' ASN: '.@ipdb[@ip]['asn']; }
+		if(@ipdb[@ip]['aso'] != '') { @listIPData .= ' | '.to_lower(@ipdb[@ip]['aso']) }
+		if(@ipdb[@ip]['asn'] != '' && array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb[@ip]['asn'])) {
+			if(@blacklistIP['Discovered_ASNs'][@ipdb[@ip]['asn']] > 0) { @listIPData .= ' <ASN present on blacklist>' } else { @listIPData .= ' <Past ASN>' }
 		}
-		if(@raw == true) { @rawIPData[] = @ip.@ipdb['raw'] }
-		if(@ipdb['c'] != '') { @listIPData .= ' Country: '.@ipdb['c'] }
-		if(@ipdb['cn'] != '') { @listIPData .= ' :flag_'.to_lower(@ipdb['cn']).':' }
-		if(@ipdb['rc'] != '') { @listIPData .= ' Registered Country: '.@ipdb['rc'] }
-		if(@ipdb['rcn'] != '') { @listIPData .= ' (:flag_'.to_lower(@ipdb['rcn']).':)' }
-		# if(@ipdb['asn'] != '') { @listIPData .= ' '.'ASN: '.@ipdb['asn'] }
-		if(@ipdb['asn'] != '') { 
-			@listIPData .= ' ASN: '.@ipdb['asn']
-			if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
-				if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@listIPData .= ' <ASN present on blacklist>' } else { @listIPData .= ' <Past ASN>' }
-			}
-		}
-		if(@ipdb['aso'] != '') { @listIPData .= ' ISP: '.to_lower(@ipdb['aso']) }
-		if(@listIPData != '`'.@ip.'` ') {
-			@msgIPData[] = @listIPData
-		}
+		if(@listIPData != '`'.@ip.'` ') { @msgIPData[] = @listIPData; }
 	}
-	if(@raw == true) {
-		_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': array_implode(@rawIPData, '\n')), 'bot')
-	}
+	# Returns
+	if(@raw == true) { _discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': array_implode(@rawIPData, '\n')), 'bot'); }
 	if(array_size(@msgIPData) < 2) { @msgIPData[] = '`None Found`' }
-	return(array_implode(@msgIPData, '\n'))
+	return(array_implode(@msgIPData, '\n'));
 }
 
 proc _discordBot_cmd_getperms(@discord, @args) {

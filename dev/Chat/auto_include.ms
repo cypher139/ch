@@ -569,25 +569,34 @@ proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore', boole
 	return(true)
 }
 
-proc _chat_lookup_ip_db(string @ip, boolean @raw = false) {
-	@serverConfig = import('Chat.config.Server')
-	@ip = reg_replace('[%][0]$', '', @ip)
-	@noip = false
-	#neither.
-	if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) { @noip = true }
-	#v4:
-	if(string_contains(@ip, '.') && !string_contains(@ip, ':')) {
-		if(!is_numeric(replace(@ip, '.', ''))) { @noip = true }
-	} else {
-	#v6:
-		if(reg_count('[G-Zg-z]+', @ip) > 0) { @noip = true }
+proc _chat_lookup_ip_db(@args, boolean @raw = false) {
+	@serverConfig = import('Chat.config.Server');
+	@checkIPs = array();
+	if(!is_array(@args)) { @args = array(@args) }
+	#Setup Check array, validate addresses
+	foreach(@arg in @args) {
+		@ip = reg_replace('[%][0]$', '', @arg);
+		@noip = false;
+		#Validate v4 or v6 octet dividers
+		if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) { @noip = true }
+		#v4:
+		if(string_contains(@ip, '.') && !string_contains(@ip, ':')) {
+			if(!is_numeric(replace(@ip, '.', ''))) { @noip = true }
+		} else {
+		#v6:
+			if(reg_count('[G-Zg-z]+', @ip) > 0) { @noip = true }
+		}
+		if(@noip == true) {
+			_chat_msg_Admins('GeoIP Lookup: Invalid IP given', color(12).':  '.@ip, true);
+			continue();
+		}
+		@checkIPs[] = @ip;
 	}
-	if(@noip == true) {
-		_chat_msg_Admins('Geo IP lookup: Invalid IP given', color(12).':  '.@ip, true)
-		return('NoIP')
-	}
+	if(array_size(@checkIPs) < 1) {	return('NoIP') }
+	#Setup GeoIP Databases and shell call
 	if(function_exists('file_last_modified')) {
-		foreach(@file in array('GeoLite2-ASN.mmdb', 'GeoLite2-City.mmdb', 'GeoLite2-Country.mmdb')) {
+		# foreach(@file in array('GeoLite2-ASN.mmdb', 'GeoLite2-City.mmdb', 'GeoLite2-Country.mmdb')) {
+		foreach(@file in array('GeoLite2-ASN.mmdb', 'GeoLite2-City.mmdb')) {
 			@fm = file_last_modified(@serverConfig['LookupIP_DB_Dir'].'/'.@file);
 			if(@fm > 0 && @fm > (time() - 604800000)) { continue() }
 			http_request('https://github.com/P3TERX/GeoLite.mmdb/raw/download/'.@file, array('binary': true, 'blocking': true, 'success': closure(@data) {
@@ -613,11 +622,12 @@ proc _chat_lookup_ip_db(string @ip, boolean @raw = false) {
 				}
 			}));
 		}
-	}	
-	@ipreturn = array('cn': '', 'c': '', 'asn': '', 'aso': '', 'rc': '', 'rcn': '')
-	@shellreturn = array()
+	}
+	@geoipData = array()
 	try {
-		@shellreturn = json_decode(shell(array('python3', 'geoip.py', @ip), array('workingDir': @serverConfig['LookupIP_DB_Dir'])))
+		@call = array('python3', 'geoip.py')
+		array_push_all(@call, @checkIPs);
+		@geoipData = json_decode(shell(@call, array('workingDir': @serverConfig['LookupIP_DB_Dir'])));
 	} catch(InsufficientPermissionException @ex) {
 		console(color(12).'Chat: GeoIP shell cannot start, make sure you have turned on the allow-shell setting in preferences.ini. \n'.@ex)
 		return('NoPerms')
@@ -631,27 +641,40 @@ proc _chat_lookup_ip_db(string @ip, boolean @raw = false) {
 		console('Chat: GeoIP shell: '.@ex)
 		return(false)
 	}
-	# console(color(9).'GeoIP: '.color(14).@ip.' '.color(7).@shellreturn, false)
-	if(array_index_exists(@shellreturn, 'country')) { 
-		array_set(@ipreturn, 'cn', @shellreturn['country']['iso_code'])
-		array_set(@ipreturn, 'c', @shellreturn['country']['names']['en'])
-	}
-	if(array_index_exists(@shellreturn, 'country') && array_index_exists(@shellreturn, 'registered_country')) {
-		if(@shellreturn['registered_country']['iso_code'] != @shellreturn['country']['iso_code']) {
-			array_set(@ipreturn, 'rcn', @shellreturn['registered_country']['iso_code'])
-			array_set(@ipreturn, 'rc', @shellreturn['registered_country']['names']['en'])
+	@return = array()
+	#Parse returned Data
+	foreach(@ip in @checkIPs) {
+		@ipData = array();
+		if(array_index_exists(@geoipData, @ip)) {
+			if(array_size(@geoipData[@ip]) > 0) { @ipData = @geoipData[@ip]; }
 		}
+		if(array_size(@ipData) < 1) {
+			_chat_msg_Admins('GeoIP Lookup: no IP data returned for'.color(12).':  '.@ip);
+		}
+###DEBUG: console(color(9).'GeoIP: '.color(14).@ip.' '.color(7).@ipData, false)
+		@ipreturn = array('cn': '', 'c': '', 'asn': '', 'aso': '', 'rc': '', 'rcn': '');
+		if(array_index_exists(@ipData, 'country')) { 
+			array_set(@ipreturn, 'cn', @ipData['country']['iso_code']);
+			array_set(@ipreturn, 'c', @ipData['country']['names']['en']);
+		}
+		if(array_index_exists(@ipData, 'country') && array_index_exists(@ipData, 'registered_country')) {
+			if(@ipData['registered_country']['iso_code'] != @ipData['country']['iso_code']) {
+				array_set(@ipreturn, 'rcn', @ipData['registered_country']['iso_code']);
+				array_set(@ipreturn, 'rc', @ipData['registered_country']['names']['en']);
+			}
+		}
+		if(array_index_exists(@ipData, 'autonomous_system_number')) { 
+			array_set(@ipreturn, 'asn', @ipData['autonomous_system_number']);
+		}
+		if(array_index_exists(@ipData, 'autonomous_system_organization')) { 
+			array_set(@ipreturn, 'aso', @ipData['autonomous_system_organization']);
+		}
+		if(@raw == true) {
+			array_set(@ipreturn, 'raw', @ipData);
+		}
+		array_set(@return, @ip, @ipreturn);
 	}
-	if(array_index_exists(@shellreturn, 'autonomous_system_number')) { 
-		array_set(@ipreturn, 'asn', @shellreturn['autonomous_system_number'])
-	}
-	if(array_index_exists(@shellreturn, 'autonomous_system_organization')) { 
-		array_set(@ipreturn, 'aso', @shellreturn['autonomous_system_organization'])
-	}
-	if(@raw == true) {
-		array_set(@ipreturn, 'raw', @shellreturn)
-	}
-	return(@ipreturn);
+	return(@return);
 }
 
 

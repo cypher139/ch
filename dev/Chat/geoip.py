@@ -1,24 +1,31 @@
 import maxminddb
 import sys
 import json
-ipa = str(sys.argv[1])
 
+x = 1
 ispdatajson = {}
 
-with maxminddb.open_database('GeoLite2-City.mmdb') as reader:
-    record = reader.get(ipa)
+for arg in sys.argv[1:]:
 
-    if record:
-       try: ispdatajson.update(record)
-       except KeyError:
-        pass
+    ipa = str(sys.argv[x])
+    ispdatajson[ipa] = {}
 
-with maxminddb.open_database('GeoLite2-ASN.mmdb') as reader:
-    record = reader.get(ipa)
+    with maxminddb.open_database('GeoLite2-City.mmdb') as reader:
+        record = reader.get(ipa)
 
-    if record:
-       try: ispdatajson.update(record)
-       except KeyError:
-        pass
+        try:
+            ispdatajson[ipa].update(record)
+        except (TypeError, KeyError):
+            pass
+
+    with maxminddb.open_database('GeoLite2-ASN.mmdb') as reader:
+        record = reader.get(ipa)
+
+        try:
+            ispdatajson[ipa].update(record)
+        except (TypeError, KeyError):
+            pass
+
+    x += 1
 
 print(json.dumps(ispdatajson))

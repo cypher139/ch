@@ -66,7 +66,9 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 		return(false);
 	}
 	if(@scan == true) {
-		_write_file(@writeDir.'/checkip.json', json_encode(@checkIP), 'Overwrite');
+		# _write_file(@writeDir.'/checkip.json', json_encode(@checkIP), 'Overwrite');
+		@ipdb = _chat_lookup_ip_db(@checkIP);
+		if(!is_array(@ipdb)) { die(color(12).'An error occured with the Geo IP scanner, see logs.') }
 		foreach(@i: @ip in @checkIP) {
 			if(@i % 100 == 0) { _geoip_report_send_msg(color(8).'Processed '.color(5).@i.color(8).' of '.color(1).array_size(@checkIP).color(8).' IPs.', @player); }
 			if(@ip == 'raw') { continue() }
@@ -75,28 +77,30 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 				continue();
 			}
 			@listIPData = color(14).'['.@ip.'] '.color(3)
-			@ipdb = _chat_lookup_ip_db(@ip);
-			if(!is_array(@ipdb)) { die(color(12).'An error occured with the Geo IP scanner, see logs.') }
-			if(@ipdb['asn'] == '') { 
-				_geoip_report_send_msg(color(12).@ip.': no ASN!', @player);
-				array_set(@ipdb, 'asn', 'None')
-				array_set(@ipdb, 'aso', 'Unknown: No Data Given')
-				array_set(@ipdb, 'c', '?')
+			@nomsg = array()
+			if(@ipdb[@ip]['c'] == '') { 
+				@nomsg[] = 'country';
+				array_set(@ipdb[@ip], 'c', '?')
 			}
-			if(@ipdb['c'] == '') { _geoip_report_send_msg(color(12).@ip.': no country!', @player) }
-			if(!array_index_exists(@asnc, @ipdb['asn'])) { array_set(@asnc, @ipdb['asn'], array()) }
-			if(!array_index_exists(@asnrc, @ipdb['asn'])) { array_set(@asnrc, @ipdb['asn'], array()) }
-			if(!array_index_exists(@asnip, @ipdb['asn'])) { array_set(@asnip, @ipdb['asn'], array()) }
+			if(@ipdb[@ip]['asn'] == '') { 
+				@nomsg[] = 'ASN';
+				array_set(@ipdb[@ip], 'asn', 'None')
+				array_set(@ipdb[@ip], 'aso', 'Unknown: No Data Given')
+			}
+			if(array_size(@nomsg) > 0) { _geoip_report_send_msg(color(12).@ip.': no '.array_implode(@nomsg, ', ').'!', @player) }
+			if(!array_index_exists(@asnc, @ipdb[@ip]['asn'])) { array_set(@asnc, @ipdb[@ip]['asn'], array()) }
+			if(!array_index_exists(@asnrc, @ipdb[@ip]['asn'])) { array_set(@asnrc, @ipdb[@ip]['asn'], array()) }
+			if(!array_index_exists(@asnip, @ipdb[@ip]['asn'])) { array_set(@asnip, @ipdb[@ip]['asn'], array()) }
 			#List ASN under mc spam
-			if(array_contains(@spnList, @ip)) { @spasnList[] = @ipdb['asn'] }
+			if(array_contains(@spnList, @ip)) { @spasnList[] = @ipdb[@ip]['asn'] }
 			#Add IP
-			@asnip[@ipdb['asn']][] = @ip;
+			@asnip[@ipdb[@ip]['asn']][] = @ip;
 			#List all given country codes, in case one entry differs in review
-			if(@ipdb['c'] == '' || @ipdb['c'] == '?') { @asnc[@ipdb['asn']][] = 'Unknown' } else { @asnc[@ipdb['asn']][] = @ipdb['cn'] }
-			if(@ipdb['rc'] != '') { 
-				@asnrc[@ipdb['asn']][] = @ipdb['rcn']
+			if(@ipdb[@ip]['c'] == '' || @ipdb[@ip]['c'] == '?') { @asnc[@ipdb[@ip]['asn']][] = 'Unknown' } else { @asnc[@ipdb[@ip]['asn']][] = @ipdb[@ip]['cn'] }
+			if(@ipdb[@ip]['rc'] != '') { 
+				@asnrc[@ipdb[@ip]['asn']][] = @ipdb[@ip]['rcn']
 			}
-			array_set(@asnlist, @ipdb['asn'], @ipdb['aso'])
+			array_set(@asnlist, @ipdb[@ip]['asn'], @ipdb[@ip]['aso'])
 			@ipcount++
 			if(string_contains(@ip, ':')) { @v6ip[] = @ip; }
 		}
@@ -202,30 +206,31 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 		@asnrcnreport .= '\n'.@cn.','.array_implode(@asns, ',')
 	}
 	array_sort(@jsoncfg['IP_Blacklist'], 'REGULAR');
+	#final array setup
+	@extracfg = array('Spam_Player_ASNs': @spasnList, 'Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @asnipover10)
+	if(array_index_exists(@asnip, 'None')) { array_set(@extracfg, 'Unknown_ASN_IPs', @asnip['None']) }
+	@jsoncfg = array_merge(@jsoncfg, @mancfgArray, @extracfg)
+	store_value('Chat.server.bl.known.ASNs', @kASN);
+	store_value('Chat.server.bl.known.mc.ASNs', @spasnList);
 #Auto_Generate new blacklist for IP_Blacklist config file. Does not run for previous scan replays.
 	@prevhash = get_value('Chat.IPBlacklist.Publish.hash')
 	if(sha1(@jsoncfg['IP_Blacklist']) != @prevhash && @gencfg == true && @scan == true) {
 		_write_file(@writeDir.'/Report.txt', strip_colors(array_implode(@reportmsg, '\n')), 'overwrite');
+		_write_file(@writeDir.'/Reports/v6.txt', array_implode(@v6ip, '\n'), 'Overwrite');
 		_write_file(@writeDir.'/Reports/ASN-IP.csv', @asnipreport, 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-IP-10.csv', 'Known ASNs with over 10 IPs blacklisted\n'.array_implode(@asnipover10, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-CN.csv', @asncnreport, 'overwrite');
 		_write_file(@writeDir.'/Reports/ASN-RCN.csv', @asnrcnreport, 'overwrite');
 		_write_file(@writeDir.'/Reports/Current-ASNs.csv', 'Current ASNs\n'.array_implode(array_keys(@asnip), '\n'), 'overwrite');
-		store_value('Chat.server.bl.known.ASNs', @kASN);
-		store_value('Chat.server.bl.known.mc.ASNs', @spasnList);
 		_write_file(@writeDir.'/Reports/Known-ASNs.csv', 'Known ASNs\n'.array_implode(@kASN, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/Known-MC-ASNs.csv', 'Known Minecraft centric spam ASNs\n'.array_implode(@spasnList, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/Obnoxious_IPs.yml', yml_encode(yml_decode(@mancfg)['Obnoxious'], true), 'overwrite');
 		_write_file(@writeDir.'/Reports/IP_Block_Blacklist.yml', yml_encode(yml_decode(@mancfg)['IP_Block_Blacklist'], true), 'overwrite');
-		@extracfg = array('Spam_Player_ASNs': @spasnList, 'Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @asnipover10)
-		if(array_index_exists(@asnip, 'None')) { array_set(@extracfg, 'Unknown_ASN_IPs', @asnip['None']) }
-		@jsoncfg = array_merge(@jsoncfg, @mancfgArray, @extracfg)
 		_write_file(@writeDir.'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
-		_write_file(import('Chat.config.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		_write_file(@writeDir.'/IPBlacklist.json', json_encode(@jsoncfg), 'overwrite');
 		_write_file(@writeDir.'/block.txt', array_implode(@jsoncfg['IP_Blacklist'], '\n'), 'Overwrite');
-		_write_file(@writeDir.'/Reports/v6.txt', array_implode(@v6ip, '\n'), 'Overwrite');
 		@addMsg = '[Chat] Wrote report files to Git folder.'
+		_write_file(import('Chat.config.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		console(color(8).@addMsg, false);
 		@reportmsg[] = color(2).@addMsg;
 		if(@gitpublish) {

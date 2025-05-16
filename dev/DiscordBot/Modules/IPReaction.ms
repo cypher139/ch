@@ -50,40 +50,35 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 			@msgIPData = array('ISP Database Lookup Results:')
 			@blacklistIP = import('Chat.config.IPBlacklist', array())
 		#Get IP datas
-			foreach(@ip in @cacheID[@discord['messageid']]) {
-				if(@serverConfig['Ping_Message_LookupIP_DB'] == true) {
-					@ipdb = _chat_lookup_ip_db(@ip);
-					if(is_array(@ipdb)) {
-						@listIPData = '`'.@ip.'`: '
-						if(@ipdb['cn'] != '') { @listIPData .= ':flag_'.to_lower(@ipdb['cn']).':' }
-						if(@ipdb['rcn'] != '') { @listIPData .= '(reg: :flag_'.to_lower(@ipdb['rcn']).':)' }
-						# if(@ipdb['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb['c'] }
-						if(@ipdb['asn'] != '') { 
-							@listIPData .= ' '.'ASN: '.@ipdb['asn']
-							if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb['asn'])) {
-								if(@blacklistIP['Discovered_ASNs'][@ipdb['asn']] > 0) {	@listIPData .= '<ASN has IPs on Blacklist>' } else { @listIPData .= '<Past ASN>' }
-							}
-						}
-						if(@ipdb['aso'] != '') { @listIPData .= ' '.'ISP: '.@ipdb['aso'] }
-						if(@listIPData != '`'.@ip.'`: ') {
-							@msgIPData[] = @listIPData
-						}
-					} else { @msgIPData[] = array('An error occcured, see bot server logs.') }
+			@ipdb = _chat_lookup_ip_db(@cacheID[@discord['messageid']]);
+			if(is_array(@ipdb)) {
+				foreach(@ip in @cacheID[@discord['messageid']]) {
+					if(@serverConfig['Ping_Message_LookupIP_DB'] != true) { break() }
+					@listIPData = '`'.@ip.'`: '
+					if(@ipdb[@ip]['cn'] != '') { @listIPData .= ':flag_'.to_lower(@ipdb[@ip]['cn']).':' }
+					if(@ipdb[@ip]['rcn'] != '') { @listIPData .= ', reg: :flag_'.to_lower(@ipdb[@ip]['rcn']).': ' }
+					# if(@ipdb[@ip]['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb[@ip]['c'] }
+					if(@ipdb[@ip]['asn'] != '') { @listIPData .= ' ASN: '.@ipdb[@ip]['asn'] }
+					if(@ipdb[@ip]['aso'] != '') { @listIPData .= ' | '.@ipdb[@ip]['aso'] }
+					if(@ipdb[@ip]['asn'] != '' && array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb[@ip]['asn'])) {
+						if(@blacklistIP['Discovered_ASNs'][@ipdb[@ip]['asn']] > 0) { @listIPData .= ' <ASN has IPs on Blacklist>' } else { @listIPData .= ' <Past ASN>' }
+					}
+					if(@listIPData != '`'.@ip.'`: ') { @msgIPData[] = @listIPData; }
 				}
-			}
+			} else { @msgIPData[] = array('An error occcured, see bot server logs.') }
 		#Log
 			@s = ''
 			if(array_size(@cacheID[@discord['messageid']]) > 1) { @s = 's' }
 			_db_msg_Console(color(9).@discord['username'].color(10).' requested ISP data for IP'.@s.': '.color(7).array_implode(@cacheID[@discord['messageid']], ', '), @discord['serverid'])
-			@cacheID['i'][] = @discord['messageid']
+			@cacheID['i'][] = @discord['messageid'];
 			discord_request('PUT', 'channels/'.@discord['channelid'].'/messages/'.@discord['messageid'].'/reactions/%F0%9F%AA%AA/@me', null, closure(@ex) { @react = 1 }, closure(@ex) { console('reaction failed: \n'.@ex) });
 			_discordBot_broadcast(@discord['serverid'], '--ping', array('content': array_implode(@msgIPData, '\n'), 'reference_id': @discord['messageid']), 'bot');
 		} else {
-			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list!', @discord['serverid']), 'bot')
-			@cacheID['i'][] = @discord['messageid']
+			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list!', @discord['serverid']), 'bot');
+			@cacheID['i'][] = @discord['messageid'];
 		}
-		array_set(@cacheID, 'lastedit', time())
-		export('DiscordBot.bot.msg.IP.Review', @cacheID)
+		array_set(@cacheID, 'lastedit', time());
+		export('DiscordBot.bot.msg.IP.Review', @cacheID);
 	case 'PingBlacklist':
 		if(!array_index_exists(@cacheID, 'c')) { array_set(@cacheID, 'c', array()) }
 		if(!array_index_exists(@cacheID, 'r')) { array_set(@cacheID, 'r', array()) }
