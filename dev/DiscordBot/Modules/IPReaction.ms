@@ -42,6 +42,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 #Actions
 	switch(string(@doAction)) {
 	case 'PingGetISP':
+		@e = false
 		if(!array_index_exists(@cacheID, 'i')) { array_set(@cacheID, 'i', array()) }
 	# Check if cache reports the message was already acted upon
 		if(array_contains(@cacheID['i'], @discord['messageid'])) { die('i') }
@@ -65,14 +66,30 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 					}
 					if(@listIPData != '`'.@ip.'`: ') { @msgIPData[] = @listIPData; }
 				}
-			} else { @msgIPData[] = array('An error occcured, see bot server logs.') }
+			} else { 
+				@useMsg = ''
+				switch(string(@ipdb)) {
+				case 'NoPerms':
+					@useMsg = 'This command requires configuration to use, see bot server logs.';
+				case 'NoIP':
+					@useMsg = 'A Given IP was invalid.';
+				case 'DBUpdate':
+					@useMsg = 'Required Database files are being updated. Try re-running your query later.';
+					@e = true
+				default:
+					@useMsg = 'An error occured, see bot server logs.';
+				}
+				@msgIPData[] = @useMsg;
+			}
 		#Log
 			@s = ''
 			if(array_size(@cacheID[@discord['messageid']]) > 1) { @s = 's' }
 			_db_msg_Console(color(9).@discord['username'].color(10).' requested ISP data for IP'.@s.': '.color(7).array_implode(@cacheID[@discord['messageid']], ', '), @discord['serverid'])
-			@cacheID['i'][] = @discord['messageid'];
-			discord_request('PUT', 'channels/'.@discord['channelid'].'/messages/'.@discord['messageid'].'/reactions/%F0%9F%AA%AA/@me', null, closure(@ex) { @react = 1 }, closure(@ex) { console('reaction failed: \n'.@ex) });
 			_discordBot_broadcast(@discord['serverid'], '--ping', array('content': array_implode(@msgIPData, '\n'), 'reference_id': @discord['messageid']), 'bot');
+			if(!@e) { 
+				@cacheID['i'][] = @discord['messageid'];
+				discord_request('PUT', 'channels/'.@discord['channelid'].'/messages/'.@discord['messageid'].'/reactions/%F0%9F%AA%AA/@me', null, closure(@ex) { @react = 1 }, closure(@ex) { console('reaction failed: \n'.@ex) });
+			}
 		} else {
 			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list!', @discord['serverid']), 'bot');
 			@cacheID['i'][] = @discord['messageid'];

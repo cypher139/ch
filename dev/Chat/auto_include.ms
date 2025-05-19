@@ -569,6 +569,51 @@ proc _chat_pings_write_log(array @ping = array(), string @type = 'ignore', boole
 	return(true)
 }
 
+proc _chat_download_file(@file, @path, @url, @mode = 'update') {
+	@write = false
+	@prefix = 'File '
+	if(!@url) {
+		switch(@file) {
+		case 'GeoLite2-ASN.mmdb':
+		case 'GeoLite2-City.mmdb':
+			@url = 'https://github.com/P3TERX/GeoLite.mmdb/raw/download/'
+			@prefix = 'GeoIP database file '
+		case 'geoip.py': 
+			@url = 'https://raw.githubusercontent.com/cypher139/ch/release/dev/Chat/'
+		default:
+			return('NoURL')
+		}
+	}
+	if(!@file || !@path) { return('NoFile') }
+	switch(@mode) {
+	case 'update':
+		if(function_exists('file_last_modified')) {
+			@fm = file_last_modified(@path.'/'.@file);
+			if(@fm > 0 && @fm > (time() - 604800000)) { @write = false } else { @write = true }
+		} else { return('NoExt') }
+	case 'create':
+		if(function_exists('file_exists')) {
+			if(!file_exists(@path.'/'.@file)) { @write = true }
+		} else { return('NoExt') }
+	}	
+	if(@write) {	
+		http_request(@url.@file, array('binary': true, 'blocking': true, 'success': closure(@data) {
+			# export('Chat.dl.update.check.'.@file, time())
+			if(@data['error'] == true) {
+				if(@data['responseCode'] == 404) { console('URL '.@url.@file.' was not found!')	}
+				export('Chat.debug.http.error', @data)
+				return(false)
+			} else {
+				@writeReturn = _write_file(@path.'/'.@file, @data['data'], 'OVERWRITE')
+				@suffix = color(10).'updated: '
+				if(!@writeReturn) { @suffix = color(4).'could not be written: ' }
+				console(color(14).@prefix..color(9).@file, false)
+			}
+		}));
+	}
+	return(true)
+}
+
 proc _chat_lookup_ip_db(@args, boolean @raw = false) {
 	@serverConfig = import('Chat.config.Server');
 	@checkIPs = array();
@@ -594,55 +639,37 @@ proc _chat_lookup_ip_db(@args, boolean @raw = false) {
 	}
 	if(array_size(@checkIPs) < 1) {	return('NoIP') }
 	#Setup GeoIP Databases and shell call
-	if(function_exists('file_last_modified')) {
-		# foreach(@file in array('GeoLite2-ASN.mmdb', 'GeoLite2-City.mmdb', 'GeoLite2-Country.mmdb')) {
-		foreach(@file in array('GeoLite2-ASN.mmdb', 'GeoLite2-City.mmdb')) {
-			@fm = file_last_modified(@serverConfig['LookupIP_DB_Dir'].'/'.@file);
-			if(@fm > 0 && @fm > (time() - 604800000)) { continue() }
-			http_request('https://github.com/P3TERX/GeoLite.mmdb/raw/download/'.@file, array('binary': true, 'blocking': true, 'success': closure(@data) {
-				export('Chat.GeoIP.update.check', time())
-				if(@data['error'] == true) {
-					if(@data['responseCode'] == 404) { console('File '.@file.' was not found!')	}
-					export('Chat.debug.http.error', @data)
-					return(false)
-				} else {
-					_write_file(@serverConfig['LookupIP_DB_Dir'].'/'.@file, @data['data'], 'OVERWRITE')
-					console(color(14).'Chat: GeoIP database file '.color(10).'updated: '.color(9).@file, false)
-				}
-			}));
-		}
-		if(!file_exists(@serverConfig['LookupIP_DB_Dir'].'/geoip.py')) {
-			http_request('https://raw.githubusercontent.com/cypher139/ch/release/dev/Chat/geoip.py', array('blocking': true, 'success': closure(@data) {
-				if(@data['error'] == true) {
-					if(@data['responseCode'] == 404) { console(color(12).'Chat: GeoIP script was not found!') }
-					export('Chat.debug.http.error', @data)
-					return(false)
-				} else {
-					_write_file(@serverConfig['LookupIP_DB_Dir'].'/geoip.py', @data['body'], 'Overwrite')
-				}
-			}));
-		}
-	}
 	@geoipData = array()
 	try {
 		@call = array('python3', 'geoip.py')
 		array_push_all(@call, @checkIPs);
 		@geoipData = json_decode(shell(@call, array('workingDir': @serverConfig['LookupIP_DB_Dir'])));
 	} catch(InsufficientPermissionException @ex) {
-		console(color(12).'Chat: GeoIP shell cannot start, make sure you have turned on the allow-shell setting in preferences.ini. \n'.@ex)
+		console(color(12).'GeoIP shell cannot start, make sure you have turned on the allow-shell setting in preferences.ini. \n'.@ex)
 		return('NoPerms')
 	} catch(ShellException @ex) {
-		console(color(12).'Chat: GeoIP: Shell command had an exception:\n'.@ex['message'])
+		if(string_starts_with(@ex['message'], 'python3: can\'t open file')) {
+			_chat_download_file('geoip.py', @serverConfig['LookupIP_DB_Dir'])
+			console(color(14).'Downloading geoip.py')
+			return('DBUpdate')
+		} else {
+			console(color(12).'GeoIP: Shell command had an exception:\n'.@ex['message'])
+		}
 		return('Error')
-	} catch(IOException @ex) {
-		console('Chat: GeoIP shell: '.@ex)
-		return(false)
 	} catch(Exception @ex) {
-		console('Chat: GeoIP shell: '.@ex)
+		console('GeoIP shell: '.@ex)
 		return(false)
 	}
-	@return = array()
+	#File Update Check:
+	if(array_size(@geoipData['updateFile']) > 0) {
+		foreach(@file in @geoipData['updateFile']) {
+			_chat_download_file('GeoLite2-'.@file.'.mmdb', @serverConfig['LookupIP_DB_Dir'])
+		}
+		console(color(14).'Downloading '.array_implode(@geoipData['updateFile'], ', ').' database files.', false)
+		return('DBUpdate')
+	}
 	#Parse returned Data
+	@return = array()
 	foreach(@ip in @checkIPs) {
 		@ipData = array();
 		if(array_index_exists(@geoipData, @ip)) {
@@ -676,11 +703,3 @@ proc _chat_lookup_ip_db(@args, boolean @raw = false) {
 	}
 	return(@return);
 }
-
-
-
-####
-# Load configs
-#Loading here runs load on every proc call CH makes
-# _chat_load_config('Server');
-# _chat_load_config('IPBlacklist');

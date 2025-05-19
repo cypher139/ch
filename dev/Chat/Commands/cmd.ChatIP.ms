@@ -426,8 +426,9 @@ register_command('chatip', array(
 					case 'NoPerms':
 						die(color(12).'This command requires configuration to use, see console logs.');
 					case 'NoIP':
-						msg('A Given IP was invalid.');
-						die()
+						die('A Given IP was invalid.');
+					case 'DBUpdate':
+						die('Required Database files are being updated. Try re-running your query later.');
 					default:
 						die(color(12).'An error occured, see console logs.');
 					}

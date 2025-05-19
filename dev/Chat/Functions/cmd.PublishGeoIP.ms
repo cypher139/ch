@@ -1,13 +1,17 @@
 # Generate reports about which ASNs and countries are listed in Chat's IP Blacklist file, using the GeoIP shell command lookup.
-proc _geoip_report_send_msg(@msg, @player) {
+proc _geoip_report_send_msg(@msg, @player, @msgConsole) {
 	if(!@player) { @player = '~console'; }
-	console(@msg, false);
+	@s = '';
+	if(@msgConsole) { @s = ' '; }
+	console(@msg.@s.@msgConsole, false);
 	if(@player != '~console' && function_exists('msg')) { msg(@msg); }
 }
 proc _geoip_asn_report(boolean @scan = true, boolean @consoleReport = false, boolean @gencfg = true) {
 x_new_thread('GeoIPASNReport'.time(), closure(){
 #threaded due to shell call processing ~25 IPs/second
-	@player = '~console';
+	@prefix = color(8).'['.color(1).'GeoIP Report'.color(8).']'.color('r').' '
+	@prefixError = color(12).'['.color(7).'GeoIP Report'.color(12).']'.color('r').' '
+	@player = '~console'
 	if(function_exists('player')) { @player = player(); }
 	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 	@checkIP = array_sort(array_unique(@blacklistIP['IP_Blacklist'], false), 'REGULAR');
@@ -30,11 +34,11 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 	try {
 		@asnnicks = yml_decode(read(import('Chat.config.dir').'/ASN_ISP_Names.yml'))
 	} catch(IOException @ex) {
-		_chat_msg_Admins(color(12).'[Chat] ASN ISP Nicknames file could not be read. ', @ex['message'], true);
+		_geoip_report_send_msg(@prefixError.color(12).'ASN ISP Nicknames file could not be read. ', @player, @ex['message']);
 	} catch(FormatException @ex) {
-		_chat_msg_Admins(color(12).'[Chat] ASN ISP Nicknames file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true);
+		_geoip_report_send_msg(@prefixError.color(12).'ASN ISP Nicknames file is improperly formatted.', @player, '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']));
 	} catch(Exception @ex) {
-		_chat_msg_Admins(color(12).'[Chat] There was an error with the ASN ISP Nicknames file. ', @ex['message'], true);
+		_geoip_report_send_msg(@prefixError.color(12).'There was an error with the ASN ISP Nicknames file. ', @player, @ex['message']);
 	}
 	@mancfg = ''
 	@mancfgArray = array('Spam_Player_Names': array());
@@ -42,13 +46,13 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 		@mancfg = read(import('Chat.config.dir').'/Template-IP.yml');
 		@mancfgArray = yml_decode(@mancfg);
 	} catch(IOException @ex) {
-		_chat_msg_Admins(color(12).'[Chat] Template-IP Config file could not be read. ', @ex['message'], true);
+		_geoip_report_send_msg(@prefixError.color(12).'Template-IP Config file could not be read. ', @player, @ex['message']);
 		die();
 	} catch(FormatException @ex) {
-		_chat_msg_Admins(color(12).'[Chat] Template-IP Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']), true);
+		_geoip_report_send_msg(@prefixError.color(12).'Template-IP Config file is improperly formatted.', @player, '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']));
 		die();
 	} catch(Exception @ex) {
-		_chat_msg_Admins(color(12).'[Chat] There was an error with the Template-IP Config file. ', @ex['message'], true);
+		_geoip_report_send_msg(@prefixError.color(12).'There was an error with the Template-IP Config file. ', @player, @ex['message']);
 		die();
 	}
 	@spnList = array();
@@ -62,18 +66,22 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 	}
 	@prevcount = get_value('Chat.IPBlacklist.Publish.count')
 	if(array_size(@checkIP) == @prevcount && @scan == true) { 
-		_geoip_report_send_msg('Count of blacklisted IPs is the same as the last run, stopping.', @player);
+		_geoip_report_send_msg(@prefix.'Count of blacklisted IPs is the same as the last run, stopping.', @player);
 		return(false);
 	}
 	if(@scan == true) {
 		# _write_file(@writeDir.'/checkip.json', json_encode(@checkIP), 'Overwrite');
+		_geoip_report_send_msg(@prefix.color(8).'Processing GeoIP report data:', @player);
 		@ipdb = _chat_lookup_ip_db(@checkIP);
-		if(!is_array(@ipdb)) { die(color(12).'An error occured with the Geo IP scanner, see logs.') }
+		if(!is_array(@ipdb)) { 
+			_geoip_report_send_msg(@prefixError.color(8).'An error occured with the Geo IP scanner, see logs.', @player, 'Data received:\n'.@ipdb);
+			die();
+		}
 		foreach(@i: @ip in @checkIP) {
-			if(@i % 100 == 0) { _geoip_report_send_msg(color(8).'Processed '.color(5).@i.color(8).' of '.color(1).array_size(@checkIP).color(8).' IPs.', @player); }
+			if(@i % 100 == 0) { _geoip_report_send_msg(@prefix.color(8).'Checked '.color(5).@i.color(8).' of '.color(1).array_size(@checkIP).color(8).' IPs.', @player); }
 			if(@ip == 'raw') { continue() }
 			if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
-				_geoip_report_send_msg(color(12).'[Chat] Not a valid IP: '.@ip, @player);
+				_geoip_report_send_msg(@prefixError.color(12).'Not a valid IP: '.@ip, @player);
 				continue();
 			}
 			@listIPData = color(14).'['.@ip.'] '.color(3)
@@ -87,7 +95,7 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 				array_set(@ipdb[@ip], 'asn', 'None')
 				array_set(@ipdb[@ip], 'aso', 'Unknown: No Data Given')
 			}
-			if(array_size(@nomsg) > 0) { _geoip_report_send_msg(color(12).@ip.': no '.array_implode(@nomsg, ', ').'!', @player) }
+			if(array_size(@nomsg) > 0) { _geoip_report_send_msg(@prefix.color(9).@ip.color(7).': no '.array_implode(@nomsg, ', ').'!', @player) }
 			if(!array_index_exists(@asnc, @ipdb[@ip]['asn'])) { array_set(@asnc, @ipdb[@ip]['asn'], array()) }
 			if(!array_index_exists(@asnrc, @ipdb[@ip]['asn'])) { array_set(@asnrc, @ipdb[@ip]['asn'], array()) }
 			if(!array_index_exists(@asnip, @ipdb[@ip]['asn'])) { array_set(@asnip, @ipdb[@ip]['asn'], array()) }
@@ -206,7 +214,7 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 		@asnrcnreport .= '\n'.@cn.','.array_implode(@asns, ',')
 	}
 	array_sort(@jsoncfg['IP_Blacklist'], 'REGULAR');
-	#final array setup
+	# Final array setup
 	@extracfg = array('Spam_Player_ASNs': @spasnList, 'Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @asnipover10)
 	if(array_index_exists(@asnip, 'None')) { array_set(@extracfg, 'Unknown_ASN_IPs', @asnip['None']) }
 	@jsoncfg = array_merge(@jsoncfg, @mancfgArray, @extracfg)
@@ -224,12 +232,12 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 		_write_file(@writeDir.'/Reports/Current-ASNs.csv', 'Current ASNs\n'.array_implode(array_keys(@asnip), '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/Known-ASNs.csv', 'Known ASNs\n'.array_implode(@kASN, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/Known-MC-ASNs.csv', 'Known Minecraft centric spam ASNs\n'.array_implode(@spasnList, '\n'), 'overwrite');
-		_write_file(@writeDir.'/Reports/Obnoxious_IPs.yml', yml_encode(yml_decode(@mancfg)['Obnoxious'], true), 'overwrite');
-		_write_file(@writeDir.'/Reports/IP_Block_Blacklist.yml', yml_encode(yml_decode(@mancfg)['IP_Block_Blacklist'], true), 'overwrite');
+		_write_file(@writeDir.'/Reports/Obnoxious_IPs.yml', yml_encode(@mancfgArray['Obnoxious'], true), 'overwrite');
+		_write_file(@writeDir.'/Reports/IP_Block_Blacklist.yml', yml_encode(@mancfgArray['IP_Block_Blacklist'], true), 'overwrite');
 		_write_file(@writeDir.'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		_write_file(@writeDir.'/IPBlacklist.json', json_encode(@jsoncfg), 'overwrite');
 		_write_file(@writeDir.'/block.txt', array_implode(@jsoncfg['IP_Blacklist'], '\n'), 'Overwrite');
-		@addMsg = '[Chat] Wrote report files to Git folder.'
+		@addMsg = @prefix.'Wrote report files to Git folder.'
 		_write_file(import('Chat.config.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		console(color(8).@addMsg, false);
 		@reportmsg[] = color(2).@addMsg;
@@ -237,16 +245,16 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 			@addMsg2 = ''
 			try {
 				@shellreturn = shell(array('./gitupload.sh'), array('workingDir': @writeDir));
-				@addMsg = color(3).'[Chat] Git push results: '.color('r').@shellreturn;
+				@addMsg = @prefix.color(3).'Git push results: '.color('r').@shellreturn;
 				store_value('Chat.IPBlacklist.Publish.hash', sha1(@jsoncfg['IP_Blacklist']));
 			} catch(InsufficientPermissionException @ex) {
-				@addMsg = color(12).'Chat: GeoIP Git shell cannot start, make sure you have turned on the allow-shell setting.'
+				@addMsg = @prefixError.color(12).'GeoIP Git shell cannot start, make sure you have turned on the allow-shell setting.'
 				@addMsg2 = color(12).' (in preferences.ini) \n'.@ex;
 			} catch(ShellException @ex) {
-				@addMsg = color(12).'Chat: GeoIP Git Shell command had an exception.';
+				@addMsg = @prefixError.color(12).'GeoIP Git Shell command had an exception.';
 				@addMsg2 = color(4).'\n'.@ex['message'];
 			} catch(Exception @ex) {
-				@addMsg = color(12).'Chat: GeoIP Git shell had an exception: ';
+				@addMsg = @prefixError.color(12).'GeoIP Git shell had an exception: ';
 				@addMsg2 = color(4).@ex;
 			}
 			console(@addMsg.@addMsg2, false)
@@ -261,6 +269,14 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 #------------------------------
 # Auto-Generate Blacklist config file for new IPs, for publish to Git
 set_cron('@daily', closure(){ _geoip_asn_report(); });
+#------------------------------
+# Update Check for GeoIP Database files
+set_cron('0 23 * * *', closure(){ 
+	@serverConfig = import('Chat.config.Server');
+	_chat_download_file('GeoLite2-ASN.mmdb', @serverConfig['LookupIP_DB_Dir'])
+	_chat_download_file('GeoLite2-City.mmdb', @serverConfig['LookupIP_DB_Dir'])
+	_chat_download_file('geoip.py', @serverConfig['LookupIP_DB_Dir'], '', 'create')
+});
 #------------------------------
 # Generate Blacklist config file for new IPs manually / view report in game or console.
 if(function_exists('register_command')) {

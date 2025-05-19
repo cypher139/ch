@@ -159,9 +159,9 @@ Obnoxious:
     i: "Netiface Limited"
     p: 34
   156.146.63.209:
-    f: 32
+    f: 17m
     i: "Datacamp Limited"
-    p:
+    p: 32
 #
 Spam_Player_Names:
 # Player names, if an actual connection via Mojang auth was tried, are listed here.
