@@ -27,7 +27,7 @@ Channels:
   # This channel is to post join/leave embeds for a user facing log
   Join_Log: join-log
   # Your channel for notification of IP address pings on the Minecraft server. 
-  # Used for Chat script integration. Uncomment if needed.
+  # Used for IP Blacklist script integration. Uncomment if needed.
   Ping_Log: bot-logs
   # Showcase Channel
   # Intended as a place to show your server community's art projects, latest game achievements, etc., and ward off chat to another channel.

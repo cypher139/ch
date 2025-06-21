@@ -1,6 +1,6 @@
-bind('player_login', array('id': 'Chat.Server.Login.Monitor', 'priority': 'HIGH'), null, @login) {	
-	@serverConfig = import('Chat.config.Server')
-	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+bind('player_login', array('id': 'ipbl.Server.Login.Monitor', 'priority': 'HIGH'), null, @login) {	
+	@serverConfig = import('ipbl.config.Server')
+	@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 	@ipdata = import('primus.database.IP');
 	@ip = reg_replace('[%][0]$', '', @login['ip'])
 	if(!is_array(@ipdata)) { @ipdata = array() }

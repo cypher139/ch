@@ -31,6 +31,7 @@ for arg in sys.argv[1:]:
         ispdatajson['updateFile'].append('ASN')
 
     x += 1
+    # print(len(ispdatajson['updateFile']))
     if len(ispdatajson['updateFile']) > 0:
         break
 

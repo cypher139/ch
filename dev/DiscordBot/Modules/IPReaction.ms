@@ -5,12 +5,12 @@ export('DiscordBot.db.save.keys', array_unique(@x8db))
 
 export('DiscordBot.bot.msg.IP.Review', get_value('DiscordBot.bot.msg.IP.Review'))
 
-# Add listed IP(s) from cypher139's Chat script's IP ping messages to Chat's IP Blacklist file, upon using the configured emoji.
-bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority': 'MONITOR'), null, @discord) {
+# Add listed IP(s) from cypher139's IP Blacklist script's IP ping messages to the IP Blacklist file, upon using the configured emoji.
+bind('discord_reaction_added', array('id': 'DiscordBot.IP.React', 'priority': 'MONITOR'), null, @discord) {
 	# custom emoji given with <>
-	if(is_null(import('Chat.config.dir'))) { die('Chat functions are not loaded, skipping') }
+	if(is_null(import('ipbl.config.dir'))) { die('IP Blacklist functions are not loaded, skipping') }
 	array_set(@discord, 'time', time());
-	@serverConfig = import('Chat.config.Server')
+	@serverConfig = import('ipbl.config.Server')
 	@botconfig = import('DiscordBot.config.Bot')
 # IP ping logs are only sent to the Primary guild.
 	if(@discord['serverid'] != @botconfig['Primary_Guild']) { die() }
@@ -26,7 +26,20 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 	if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji'])) { @doAction = @config['Reaction_Actions'][@discord['emoji']]
 	} else if(array_index_exists(@config, 'Reaction_Actions', reg_replace('[0-9]', '', @discord['emoji']))) { @doAction = @config['Reaction_Actions'][reg_replace('[0-9]', '', @discord['emoji'])]
 	} else { die() }
-	
+# Verify if user is an admin
+	@userRoles = array()
+	try {
+		@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
+	} catch(NotFoundException @ex) {
+		export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
+	} 
+	@isAdmin = false;
+	foreach(@rN: @rID in @userRoles) {
+		if(array_contains_ic(@config['Role_Admins'], @rN) || array_contains(@config['Role_Admins'], @rID)) {
+			@isAdmin = true;
+			break();
+		}
+	}
 		# remove encasing <>, in case it is not included in config.
 		# foreach(@act: @em in @config['Special_Emoji']) {
 			# if(reg_replace('[<>]', '', @discord['emoji']) == reg_replace('[<>]', '', @em)) { 
@@ -49,9 +62,9 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 	# Action IPs
 		if(array_index_exists(@cacheID, @discord['messageid'])) {
 			@msgIPData = array('ISP Database Lookup Results:')
-			@blacklistIP = import('Chat.config.IPBlacklist', array())
+			@blacklistIP = import('ipbl.config.IPBlacklist', array())
 		#Get IP datas
-			@ipdb = _chat_lookup_ip_db(@cacheID[@discord['messageid']]);
+			@ipdb = _geoip_lookup(@cacheID[@discord['messageid']]);
 			if(is_array(@ipdb)) {
 				foreach(@ip in @cacheID[@discord['messageid']]) {
 					if(@serverConfig['Ping_Message_LookupIP_DB'] != true) { break() }
@@ -97,6 +110,10 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 		array_set(@cacheID, 'lastedit', time());
 		export('DiscordBot.bot.msg.IP.Review', @cacheID);
 	case 'PingBlacklist':
+		if(!@isAdmin) {
+			_discordBot_broadcast(@discord['serverid'], '--ping', array('content': 'Sorry <@'.@discord['userid'].'>, this command is only for server moderators.', 'reference_id': @discord['messageid']), 'bot')
+			die();
+		}
 		if(!array_index_exists(@cacheID, 'c')) { array_set(@cacheID, 'c', array()) }
 		if(!array_index_exists(@cacheID, 'r')) { array_set(@cacheID, 'r', array()) }
 		array_set(@cacheID, 'lastedit', time())
@@ -105,7 +122,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 	# Action IPs
 		if(array_index_exists(@cacheID, @discord['messageid'])) {
 		#Get
-			@blacklistIP = import('Chat.config.IPBlacklist')
+			@blacklistIP = import('ipbl.config.IPBlacklist')
 			if(!is_array(@blacklistIP)) { array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()) }
 			# Get player name(s) from IP database
 			@ipuserdata = import('primus.database.IP');
@@ -114,23 +131,24 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 			@addip = array()
 			@reviewip = array()
 			@userdisplay = ''
-			if(!array_index_exists(@cacheID, 'r', @discord['messageid'])) {
-				foreach(@rawip in @cacheID[@discord['messageid']]) {
-					# remove v6's end "%0", ufw doesn't support.
-					@ip = reg_replace('[%][0]$', '', @rawip)
-					# Check for player names, don't add if found.
-					@userdisplay = ''
-					if(array_index_exists(@ipuserdata, @ip) && !array_index_exists(@cacheID, 'r', @discord['messageid'])) {
-						array_set(@reviewip, @ip, @ipuserdata[@ip]);
-						@userdisplay .= '\n'.@ip.': `'.array_implode(@ipuserdata[@ip], ', ').'`'
-						continue();
-					}
-					@blacklistIP['IP_Blacklist'][] = @ip
-					@addip[] = @ip
+			foreach(@rawip in @cacheID[@discord['messageid']]) {
+				# remove v6's end "%0", ufw doesn't support.
+				@ip = reg_replace('[%][0]$', '', @rawip)
+				# Check for player names, don't add if found.
+				@userdisplay = ''
+				if(array_index_exists(@ipuserdata, @ip) && !array_contains(@cacheID['r'], @discord['messageid'])) {
+					array_set(@reviewip, @ip, @ipuserdata[@ip]);
+					@userdisplay .= '\n'.@ip.': `'.array_implode(@ipuserdata[@ip], ', ').'`'
+					continue();
 				}
+				@blacklistIP['IP_Blacklist'][] = @ip
+				@addip[] = @ip
 			}
 		#Write
-			_write_file(import('Chat.config.dir').'/IPBlacklist.yml', yml_encode(@blacklistIP, true), 'OVERWRITE')
+		if(array_size(@addip) > 0) {
+			export('ipbl.config.IPBlacklist', @blacklistIP);
+			_ipbl_save_config();
+		}
 		#Log
 			@s = ''
 			if(array_size(@cacheID[@discord['messageid']]) > 1) { @s = 's' }
@@ -146,7 +164,8 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 					@cacheID['r'][] = @msgID;
 					if(array_size(@cacheID) > 400) {
 						@key = array_keys(@cacheID)
-						array_remove(@key, 'c')
+						array_remove_values(@key, 'c')
+						array_remove_values(@key, 'r')
 						array_remove(@cacheID, array_sort(@key, 'NUMERIC')[0])
 					}
 					export('DiscordBot.bot.msg.IP.Review', @cacheID)
@@ -155,11 +174,6 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Chat.IP.React', 'priority
 			}
 			export('DiscordBot.bot.msg.IP.Review', @cacheID)
 			discord_request('PUT', 'channels/'.@discord['channelid'].'/messages/'.@discord['messageid'].'/reactions/%E2%9C%85/@me', null, closure(@ex) { @react = 1 }, closure(@ex) { console('reaction failed: \n'.@ex) });
-		# Reload file - registers for auto loading.
-		# -- File loading triggers the add to blacklist block file for host system use.
-			@polls = import('cypher139.poll.files')
-			if(!is_array(@polls)) { @polls = array() }
-			if(!array_index_exists(@polls, 'IPBlacklist')) { _register_poll_file('IPBlacklist', '_chat_load_config', import('Chat.config.dir').'/IPBlacklist.yml') }
 		} else {
 			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list! You\'ll need to manually add the IP address in question to the bot\'s blacklist file.'), 'bot');
 			@cacheID['c'][] = @discord['messageid']

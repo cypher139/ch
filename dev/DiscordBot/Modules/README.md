@@ -7,4 +7,4 @@ These are optional Bot components. Only include them with your Bot installation 
 
 ## Modules:  
 - IP Reactions:  
-    - By reacting with a configured emoji to [Chat's](https://github.com/cypher139/ch/tree/release/dev/Chat) IP ping messages, the IP is added to IP Blacklist file.  
+    - By reacting with a configured emoji to [IP Blacklist's](https://github.com/cypher139/ch/tree/release/dev/IPBlacklist) IP ping messages, the IP is added to IP Blacklist file.  

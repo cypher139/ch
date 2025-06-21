@@ -42,7 +42,7 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 # Load master custom messages list
 	@newmsg = import('Chat.config.Death_Messages')
 	if(!is_array(@newmsg)) { 
-		_chat_msg_Admins('[Chat] Death Messages List file is not properly formatted.') 
+		_msg_Admins('Chat', 'error', 'Death Messages List file is not properly formatted.') 
 		die()
 	}
 # Unload non-matching array IDs

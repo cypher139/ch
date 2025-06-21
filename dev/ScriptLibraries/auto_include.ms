@@ -1,3 +1,54 @@
+proc _msg_Admins(string @name = 'CommandHelper', string @type = 'info', string @message, string @consoleData = '', @skipPlayer) {
+	if(!@name) { @name = 'CH' }
+	@sendConsole = true
+	@sendPlayer = true
+	@logPath = 'Bot'
+	@prefix = color(8).'['.color(3).@name.color(8).'] '.color('r')
+	switch(@type) {
+	case 'prefix':
+	case 'info':
+		@nc = 1
+	case 'server':
+		@prefix = color(6).'['.color(9).'Server'.color(6).'] '.color('r')
+	case 'debug':
+		@prefix .= color(14).'<debug> '.color('r')
+	case 'error':
+		@prefix .= color(12).'<error> '.color('r')
+	case 'warning':
+		@prefix .= color(6).'<Warning> '.color('r')
+	case 'd':
+	case 'bot':
+		@prefix = color(8).'['.color(5).'Bot'.color(8).'] '.color('r')
+	case '-':
+	case 'none':
+		@prefix = ''
+	default:
+		@prefix = @type
+	}
+	@message = @prefix.@message
+	if(import('Server.config.messages.Console_Messages', true) != true) { @sendConsole = false }
+	if(@type == 'debug') {
+		@sendConsole = false
+		@sendPlayer = false
+		if(import('Server.config.messages.Console_Debug') == true) { @sendConsole = true }
+	}
+	if(@type == 'error') { 
+		_write_file('Log-Error-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.@consoleData.'\n', 'Append')
+		@sendConsole = true;
+	}
+	if(@sendConsole == true) {
+		console(@message.@consoleData, false)
+	} else {
+		_write_file('Log-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.@consoleData.'\n', 'Append')
+	}
+	# Broadcast to MC server Admins, if available
+	if(function_exists('all_players') && @sendPlayer == true) {
+		foreach(@p in all_players()) {
+			if(has_permission(@p, 'admin.messages.receive.'.@type) && @p != @skipPlayer) { tmsg(@p, @message) }
+		}
+	}
+}
+
 proc _write_file(string @path, @content, @append, @option) {
 	if(length(@path) < 5) { return(false) }
 	if(!is_bytearray(@content)) {

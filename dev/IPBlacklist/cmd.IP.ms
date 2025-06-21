@@ -1,16 +1,16 @@
 #Ignored & Blacklisted IP pings notification
 set_cron('59 23 * * *', closure(){
-	export('Chat.cmd.IP.report', 'auto');
-	run_cmd('/chatip report');
+	export('ipbl.cmd.IP.report', 'auto');
+	run_cmd('/ip report');
 });
 
 #------------------------------
-try(unregister_command('chatip'))
+try(unregister_command('ip'))
 
-register_command('chatip', array(
-	'description': 'Chat: Admin: IP address Blacklist management.',
-	'usage': color(8).'Examples: /chatip report, /chatip avgtime <IP>, /chatip check <IP>, /chatip geo <IP>',
-	'permission': 'Chat.Admin.cmd.IP',
+register_command('ip', array(
+	'description': 'Admin: IP address Blacklist management.',
+	'usage': color(8).'Examples: /ip report, /ip avgtime <IP>, /ip check <IP>, /ip geo <IP>',
+	'permission': 'ipbl.Admin.cmd.IP',
 	'noPermMsg': 'Unknown command. Type "/help" for help.',
 	'tabcompleter':
 		closure(@alias, @sender, @args, @info) {
@@ -49,7 +49,7 @@ register_command('chatip', array(
 			# console(@atype)
 			return(@areturn);
 		},
-	# 'aliases': array('dc'),
+	'aliases': array('ipbl'),
 	'executor':
 		closure(@alias, @sender, @args, @info) {
 			@player = @sender;
@@ -57,7 +57,7 @@ register_command('chatip', array(
 			@id = 0;
 			@returnMsg = array(12, '?');
 			@cmd = ''
-			@name = 'ChatIP'
+			@name = 'IPBlacklist'
 			if(array_index_exists(@args, 0)) {
 				if(@args[-1] == 'arguments>') {
 					@back = array_size(@args) - 4;
@@ -76,8 +76,10 @@ register_command('chatip', array(
 					@cmd = 'report';
 					array_remove(@args, 0);
 				case 'c':
-				case 'b':
 					@cmd = 'check';
+					array_remove(@args, 0);	
+				case 'b':
+					@cmd = 'blacklist';
 					array_remove(@args, 0);
 				case 'g':
 				case 'l':
@@ -87,6 +89,9 @@ register_command('chatip', array(
 				case 't':
 					@cmd = 'avgtime';
 					array_remove(@args, 0);
+				case 'n':
+					@cmd = 'notblock';
+					array_remove(@args, 0);
 				}
 			} 
 			if(!@cmd) {
@@ -94,20 +99,75 @@ register_command('chatip', array(
 				return(false);
 			}
 		#Common Args
-			if(!has_permission(player(), 'Chat.Admin.cmd.IP.'.@cmd)) {
-				@cmdmsg = array('report': 'to view the Blackisted IP report', 'check': 'to check if IP is blacklisted here.', 'avgtime': 'to check average IP ping times.', 'geoip': 'to lookup GeoIP information.');
+			if(!has_permission(player(), 'ipbl.Admin.cmd.IP.'.@cmd)) {
+				@cmdmsg = array('report': 'to view the Blackisted IP report.', 'check': 'to check if IP is blacklisted here.', 'avgtime': 'to check average IP ping times.', 'geoip': 'to lookup GeoIP information.', 'notblock': 'to view IPs not listed in a blacklisted IP Block.', 'blacklist': 'to manually blacklist IPs.');
 				msg(color(12).'['.color(7).@name.color(12).'] '.color(12).'You do not have permission '.color(7).@cmdmsg[@cmd]); 
 				return(true);
 			}
 			@time = time();
-			@serverConfig = import('Chat.config.Server');
+			@serverConfig = import('ipbl.config.Server');
 			@results = array();
 		# Sub Actions:
 			switch(@cmd) {
+			case 'blacklist':
+		#Check if a given IP is already in IP Blacklist config
+				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+				@results[] = color(14).'IPs to add to IP Blacklist: ';
+				@listIPData = ''
+				@ipuserdata = import('primus.database.IP');
+				if(!is_array(@ipuserdata)) { @ipuserdata = array() }
+			#Add
+				@addip = array()
+				@reviewip = array()
+				@userdisplay = ''
+				@showall = false
+				if(array_contains(@args, 'show')) { @showall = true }
+				foreach(@arg in @args) {
+					if(@arg == 'show') { continue() }
+					@listIPData = ''
+					@upload = true
+					@ip = reg_replace('[%][0]$', '', @arg);
+					if(@ip == 'raw' || @ip == 'isp' || @ip == 'ip') { continue() }
+					if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
+						msg(color(12).'Not a valid IP: '.@ip);
+						continue()
+					}
+					@listIPData = color(9).@ip.color(3)
+					foreach(@block: @ISP in @blacklistIP['IP_Block_Blacklist']) {
+						@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
+						if(string_starts_with(string(@ip), @startBlock)) {
+							@listIPData .= color(14).' Found On Block Blacklist: '.color(7).@block
+						}
+					}
+					if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
+						if(@showall) { @listIPData .= color(12).' Already In Blacklist' } else { continue(); }
+						@upload = false
+					}
+					if(array_index_exists(@ipuserdata, @ip) && !array_contains(@args, 'confirm')) {
+						array_set(@reviewip, @ip, @ipuserdata[@ip]);
+						@listIPData .= color(9).' Player Names: '.color(8).array_implode(@ipuserdata[@ip], ', ')
+						@userdisplay .= '\n'.@ip.': '.array_implode(@ipuserdata[@ip], ', ')
+						@upload = false
+					}
+					if(@upload) { 
+						@addip[] = @ip;
+						@blacklistIP['IP_Blacklist'][] = @ip;
+						@listIPData .= color(10).' - Added.'
+					}
+					@results[] = @listIPData;
+				} else { @results[] = color(12).'No IPs were given to add?!?!'; }
+				if(array_size(@addip) > 0) {
+					export('ipbl.config.IPBlacklist', @blacklistIP);
+					_ipbl_save_config();
+					@results[] = color(10).array_size(@addip).' IPs were added.'; 
+				}
+				if(array_size(@reviewip) > 0) {
+					@results[] = color(14).'These IPs have connected with a player name; If you wish to confirm blacklisting these IPs, '.color('r').'*type this command again and include the word "'.color(14).'confirm'.color('r').'".*'.@userdisplay;
+				}
 			case 'check':
 		#Check if a given IP is already in IP Blacklist config
-				@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
-				@results[] = color(14).'is IPs on Chat IP Blacklist: ';
+				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+				@results[] = color(14).'is IPs on IP Blacklist: ';
 				@listIPData = ''
 				foreach(@arg in @args) {
 					@listIPData = ''
@@ -132,6 +192,47 @@ register_command('chatip', array(
 					}
 					@results[] = @listIPData;
 				} else { @results[] = color(12).'No IPs were given to check?!?!'; }
+			case 'notblock':
+		#Check all IPs for potential blocks to add to list
+				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+				@results[] = color(14).'All IPs not on a Block Blacklist: ';
+				@listIPData = ''
+				@useLimit = false
+				if(array_index_exists(@args, 0)) {
+					if(string(@args[0]) == 'true') { @useLimit = true; }
+				}
+				@ipList = array()
+				foreach(@arg in @blacklistIP['IP_Blacklist']) {
+					@listIPData = ''
+					@ip = reg_replace('[%][0]$', '', @arg);
+					if(@ip == 'raw' || @ip == 'isp' || @ip == 'ip') { continue() }
+					if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
+						msg(color(12).'Not a valid IP: '.@ip);
+						continue()
+					}
+					@listIPData = color(9).@ip.color(3)
+					@onBlock = false
+					foreach(@block: @ISP in @blacklistIP['IP_Block_Blacklist']) {
+						@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
+						if(string_starts_with(string(@ip), @startBlock)) {
+							@listIPData .= color(8).', '.color(14).'Found On Block Blacklist: '.color(7).@block
+							@onBlock = true
+							break()
+						}
+					}
+					if(@onBlock) { continue() } else {
+						@type = '.';
+						if(string_contains(@ip, ':')) { @type = ':' }
+						@split = reg_split('[.:]', @ip);
+						foreach(@i: @octet in @split) {
+							@color = sha1(@octet)[0];
+							@split[@i] = color(@color).@octet
+						}
+						@ipList[] = array_implode(@split, color('r').@type);
+					}
+				} else { @results[] = color(12).'No IPs were given to check?!?!'; }
+				@results[] = array_implode(@ipList, '\n');
+				@results[] = color(3).'Total IPs not on a Block list: '.color(6).array_size(@ipList);
 			# case 'leaderboard':
 		# Setup Leaderboard of most pings
 			case 'report':
@@ -141,9 +242,9 @@ register_command('chatip', array(
 				if(array_index_exists(@args, 0)) {
 					if(string(@args[0]) == 'true') { @useMsg = true; }
 				}
-				if(import('Chat.cmd.IP.report') == 'auto') { @useMsg = true; @useReturn = false; }
-				export('Chat.cmd.IP.report', null);
-				@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+				if(import('ipbl.cmd.IP.report') == 'auto') { @useMsg = true; @useReturn = false; }
+				export('ipbl.cmd.IP.report', null);
+				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 				foreach(@type: @typeName in array('ignore': 'Ignored', 'blacklist': 'Blacklisted')) {
 					@count = 0
 					@iplog = get_value('Server.pings.log.'.@type.'.IP');
@@ -183,7 +284,7 @@ register_command('chatip', array(
 							@isp = ''
 							@addemoji = 0
 							if(@serverConfig['Ping_Message_LookupIP_DB'] == true) {
-								@ipdb = _chat_lookup_ip_db(@ip);
+								@ipdb = _geoip_lookup(@ip);
 								if(is_array(@ipdb)) {
 									@listIPData = ''
 									@cnFlag = ''
@@ -202,7 +303,7 @@ register_command('chatip', array(
 											if(array_contains(@blacklistIP['Auto_Blacklist_ASNs'], @ipdb[@ip]['asn'])) {
 												@addemoji = 2
 												@blacklistIP['IP_Blacklist'][] = @ip;
-												export('Chat.config.IPBlacklist', @blacklistIP);
+												export('ipbl.config.IPBlacklist', @blacklistIP);
 											}
 										}
 										if(@addemoji > 0) { @listIPData .= ' %a'.@addemoji.'%' }
@@ -254,9 +355,9 @@ register_command('chatip', array(
 									array_set(@cacheID, @msgID, @IPList)
 									array_set(@cacheID, 'lastedit', time())
 									if(array_size(@cacheID) > 400) {
-										@key = array_keys(@cacheID)
-										array_remove(@key, 'c')
-										array_remove(@cacheID, array_sort(@key, 'NUMERIC')[0])
+										@selectKey = array_keys(@cacheID)
+										array_remove(@cacheID, @selectKey[0])
+										array_remove(@cacheID, @selectKey[1])
 									}
 									export('DiscordBot.bot.msg.IP.Review', @cacheID)
 									return(true)
@@ -298,11 +399,12 @@ register_command('chatip', array(
 					} 
 					return(@dl.simple_date(@dateType, @time));
 				}
-				if(array_contains(@args, 'raw')) { 
+				if(array_contains(@args, 'raw') || array_contains(@args, 'all')) { 
 					@raw = true
 					@filecurate = ' (All)'
 					@allprefix = 'All Known';
 					array_remove_values(@args, 'raw')
+					array_remove_values(@args, 'all')
 				}
 				if(array_contains(@args, 'curate')) { 
 					@curate = true
@@ -326,9 +428,9 @@ register_command('chatip', array(
 				@ipdb = array()
 				switch(@type) {
 				case 'obnoxious':
-					@odb = import('Chat.config.IPBlacklist')
-					if(!is_array(@odb)) { die('Chat config not loaded.') }
-					if(!array_index_exists(@odb, 'Obnoxious')) { die('Chat config not loaded..') }
+					@odb = import('ipbl.config.IPBlacklist')
+					if(!is_array(@odb)) { die('config not loaded.') }
+					if(!array_index_exists(@odb, 'Obnoxious')) { die('Obnoxious config not loaded..') }
 					@usearray = array_keys(@odb['Obnoxious'])
 					@allprefix = 'All Listed'
 					@ipdb = get_value('Server.pings.log.blacklist.IP')
@@ -344,6 +446,14 @@ register_command('chatip', array(
 				@obnoxData = array()
 				@jsoncfg = array()
 				if(array_size(@usearray) <= 0) { die(color(12).'No IPs were provided.') }
+				@mancfgArray = array('Obnoxious': array());
+				try {
+					@mancfg = read(import('ipbl.config.dir').'/Template-IP.yml');
+					@mancfgArray = yml_decode(@mancfg);
+				} catch(Exception @ex) {
+					@results[] = color(12).'There was an error with the Template-IP Config file. '
+					# console(@ex)
+				}
 				foreach(@arg in @usearray) {
 					@ip = reg_replace('[%][0]$', '', @arg);
 					if(@ip == 'raw' || @ip == 'isp' || @ip == 'ip') { continue() }
@@ -386,7 +496,11 @@ register_command('chatip', array(
 						array_set(@sortedIPData[@asize], @ip, @listIPData)
 					}
 					if(@asize > 9 && @avgtime < 86400000 && @avgtime > 0) {
-						array_set(@obnoxData, @ip, array('f': _display_duration(@avgtime), 'p': @asize))
+						@obArray = array('f': _display_duration(@avgtime), 'p': @asize);
+						if(array_index_exists(@mancfgArray, 'Spam_Player_Names')) {
+							if(array_index(@mancfgArray['Spam_Player_Names'], @ip) != null) { array_set(@obArray, 'u', array_index(@mancfgArray['Spam_Player_Names'], @ip)) }
+						}
+						array_set(@obnoxData, @ip, @obArray);
 					}
 				}
 				@ipcount = 0
@@ -397,13 +511,21 @@ register_command('chatip', array(
 				}
 				@allavgtime = ceil(average(@allavg))
 				@results[] = color(6).'Total IPs listed: '.color(9).@ipcount.color(6).' | Total Average Time between pings: '.color(9).@allavgtime.' ('._display_duration(@allavgtime).')'
-				_write_file(import('Chat.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.txt', strip_colors(array_implode(@results, '\n')), 'overwrite');
-				_write_file(import('Chat.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.json', json_encode(@jsoncfg), 'overwrite');
-				_write_file(import('Chat.logs.dir').'/Average obnoxious IP Ping times'.@filecurate.'.yml', yml_encode(@obnoxData, true), 'overwrite');
+				_write_file(import('ipbl.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.txt', strip_colors(array_implode(@results, '\n')), 'overwrite');
+				_write_file(import('ipbl.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.json', json_encode(@jsoncfg), 'overwrite');
+				_write_file(import('ipbl.logs.dir').'/Average obnoxious IP Ping times'.@filecurate.'.yml', yml_encode(@obnoxData, true), 'overwrite');
 				if(array_size(@obnoxData) > 0) { @results[] = color(14).'Obnoxious: IPs with average times below 1 day and over 10 pings: ('.array_size(@obnoxData).')\n'.color(8).map_implode(@obnoxData, color(9).': ', '\n'.color(8)); }
+				#--
+				@addtoobList = array();
+				foreach(@obIP: @obData in @obnoxData) {
+					if(!array_index_exists(@mancfgArray, 'Obnoxious', @obIP) && is_array(@obData)) { 
+						if(@obData['p'] > 28) { array_set(@addtoobList, @obIP, @obData); }
+					}
+				}
+				if(array_size(@addtoobList) > 0) { @results[] = color(12).array_size(@addtoobList).color(14).' Obnoxious IPs with 30+ pings were not found on template list: \n'.color(6).map_implode(@addtoobList, color(2).': ', '\n'.color(6)); }
 		# Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
 			case 'geoip':
-				@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 				@raw = false
 				if(array_contains(@args, 'raw')) { 
 					@raw = true
@@ -420,7 +542,7 @@ register_command('chatip', array(
 					}
 					@checkIPs[] = @ip;
 				}
-				@ipdb = _chat_lookup_ip_db(@checkIPs, @raw);
+				@ipdb = _geoip_lookup(@checkIPs, @raw);
 				if(!is_array(@ipdb)) {
 					switch(string(@ipdb)) {
 					case 'NoPerms':

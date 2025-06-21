@@ -281,9 +281,9 @@ proc _discordBot_cmd_asremove(@discord, @args) {
 
 # Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
 proc _discordBot_cmd_geoiplookup(@discord, @args) {
-	# Requires Chat script and working shell command.
-	if(!is_proc('_chat_lookup_ip_db')) { return('NoCmd') }
-	@blacklistIP = import('Chat.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+	# Requires IP Blacklist script and working shell command.
+	if(!is_proc('_geoip_lookup')) { return('NoCmd') }
+	@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
 	@raw = false
 	if(array_contains(@args, 'raw')) {
 		@raw = true;
@@ -326,7 +326,7 @@ proc _discordBot_cmd_geoiplookup(@discord, @args) {
 	}
 	# Get IP data
 	@ipdb = array()
-	@ipdb = _chat_lookup_ip_db(@checkIPs, @raw);
+	@ipdb = _geoip_lookup(@checkIPs, @raw);
 	if(!is_array(@ipdb)) { return('Error') }
 	# Parse
 	foreach(@ip in @checkIPs) {

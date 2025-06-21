@@ -409,7 +409,7 @@ switch(@action){
 			@word = 'Exported'
 			export(@args[0], @v)
 		case 'file':
-			@dest = 'chdb_export_'.@v.'_'.simple_date('MMddyy', time()).'.txt'
+			@dest = 'chdb_export_'.@args[0].'_'.simple_date('MMddyy', time()).'.txt'
 			@word = 'Wrote'
 			_write_file(@dest, @v, 'Overwrite')
 		default:
