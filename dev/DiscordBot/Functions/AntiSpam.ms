@@ -148,6 +148,9 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 
 # Add user to Triggered state:
 	if(@adduser == true) {
+		if(length(@reasonSubCode) > 1) {
+			if(substr(@reasonSubCode,0,1) == 0) { @reasonSubCode = substr(@reasonSubCode, 1) }
+		}
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
 			# Returning users: Bypass new user checks
 			if(@reasonCode < 3) {
@@ -241,7 +244,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			if(@actiontaken == '\n- *Actions taken:*') { @actiontaken = '' }
 			@subCodeDisplay = ''
 			if(@reasonSubCode > 0) {
-				foreach(@r in split('', @reasonSubCode)) {
+				foreach(@i: @r in split('', @reasonSubCode)) {
 					@subCodeDisplay .= ' '.@subcodeDesc[@r]
 				}
 			}
@@ -300,7 +303,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				@logMsg['embeds'][0]['fields'][] = array('name': 'Roles ['.array_size(@userRoles).']', 'value': @displayUR, 'inline': false)
 			}
 			if(@asmembers[@discord['userid']]['log'] == false) {
-				_db_msg_Console(color(14).@discord['username'].color(8).' <@'.@discord['userid'].'>'.color(7).' triggered Anti Spam protection. Reason #'.@reasonCode.color(9).'\n'.@codeDesc[@reasonCode], @discord['serverid'])
+				_db_msg_Console(color(14).@discord['username'].color(8).' <@'.@discord['userid'].'>'.color(7).' triggered Anti Spam protection. Reason #'.@reasonCode.color(9).'\n'.@codeDesc[@reasonCode].color(1).@subCodeDisplay, @discord['serverid'])
 				_discordBot_broadcast(@discord['serverid'], '--admin', @logMsg);
 				@announceMsg = @botconfig['AS_General_Announcement']
 				if(array_index_exists(@config, 'AS_Announcement_'.@reasonCode)) {

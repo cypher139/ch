@@ -3,12 +3,19 @@ admin:/lbdbg [$action] [$] = >>>
 @id = ''
 @serverID = @botconfig['Primary_Guild']
 @servers = import('DiscordBot.Servers')
+@servernicks = import('DiscordBot.Servers.Nicknames')
 @args = parse_args($)
-foreach(@i: @arg in @args) {
-	if(is_numeric(@arg) && length(@arg) > 16) {
-		if(array_contains(@servers, @arg)) { 
-			@serverID = @arg
-			array_remove(@args, @i)
+foreach(@arg in @args) {
+	if(array_contains(@servers, @arg)) {
+		@serverID = @arg
+		array_remove_values(@args, @arg)
+		break()
+	}	
+	if(string_starts_with(@arg, '--')) {
+		if(array_contains(@servernicks, replace(@arg, '--', ''))) {
+			@serverID = array_index(@servernicks, replace(@arg, '--', ''))
+			array_remove_values(@args, @arg)
+			break()
 		}
 	}
 }
@@ -25,6 +32,69 @@ msg('Server: '.@config['Server_Nickname'])
 
 #Serverwide actions
 switch($action) {
+case 'lastmessagedatestage1':
+case 'lmd1':
+	@addall = false
+	if(array_contains(@args, 'all')) { @addall = true }
+	@adddateUsers = array();
+	foreach(@userID: @userLBData in @leaderboard['members']) {
+		@adduser = false;
+		if(@userLBData['last_msg'] < 1) {
+			if(@addall == false) {
+				 if(@userLBData['level'] > 0) { @adduser = true; }
+			} else { @adduser = true; }
+		}
+		if(@adduser) {
+			array_set(@adddateUsers, @userID, 0)
+		}
+	}
+	@write = array('all': array('servers': array()));
+	array_set(@write['all']['servers'], @serverID, @adddateUsers);
+	if(array_size(@adddateUsers) > 0) {
+		_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/LastMessageDateUserSearch.config.json', json_encode(@write), 'overwrite');
+		msg(color(11).array_size(@adddateUsers).color(14).' Users were found with missing Last Message dates.')
+		msg(color(10).'Stage 1 of 3 Complete: \n'.color(11).'LastMessageDateUserSearch.config.json'.color('r').' Config File was written to DiscordBot\'s server Logs folder for the '.@config['Server_Nickname'].' server. \n Add this config to the BetterDiscord plugins folder, restart Discord, and run the LastMessageDateUserSearch plugin to find the missing last message dates.')
+	} else {
+		msg(color(10).array_size(@adddateUsers).color(14).' Users were found with missing Last Message dates!');
+	}
+	die();
+case 'lastmessagedatestage2':
+case 'lmd2':
+	die('This step is accomplished on your own client!');
+case 'lastmessagedatestage3':
+case 'lmd3':
+# import json from logs folder
+	@dateCfg = array('all': array('servers': array()));
+	try {
+		@read = read(import('DiscordBot.logs.dir').'/'.@serverID.'/LastMessageDateUserSearch.config.json');
+		@dateCfg = json_decode(@read);
+	} catch(Exception @ex) {
+		msg(color(12).'There was an error with the LastMessageDateUserSearch Config file.')
+		console(@ex)
+	}
+	if(!array_index_exists(@dateCfg, 'all', 'servers', @serverID)) {
+		die(color(12).'This server does not have data in the config file. Recheck your file upload to the bot.');
+	}
+	@count = 0;
+	foreach(@userID: @userMsg in @dateCfg['all']['servers'][@serverID]) {
+		if(!array_index_exists(@leaderboard, 'members', @userID)) {
+			msg('User '.@userID.' is no longer present on the Leaderboard?!');
+			continue();
+		}
+		if(@userMsg < 1) {
+			msg('User '.@userID.' did not get a message ID saved?!');
+			continue();
+		}
+		@userTime = rshift(@userMsg, 22) + 1420070400000;
+		@leaderboard['members'][@userID]['last_msg'] = @userTime;
+		@count++;
+	}
+	if(@count > 0) {	
+		@leaderboard['lastedit'] = time()
+		export('DiscordBot.Leaderboard', @leaderboard)
+		msg(color(10).'Stage 3 of 3 Complete: \n'.color(11).@count.color(14).' Users were updated with found Last Message dates.');
+	}
+	die();
 case 'nowords':
 	foreach(@id in discord_get_members(@serverID)) {
 		if(array_index_exists(@leaderboard, 'members', @id)) {
