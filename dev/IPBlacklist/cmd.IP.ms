@@ -92,6 +92,9 @@ register_command('ip', array(
 				case 'n':
 					@cmd = 'notblock';
 					array_remove(@args, 0);
+				case 'p':
+					@cmd = 'pingmismatchignore';
+					array_remove(@args, 0);
 				}
 			} 
 			if(!@cmd) {
@@ -158,11 +161,49 @@ register_command('ip', array(
 				} else { @results[] = color(12).'No IPs were given to add?!?!'; }
 				if(array_size(@addip) > 0) {
 					export('ipbl.config.IPBlacklist', @blacklistIP);
-					_ipbl_save_config();
+					_ipbl_save_config(@blacklistIP);
 					@results[] = color(10).array_size(@addip).' IPs were added.'; 
 				}
 				if(array_size(@reviewip) > 0) {
 					@results[] = color(14).'These IPs have connected with a player name; If you wish to confirm blacklisting these IPs, '.color('r').'*type this command again and include the word "'.color(14).'confirm'.color('r').'".*'.@userdisplay;
+				}
+			case 'pingmismatchignore':
+		#Check if a given IP is already in IP Blacklist config
+				@ignoreCheckob = get_value('ipbl.ignore.mismatch.pings');
+				if(!is_array(@ignoreCheckob)) { @ignoreCheckob = array() } 
+				@results[] = color(14).'IPs to add to ignore ping mismatch: ';
+				@listIPData = ''
+			#Add
+				@addip = array()
+				@reviewip = array()
+				@userdisplay = ''
+				@showall = false
+				if(array_contains(@args, 'show')) { @showall = true }
+				foreach(@arg in @args) {
+					if(@arg == 'show') { continue() }
+					@listIPData = ''
+					@upload = true
+					@ip = reg_replace('[%][0]$', '', @arg);
+					if(@ip == 'raw' || @ip == 'isp' || @ip == 'ip') { continue() }
+					if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
+						msg(color(12).'Not a valid IP: '.@ip);
+						continue()
+					}
+					@listIPData = color(9).@ip.color(3)
+					if(array_contains(@ignoreCheckob, @ip)) {
+						if(@showall) { @listIPData .= color(12).' Already In List' } else { continue(); }
+						@upload = false
+					}
+					if(@upload) { 
+						@addip[] = @ip;
+						@ignoreCheckob[] = @ip;
+						@listIPData .= color(10).' - Added.'
+					}
+					@results[] = @listIPData;
+				} else { @results[] = color(12).'No IPs were given to add?!?!'; }
+				if(array_size(@addip) > 0) {
+					store_value('ipbl.ignore.mismatch.pings', @ignoreCheckob);
+					@results[] = color(10).array_size(@addip).' IPs were added to ignore ping mismatch list.'; 
 				}
 			case 'check':
 		#Check if a given IP is already in IP Blacklist config
@@ -380,6 +421,8 @@ register_command('ip', array(
 				@type = 'blacklist'
 				@allprefix = 'these'
 				@filecurate = ''
+				@enCheckob = true;
+				@showobnoxData = true;
 				proc _display_duration(@time) {
 					@time = ceil(@time)
 					@dateType = 'HH\'h\' mm\'m\' ss\'s\''
@@ -398,6 +441,13 @@ register_command('ip', array(
 						@dl = (simple_date('D', @time) - 1).'d '
 					} 
 					return(@dl.simple_date(@dateType, @time));
+				}
+				@printAllPings = true
+				if(array_contains(@args, 'print') || array_contains(@args, '-p')) {
+					@printAllPings = true;
+				}
+				if(array_contains(@args, 'print') || array_contains(@args, '-noprint')) {
+					@printAllPings = false;
 				}
 				if(array_contains(@args, 'raw') || array_contains(@args, 'all')) { 
 					@raw = true
@@ -419,27 +469,29 @@ register_command('ip', array(
 					@type = 'blacklist'
 					array_remove_values(@args, 'blacklist')
 				}
-				if(array_contains(@args, 'obnoxious')) { 
+				if(array_contains(@args, 'obnoxious')) {
 					@type = 'obnoxious'
 					array_remove_values(@args, 'obnoxious')
+				}
+				if(array_contains(@args, '-u')) {
+					@showobnoxData = false;
+					array_remove_values(@args, '-u')
 				}
 				@usearray = @args[];
 				@types = array('ignore': 'Ignored', 'blacklist': 'Blacklisted', 'obnoxious': 'Obnoxious')
 				@ipdb = array()
 				switch(@type) {
 				case 'obnoxious':
-					@odb = import('ipbl.config.IPBlacklist')
-					if(!is_array(@odb)) { die('config not loaded.') }
-					if(!array_index_exists(@odb, 'Obnoxious')) { die('Obnoxious config not loaded..') }
-					@usearray = array_keys(@odb['Obnoxious'])
-					@allprefix = 'All Listed'
 					@ipdb = get_value('Server.pings.log.blacklist.IP')
+					@usearray = array_keys(@ipdb);
+					@allprefix = 'All Listed'
+					@printAllPings = false;
 				default:
 					@ipdb = get_value('Server.pings.log.'.@type.'.IP')
 					if(!is_array(@ipdb)) { die('No data of type '.@types[@type]) }
 				}
 				if(@raw) { @usearray = array_keys(@ipdb); }
-				@results[] = color(14).'Average Ping Times observed for '.color(9).@allprefix.' '.@types[@type].color(14).' IPs:'.@filecurate;
+				if(@showobnoxData) { @results[] = color(14).'Average Ping Times observed for '.color(9).@allprefix.' '.@types[@type].color(14).' IPs:'.@filecurate; }
 				@allavg = array()
 				@sortedIPData = array()
 				@IPsorteddata = array()
@@ -503,26 +555,39 @@ register_command('ip', array(
 						array_set(@obnoxData, @ip, @obArray);
 					}
 				}
-				@ipcount = 0
-				foreach(@size: @datas in @sortedIPData) {
-					@ipcount += array_size(@datas)
-					@results[] = color(13).'IPs with '.@size.' Total Pings: '.color(8).array_size(@datas)
-					@results[] = array_implode(@datas, '\n')
+				@ipcount = array_size(@ipdb) - 1;
+				if(@printAllPings) {
+					foreach(@size: @datas in @sortedIPData) {
+						# @ipcount += array_size(@datas)
+						@results[] = color(13).'IPs with '.@size.' Total Pings: '.color(8).array_size(@datas)
+						@results[] = array_implode(@datas, '\n')
+					}
 				}
 				@allavgtime = ceil(average(@allavg))
 				@results[] = color(6).'Total IPs listed: '.color(9).@ipcount.color(6).' | Total Average Time between pings: '.color(9).@allavgtime.' ('._display_duration(@allavgtime).')'
 				_write_file(import('ipbl.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.txt', strip_colors(array_implode(@results, '\n')), 'overwrite');
 				_write_file(import('ipbl.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.json', json_encode(@jsoncfg), 'overwrite');
 				_write_file(import('ipbl.logs.dir').'/Average obnoxious IP Ping times'.@filecurate.'.yml', yml_encode(@obnoxData, true), 'overwrite');
-				if(array_size(@obnoxData) > 0) { @results[] = color(14).'Obnoxious: IPs with average times below 1 day and over 10 pings: ('.array_size(@obnoxData).')\n'.color(8).map_implode(@obnoxData, color(9).': ', '\n'.color(8)); }
+				if(array_size(@obnoxData) > 0 && @showobnoxData) { @results[] = color(14).'Obnoxious: IPs with average times below 1 day and over 10 pings: ('.array_size(@obnoxData).')\n'.color(8).map_implode(@obnoxData, color(9).': ', '\n'.color(8)); }
 				#--
 				@addtoobList = array();
+				@checkobList = array();
+				@ignoreCheckob = get_value('ipbl.ignore.mismatch.pings');
+				if(!is_array(@ignoreCheckob)) { @ignoreCheckob = array() } 
 				foreach(@obIP: @obData in @obnoxData) {
-					if(!array_index_exists(@mancfgArray, 'Obnoxious', @obIP) && is_array(@obData)) { 
+					if(!is_array(@obData)) { continue() }
+					if(!array_index_exists(@mancfgArray, 'Obnoxious', @obIP, 'p')) {
 						if(@obData['p'] > 28) { array_set(@addtoobList, @obIP, @obData); }
+					} else {
+						if(@obData['p'] > 20 && @mancfgArray['Obnoxious'][@obIP]['p'] != @obData['p']) {
+							if(array_contains(@ignoreCheckob, @obIP)) { continue() }
+							@obData['p'] = color(12).@obData['p'];
+							array_set(@checkobList, @obIP, @obData);
+						}
 					}
 				}
-				if(array_size(@addtoobList) > 0) { @results[] = color(12).array_size(@addtoobList).color(14).' Obnoxious IPs with 30+ pings were not found on template list: \n'.color(6).map_implode(@addtoobList, color(2).': ', '\n'.color(6)); }
+				if(array_size(@addtoobList) > 0) { @results[] = color(12).array_size(@addtoobList).color(14).' Obnoxious IPs: 30+ pings, Not found on template list: \n'.color(6).map_implode(@addtoobList, color(2).': ', '\n'.color(6)); }
+				if(array_size(@checkobList) > 0 && @enCheckob) { @results[] = color(12).array_size(@checkobList).color(14).' Obnoxious IPs: 20+ pings, with mismatched ping count on template list (does not include non-blacklisted pings!): \n'.color(6).map_implode(@checkobList, color(2).': ', '\n'.color(6)); }
 		# Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
 			case 'geoip':
 				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))

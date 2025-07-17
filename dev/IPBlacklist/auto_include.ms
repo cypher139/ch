@@ -44,7 +44,7 @@ proc _ipbl_load_config(@cfgtype) {
 			}
 			array_remove(@loadcfg, 'Spam_Player_Names')
 		}
-		@loadcfg['IP_Blacklist'] = array_sort(array_unique(@loadcfg['IP_Blacklist'], false), 'REGULAR')
+		@loadcfg['IP_Blacklist'] = array_sort(array_unique(@loadcfg['IP_Blacklist']), 'REGULAR')
 	default:
 		_msg_Admins('IP Blacklist', 'error', color(14).'Config file given not recognized.');
 		return(false)
@@ -55,16 +55,18 @@ proc _ipbl_load_config(@cfgtype) {
 	export('ipbl.config.load.time', @loadTimes)
 	export('ipbl.config.'.@cfgtype, @loadcfg)
 	if(string(@cfgtype) == 'IPBlacklist') {
-		_ipbl_save_config('block');
+		_ipbl_save_config(@loadcfg, 'block');
 	}
 	return(@loadcfg)
 }
 
-proc _ipbl_save_config(@savetype = 'all') {
+proc _ipbl_save_config(array @blacklistIP = array(), string @savetype = 'all') {
 	@serverConfig = import('ipbl.config.Server')
-	@blacklistIP = import('ipbl.config.IPBlacklist');
 	if(!is_array(@blacklistIP)) { die() }
-
+	if(array_size(@blacklistIP) < 3) {
+		@blacklistIP = import('ipbl.config.IPBlacklist');
+	}
+#Save to persistance
 	if(@savetype == 'all' || @savetype == 'store') {
 		store_value('ipbl.config.IPBlacklist', @blacklistIP);
 	}
@@ -78,14 +80,17 @@ proc _ipbl_save_config(@savetype = 'all') {
 				console('[IP Blacklist] Blacklist IP file: '.@ex['classType'].' '.@ex['message'], false)
 			}
 			if(sha1(@blacklistIP['IP_Blacklist']) != sha1(@ipFileList)) {
-				@newip = 0
-				foreach(@k: @v in @blacklistIP['IP_Blacklist']) {
-					if(!array_contains(@ipFileList, @v)) {
-						@newip++
-					}
+				@ipSizeOld = array_size(@ipFileList)
+				@ipSizeNew = array_size(@blacklistIP['IP_Blacklist'])
+				_write_file(@serverConfig['Write_Blacklist_IP_File_Path'], array_implode(@blacklistIP['IP_Blacklist'], '\n'), 'OVERWRITE');
+				@ipSizePrefix = ''
+				if(@ipSizeNew > @ipSizeOld) { @ipSizePrefix = 'Added '.(@ipSizeNew - @ipSizeOld).' IPs to' }
+				if(@ipSizeNew < @ipSizeOld) {
+					@ipSizePrefix = 'Removed '.(@ipSizeOld - @ipSizeNew).' IPs from'
+					_write_file(import('ipbl.logs.dir').'/ipold.yml', yml_encode(@ipFileList, true), 'OVERWRITE')
+					_write_file(import('ipbl.logs.dir').'/ipnew.yml', yml_encode(@blacklistIP['IP_Blacklist'], true), 'OVERWRITE')
 				}
-				_write_file(@serverConfig['Write_Blacklist_IP_File_Path'], array_implode(@blacklistIP['IP_Blacklist'], '\n'), 'OVERWRITE')
-				if(@newip > 0) { console('[IP Blacklist] Added '.@newip.' IPs to firewall blacklist.', false) }
+				if(@ipSizePrefix != '') { console('[IP Blacklist] '.@ipSizePrefix.' firewall blacklist.', false) }
 			}
 		}
 	}
@@ -93,7 +98,6 @@ proc _ipbl_save_config(@savetype = 'all') {
 	if(@savetype == 'all' || @savetype == 'cfg') {
 		_write_file(import('ipbl.config.dir').'/IPBlacklist.yml', yml_encode(@blacklistIP, true), 'OVERWRITE')
 	}
-
 }
 
 proc _ipbl_pings_write_log(array @ping = array(), string @type = 'ignore', boolean @superignore = false, string @ISP = 'Unknown') {

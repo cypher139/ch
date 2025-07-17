@@ -86,7 +86,7 @@ bind('server_ping', array('id': 'ipbl.Format.Ping'), null, @ping) {
 						@addemoji = 2
 						@blacklistIP['IP_Blacklist'][] = @ip
 						export('ipbl.config.IPBlacklist', @blacklistIP);
-						_ipbl_save_config();
+						_ipbl_save_config(@blacklistIP);
 					}
 				}
 				if(@addemoji > 0) { @listIPData .= '%fe%%a'.@addemoji.'%%fs%' }

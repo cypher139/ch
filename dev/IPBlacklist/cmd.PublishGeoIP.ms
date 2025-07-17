@@ -8,17 +8,44 @@ proc _geoip_report_send_msg(@msg, @player, @msgConsole) {
 }
 proc _geoip_asn_report(boolean @scan = true, boolean @consoleReport = false, boolean @gencfg = true) {
 x_new_thread('GeoIPASNReport'.time(), closure(){
-#threaded due to shell call processing ~25 IPs/second
+#threaded due to shell call for single IP would process ~25 IPs/second
 	@prefix = color(8).'['.color(1).'GeoIP Report'.color(8).']'.color('r').' '
 	@prefixError = color(12).'['.color(7).'GeoIP Report'.color(12).']'.color('r').' '
 	@player = '~console'
+	@reportmsg = array();
 	if(function_exists('player')) { @player = player(); }
 	@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
-	@checkIP = array_sort(array_unique(@blacklistIP['IP_Blacklist'], false), 'REGULAR');
-	@serverConfig = import('ipbl.config.Server')
-	@writeDir = import('ipbl.logs.dir')
+	@extFileList = array('Source1.txt');
+	if(function_exists('list_files')) { @extFileList = list_files(import('ipbl.config.dir')) }
+	@checkIP = @blacklistIP['IP_Blacklist'][];
+	@sourceCount = 1;
+	foreach(@num: @filename in @extFileList) {
+		if(reg_count('^[Ss]ource[0-9][.]txt$', @filename) < 1) { continue() }
+		@extSource = array();
+		try {
+			@extSource = parse_args(replace(replace(read(import('ipbl.config.dir').'/'.@filename), '\r', ''), '\n', ' '));
+		} catch(IOException @ex) {
+			_geoip_report_send_msg(@prefixError.color(12).'ext source file "'.@filename.'" could not be read. ', @player, @ex['message']);
+			@extSource = array();
+		} catch(FormatException @ex) {
+			_geoip_report_send_msg(@prefixError.color(12).'ext source file "'.@filename.'" is improperly formatted.', @player, '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']));
+			@extSource = array();
+		} catch(Exception @ex) {
+			_geoip_report_send_msg(@prefixError.color(12).'ext source file "'.@filename.'" has an error. ', @player, @ex['message']);
+			@extSource = array();
+		}
+		if(array_size(@extSource) > 1) {
+			foreach(@e in @extSource) {
+				if(string_starts_with(@e, '#')) { array_remove_values(@extSource, @e) }
+			}
+			@checkIP = array_merge(@checkIP, @extSource);
+			@sourceCount++;
+		}
+	}
+	@checkIP = array_sort(array_unique(@checkIP, false), 'REGULAR');
+	@serverConfig = import('ipbl.config.Server');
+	@writeDir = import('ipbl.logs.dir');
 	@gitpublish = true
-	@reportmsg = array();
 	if(array_index_exists(@serverConfig, 'Git_Dir')) { @writeDir = @serverConfig['Git_Dir'];} else { @gitpublish = false }
 	@time = time();
 	@raw = false
@@ -30,6 +57,7 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 	@ipcount = 0
 	@asnnicks = array()
 	@asnipover10 = array()
+	@ablasnList = array()
 	@v6ip = array()
 	try {
 		@asnnicks = yml_decode(read(import('ipbl.config.dir').'/ASN_ISP_Names.yml'))
@@ -99,8 +127,10 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 			if(!array_index_exists(@asnc, @ipdb[@ip]['asn'])) { array_set(@asnc, @ipdb[@ip]['asn'], array()) }
 			if(!array_index_exists(@asnrc, @ipdb[@ip]['asn'])) { array_set(@asnrc, @ipdb[@ip]['asn'], array()) }
 			if(!array_index_exists(@asnip, @ipdb[@ip]['asn'])) { array_set(@asnip, @ipdb[@ip]['asn'], array()) }
-			#List ASN under mc spam
+			#List ASN under mc spam.
 			if(array_contains(@spnList, @ip)) { @spasnList[] = @ipdb[@ip]['asn'] }
+			#Auto blacklist ASNs if an IP is deemed obnoxious.
+			if(array_contains(array_keys(@mancfgArray['Obnoxious']), @ip)) { @ablasnList[] = @ipdb[@ip]['asn'] }
 			#Add IP
 			@asnip[@ipdb[@ip]['asn']][] = @ip;
 			#List all given country codes, in case one entry differs in review
@@ -215,7 +245,9 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 	}
 	array_sort(@jsoncfg['IP_Blacklist'], 'REGULAR');
 	# Final array setup
-	@extracfg = array('Spam_Player_ASNs': @spasnList, 'Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @asnipover10)
+	array_push_all(@ablasnList, @asnipover10);
+	@ablasnList = array_sort(array_unique(@ablasnList), 'REGULAR');
+	@extracfg = array('Spam_Player_ASNs': @spasnList, 'Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @ablasnList)
 	if(array_index_exists(@asnip, 'None')) { array_set(@extracfg, 'Unknown_ASN_IPs', @asnip['None']) }
 	@jsoncfg = array_merge(@jsoncfg, @mancfgArray, @extracfg)
 	store_value('Server.ipbl.known.ASNs', @kASN);
@@ -238,8 +270,9 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 		_write_file(@writeDir.'/IPBlacklist.json', json_encode(@jsoncfg), 'overwrite');
 		_write_file(@writeDir.'/block.txt', array_implode(@jsoncfg['IP_Blacklist'], '\n'), 'Overwrite');
 		@addMsg = @prefix.'Wrote report files to Git folder.'
+		if(@sourceCount > 1) { @addMsg .= ' Total Sources Used: '.@sourceCount }
 		export('ipbl.config.IPBlacklist', @jsoncfg);
-		_ipbl_save_config();
+		_ipbl_save_config(@jsoncfg);
 		# _write_file(import('ipbl.config.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		console(color(8).@addMsg, false);
 		@reportmsg[] = color(2).@addMsg;
@@ -283,7 +316,7 @@ set_cron('0 23 * * *', closure(){
 # Generate Blacklist config file for new IPs manually / view report in game or console.
 if(function_exists('register_command')) {
 	register_command('geoipasnreport', array(
-		'description': 'Admin: Generate report of Blacklsited IP address ASNs.',
+		'description': 'Admin: Generate report of Blacklisted IP address ASNs.',
 		'usage': color(8).'Examples: /geoipasnreport <true to scan, false to use previous result> <true to list report to console> <true to write config files and reports>',
 		'permission': 'ipbl.Admin.cmd.geoIPasn',
 		'noPermMsg': 'Unknown command. Type "/help" for help.',

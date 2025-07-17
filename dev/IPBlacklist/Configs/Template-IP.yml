@@ -310,7 +310,7 @@ Obnoxious:
   179.43.189.80:
     f: 6m
     i: "Private Layer Inc"
-    p: 36
+    p: 79
   185.209.199.144:
     f: 6m
     i: "31173 Services AB"
@@ -320,6 +320,102 @@ Obnoxious:
     i: "Xtra Telecom S.A."
     p: 109
     u: kevincitopito
+  178.255.149.134:
+    f: 6m
+    i: "Blix Solutions AS"
+    p: 131
+  45.130.200.119:
+    f: 6m
+    i: "Eisenia AB"
+    p: 32
+  45.83.220.211:
+    f: 6m
+    i: "31173 Services AB"
+    p: 76
+  185.209.198.110:
+    f: 6m
+    i: "31173 Services AB"
+    p: 33
+  92.60.40.202:
+    f: 11m
+    i: "Owl Limited"
+    p: 90
+  119.214.34.93:
+    f: 2m
+    i: "Korea Telecom"
+    p: 159
+  193.32.249.171:
+    f: 4m
+    i: "31173 Services AB"
+    p: 237
+  149.88.20.200:
+    f: 6m
+    i: "Datacamp Limited"
+    p: 31
+  138.199.6.227:
+    f: 4m
+    i: "DataCamp Limited"
+    p: 91
+  185.209.198.200:
+    f: 4m
+    i: "31173 Services AB"
+    p: 47
+  95.173.222.18:
+    f: 4m
+    i: "Datacamp Limited"
+    p: 96
+  194.36.25.56:
+    f: 4m
+    i: "Owl Limited"
+    p: 282
+  103.214.20.57:
+    f: 5m
+    i: "Host Universal Pty Ltd"
+    p: 35
+  103.216.220.25:
+    f: 4m
+    i: "Host Universal Pty Ltd"
+    p: 64
+  23.234.86.197:
+    f: 4m
+    i: TZULO
+    p: 91
+  185.92.210.210:
+    f: 4m
+    i: "HostRoyale Technologies Pvt Ltd"
+    p: 126
+  68.235.46.111:
+    f: 4m
+    i: TZULO
+    p: 65
+  146.70.225.31:
+    f: 8m
+    i: M247 Europe SRL
+    p: 70
+  146.70.117.208:
+    f: 6m
+    i: M247 Europe SRL
+    p: 29
+  68.235.46.142:
+    f: 6m
+    i: TZULO
+    p: 224
+  146.70.187.159:
+    f: 6m
+    i: M247 Europe SRL
+    p: 197
+  175.235.126.90:
+    f: 44s
+    i: Korea Telecom
+    p: 763
+  103.251.27.71:
+    f: 7m
+    i: HostRoyale Technologies Pvt Ltd
+    p: 109
+  115.4.98.136:
+    f: 10m
+    i: Korea Telecom
+    p: 104
 #
 Spam_Player_Names:
 # Player names, if an actual connection via Mojang auth was tried, are listed here.
@@ -338,11 +434,20 @@ Spam_Player_Names:
   JustAScanner: 156.253.227.141
   kevincitopito: 85.235.71.200
   kinho_fsc: 170.233.250.30
-  kons0las: 199.58.83.10
+  kons0las: 
+    - 199.58.83.10
+    - 104.28.196.152
+    - 104.28.196.153
+    - 104.28.163.222
   # martusin connected, advertised pfcloud and other unwanted spam before immediately disconnecting. Same IP also tried logging in with other usernames:
   martusin: 94.103.124.169
-  MartinReye: 191.119.57.63
+  MartinReye: 
+  - 191.119.57.63
+  - 201.241.38.31
   Mateinho: 181.46.9.231
+  MCScans: 
+    - 217.28.130.85
+    - 45.148.10.134
   notcheat: 86.106.2.222
   NotABot: 195.226.194.14
   Notch: 131.156.156.12
@@ -427,10 +532,13 @@ Spam_Player_Names:
   # Login is clearly trying to use hacked item tags & overflow server with IndexOutOfBoundsException
   Various_Hack: 
   - 156.253.227.129
+  - 104.28.196.153
   - 104.28.196.199
   - 156.146.63.209
   - 191.101.31.23
   - 191.101.31.45
+  - 190.5.196.217
+  - 85.235.71.200
   xerub: 104.28.196.198
 #
 # Ranges of IPs to disallow access to server:
@@ -559,6 +667,17 @@ IP_Block_Blacklist:
   "169.150.196/24": "Datacamp Limited"
   "176.65.14/23": "Pfcloud"
   "23.162.40/24": "AS-CYBER-DATA"
+  "104.28.1/22": "Cloudflare - MC spam"
+  "66.63.1/22": "AS-VULTR"
+  "62.93.167/24": "Datacamp Limited"
+  "190.5.196/24": "EMTEL S.A. E.S.P."
+  "45.135/16": "Pfcloud UG"
+  "52.58/16": "AMAZON-02"  
+  "52.59/16": "AMAZON-02"
+  "45.83.220/24": "31173 Services AB"
+  "40.83.1/22": "azure"
+  "178.255.149/24": "Blix Solutions AS"
+  "103.216.220/24": "Host Universal Pty Ltd"  
 #
 # Main IP Blacklist:
 # Player names, if an actual connection via Mojang auth was tried, are listed separately.

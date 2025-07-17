@@ -40,6 +40,6 @@ Thumbs.db
 # Custom Dirs #
 ###############
 /test
-*/Logs
 *.lnk
 *.url
+*Logs/
