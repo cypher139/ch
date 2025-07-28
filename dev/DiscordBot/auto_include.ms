@@ -315,6 +315,30 @@ proc _db_get_user_nick(@userID, @serverID, @username) {
 	}
 }
 
+proc _db_check_perms(@check, @serverID, @channelID) {
+	if(!array_contains(import('DiscordBot.Servers'), @serverID)) { throw(CastException, "Invalid Server ID to check") }
+	@perm = @check
+	switch(@check) {
+	case 'delete':
+		@perm = 'MESSAGE_MANAGE'
+	case 'roles':
+		@perm = 'MANAGE_ROLES'
+	case 'send':
+		@perm = 'MESSAGE_SEND'
+	case 'inv':
+		@perm = 'MANAGE_SERVER'
+	}
+	
+	@perms = discord_get_permissions(@serverID, @channelID);
+	@return = false
+	if(array_contains(@perms, 'ADMINISTRATOR')) { return(true) }
+	if(@channelID != '' || @channelID != null) { 
+		if(!array_contains(@perms, 'VIEW_CHANNEL')) { return(false) }
+	}
+	if(array_contains(@perms, @perm)) { @return = true }
+	return(@return)
+}
+
 proc _discordBot_db_autosave(string @usekey = '', @option) {
 	# _db_msg_Console('Autosaving', 'debug')
 	@botconfig = import('DiscordBot.config.Bot')
@@ -372,16 +396,16 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 		if(@exptime < 10000000 || @botconfig['Msg_Cache_Time'] > 2592000000) { @exptime = 2592000000 }
 		@exptime = @time - @exptime
 		if(!is_array(@guildlist)) { @guildlist = import('DiscordBot.Servers') }
-		@stats = array()
-		@VCstats = array()
+		@stats = array();
+		@VCstats = array();
 		foreach(@serverID in @guildlist) {
-			@serverstats = array()
+			@serverstats = array();
 			# Clean various RAM values:
 			foreach(@nullkey in array('is.new.member', 'antispam.dupecount')) {
-				export('DiscordBot.'.@serverID.'.'.@nullkey, null)
+				export('DiscordBot.'.@serverID.'.'.@nullkey, null);
 			}
 			# Clean Command messages cache: (key expected to be message ID)
-			# to add would require array sort by key highest first, get 100 most recent ids then foreach add each index in this order up to limit into new array and svae that
+			# to add would require array sort by key highest first, get 100 most recent ids then foreach add each index in this order up to limit into new array and save that.
 			foreach(@statkey: @key in array('cmd': 'Cache.Cmd.Messages', 'cmdret': 'Cache.Cmd.Messages.return', 'cmdreply': 'Cache.Messages.Command.Replies', 'bot': 'Cache.Messages.Bot.sent')) {
 				@clean = import('DiscordBot.'.@serverID.'.'.@key)
 				if(!is_array(@clean)) { export('DiscordBot.'.@serverID.'.'.@key, null) continue() }
@@ -396,16 +420,32 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 					@serverstats[@statkey][2] = @botconfig['Msg_Cache_Cmd'];
 					export('DiscordBot.'.@serverID.'.'.@key, @newclean)
 				} else {
-					foreach(@i: @value in @clean) {
-						if(!is_numeric(@value)) { continue() }
-						if(rshift(@value, 22) + 1420070400000 < @exptime) { 
-							array_remove(@clean, @i);
+					foreach(@msgID: @value in @clean) {
+						if(!is_numeric(@msgID)) { continue() }
+						if(rshift(@msgID, 22) + 1420070400000 < @exptime) { 
+							array_remove(@clean, @msgID);
 							@serverstats[@statkey][1]++;
 							@serverstats[@statkey][2]--;
 						}
 					}
 					export('DiscordBot.'.@serverID.'.'.@key, @clean)
 				}
+			}
+			# Clean CS relay messages
+			# key: userid, v: msgID
+			@csclean = import('DiscordBot.CS.UserMessage.relay.ID')
+			if(!is_array(@csclean)) { @csclean = array() }
+			if(array_index_exists(@csclean, @serverID)) {
+				array_set(@serverstats, 'cs', array(array_size(@csclean[@serverID]),0,array_size(@csclean[@serverID])));
+				foreach(@uID: @mID in @csclean[@serverID]) {
+					if(!is_numeric(@mID)) { continue() }
+					if(rshift(@mID, 22) + 1420070400000 < @exptime) {
+						array_remove(@csclean[@serverID], @uID);
+						@serverstats['cs'][1]++;
+						@serverstats['cs'][2]--;
+					}
+				}
+				export('DiscordBot.CS.UserMessage.relay.ID', @csclean);
 			}
 			# Clean main Message Cache:
 			@queue = array()
@@ -867,7 +907,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 				if(is_numeric(@v)) {
 					@editMsg = @v
 				} else { @dbgcolor = 1 }
-# console('edit msg id \n n:'.@v.'\n i:'.integer(@v))
+###DEBUG: db_msg_Console('edit msg id \n n:'.@v.'\n i:'.integer(@v), @serverID, 'debug')
 				array_remove(@message, @k)
 			case 'dm':
 				@dbgcolor = 3
@@ -1399,7 +1439,15 @@ proc _discordBot_send_cs_chat(@discord, @option) {
 		}
 		if(array_size(@message['embeds'][0]) <= 0) { array_remove(@message, 'embeds') }
 		@message['content'] = @userPrefix.@message['content'].@suffix
-		_discordBot_broadcast(@serverID, @channel, @message, 'cross')
+		_discordBot_broadcast(@serverID, @channel, @message, 'cross', closure(@msgID){
+			@cacheID = import('DiscordBot.CS.UserMessage.relay.ID')
+			if(!is_array(@cacheID)) { @cacheID = array() }
+			if(!array_index_exists(@cacheID, @serverID)) { array_set(@cacheID, @serverID, array()) }
+			array_set(@cacheID[@serverID], @discord['userid'], @msgID);
+			array_set(@cacheID, 'lastedit', time());
+			export('DiscordBot.CS.UserMessage.relay.ID', @cacheID);
+			return(true);
+		});	
 	}
 	return(true);
 }

@@ -436,11 +436,18 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			}
 			# Remove Welcome message
 			if(array_index_exists(@joininfo, @discord['userid'], 'wmid')) {
-				try { 
-					discord_delete_message(@discord['serverid'], @config['Channels']['Welcome_Message'], @joininfo[@discord['userid']]['wmid'])
-					@wmres = color(8).' <New join>'
-				} catch(Exception @ex) {
-					@wmres = ' Unable to remove Welcome Message!\n'.color(12).@ex['classType'].': '.@ex['message']
+				@hasPerm = _db_check_perms('delete', @discord['serverid'], @config['Channels']['Welcome_Message']);
+				if(@hasPerm) {
+					try { 
+						discord_delete_message(@discord['serverid'], @config['Channels']['Welcome_Message'], @joininfo[@discord['userid']]['wmid'])
+						@wmres = color(8).' <New join>'
+					} catch(Exception @ex) {
+						@wmres = ' Unable to remove Welcome Message!\n'.color(12).@ex['classType'].': '.@ex['message']
+					}
+				} else {
+					@wmres = ' Member Leave was Not allowed to remove '.@discord['username'].'\'s welcome message.';
+					@config = import('DiscordBot.config.'.@discord['serverid']);
+					if(array_index_exists(@config, 'Nag_Server')) { _discordBot_broadcast(@discord['serverid'], @config['Nag_Server'], array('prefix': array('confirm', false), 'dm': true, 'content': @wmres), 'Bot') }
 				}
 			}
 		} else {

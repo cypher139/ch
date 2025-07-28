@@ -1,0 +1,49 @@
+# If you used AntiSpam before a format change on commit on 4/1/2025 and 8/1/2025:
+# 4/1: deprecated reason code 4 in favor of subcode 1
+# 8/1: deprecated reason codes to user flags, allowing for multiple reasons!
+# this will convert your old database format into the new flags format
+admin:/updatedbas [$] = >>>
+@servers = import('DiscordBot.Servers')
+	# @asmembers, @discord['userid'], array('rt': @reasonCode, 'log': false, 'rtime': @time, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0))
+@convert = array('rt': array(0: 'Unknown', 1: 'newlimit', 2: 'newglobalping', 3: 'dupe', 4: 'dupe'), 'rts': array(0: 'Unknown', 1: 's-chan3', 2: 's-url', 3: 's-img'))
+
+foreach(@serverID in @servers) {
+	@msg = @serverID.': fixed: '
+	@results = array('Fixed': 0);
+	@asmembers = import('DiscordBot.'.@serverID.'.antispam.members');
+	if(!is_array(@asmembers)) {
+		@asmembers = get_value('DiscordBot.'.@serverID.'.antispam.members');
+	}
+	if(!is_array(@asmembers)) { 
+		msg(color(10).'No Antispam data for server: '.@serverID);
+		continue();
+	}
+	foreach(@userID: @userData in @asmembers) {
+		if(@userID == 'lastedit') { continue() }
+		if(!array_index_exists(@userData, 'rt') && array_index_exists(@userData, 'flags')) {
+			if(!array_index_exists(@results, 'Already Converted')) { array_set(@results, 'Already Converted', 0) }
+			@results['Already Converted']++;
+			continue();
+		}
+		@userFlags = array();
+		@userFlags[] = @convert['rt'][@userData['rt']];
+		if(array_index_exists(@userData, 'rts')) {
+			foreach(@i: @r in split('', @userData['rts'])) {
+				if(@r < 1) { continue() }
+				@userFlags[] = @convert['rts'][@r];
+			}
+		}
+		if(@userData['rt'] == 4) {
+			@userFlags[] = @convert['rts'][1];
+		}
+		array_remove(@asmembers[@userID], 'rt');
+		array_remove(@asmembers[@userID], 'rts');
+		@userFlags = array_unique(@userFlags);
+		array_set(@asmembers[@userID], 'flags', @userFlags);
+		@results['Fixed']++;
+	}
+	msg(@serverID.': '.color(3).map_implode(@results, color(10).': ', color(8).', '.color(3)));
+	@asmembers['lastedit'] = time();
+	export('DiscordBot.'.@serverID.'.antispam.members', @asmembers);
+}
+<<<
