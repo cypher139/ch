@@ -1,6 +1,6 @@
 ### Core Startup
 export('chatmodifier.name', 'Chat')
-@cfgVersion = array(11,0,0)
+@cfgVersion = array(13,0,0)
 # Types
 @dev = '-dev'
 @envtype = ''

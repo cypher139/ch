@@ -412,19 +412,23 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			@displays['position'] = @joininfo[@discord['userid']]['position'];
 		}
 	# Add leave stats to invite used
-		if(!is_array(@joininfo[@discord['userid']]['code']) && @joininfo[@discord['userid']]['code'] != '') {
-			@inv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
-			if(!is_array(@inv)) { @inv = array() }
-			if(array_index_exists(@inv, @joininfo[@discord['userid']]['code'])) {
-				@displays['inviter'] = ' -Inviter: '.@joininfo[@discord['userid']]['inviter']
-				@displays['code'] = ' Invite: '.@joininfo[@discord['userid']]['code']
-				if(!array_index_exists(@inv, @joininfo[@discord['userid']]['code'], 'leaves')) { array_set(@inv[@joininfo[@discord['userid']]['code']], 'leaves', 0) }
-				@inv[@joininfo[@discord['userid']]['code']]['leaves']++
-				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
+		if(array_index_exists(@joininfo, @discord['userid'], 'code')) {
+			if(is_array(@joininfo[@discord['userid']]['code'])) {
+			# Multiple Invite Matches
+				@matches = array_implode(@joininfo[@discord['userid']]['code'], '  ')
+				@displays['inviter'] = '-Invites: I\'m not sure which one: '.@matches
+			} else if(@joininfo[@discord['userid']]['code'] != '') {
+			# Single Invite Match
+				@inv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
+				if(!is_array(@inv)) { @inv = array() }
+				if(array_index_exists(@inv, @joininfo[@discord['userid']]['code'])) {
+					@displays['inviter'] = ' -Inviter: '.@joininfo[@discord['userid']]['inviter']
+					@displays['code'] = ' Invite: '.@joininfo[@discord['userid']]['code']
+					if(!array_index_exists(@inv, @joininfo[@discord['userid']]['code'], 'leaves')) { array_set(@inv[@joininfo[@discord['userid']]['code']], 'leaves', 0) }
+					@inv[@joininfo[@discord['userid']]['code']]['leaves']++
+					store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
+				}
 			}
-		} else if(is_array(@joininfo[@discord['userid']]['code'])) { 
-			@matches = array_implode(@joininfo[@discord['userid']]['code'], '  ')
-			@displays['inviter'] = '-Invites: I\'m not sure which one: '.@matches
 		}
 		array_set(@joininfoFR, @discord['userid'], @joininfo[@discord['userid']])
 		array_set(@joininfoFR[@discord['userid']], 'removed', time())

@@ -105,8 +105,10 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 			_geoip_report_send_msg(@prefixError.color(8).'An error occured with the Geo IP scanner, see logs.', @player, 'Data received:\n'.@ipdb);
 			die();
 		}
+		@scReport = integer(array_size(@checkIP) * .10);
+console(@scReport.'   /   '.array_size(@checkIP))
 		foreach(@i: @ip in @checkIP) {
-			if(@i % 100 == 0) { _geoip_report_send_msg(@prefix.color(8).'Checked '.color(5).@i.color(8).' of '.color(1).array_size(@checkIP).color(8).' IPs.', @player); }
+			if(@i % @scReport == 0) { _geoip_report_send_msg(@prefix.color(8).'Checked '.color(5).@i.color(8).' of '.color(1).array_size(@checkIP).color(8).' IPs.', @player); }
 			if(@ip == 'raw') { continue() }
 			if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
 				_geoip_report_send_msg(@prefixError.color(12).'Not a valid IP: '.@ip, @player);

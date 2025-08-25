@@ -902,6 +902,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 				}
 			case 'custom_split':
 				@splitRegEx = @v
+				###DEBUG: _db_msg_Console(@splitRegEx, @serverID, 'debug')
 				array_remove(@message, @k)
 			case 'message_id':
 				if(is_numeric(@v)) {
@@ -1643,7 +1644,7 @@ proc _discordBot_update_members(@useguild = 0) {
 					if(array_index_exists(@leaderboard, 'members', @id)) {
 						@newavatar = reg_match('([^/]+)[.][A-Za-z]{2,}$', @idInfo['avatar'])
 						@newcolor = 'fff'
-						if(@idInfo['color'] != null) { @newcolor = _rgb_to_hex(@idInfo['color']) }
+						if(@idInfo['color'] != null) { @newcolor = array(@idInfo['color']['r'],@idInfo['color']['g'],@idInfo['color']['b']); }
 						if(array_index_exists(@newavatar, 1)) { array_set(@leaderboard['members'][@id], 'avatar', @newavatar[1]) }
 						array_set(@leaderboard['members'][@id], 'color', @newcolor)
 						array_set(@leaderboard['members'][@id], 'username', @idInfo['username'])
@@ -2872,11 +2873,14 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	if(@return == false) { @colorret = 12 @retdisplay = ' (Failed)' }
 	if(array_index_exists(@config, 'CMD_Message_Action')) {
 		if(to_lower(@config['CMD_Message_Action']) == 'delete' && string(@CmdReturn) != 'NotACmd' && @discord['UseDM'] == false) {
-			try {
-				discord_delete_message(@discord['serverid'], @discord['channel'], @discord['id'])
-			} catch(Exception @ex) {
-				_db_msg_Console('Could not delete command message, Another bot running?', @discord['serverid'])
-			}
+			@hasPerm = _db_check_perms('delete', @discord['serverid'], @discord['channelid']);
+			if(@hasPerm) {
+				try {
+					discord_delete_message(@discord['serverid'], @discord['channel'], @discord['id'])
+				} catch(Exception @ex) {
+					_db_msg_Console('Could not delete command message, Another bot running?', @discord['serverid'])
+				}
+			} else { _db_msg_Console('Bot does not have permissions to delete command message.', @discord['serverid']) }
 		}
 	}
 	_db_msg_Console('<'.(time() - @StartTime).'ms> '.@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid'])

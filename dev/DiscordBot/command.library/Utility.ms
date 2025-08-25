@@ -1,3 +1,52 @@
+proc _discordBot_cmd_codegen(@discord, @args) {	
+	switch(rand(1,11)){
+	case 4:
+		return(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/password_strength.png'))))
+	default:
+		if(is_proc('_codegen')) {
+			@time = time();
+			@id = rand(25,120);
+			@dmCode = @discord['UseDM'];
+			@length = 8;
+			@prefix = '';
+			@options = array();
+			if(array_index_exists(@args, 0)) {
+				foreach(@i: @arg in @args) {
+					if(reg_count('^[-/]?[PpDd]', @arg) > 0) {
+						@dmCode = true;
+						continue();
+					}
+					if(reg_count('^[-?]?[HhIi]', @arg) > 0) {
+						return('Character types: lowercase, uppercase, number, symbol, full (all alphanumeric characters) or all (full + symbols). Extra character types: 8bit or 16bit for their respective numbers.');
+					}
+					#if arg more than numeric type: set length
+					if(is_numeric(@arg)) {
+						if(@arg > 6) {
+							@length = @arg;
+							continue();
+						}
+					}
+					@options[] = @arg;
+				}
+			}
+			if(!@options) { @options = 'full'; }
+			if(@length > 500) { @length = 500; }
+			x_new_thread(@id.@time, closure(){
+				@code = _codegen(@length, @options);
+				export(@id.@time, @code);
+			});
+			x_thread_join(@id.@time, 7000);
+			@code = import(@id.@time);
+			if(@code == null) { return('Error') }
+			if(@dmCode == 'dm') {
+				@prefix = 'Randomly Generated code: \n';
+			}
+			export(@id.@time, null);
+			return(array('content': @prefix.'`'.@code.'`', 'dm': @dmCode));
+		} else { return('NoCmd'); }
+	}
+}
+
 proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@membernames = import('DiscordBot.'.@discord['serverid'].'.members.names')
@@ -115,15 +164,15 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	@toroles = array()
 	if(!array_index_exists(@args, 0)) { return(color(12).'Specify the Discord user ID to copy from!') }
 	if(!array_index_exists(@args, 1)) { return(color(12).'Specify the Discord user ID to copy to!') }
-	@id0 = @args[0]
-	@id1 = @args[1]
+	@id0 = @args[0];
+	@id1 = @args[1];
 	if(array_index_exists(@args, 2)) { 
 		if(!string_contains(array_implode(@args, ''), '@')) { return(color(12).'Cannot parse user IDs given.') }
 		@test = split('@', array_implode(@args, ' '))
 		if(!@test[0]) { array_remove(@test, 0) }
 		if(array_size(@test) != 2) { return(color(12).'Cannot parse user IDs given ('.array_size(@test).')') }
-		@id0 = @test[0]
-		@id1 = @test[1]
+		@id0 = @test[0];
+		@id1 = @test[1];
 	}
 	@botperms = discord_get_permissions(@discord['serverid'])
 	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {	return('NoPerms'); }
@@ -259,6 +308,7 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 #Add Commands to List
 @c3lx = import('DiscordBot.Command.List', array())
 @mIu7 = array(	
+	'codegen': array('alias': array('code', 'gibberish', 'generatecode', 'password'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_codegen(@discord, @args)); }),
 	'dmoptions': array('alias': array('dm'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_dmoptions(@discord, @args)); }),
 	'transferroles': array('alias': array('trroles'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_transferroles(@discord, @args)); })
 );

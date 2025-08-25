@@ -169,71 +169,36 @@ proc _write_file(string @path, @content, @append, @option) {
 	}
 }
 
-proc _hex_to_rgb(@num, @string = false) {
-	@num = reg_replace('#', '', @num)
-	if(length(@num) == 3) {
-		@num = reg_split('(?<=\\G.)', @num)
-		@num[0] = @num[0].@num[0]
-		@num[1] = @num[1].@num[1]
-		@num[2] = @num[2].@num[2]
-	} else if(length(@num) == 6) {
-		@num = reg_split('(?<=\\G..)', @num)
-	} else {
-		throw('ms.lang.CastException', 'Unsupported Hex code given.')
-	}
-	@results = array('r': parse_int(@num[0], 16), 'g': parse_int(@num[1], 16), 'b': parse_int(@num[2], 16))
-	if(@string == true) { @results = @results['r'].', '.@results['g'].', '.@results['b'] }
-	return(@results)
-}
-
-proc _rgb_to_hex(array @rgb, string @prefix = '') {
-	if(array_size(@rgb) < 3) { throw('ms.lang.CastException', 'Not enough array elements present.') }
-	@cast = array()
-	if(is_associative(@rgb)) { 
-		if(!array_index_exists(@rgb, 'r') || !array_index_exists(@rgb, 'g') || !array_index_exists(@rgb, 'b')) { throw('ms.lang.CastException', 'RGB element missing.') }
-		@cast = array(@rgb['r'], @rgb['g'], @rgb['b'])
-	} else {
-		@cast = @rgb
-	}
-	foreach(@k: @v in @cast) {
-		if(@k > 2) { break(); }
-		if(@v > 255) { throw('ms.lang.CastException', 'Unsupported RGB code given. ('.@k.')') }
-	}
-	#order: bgr
-	@results = to_radix(bit_or(@cast[2], lshift(@cast[1], 8), lshift(@cast[0], 16)), 16);
-	if(length(@results) < 6 && @cast[0] < 16) { @results = string_multiply('0', (6 - length(@results))).@results }
-	if(@prefix != '') { @results = @prefix.@results }
-	return(@results)
-}
-
 proc _register_sign_command(string @name, string @proc, array @options = array()) {
 	if(@name == '' || @name == null) { return(false) }
 	if(@proc == '' || @proc == null) { return(false) }
-	@signCmds = import('cypher139.sign.Commands')
-	@name = to_lower(@name)
+	@signCmds = import('cypher139.sign.Commands');
+	@name = to_lower(@name);
+	@rereg = array();
 	if(!is_array(@signCmds)) { @signCmds = array() } 
 	if(is_associative(@options)) { @options = array_normalize(@options) }
 	if(!array_index_exists(@options, 0)) { @options = array('event', 'sign') }
-	if(array_index_exists(@signCmds, @name)) {
-		console(color(12).'[Signs] A command named '.@name.' was already registered!')
-	}
+	if(array_index_exists(@signCmds, @name)) { @rereg[] = @name; }
 	#Register command
 	array_set(@signCmds, @name, array('proc': @proc, 'options': @options))
-	export('cypher139.sign.Commands', @signCmds)
+	export('cypher139.sign.Commands', @signCmds);
+	if(array_size(@rereg) > 0) { console(color(14).'[Signs] '.color('r').'Re-registered sign commands: '.array_implode(@rereg, ', '), false); }
+	return(true);
 }
 
 proc _register_poll_file(string @name, string @proc, string @path, array @options = array()) {
 	if(@name == '' || @name == null) { return(false) }
 	if(@proc == '' || @proc == null) { return(false) }
+	@rereg = array();
 	@polls = import('cypher139.poll.files')
 	if(!is_array(@polls)) { @polls = array() }
 	if(is_associative(@options)) { @options = array_normalize(@options) }
-	if(array_index_exists(@polls, @name)) {
-		console(color(14).'[File Poll] File '.@name.' was already registered, re-registering.')
-	}
+	if(array_index_exists(@polls, @name)) { @rereg[] = @name; }
 	#Register file
 	array_set(@polls, @name, array('proc': @proc, 'last': time(), 'path': @path, 'options': @options))
-	export('cypher139.poll.files', @polls)
+	export('cypher139.poll.files', @polls);
+	if(array_size(@rereg) > 0) { console(color(14).'[File Poll] '.color('r').'Re-registered files: '.array_implode(@rereg, ', '), false); }
+	return(true);
 }
 
 
@@ -317,6 +282,128 @@ proc _is_even_number(@number, @round) {
 	return(@number % 2 == 0)
 }
 
+#Random Code Generation
+proc _codegen(@length = 7, @t1 = 'full', @t2) {
+# Character types: lowercase ("lower"), uppercase ("upper"), number ("num"), symbol ('sym'), full (all alphanumeric characters) or all (Full + symbols).
+# Extra character types: 8bit or 16bit for their respective numbers.
+
+#--- User Input Checks
+	@string = array()
+	@chars = array()
+	@opt = array()
+	if(!@t1) { @t1 = 'full'; }
+	if(is_array(@t1)) {
+		if(is_associative(@t1)) {
+			@opt = array_normalize(@t1);
+		} else {
+			@opt = @t1;
+		}
+	} else {
+		@opt = array(@t1);
+		if(@t2) { @opt[] = @t2; }
+	}
+	if(is_numeric(@length)) {
+		@length = integer(@length);
+	} else if(!@length) { 
+		@length = 7;
+	}
+	# Thread limit: Using main server thread may produce slowdowns for large code numbers.
+	if(x_get_current_thread() == 'Server thread') {
+		if(@length > 512) { @length = 512; }
+	}
+	@numlimit = array();
+	
+#--- List of Characters
+	@lower = array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z');
+	@upper = array('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z');
+	@number = array('1','2','3','4','5','6','7','8','9');
+	@full = array_merge(@lower, @upper, @number);
+	@symbol = array('!', '@', '#', '$', '%', '^', '&', '*', '+', '-', '/', '\\', '~', '?');
+	@all = array_merge(@full, @symbol);
+	
+#--- Character Sets
+	@j = 0;
+	foreach(@i: @o in @opt) {
+		if(@i > 3) { break(); }
+		@j++;
+		@useChars = array();
+		@b = false;
+		if(!is_numeric(@o)) { @o = to_lower(@o); }
+		switch(@o){
+		case 'lower':
+		case 'l':
+		case 'low':
+		case 0:
+			@useChars = @lower[];
+		case 'upper':
+		case 'u':
+		case 'up':
+		case 1:
+			@useChars = @upper[];
+		case 'number':
+		case 'n':
+		case '#':
+		case 'num':
+		case 2:
+			@useChars = @number[];
+		case 'full':
+		case 'f':
+		case 3:
+			@useChars = @full[];
+		case 'swear':
+		case 'symbol':
+		case 'sym':
+		case 's':
+		case 4:
+			@useChars = @symbol[];
+		case 'all':
+		case 'a':
+		case 5:
+			@useChars = @all[];
+		case 'read':
+		case 6:
+			@useChars = array_merge(@lower, @number);
+			array_remove_values(@useChars, 'i');
+			array_remove_values(@useChars, 'l');
+			array_remove_values(@useChars, 'o');
+		case 'n8':
+		case '8bit':
+			if(@i > 0) { return('8-bit Not supported as type #'.@j); }
+			@number[] = 0;
+			@useChars = @number[];
+			@length = 3;
+			@numlimit = array(2,5,5);
+			@b = true;
+		case 'n16':
+		case '16bit':
+			if(@i > 0) { return('16-bit Not supported as type #'.@j); }
+			@number[] = 0;
+			@useChars = @number[];
+			@length = 5;
+			@numlimit = array(6,5,5,3,5);
+			@b = true;
+		default:
+			return('Invalid code type given ('.@j.')');
+		}
+		@chars = array_merge(@chars, @useChars);
+		if(@b) { break(); }
+	}
+	
+#--- Generate code
+	array_resize(@string, @length);
+	foreach(@i: @char in @string) {
+		if(array_index_exists(@numlimit, 0)) {
+			@string[@i] = @chars[rand(@numlimit[@i])];
+		} else {
+			@string[@i] = @chars[rand(array_size(@chars))];
+		}
+	}
+	return(array_implode(@string, ''));
+}
+
+
+#-----------
+# Minecraft only functions:
 
 #Find player UUID when given a player NAME.
 #returns array of name, displayname, nickname, and UUID
@@ -421,8 +508,6 @@ proc _getplayerName(@findID) {
 		return('Running in Command Line')
 	}
 }
-
-# Minecraft only functions:
 
 proc _primus_database_add(@player, @type, @data, @option) {
 	if(@player == '' || @player == null) { return('No Player Given') }

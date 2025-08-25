@@ -13,9 +13,9 @@ proc _vc_display_duration(@time) {
 		@dateType = 'HH\'h\' mm\'m\' ss\'s\''
 	} else if(@time >= 86400000) {
 	#over 1 day
-		@dl = (simple_date('D', @time) - 1).'d '
+		@dl = (simple_date('D', @time, 'UTC') - 1).'d '
 	} 
-	return(@dl.simple_date(@dateType, @time));
+	return(@dl.simple_date(@dateType, @time, 'UTC'));
 }
 #---
 proc _vc_user_joined(@discord, @type, @chan = array(), @vc) {

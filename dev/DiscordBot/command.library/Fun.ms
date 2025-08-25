@@ -226,6 +226,38 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 }
 
 
+proc _discordBot_cmd_codegen_pl(@discord, @args) {	
+	switch(rand(1,4)) {
+		case 2:
+		if(is_proc('_codegen')) {
+			@time = time();
+			@id = rand(25,150);
+			x_new_thread(@id.@time, closure(){
+				@results = array()		
+				array_resize(@results, rand(5, 15)) 
+				foreach(@k: @v in @results) {
+					@results[@k] = _codegen(rand(6, 21), rand(0, 5), rand(0, 5))
+				}
+				export(@id.@time, @results)
+			});	
+			x_thread_join(@id.@time, 7000)
+			@results = import(@id.@time)
+			if(!is_array(@results)) { return('Error') }
+			_db_msg_Console(@results, @discord['serverid'], 'debug');
+			@service = array_get_rand(array('your mom', '<redacted>', 'FTP'));
+			export(@id.@time, null);
+			return('Passwords for '.@service.': \n --: '.array_implode(@results, '\n --: '))
+		} else {
+			return('NoCmd')
+		}
+		case 3:
+			return(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))))
+		default:
+			return(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))))
+	}
+}
+
+
 #Add Commands to List
 @c3lx = import('DiscordBot.Command.List', array())
 @mIu7 = array(
@@ -236,7 +268,8 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 	'cointoss': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_cointoss(@discord, @args)); }),
 	'1to100': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_1to100(@discord, @args)); }),
 	'fakeadmin': array('alias': array('sudo', 'makemeadmin'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_fakeadmin(@discord)); }),
-	'fakeban': array('alias': array('fban', 'fb'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_fakeban(@discord, @args)); })
+	'fakeban': array('alias': array('fban', 'fb'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_fakeban(@discord, @args)); }),
+	'listpasswords': array('alias': array('passwords', 'lp', 'passwordlist'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_codegen_pl(@discord)); })
 );
 @c3lx = array_merge(@c3lx, @mIu7)
 export('DiscordBot.Command.List', @c3lx)

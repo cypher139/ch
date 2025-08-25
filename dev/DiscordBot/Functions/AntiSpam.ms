@@ -121,12 +121,17 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	if(@discord['message'] != '') {
 		if(reg_count('([\\w+]+\\:\\/\\/)?([\\w\\d-]+\\.)*[\\w-]+[\\.\\:]\\w+([\\/\\?\\=\\&\\#.]?[\\w-]+)*\\/?', @discord['message']) > 0) {
 			@userFlags[] = 's-url';
+		# Check if URL links to an image (popular to avoid reupload for each spam message)
+			@fileExt = reg_match('[.](?<ext>[\\w]{0,5})(?:\\?|$|h|\\s)', @discord['message']);
+			if(array_index_exists(@fileExt, 'ext')) {
+				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt)) { @userFlags[] = 's-img' }
+			}
 		}
 	}
 	# Message contains image attachment
 	if(array_index_exists(@discord, 'attachments', 0)) {
 		foreach(@at in @discord['attachments']) {
-			@fileExt = reg_match('[.](?<ext>[A-Za-z0-9]{0,4})$', @at['filename']);
+			@fileExt = reg_match('[.](?<ext>[\\w]{0,5})(?:\\?|$)', @at['filename']);
 			if(array_index_exists(@fileExt, 'ext')) {
 				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt)) { @userFlags[] = 's-img' }
 			}
@@ -234,10 +239,10 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # Add user to Triggered state:
 
 	if(@adduser == true) {
+		@userFlags = array_unique(@userFlags);
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
 			array_set(@asmembers, @discord['userid'], array('flags': @userFlags, 'log': false, 'rtime': @time, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0))
 		}
-		@userFlags = array_unique(@userFlags);
 	}
 	
 ##### -------------------

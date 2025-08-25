@@ -16,7 +16,7 @@ register_command('ip', array(
 		closure(@alias, @sender, @args, @info) {
 			@arg = @args[-1];
 			@argPos = array_size(@args) - 1;
-			@actsub = array('report', 'avgtime', 'check', 'geoip');
+			@actsub = array('report', 'check', 'blacklist', 'whitelist', 'geoip', 'avgtime', 'notblock', 'pingmismatchignore');
 			# @actsubAdmin = array('leaderboard');
 			@actplayers = all_players();
 			@actqty = array();
@@ -56,7 +56,7 @@ register_command('ip', array(
 			@uuid = puuid(@player, 'dashless');
 			@id = 0;
 			@returnMsg = array(12, '?');
-			@cmd = ''
+			@cmd = '';
 			@name = 'IPBlacklist'
 			if(array_index_exists(@args, 0)) {
 				if(@args[-1] == 'arguments>') {
@@ -74,28 +74,24 @@ register_command('ip', array(
 				case 'r':
 				case 'e':
 					@cmd = 'report';
-					array_remove(@args, 0);
 				case 'c':
 					@cmd = 'check';
-					array_remove(@args, 0);	
 				case 'b':
 					@cmd = 'blacklist';
-					array_remove(@args, 0);
+				case 'w':
+					@cmd = 'whitelist';
 				case 'g':
 				case 'l':
 					@cmd = 'geoip';
-					array_remove(@args, 0);
 				case 'a':
 				case 't':
 					@cmd = 'avgtime';
-					array_remove(@args, 0);
 				case 'n':
 					@cmd = 'notblock';
-					array_remove(@args, 0);
 				case 'p':
 					@cmd = 'pingmismatchignore';
-					array_remove(@args, 0);
 				}
+				if(@cmd != '') { array_remove(@args, 0); }
 			} 
 			if(!@cmd) {
 				msg(color(12).'['.color(7).@name.color(12).'] '.color(12).'You need to specify a command to run!'); 
@@ -166,6 +162,67 @@ register_command('ip', array(
 				}
 				if(array_size(@reviewip) > 0) {
 					@results[] = color(14).'These IPs have connected with a player name; If you wish to confirm blacklisting these IPs, '.color('r').'*type this command again and include the word "'.color(14).'confirm'.color('r').'".*'.@userdisplay;
+				}
+				case 'whitelist':
+		#Check if a given IP is already in IP Blacklist config
+				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()))
+				@results[] = color(3).'IPs to remove from IP Blacklist: ';
+				@listIPData = ''
+				@ipuserdata = import('primus.database.IP');
+				if(!is_array(@ipuserdata)) { @ipuserdata = array() }
+			#Add
+				@addip = array()
+				@reviewip = array()
+				@whitelist = get_value('ipbl.data.Whitelist')
+				if(!@whitelist) { @whitelist = array() }
+				@userdisplay = '';
+				@showall = true
+				if(array_contains(@args, 'show')) { @showall = true }
+				foreach(@arg in @args) {
+					if(@arg == 'show') { continue() }
+					@listIPData = ''
+					@upload = true
+					@ip = reg_replace('[%][0]$', '', @arg);
+					if(@ip == 'raw' || @ip == 'isp' || @ip == 'ip') { continue() }
+					if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) == false) {
+						msg(color(12).'Not a valid IP: '.@ip);
+						continue()
+					}
+					@listIPData = color(9).@ip.color(3)
+					foreach(@block: @ISP in @blacklistIP['IP_Block_Blacklist']) {
+						@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
+						if(string_starts_with(string(@ip), @startBlock)) {
+							@listIPData .= color(14).' Found On Block Blacklist: '.color(7).@block
+						}
+					}
+					if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
+						@upload = true;
+					} else {
+						@listIPData .= color(11).' Not Found In Blacklist';
+						@upload = false
+					}
+					if(array_index_exists(@ipuserdata, @ip) && !array_contains(@args, 'confirm')) {
+						array_set(@reviewip, @ip, @ipuserdata[@ip]);
+						@listIPData .= color(9).' Player Names: '.color(8).array_implode(@ipuserdata[@ip], ', ')
+						@userdisplay .= '\n'.@ip.': '.array_implode(@ipuserdata[@ip], ', ')
+						@upload = false
+					}
+					if(@upload) { 
+						@addip[] = @ip;
+						array_remove_values(@blacklistIP['IP_Blacklist'], @ip);
+						@listIPData .= color(10).' - Removed.'
+					}
+					@results[] = @listIPData;
+				} else { @results[] = color(12).'No IPs were given to remove?!?!'; }
+				if(array_size(@addip) > 0) {
+					@whitelist = array_unique(array_merge(@whitelist, @addip));
+					store_value('ipbl.data.Whitelist', @whitelist);
+					export('ipbl.config.IPBlacklist', @blacklistIP);
+					_ipbl_save_config(@blacklistIP);
+					@results[] = color(10).array_size(@addip).' IPs were removed.'; 
+				}
+				if(array_size(@reviewip) > 0) {
+					@results[] = color(14).'These IPs have connected with a player name; If you wish to confirm whitelisting these IPs, '.color('r').'*type this command again and include the word "'.color(14).'confirm'.color('r').'".*'.@userdisplay;
 				}
 			case 'pingmismatchignore':
 		#Check if a given IP is already in IP Blacklist config
@@ -267,8 +324,10 @@ register_command('ip', array(
 						@split = reg_split('[.:]', @ip);
 						foreach(@i: @octet in @split) {
 							@color = sha1(@octet)[0];
+							# msg(@i.':  '.@color)
 							@split[@i] = color(@color).@octet
 						}
+						# msg(array_implode(@split, color('r').@type))
 						@ipList[] = array_implode(@split, color('r').@type);
 					}
 				} else { @results[] = color(12).'No IPs were given to check?!?!'; }
@@ -397,11 +456,12 @@ register_command('ip', array(
 									array_set(@cacheID, 'lastedit', time())
 									if(array_size(@cacheID) > 400) {
 										@selectKey = array_keys(@cacheID)
-										array_remove(@cacheID, @selectKey[0])
-										array_remove(@cacheID, @selectKey[1])
+										_db_msg_Console('[cmd.ip] IP review msg Cache ('.array_size(@cacheID).'): picked: '.@selectKey[0].'   '.@selectKey[1], 'debug')
+										array_remove(@cacheID, @selectKey[0]);
+										array_remove(@cacheID, @selectKey[1]);
 									}
-									export('DiscordBot.bot.msg.IP.Review', @cacheID)
-									return(true)
+									export('DiscordBot.bot.msg.IP.Review', @cacheID);
+									return(true);
 								});
 							}
 						}
@@ -438,9 +498,9 @@ register_command('ip', array(
 						@dateType = 'HH\'h\' mm\'m\' ss\'s\''
 					} else if(@time >= 86400000) {
 					#over 1 day
-						@dl = (simple_date('D', @time) - 1).'d '
+						@dl = (simple_date('D', @time, 'UTC') - 1).'d '
 					} 
-					return(@dl.simple_date(@dateType, @time));
+					return(@dl.simple_date(@dateType, @time, 'UTC'));
 				}
 				@printAllPings = true
 				if(array_contains(@args, 'print') || array_contains(@args, '-p')) {
@@ -586,7 +646,17 @@ register_command('ip', array(
 						}
 					}
 				}
-				if(array_size(@addtoobList) > 0) { @results[] = color(12).array_size(@addtoobList).color(14).' Obnoxious IPs: 30+ pings, Not found on template list: \n'.color(6).map_implode(@addtoobList, color(2).': ', '\n'.color(6)); }
+				if(array_size(@addtoobList) > 0) {
+					@getgeoIP = _geoip_lookup(array_keys(@addtoobList))
+					if(!is_array(@getgeoIP)) { @getgeoIP = array() }
+					foreach(@ip1: @data in @addtoobList) {
+						if(array_index_exists(@getgeoIP, @ip1, 'aso')) {
+							array_set(@addtoobList[@ip1], 'i', @getgeoIP[@ip1]['aso'])
+						}
+					}		
+					@results[] = color(12).array_size(@addtoobList).color(14).' Obnoxious IPs: 30+ pings, Not found on template list: \n'.color(2).yml_encode(@addtoobList, true);
+				}
+				# if(array_size(@addtoobList) > 0) { @results[] = color(12).array_size(@addtoobList).color(14).' Obnoxious IPs: 30+ pings, Not found on template list: \n'.color(6).map_implode(@addtoobList, color(2).': ', '\n'.color(6)); }
 				if(array_size(@checkobList) > 0 && @enCheckob) { @results[] = color(12).array_size(@checkobList).color(14).' Obnoxious IPs: 20+ pings, with mismatched ping count on template list (does not include non-blacklisted pings!): \n'.color(6).map_implode(@checkobList, color(2).': ', '\n'.color(6)); }
 		# Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
 			case 'geoip':

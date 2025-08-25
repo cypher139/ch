@@ -116,17 +116,22 @@ bind('discord_message_received', array('id': 'DiscordBot.showcase.check'), null,
 		if(@isAllowed == false) {
 			consume();
 			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': ':x: '.@reaction.'\n:arrow_right: A copy of your recent message in the Showcase chat is below:\n\n'.@discord['message']), 'bot');
-			try {
-				discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
-			} catch(Exception @ex) {
-				_db_msg_Console('  ['.@discord['serverid'].'] [Showcase] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
-			}
+			@hasPerm = _db_check_perms('delete', @discord['serverid'], @discord['channelid']);
+			if(@hasPerm) {
+				try {
+					discord_delete_message(@discord['serverid'], @discord['channelid'], @discord['id']);
+				} catch(Exception @ex) {
+					_db_msg_Console('  ['.@discord['serverid'].'] [Showcase] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
+				}
+			} else { _db_msg_Console('  ['.@discord['serverid'].'] [Showcase] No permission to remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> in showcase channel! Showcase functionality is limited!', @discord['serverid']) }
 			_discordBot_broadcast(@discord['serverid'], @discord['channelid'], @reaction, closure(@reactionID){
 				set_timeout(300000, closure(){
-					try {
-						discord_delete_message(@discord['serverid'], @discord['channelid'], @reactionID);
-					} catch(Exception @ex) {
-						_db_msg_Console('  ['.@discord['serverid'].'] [Showcase] Cannot remove my reaction message "'.@reactionID.'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
+					if(@hasPerm) {
+						try {
+							discord_delete_message(@discord['serverid'], @discord['channelid'], @reactionID);
+						} catch(Exception @ex) {
+							_db_msg_Console('  ['.@discord['serverid'].'] [Showcase] Cannot remove my reaction message "'.@reactionID.'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
+						}
 					}
 				});
 			});	

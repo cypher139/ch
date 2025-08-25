@@ -167,10 +167,20 @@ bind('discord_reaction_added', array('id': 'DiscordBot.IP.React', 'priority': 'M
 						array_remove_values(@key, 'c')
 						array_remove_values(@key, 'r')
 						array_remove(@cacheID, array_sort(@key, 'NUMERIC')[0])
+						@selectKey = array_keys(@cacheID)
+						_db_msg_Console('[ipr-review] IP review msg Cache ('.array_size(@cacheID).'): picked: '.@selectKey[0].'   '.@selectKey[1], @discord['serverid'], 'debug')
+						array_remove(@cacheID, @selectKey[0]);
+						array_remove(@cacheID, @selectKey[1]);
 					}
 					export('DiscordBot.bot.msg.IP.Review', @cacheID)
 					return(true)
 				});
+			}
+			if(array_size(@cacheID) > 400) {
+				@selectKey = array_keys(@cacheID);
+				_db_msg_Console('[ipr] IP review msg Cache ('.array_size(@cacheID).'): picked: '.@selectKey[0].'   '.@selectKey[1], @discord['serverid'], 'debug')
+				array_remove(@cacheID, @selectKey[0]);
+				array_remove(@cacheID, @selectKey[1]);
 			}
 			export('DiscordBot.bot.msg.IP.Review', @cacheID)
 			discord_request('PUT', 'channels/'.@discord['channelid'].'/messages/'.@discord['messageid'].'/reactions/%E2%9C%85/@me', null, closure(@ex) { @react = 1 }, closure(@ex) { console('reaction failed: \n'.@ex) });

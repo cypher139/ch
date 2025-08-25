@@ -129,9 +129,6 @@
 	$levelXP = $data['options']['levelXP'];
 	//compute level xp left
 	foreach ($members as $key => $row){
-		if($row['level'] == 0) {
-			continue;
-		}	
 		$xpleft = $levelXP[($row['level'] + 1)] - $row['xp'];
 		$members[$key] += ['xp_remain' => $xpleft];
 	}
@@ -197,7 +194,7 @@
 	?>
 	<tr>
 		<td>#<?php echo $entrycount; ?></td>
-		<td style="color:#<?php echo $usercolor; ?>"><div class="info-user"><?php if($entrycount < $userAvatarLimit) { echo "<img class=\"avatar\" src=\"".$avatar."\">"; }?>&nbsp;&nbsp;
+		<td style="color:rgb(<?php echo $row['color'][0].', '.$row['color'][1].', '.$row['color'][2]; ?>)"><div class="info-user"><?php if($entrycount < $userAvatarLimit) { echo "<img class=\"avatar\" src=\"".$avatar."\">"; }?>&nbsp;&nbsp;
 		<?php echo $nick; ?>
 			<span>
 		<?php
@@ -246,6 +243,12 @@
 			if($data['guild']['members'] > count(array_keys($members))) { 
 				$membersleft = $data['guild']['members'] - count(array_keys($members));
 				echo "<br>- <em>At least </em>".number_format($membersleft)."<em> server members did not place on the Leaderboard!</em>";
+			}
+		?>
+		<?php 
+			if($data['guild']['members'] > count(array_keys($members))) { 
+				$membersleft = $data['guild']['members'] - count(array_keys($members));
+				echo "<br>- At least ".$membersleft."<em> server members did not even place on the Leaderboard!";
 			}
 		?>
 	</span>

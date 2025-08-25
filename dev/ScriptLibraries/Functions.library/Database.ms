@@ -30,7 +30,7 @@ if(array_index_exists(@args, 1)) { @option2 = @args[1] }
 @otherplayer = ''
 if(function_exists('player')) {
 	@player = player()
-	# Get other player name  
+	# Get other player name
 	foreach(@v in @args) {
 		if(array_contains_ic(all_players(), @v)) {
 			@otherplayer = player(@v)
@@ -64,8 +64,19 @@ switch(@action){
 		return(@returnmsg)
 
 	case 'import':
-		@v = import(@args[0])
-		@arraymsg = ''
+	case 'getvalue':
+	case 'gv':
+		@useImport = true;
+		@v = null;
+		@vPrefix = 'Import';
+		if(@action[0] != 'i') {
+			@useImport = false; 
+			@vPrefix = 'Value';
+		}
+		if(@useImport) { @v = import(@args[0]); } else { @v = get_value(@args[0]); }
+		
+		@vdis = @v;
+		@arraymsg = '';
 		@as = 0
 		@as2 = 0
 		@color = 7
@@ -74,15 +85,17 @@ switch(@action){
 			@arraymsg = color(3).' size: '.@as
 			if(array_index_exists(@args, 1)) {
 				if(@args[1] == '-keys') {
-					@v = color(3).'Keys Only: \n'.color(@color).array_keys(@v)
+					@vdis = color(3).'Keys Only: \n'.color(@color).array_keys(@v)
+				} else if(@args[1] == '-size') {
+					@vdis = color(3).'Array Size: '.color(@color).@as
 				} else if(array_index_exists(@v, @args[1])) {
 					if(is_array(@v[@args[1]])) {
 						@as2 = array_size(@v[@args[1]]);
 						@arraymsg .= color(3).' index size: '.@as2
 					}
-					@v = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
+					@vdis = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
 				} else {
-					@v = color(12).'Index '.@args[1].' was not found!'
+					@vdis = color(12).'Index '.@args[1].' was not found!'
 				}
 			}
 		} else {
@@ -98,7 +111,7 @@ switch(@action){
 			}
 		}
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
-		@return = @prefix.color(6).'Import: '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
+		@return = @prefix.color(6).@vPrefix.': '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@vdis
 		if(@as > 9 || @as2 > 9) { @return .= '\n'.@arraymsg }
 		return(@return)
 
@@ -125,41 +138,6 @@ switch(@action){
 			@returnmsg .= '\n'.@prefix.color(12).'That export did not exist.'
 		}
 		return(@returnmsg)
-		
-	case 'getvalue':
-	case 'gv':
-		@v = get_value(@args[0])
-		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v))
-		@arraymsg = ''
-		@as = 0
-		@color = 7
-		if(is_array(@v)) {
-			@as = array_size(@v)
-			@arraymsg = color(3).'size: '.@as
-			if(array_index_exists(@args, 1)) {
-				if(@args[1] == '-keys') {
-					@v = color(3).'Keys Only: \n'.color(@color).array_keys(@v)
-				} else if(array_index_exists(@v, @args[1])) {
-					@v = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
-				} else {
-					@v = color(12).'Index '.@args[1].' was not found!'
-				}
-			}
-		} else {
-			switch(@v) {
-			case true:
-				@color = 10
-			case false:
-				@color = 12
-			case null:
-				@color = 8
-			default:
-				if(is_numeric(@v)) { @color = 9 }
-			}
-		}
-		@return = @prefix.color(6).'Value: '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@v
-		if(@as > 9) { @return .= '\n'.@arraymsg }
-		return(@return)
 		
 	case 'clearindex':
 	case 'ci':
@@ -364,7 +342,7 @@ switch(@action){
 				@changedcount++
 				@result = color(14).' changed'
 			}
-			@returnmsg .= '\n'.@key.@result
+			@returnmsg .= color('r').'\n'.@key.@result
 		}
 		if(@truecount > 0) { @truemsg = color(2).'True: '.@truecount }
 		if(@changedcount > 0) { @changedmsg = color(14).' Changed: '.@changedcount }

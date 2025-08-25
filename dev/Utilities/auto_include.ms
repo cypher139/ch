@@ -294,10 +294,19 @@ proc _cmd_giveitem(@player, @args, @giver) {
 		@args = array('fill')
 	}
 	if(!@player) { @player = player() }
+	if(@player == 'CONSOLE') { @player = '~console' }
 	if(!@giver) { @giver = player() }
+	if(@giver == 'CONSOLE') { @giver = '~console' }
+	@npcgiver = false
+	if(!array_contains_ic(get_offline_players(), @giver)) { @npcgiver = true }
+	if(!array_contains_ic(all_players(), @player)) {
+		msg(color(12).'That player was not found.');
+		return(false);
+	}
 	@transparent = array('water', 'lava', 'air');
 	@slot = null
 	@itemID = null
+	array_remove_values(@args, @player);
 	@itemName = array_implode(@args, ' ');
 	@amount = 1;
 	@meta = associative_array();
@@ -339,7 +348,7 @@ proc _cmd_giveitem(@player, @args, @giver) {
 	case 'look':
 	case 'looks':
 	case 'want':
-		if(@player == 'CONSOLE' || string_contains_ic(get_block(pcursor(@player, @transparent)), 'air')) {
+		if(@player == '~console' || string_contains_ic(get_block(pcursor(@player, @transparent)), 'air')) {
 			return(color(12).'No block was in sight!');
 		} else {
 			@itemName = get_block(pcursor(@player, @transparent));
@@ -349,7 +358,7 @@ proc _cmd_giveitem(@player, @args, @giver) {
 	case 'refill':
 	case 'fill':
 	case 'more':
-		if(@giver == 'CONSOLE') {
+		if(@giver == '~console') {
 			@slot = null;
 		} else {	
 			@slot = pinv(@player, null);
@@ -429,10 +438,12 @@ proc _cmd_giveitem(@player, @args, @giver) {
 	if(@amount < 1) { @amount = 1; }
 	# console(color(7).'[giveitem dev]: '.@itemName.' ('.@itemID.') [qty:'.@amount.']', false);
 # Let console get Item IDs
-	if(@player == 'CONSOLE') {	return(color(7).'Item IDs returned: '.color(3).@itemName.color(8).' ('.color(10).@itemID.color(8).') '.color(8).'[max:'.max_stack_size(array('name': to_upper(@itemName), 'meta': null)).']') }
+	if(@player == '~console') {	return(color(7).'Item IDs returned: '.color(3).@itemName.color(8).' ('.color(10).@itemID.color(8).') '.color(8).'[max:'.max_stack_size(array('name': to_upper(@itemName), 'meta': null)).']') }
 # Give Items
 	if(!has_permission(@player, 'commandhelper.alias.creative') && @player != @giver) {
-		if(!has_permission(@giver, 'commandhelper.alias.admin')) { return(color(12).@player.' does not have permission to use the /give command.'); }
+		if(@npcgiver == true) {
+			return(color(12).@player.' does not have permission to spawn items on the server.');
+		} else if(!has_permission(@giver, 'commandhelper.alias.admin')) { return(color(12).@player.' does not have permission to use the /give command.'); }
 	}
 	try {
 		pgive_item(@player, array('meta': @meta, 'name': to_upper(@itemName), 'qty': @amount));
@@ -441,13 +452,15 @@ proc _cmd_giveitem(@player, @args, @giver) {
 		return(color(12).'Could not complete giving the item.');
 	}
 #Return messages
-	@msgid = ''
-	if(has_permission(@giver, 'commandhelper.alias.creative.see.id')) {	@msgid = color(8).' ('.@itemID.')'; }
+	@msgid = color(8).' ('.@itemID.')';
+	if(@npcgiver == false) {
+		if(!has_permission(@giver, 'commandhelper.alias.creative.see.id')) { @msgid = ''; }
+	}
 	@display = to_lower(replace(@itemName, '_', ' '));
 	@dp = '';
 	if(@player != @giver) { 
 		@dp = color(5).@player.' ';
-		tmsg(@player, color(5).@giver.color(6).'Gave you '.color(3).@amount.color(6).' of '.color(10).@display);
+		tmsg(@player, color(5).@giver.color(6).' gave you '.color(3).@amount.color(6).' of '.color(10).@display);
 	}
 	return(color(6).'Giving '.@dp.color(3).@amount.color(6).' of '.color(10).@display.@msgid)
 }

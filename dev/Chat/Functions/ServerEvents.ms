@@ -1,3 +1,26 @@
+bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
+	@time = time();
+	@serverConfig = import('Chat.config.Server');
+	# Repeated pings get special message
+	@ip = reg_replace('[%][0]$', '', @ping['ip']);
+	@iplastping = import('ipbl.ping.IP.times')
+	if(!is_array(@iplastping)) { @iplastping = array() }
+	if(!array_index_exists(@iplastping, @ip)) {
+		array_set(@iplastping, @ip, (@time - 10000))
+	}
+	@ignore = false
+	if(array_contains(@serverConfig['Static_Ping_Message_To_IP'], @ip)) { die() }
+# Repeated pings (i.e. quick refreshes)? Yea, don't bother displaying those!
+	if(@time < (@iplastping[@ip] + 7000)) {
+		modify_event('motd', @serverConfig['Repeated_Ping_Message']);
+		die();
+	}
+# Colorize MOTD
+	if(@serverConfig['MOTD_Rainbow'] == true && is_proc('_rainbow')) {
+		modify_event('motd', _rainbow(@ping['motd'], @serverConfig['MOTD_Rainbow_Type']));
+	}
+}
+
 bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @login) {
 	@serverConfig = import('Chat.config.Server')
 	@playerID = _getplayerID(player())
@@ -41,13 +64,6 @@ bind('player_join', array('id': 'Chat.Format.Join', 'priority': 'HIGH'), null, @
 # Minimap: Enable radar for everything, and cavemapping. (Codes set for Rei's Minimap)
 	if(@serverConfig['Enable_Advanced_Map'] == true) { @joinmsg = color(0).color(0).color(1).color(2).color(3).color(4).color(5).color(6).color(7).color('e').color('f').@joinmsg }
 
-# IP Check: record number of concurrent players connected
-	@concurrentList = import('Server.IP.concurrent')
-	if(!is_array(@concurrentList)) { @concurrentList = array() }
-	if(!array_index_exists(@concurrentList, @ip)) { array_set(@concurrentList, @ip, 0) }
-	@concurrentList[@ip]++
-	export('Server.IP.concurrent', @concurrentList)
-
 # Send Join Message to Minecraft
 	if(@sendMsg == true) { modify_event('join_message', @joinmsg) } else { modify_event('join_message', null) }
 # Send Join message to Discord (if enabled)
@@ -70,14 +86,6 @@ bind('player_quit', array('id': 'Chat.Format.Quit'), null, @quit) {
 	@ip = reg_replace('[%][0]$', '', pinfo(player())[3])
 	@sendMsg = true
 	@type = 'none'
-	
-# IP Check: record number of concurrent players connected
-	@concurrentList = import('Server.IP.concurrent')
-	if(!is_array(@concurrentList)) { @concurrentList = array() }
-	if(!array_index_exists(@concurrentList, @ip)) { array_set(@concurrentList, @ip, 1) }
-	@concurrentList[@ip]--
-	if(@concurrentList[@ip] == 0) { array_remove(@concurrentList, @ip) }
-	export('Server.IP.concurrent', @concurrentList)
 	
 # Setup Quit Message
 	@quitmsg = ''

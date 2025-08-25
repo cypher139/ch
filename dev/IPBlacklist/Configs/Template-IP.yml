@@ -416,6 +416,154 @@ Obnoxious:
     f: 10m
     i: Korea Telecom
     p: 104
+  103.251.26.22: 
+    f: 5m
+    i: HostRoyale Technologies Pvt Ltd
+    p: 172
+  185.248.85.50:
+    f: 5m
+    i: Owl Limited
+    p: 39
+  68.235.46.37:
+    f: 5m
+    i: TZULO
+    p: 125
+  68.235.46.99:
+    f: 5m
+    i: TZULO
+    p: 86
+  68.235.46.130:
+    f: 5m
+    i: TZULO
+    p: 46
+  146.70.134.68:
+    f: 5m
+    i: M247 Europe SRL
+    p: 138
+  68.235.46.130:
+    f: 5m
+    i: TZULO
+    p: 49
+  23.162.40.148:
+    f: 5m
+    i: "AS Cyber Data"
+    p: 131
+  43.225.189.133:
+    f: 5m
+    i: HostRoyale Technologies Pvt Ltd
+    p: 213
+  103.102.247.148:
+    f: 4m
+    i: HostRoyale Technologies Pvt Ltd
+    p: 34
+  146.70.200.196:
+    f: 6m
+    i: M247 Europe SRL
+    p: 99
+  37.19.221.132:
+    f: 5m
+    i: Datacamp Limited
+    p: 57
+  185.92.210.227:
+    f: 5m
+    i: HostRoyale Technologies Pvt Ltd
+    p: 105
+  146.70.138.196:
+    f: 7m
+    i: M247 Europe SRL
+    p: 92
+  146.70.225.68:
+    f: 6m
+    i: M247 Europe SRL
+    p: 56
+  185.65.134.220:
+    f: 5m
+    i: 31173 Services AB
+    p: 108
+  193.138.7.179:
+    f: 5m
+    i: Blix Solutions AS
+    p: 49
+  103.81.230.22:
+    f: 4m
+    i: HostRoyale Technologies Pvt Ltd
+    p: 30
+  138.199.21.241:
+    f: 5m
+    i: Datacamp Limited
+    p: 70
+  37.19.210.3:
+    f: 6m
+    i: Datacamp Limited
+    p: 92
+  23.234.102.22:
+    f: 11m
+    i: TZULO
+    p: 85
+  103.81.231.22:
+    f: 06m
+    i: HostRoyale Technologies Pvt Ltd
+    p: 217
+  156.146.63.150:
+    f: 22h
+    i: Datacamp Limited
+    p: 384
+  176.65.134.5:
+    f: 10m
+    i: Go Host Ltd
+    p: 259
+  176.65.134.6:
+    f: 10m
+    i: Go Host Ltd
+    p: 256
+  176.65.148.103:
+    f: 09m
+    i: Pfcloud UG
+    p: 308
+  194.127.199.4:
+    f: 06m
+    i: Blix Solutions AS
+    p: 95
+  23.234.89.22:
+    f: 06m
+    i: TZULO
+    p: 50
+  45.95.147.247:
+    f: 20h
+    i: Alsycon B.V.
+    p: 48
+  178.16.54.25:
+    f: 2m
+    i: dus.net GmbH
+    p: 504
+  193.138.7.170:
+    f: 7m
+    i: Blix Solutions AS
+    p: 70
+  204.76.203.35:
+    f: 3m
+    i: Pfcloud UG
+    p: 198
+  185.195.232.147:
+    f: 6m
+    i: 31173 Services AB
+    p: 48
+  23.234.102.217:
+    f: 6m
+    i: TZULO
+    p: 58
+  155.2.190.62:
+    f: 6m
+    i: uk-2 Limited
+    p: 138
+  146.70.172.234:
+    f: 7m
+    i: M247 Europe SRL
+    p: 31
+  23.168.216.217:
+    f: 7m
+    i: HAYASHIMO
+    p: 42
 #
 Spam_Player_Names:
 # Player names, if an actual connection via Mojang auth was tried, are listed here.
@@ -539,6 +687,7 @@ Spam_Player_Names:
   - 191.101.31.45
   - 190.5.196.217
   - 85.235.71.200
+  - 49.192.98.245
   xerub: 104.28.196.198
 #
 # Ranges of IPs to disallow access to server:

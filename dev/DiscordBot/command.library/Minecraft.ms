@@ -80,11 +80,26 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 	return(@return)
 }
 
+proc _discordBot_cmd_mcgive(@discord, @args) {
 
+if(!array_index_exists(@args, 0)) {return('Error')}
+if(!array_contains(all_players(), @args[0])) {return('NoUserFound')}
+if(!array_index_exists(@args, 1)) {return('Error')}
+#index: 0 - -2: item name, -1: qty
+@array = @args[1..-1]
+@mcreturn = _cmd_giveitem(@args[0], @args[1..-1], @discord['nickname'])
+
+#index: 0 - -2: item name, -1: qty
+@array = @args[1..-1]
+
+@mcreturn = _cmd_giveitem(@args[0], @args[1..-1], @discord['nickname'])
+return(@mcreturn)
+}
 #Add Commands to list
 @c3lx = import('DiscordBot.Command.List', array())
 @mIu7 = array(	
-	'whitelist': array('alias': array('mc-whitelist'), 'admin': false, 'category': 'Minecraft', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_mcwhitelist(@discord, @args)); })
+	'whitelist': array('alias': array('mc-whitelist'), 'admin': false, 'category': 'Minecraft', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_mcwhitelist(@discord, @args)); }),
+	'give': array('alias': array('mc-give'), 'admin': false, 'category': 'Minecraft', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_mcgive(@discord, @args)); })
 );
 @c3lx = array_merge(@c3lx, @mIu7)
 export('DiscordBot.Command.List', @c3lx)

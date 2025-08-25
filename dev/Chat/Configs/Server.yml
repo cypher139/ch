@@ -1,5 +1,5 @@
 #version:
-v: 12
+v: 13
 # !!!!!!!!!!!! Remove the following line to remove nag configure message! !!!!!!!!!!!!!!!!!!
 Not_Configured: true
 #
@@ -22,53 +22,12 @@ MOTD_Rainbow: true
 # words (new color every word)
 # ps2 (new color every letter, using mostly colors in PS2 logo)
 MOTD_Rainbow_Type: "ps2"
-# Send Ping Notification (includes IP and all players IP has connected with) to:
-Ping_Message_Console: true
-Ping_Message_Discord: true
-# Should the message sent to Discord contain a link to lookup IP in a database?
-# Leave empty to not send a link. To insert IP in URL: %IP%
-# Format: Link Name: Link URL
-Ping_Message_Lookup_Links:
-  4:
-    Whois: "https://dnschecker.org/ip-location.php?ip=%IP%"
-    "Is Blacklisted?": "https://bl.isx.fr/%IP%"
-  6:
-    Whois: "https://dnschecker.org/ipv6-whois-lookup.php"
-# Should the message sent to Discord contain the IP's country code and ISP in the message?
-Ping_Message_LookupIP_DB: true
-# Currently the IP Database lookup uses a shell call, where is the script located?
-LookupIP_DB_Dir: "/home/minecraft/geoip"
-# For auto-Publishing the Blacklist file to Git or so, where is the .git repo folder located?
-#optional
-#Git_Dir: "/home/minecraft/Git"
-#
-# Level of Pings: 0 for none, 1 for Console only, 2 for Console and Discord
-Ping_Message_Level: 2
 # This MOTD is given if the last ping was up to 7 seconds ago.
 Repeated_Ping_Message: "Stop pinging me, and start playing on this server!"
-# These IPs should bypass message on every ping, example localhost.
-Ping_Message_Ignore_IP:
-- "192.168.1.1"
-- "127.0.0.1"
-# These IPs should bypass all ping messages and ping recording.
-Ping_Message_Super_Ignore_IP:
-- "127.0.0.1"
-# Write the blacklisted IPs to a file that your firewall can process?
-Write_Blacklist_IP_File: true
-Write_Blacklist_IP_File_Path: "/var/www/html/block.txt"
-# Message console on each attempted ping from a Blacklisted IP?
-Ping_Blacklist_Console: false
-# Should we take action on multiple accounts using the same IP address?
-Check_Multiple_Accs_IP: true
-# How many accounts can be connected with the same IP address at any given time?
-Concurrent_Accs_IP: 2
-# If many accounts have previously connected using the same IP address, should we automatically kick joins from this IP?
-Kick_Multiple_Accs_IP: true
-Allowed_Account_Amount: 2
-# These IPs bypass the auto kick:
-Kick_Multiple_Accs_IP_Whitelist:
-- "192.168.1.1"
-- "127.0.0.1"
+# Do not edit MOTD for These IPs:
+Static_Ping_Message_To_IP:
+- 192.168.1.1
+- 127.0.0.1
 Banned_Mentions:
 - "@everyone"
 - "@here"
