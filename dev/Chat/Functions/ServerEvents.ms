@@ -5,9 +5,7 @@ bind('server_ping', array('id': 'Chat.Format.Ping'), null, @ping) {
 	@ip = reg_replace('[%][0]$', '', @ping['ip']);
 	@iplastping = import('ipbl.ping.IP.times')
 	if(!is_array(@iplastping)) { @iplastping = array() }
-	if(!array_index_exists(@iplastping, @ip)) {
-		array_set(@iplastping, @ip, (@time - 10000))
-	}
+	@iplastping[@ip] = (@time - 10000);
 	@ignore = false
 	if(array_contains(@serverConfig['Static_Ping_Message_To_IP'], @ip)) { die() }
 # Repeated pings (i.e. quick refreshes)? Yea, don't bother displaying those!

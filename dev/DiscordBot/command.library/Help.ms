@@ -23,7 +23,7 @@ proc _discordBot_cmd_help(@discord) {
 				}
 			}
 		}
-		if(!array_index_exists(@categoriesList, @data['category'])) { array_set(@categoriesList, @data['category'], array()) }
+		if(!array_index_exists(@categoriesList, @data['category'])) { @categoriesList[@data['category']] = array(); }
 		array_push(@categoriesList[@data['category']], @lCmd)
 	}
 	

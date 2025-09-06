@@ -26,7 +26,7 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	@groupinfo = import(@name.'.format.groups')
 	if(!is_array(@groupinfo)) { @groupinfo = array() }
 	
-	if(!array_index_exists(@groupinfo, @group)) { array_set(@groupinfo, @group, array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': '')) }
+	if(!array_index_exists(@groupinfo, @group)) { @groupinfo[@group] = array('namecolor': '', 'showhealth': '', 'usercolor': '', 'chatcolor': '', 'nickname': ''); }
 	
 	@chatoptions = import(@name.'.format.options')
 	if(!is_array(@chatoptions)) { @chatoptions = array('colorize': '', 'randcolor': '', 'capitalizechat': '', 'capitalizegroupname': '') }

@@ -143,7 +143,7 @@ register_command('ip', array(
 						@upload = false
 					}
 					if(array_index_exists(@ipuserdata, @ip) && !array_contains(@args, 'confirm')) {
-						array_set(@reviewip, @ip, @ipuserdata[@ip]);
+						@reviewip[@ip] = @ipuserdata[@ip];
 						@listIPData .= color(9).' Player Names: '.color(8).array_implode(@ipuserdata[@ip], ', ')
 						@userdisplay .= '\n'.@ip.': '.array_implode(@ipuserdata[@ip], ', ')
 						@upload = false
@@ -202,7 +202,7 @@ register_command('ip', array(
 						@upload = false
 					}
 					if(array_index_exists(@ipuserdata, @ip) && !array_contains(@args, 'confirm')) {
-						array_set(@reviewip, @ip, @ipuserdata[@ip]);
+						@reviewip[@ip] = @ipuserdata[@ip];
 						@listIPData .= color(9).' Player Names: '.color(8).array_implode(@ipuserdata[@ip], ', ')
 						@userdisplay .= '\n'.@ip.': '.array_implode(@ipuserdata[@ip], ', ')
 						@upload = false
@@ -452,8 +452,8 @@ register_command('ip', array(
 								_discordBot_broadcast('bot', '--ping', @dMsg, 'bot', closure(@msgID){
 									@cacheID = import('DiscordBot.bot.msg.IP.Review')
 									if(!is_array(@cacheID)) { @cacheID = array() }
-									array_set(@cacheID, @msgID, @IPList)
-									array_set(@cacheID, 'lastedit', time())
+									@cacheID[@msgID] = @IPList;
+									@cacheID['lastedit'] = time();
 									if(array_size(@cacheID) > 400) {
 										@selectKey = array_keys(@cacheID)
 										_db_msg_Console('[cmd.ip] IP review msg Cache ('.array_size(@cacheID).'): picked: '.@selectKey[0].'   '.@selectKey[1], 'debug')
@@ -576,11 +576,11 @@ register_command('ip', array(
 					@listIPData = color(14).'['.@ip.'] '.color(3)
 					if(!array_index_exists(@ipdb, @ip)) {
 						@listIPData .= color(10).'Not present'
-						array_set(@obnoxData, @ip, 'Not Present')
+						@obnoxData[@ip] = 'Not Present';
 						continue()
 					}
 					@asize = array_size(@ipdb[@ip])
-					if(!array_index_exists(@sortedIPData, @asize)) { array_set(@sortedIPData, @asize, array()) }
+					if(!array_index_exists(@sortedIPData, @asize)) { @sortedIPData[@asize] = array(); }
 					@avgtime = 0
 					if(@asize == 1) { 
 						@listIPData .= color(8).' 1 ping'
@@ -601,18 +601,18 @@ register_command('ip', array(
 							@allavg[] = @avgtime
 							@listIPData .= color(6).' Average Time between pings: '.color(9).@avgtime.' ('._display_duration(@avgtime).')'
 						}
-						array_set(@jsoncfg, @ip, array('t': @avgtime, 'f': _display_duration(@avgtime), 'p': @asize))
+						@jsoncfg[@ip] = array('t': @avgtime, 'f': _display_duration(@avgtime), 'p': @asize);
 					}
 					if(@listIPData != color(14).'['.@ip.'] '.color(3)) {
 						@IPsorteddata[] = @listIPData
-						array_set(@sortedIPData[@asize], @ip, @listIPData)
+						@sortedIPData[@asize][@ip] = @listIPData;
 					}
 					if(@asize > 9 && @avgtime < 86400000 && @avgtime > 0) {
 						@obArray = array('f': _display_duration(@avgtime), 'p': @asize);
 						if(array_index_exists(@mancfgArray, 'Spam_Player_Names')) {
-							if(array_index(@mancfgArray['Spam_Player_Names'], @ip) != null) { array_set(@obArray, 'u', array_index(@mancfgArray['Spam_Player_Names'], @ip)) }
+							if(array_index(@mancfgArray['Spam_Player_Names'], @ip) != null) { @obArray['u'] = array_index(@mancfgArray['Spam_Player_Names'], @ip); }
 						}
-						array_set(@obnoxData, @ip, @obArray);
+						@obnoxData[@ip] = @obArray;
 					}
 				}
 				@ipcount = array_size(@ipdb) - 1;
@@ -637,12 +637,12 @@ register_command('ip', array(
 				foreach(@obIP: @obData in @obnoxData) {
 					if(!is_array(@obData)) { continue() }
 					if(!array_index_exists(@mancfgArray, 'Obnoxious', @obIP, 'p')) {
-						if(@obData['p'] > 28) { array_set(@addtoobList, @obIP, @obData); }
+						if(@obData['p'] > 28) { @addtoobList[@obIP] = @obData; }
 					} else {
 						if(@obData['p'] > 20 && @mancfgArray['Obnoxious'][@obIP]['p'] != @obData['p']) {
 							if(array_contains(@ignoreCheckob, @obIP)) { continue() }
 							@obData['p'] = color(12).@obData['p'];
-							array_set(@checkobList, @obIP, @obData);
+							@checkobList[@obIP] = @obData;
 						}
 					}
 				}
@@ -651,7 +651,7 @@ register_command('ip', array(
 					if(!is_array(@getgeoIP)) { @getgeoIP = array() }
 					foreach(@ip1: @data in @addtoobList) {
 						if(array_index_exists(@getgeoIP, @ip1, 'aso')) {
-							array_set(@addtoobList[@ip1], 'i', @getgeoIP[@ip1]['aso'])
+							@addtoobList[@ip1]['i'] = @getgeoIP[@ip1]['aso'];
 						}
 					}		
 					@results[] = color(12).array_size(@addtoobList).color(14).' Obnoxious IPs: 30+ pings, Not found on template list: \n'.color(2).yml_encode(@addtoobList, true);

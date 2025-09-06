@@ -7,7 +7,7 @@ export('DiscordBot.db.save.keys', array_unique(@x8db))
 bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
 	@time = time()
-	array_set(@discord, 'time', @time);
+	@discord['time'] = @time;
 	@botconfig = import('DiscordBot.config.Bot')
 	@config = import('DiscordBot.config.'.@discord['serverid'])
 	@noXP = false
@@ -66,8 +66,8 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		}
 		@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
 		if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
-		array_set(@cacheMsgs['messages'], @discord['id'], @discord)
-		if(!array_index_exists(@cacheMsgs, @userType, @discord['userid'])) { array_set(@cacheMsgs[@userType], @discord['userid'], array()) }
+		@cacheMsgs['messages'][@discord['id']] = @discord;
+		if(!array_index_exists(@cacheMsgs, @userType, @discord['userid'])) { @cacheMsgs[@userType][@discord['userid']] = array(); }
 		array_insert(@cacheMsgs[@userType][@discord['userid']], @discord['id'], 0)
 		array_insert(@cacheMsgs['server'], @discord['id'], 0)
 		export('DiscordBot.'.@discord['serverid'].'.Cache.Messages', @cacheMsgs)
@@ -76,7 +76,7 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 			@rrupdates = import('DiscordBot.'.@discord['serverid'].'.user.update.time.rr')
 			if(@rrupdates == null) { @rrupdates = array() }
 			if(!array_index_exists(@rrupdates, @discord['userid'])) {
-				array_set(@rrupdates, @discord['userid'], time())
+				@rrupdates[@discord['userid']] = time();
 				export('DiscordBot.'.@discord['serverid'].'.user.update.time.rr', @rrupdates)
 			}
 			if(time() > (@rrupdates[@discord['userid']] + 86400000)) {

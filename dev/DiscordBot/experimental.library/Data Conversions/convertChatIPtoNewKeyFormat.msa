@@ -11,11 +11,11 @@ admin:/convertchatipdb [$] = >>>
 		foreach(@ip: @times in @iplog) {
 			if(@ip == 'ip') { continue(); }
 			if(@ip == 'isp') {
-				array_set(@savenew, 'isp', @times)
+				@savenew['isp'] = @times;
 				continue();
 			}
 			@newip = @iplog['ip'][@ip]
-			array_set(@savenew, reg_replace('[%][0]$', '', @newip), @times)
+			@savenew[reg_replace('[%][0]$', '', @newip)] = @times;
 		}
 		store_value('Server.pings.log.'.@type.'.IP.debug.old', @iplog)
 		store_value('Server.pings.log.'.@type.'.IP', @savenew)
@@ -31,10 +31,10 @@ admin:/convertchatipdb [$] = >>>
 	foreach(@ip: @times in @iplog) {
 		if(@ip == '_ip') { continue(); }
 		if(@ip == '_hostname') {
-			array_set(@savenew, '_hostname', array())
+			@savenew['_hostname'] = array();
 			foreach(@badipnum: @hostname in @times) {
 				@useip = @iplog['_ip'][@badipnum]
-				array_set(@savenew['_hostname'], @useip, @hostname)
+				@savenew['_hostname'][@useip] = @hostname;
 			}
 			continue();
 		}
@@ -43,7 +43,7 @@ admin:/convertchatipdb [$] = >>>
 			continue(); 
 		}
 		@newip = @iplog['_ip'][@ip]
-		array_set(@savenew, reg_replace('[%][0]$', '', @newip), @times)
+		@savenew[reg_replace('[%][0]$', '', @newip)] = @times;
 	}
 	store_value('primus.database.IP.debug.old', @iplog)
 	store_value('primus.database.IP', @savenew)

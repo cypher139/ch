@@ -5,7 +5,7 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 	@wllog = get_value('DiscordBot.server.whitelist.info')	
 	@stats = array('NoUsesRemain': array(), 'AlreadyListed': array(), 'UserNotFound': array(), 'Success': array())
 	if(!is_array(@wllog)) { @wllog = array('Whitelisted': array(), 'log': array(), 'uses': array()) }
-	if(!array_index_exists(@wllog, 'uses', @discord['userid'])) { array_set(@wllog['uses'], @discord['userid'], 0) }
+	if(!array_index_exists(@wllog, 'uses', @discord['userid'])) { @wllog['uses'][@discord['userid']] = 0; }
 	@useList = false
 	@return = ''
 	# User Must be an admin or have the required role to proceed.
@@ -42,7 +42,7 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 				continue()
 			}
 			array_push(@wllog['Whitelisted'], @user)
-			array_set(@wllog['log'], time(), array('user': @user, 'from': @discord['userid'], 'fromuser': @discord['username']))
+			@wllog['log'][time()] = array('user': @user, 'from': @discord['userid'], 'fromuser': @discord['username']);
 			@wllog['uses'][@discord['userid']]++
 			array_push(@stats['Success'], @user)
 		}

@@ -51,7 +51,7 @@ proc _ipbl_load_config(@cfgtype) {
 	}
 	@loadTimes = import('ipbl.config.load.time')
 	if(!is_array(@loadTimes)) { @loadTimes = array() }
-	array_set(@loadTimes, @cfgtype, time())
+	@loadTimes[@cfgtype] = time();
 	export('ipbl.config.load.time', @loadTimes)
 	export('ipbl.config.'.@cfgtype, @loadcfg)
 	if(string(@cfgtype) == 'IPBlacklist') {
@@ -108,10 +108,10 @@ proc _ipbl_pings_write_log(array @ping = array(), string @type = 'ignore', boole
 	@ip = reg_replace('[%][0]$', '', @ping['ip']);
 	@ignoredIPPings = get_value('Server.pings.log.'.@type.'.IP')
 	if(!is_array(@ignoredIPPings)) { @ignoredIPPings = array() }
-	if(!array_index_exists(@ignoredIPPings, 'isp')) { array_set(@ignoredIPPings, 'isp', array()) }
-	if(!array_index_exists(@ignoredIPPings, @ip)) { array_set(@ignoredIPPings, @ip, array()) }
+	if(!array_index_exists(@ignoredIPPings, 'isp')) { @ignoredIPPings['isp'] = array(); }
+	if(!array_index_exists(@ignoredIPPings, @ip)) { @ignoredIPPings[@ip] = array(); }
 	array_push(@ignoredIPPings[@ip], @time);
-	if(@ISP != 'Unknown') { array_set(@ignoredIPPings['isp'], @ip, @ISP); }
+	if(@ISP != 'Unknown') { @ignoredIPPings['isp'][@ip] = @ISP; }
 	store_value('Server.pings.log.'.@type.'.IP', @ignoredIPPings);
 	_write_file(import('ipbl.logs.dir').'/Ping-Log-'.@type.'-IPs.csv', simple_date('MM-dd-yy HH:mm:ss', @time).','.@ping['ip'].'\n', 'append');
 	#Optional: publish IP block list to server HTML
@@ -246,25 +246,25 @@ proc _geoip_lookup(@args, boolean @raw = false) {
 ###DEBUG: console(color(9).'GeoIP: '.color(14).@ip.' '.color(7).@ipData, false)
 		@ipreturn = array('cn': '', 'c': '', 'asn': '', 'aso': '', 'rc': '', 'rcn': '');
 		if(array_index_exists(@ipData, 'country')) { 
-			array_set(@ipreturn, 'cn', @ipData['country']['iso_code']);
-			array_set(@ipreturn, 'c', @ipData['country']['names']['en']);
+			@ipreturn['cn'] = @ipData['country']['iso_code'];
+			@ipreturn['c'] = @ipData['country']['names']['en'];
 		}
 		if(array_index_exists(@ipData, 'country') && array_index_exists(@ipData, 'registered_country')) {
 			if(@ipData['registered_country']['iso_code'] != @ipData['country']['iso_code']) {
-				array_set(@ipreturn, 'rcn', @ipData['registered_country']['iso_code']);
-				array_set(@ipreturn, 'rc', @ipData['registered_country']['names']['en']);
+				@ipreturn['rcn'] = @ipData['registered_country']['iso_code'];
+				@ipreturn['rc'] = @ipData['registered_country']['names']['en'];
 			}
 		}
 		if(array_index_exists(@ipData, 'autonomous_system_number')) { 
-			array_set(@ipreturn, 'asn', @ipData['autonomous_system_number']);
+			@ipreturn['asn'] = @ipData['autonomous_system_number'];
 		}
 		if(array_index_exists(@ipData, 'autonomous_system_organization')) { 
-			array_set(@ipreturn, 'aso', @ipData['autonomous_system_organization']);
+			@ipreturn['aso'] = @ipData['autonomous_system_organization'];
 		}
 		if(@raw == true) {
-			array_set(@ipreturn, 'raw', @ipData);
+			@ipreturn['raw'] = @ipData;
 		}
-		array_set(@return, @ip, @ipreturn);
+		@return[@ip] = @ipreturn;
 	}
 	return(@return);
 }

@@ -202,7 +202,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 		# Format embed setup, send to return
 		if(array_size(@return['embeds']) <= 0) {
 		# from Discord: "Embeds are deduplicated by URL. If a message contains multiple embeds with the same URL, only the first is shown."
-			array_set(@embed, 'url', @lbURL)
+			@embed['url'] = @lbURL;
 		}
 		@return['embeds'][] = @embed
 	}

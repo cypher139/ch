@@ -21,8 +21,8 @@ foreach(@num: @filename in @filelist) {
 	# data[messages][0....][content]
 	#per server
 	if(!array_index_exists(@processcount, @filedata['guild']['id'])) {
-		array_set(@processcount, @filedata['guild']['id'], array('name': @filedata['guild']['name'], 'total': 0, 'channel': array()))
-		if(@mode == 'single') { array_set(@processcount[@filedata['guild']['id']], 'authormsgs', 0) }
+		@processcount[@filedata['guild']['id']] = array('name': @filedata['guild']['name'], 'total': 0, 'channel': array());
+		if(@mode == 'single') { @processcount[@filedata['guild']['id']]['authormsgs'] = 0; }
 	}
 	@count = 0
 	@authormsgs = 0
@@ -38,7 +38,7 @@ foreach(@num: @filename in @filelist) {
 		# at the end (size of messages):
 		if(@i + 1 == array_size(@filedata['messages'])) { 
 			@processcount[@filedata['guild']['id']]['total'] = @processcount[@filedata['guild']['id']]['total'] + @count
-			array_set(@processcount[@filedata['guild']['id']]['channel'], @filedata['channel']['id'], @count)
+			@processcount[@filedata['guild']['id']]['channel'][@filedata['channel']['id']] = @count;
 		}
 	}
 	msg('Processed '.@filename.', Total words: '.@count)

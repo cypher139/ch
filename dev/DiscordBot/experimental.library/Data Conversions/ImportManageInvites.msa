@@ -56,22 +56,22 @@ foreach(@i: @data in @importedData) {
 		msg('Cannot import index '.@i.' from user '.@data['userID'].', no code given. ['.@data['regular'].' - '.@data['leaves'].']') 
 		continue()
 	}
-	if(!array_index_exists(@inv, @data['code'])) { array_set(@inv, @data['code'], array()) }
-	array_set(@inv[@data['code']], 'code', @data['code'])
-	if(array_index_exists(@data, 'leaves')) { array_set(@inv[@data['code']], 'leaves', @data['leaves']) }
-	if(array_index_exists(@data, 'userID')) { array_set(@inv[@data['code']], 'userid', @data['userID']) }
-	if(array_index_exists(@data, 'username')) { array_set(@inv[@data['code']], 'username', @data['username']) }
-	if(array_index_exists(@data, 'regular')) { array_set(@inv[@data['code']], 'uses', @data['regular']) }
+	if(!array_index_exists(@inv, @data['code'])) { @inv[@data['code']] = array(); }
+	@inv[@data['code']]['code'] = @data['code'];
+	if(array_index_exists(@data, 'leaves')) { @inv[@data['code']]['leaves'] = @data['leaves']; }
+	if(array_index_exists(@data, 'userID')) { @inv[@data['code']]['userid'] = @data['userID']; }
+	if(array_index_exists(@data, 'username')) { @inv[@data['code']]['username'] = @data['username']; }
+	if(array_index_exists(@data, 'regular')) { @inv[@data['code']]['uses'] = @data['regular']; }
 }
 msg(color(10).'Imported saved ManageInvite bot data'.color('r').', now checking current invites:')
 try {
 	discord_retrieve_invites(@id, closure(@raw) { 
 		foreach(@i: @invite in @raw) {
 			if(array_index_exists(@inv, @invite['code'])) {
-				array_set(@inv[@invite['code']], 'uses', @invite['uses'])
-				array_set(@inv[@invite['code']], 'max_uses', @invite['max_uses'])
-				array_set(@inv[@invite['code']], 'channelid', @invite['channelid'])	
-			} else { array_set(@inv, @invite['code'], @invite) }
+				@inv[@invite['code']]['uses'] = @invite['uses'];
+				@inv[@invite['code']]['max_uses'] = @invite['max_uses'];
+				@inv[@invite['code']]['channelid'] = @invite['channelid'];	
+			} else { @inv[@invite['code']] = @invite; }
 		}
 		store_value('DiscordBot.'.@id.'.Invites', @inv)
 		msg(color(10).'Current Invite data added and saved.')

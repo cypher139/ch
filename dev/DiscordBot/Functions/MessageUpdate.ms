@@ -5,12 +5,12 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 	@msgUserID = @discord['userid']
 	if(array_index_exists(@discord, 'messageuserid')) { @msgUserID = @discord['messageuserid'] }
 	@userType = 'user'
-	if(!array_index_exists(@discord, 'webhook')) { array_set(@discord, 'webhook', false) }
+	if(!array_index_exists(@discord, 'webhook')) { @discord['webhook'] = false; }
 	if(array_index_exists(@discord, 'id')) {
 		@msgID = @discord['id']
 	} else if(array_index_exists(@discord, 'messageid')) { 
 		@msgID = @discord['messageid']
-		array_set(@discord, 'id', @discord['messageid'])
+		@discord['id'] = @discord['messageid'];
 	} else { 
 		return(false)
 	}
@@ -42,7 +42,7 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 	if(@discord['bot'] == true || @discord['webhook'] == true || @msgUserisBot == true) { @userType = 'bot' }
 	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
 	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()) }
-	if(!array_index_exists(@cacheMsgs, @userType, @msgUserID)) { console(1) array_set(@cacheMsgs[@userType], @msgUserID, array()) }
+	if(!array_index_exists(@cacheMsgs, @userType, @msgUserID)) { console(1) @cacheMsgs[@userType][@msgUserID] = array(); }
 	@addSi = false
 	@addUi = false
 	@prevData = 'Not Found'
@@ -50,7 +50,7 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 	@userIndex = array_index(@cacheMsgs[@userType][@msgUserID], @msgID)
 	@serverIndex = array_index(@cacheMsgs['server'], @msgID)
 	if(!array_index_exists(@cacheMsgs, 'messages', @msgID)) {
-		array_set(@cacheMsgs['messages'], @msgID, @discord)
+		@cacheMsgs['messages'][@msgID] = @discord;
 		if(array_index_exists(@discord, 'messageuserid')) {
 			@cacheMsgs['messages'][@msgID]['userid'] = @discord['messageuserid']
 		}
@@ -83,17 +83,17 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 		if(!array_index_exists(@newData, 'edits')) { @newData['edits'] = 0 }
 		@newData['edits']++
 		@newData['edittime'] = time()
-		array_set(@return, 'after', @newData['message'])
+		@return['after'] = @newData['message'];
 	case 'addreaction':
 	case 'removereaction':
-		if(@addUi == true || @addSi == true) { if(!array_index_exists(@newData, 'message')) { array_set(@newData, 'message', '') }}
+		if(@addUi == true || @addSi == true) { if(!array_index_exists(@newData, 'message')) { @newData['message'] = ''; }}
 		# if reaction doesnt exist, add array Data
 		if(array_index_exists(@newData, 'reactions')) { 
 			@prevData = array_deep_clone(@newData['reactions'])
 		} else {
-			array_set(@newData, 'reactions', array()) 
+			@newData['reactions'] = array(); 
 		}
-		if(!array_index_exists(@newData, 'reactions', @discord['emoji'])) { array_set(@newData['reactions'], @discord['emoji'], array()) }
+		if(!array_index_exists(@newData, 'reactions', @discord['emoji'])) { @newData['reactions'][@discord['emoji']] = array(); }
 		if(@updateType == 'addreaction') {
 			@newData['reactions'][@discord['emoji']][] = @discord['userid']
 		}			
@@ -103,18 +103,18 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 				array_remove(@newData['reactions'], @discord['emoji'])
 			}
 		}
-		array_set(@return, 'after', @newData['reactions'])
+		@return['after'] = @newData['reactions'];
 	default:
 		_db_msg_Console('Message Cache update was given an invalid update type!', @discord['serverid'], 'debug')
 		return(@return)
 	}
-	array_set(@cacheMsgs['messages'], @msgID, @newData)
+	@cacheMsgs['messages'][@msgID] = @newData;
 	export('DiscordBot.'.@discord['serverid'].'.Cache.Messages', @cacheMsgs)
-	array_set(@return, 'ui', @userIndex)
-	array_set(@return, 'si', @serverIndex)
-	array_set(@return, 'addui', @addUi)
-	array_set(@return, 'addsi', @addSi)
-	array_set(@return, 'before', @prevData)
+	@return['ui'] = @userIndex;
+	@return['si'] = @serverIndex;
+	@return['addui'] = @addUi;
+	@return['addsi'] = @addSi;
+	@return['before'] = @prevData;
 	return(@return)
 }
 
@@ -123,7 +123,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@idtime = rshift(@discord['id'], 22) + 1420070400000
 	@time = time()
 	@diff = @time - @idtime
-	array_set(@discord, 'time', @time);
+	@discord['time'] = @time;
 	@userType = 'User'
 	if(@discord['bot']) { @userType = 'Bot' }
 	if(@discord['webhook']) { @userType = 'Webhook' }
@@ -249,7 +249,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	if(@isCmd == true) {
 		if(@userType == 'User') {
 			consume();
-			array_set(@discord, 'time', time())
+			@discord['time'] = time();
 			@isMention = _discordBot_ismention(@discord)
 			if(@isMention == true) { @isMention = 'mention' }
 			@return = _discordBot_handlecommand(@discord, 'edit', @isMention)
@@ -281,7 +281,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 		}
 	}
 	# if(@isIPemoji == false) { console('bind-ra:'.@discord) }
-	array_set(@discord, 'time', time());
+	@discord['time'] = time();
 	# Update Recent Messages with current data
 	@saveMsg = _db_update_message_cache(@discord, 'addreaction', @isIPemoji)
 	if(@isIPemoji == true) { die() }
@@ -313,7 +313,7 @@ bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 
 			}
 		}
 	}
-	array_set(@discord, 'time', time());
+	@discord['time'] = time();
 	# Update Recent Messages with current data
 	@saveMsg = _db_update_message_cache(@discord, 'removereaction', @isIPemoji)
 	if(@isIPemoji == true) { die() }

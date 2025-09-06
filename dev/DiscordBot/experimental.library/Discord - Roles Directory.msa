@@ -106,14 +106,14 @@ case 'update':
 				if(array_contains(array_keys(@servermemberroles), @id)) {
 					@servermemberroles[@id] = @memberroles 
 				} else {
-					array_set(@servermemberroles, @id, @memberroles)
+					@servermemberroles[@id] = @memberroles;
 				}
 				  
 				# total roles array. reset per run
 				# array 2: {123: role 1, 456: roles2}
 				foreach(@k: @v in @memberroles) {
 					if(!array_contains(array_keys(@totalroles), @v)){
-						array_set(@totalroles, @v, @k)
+						@totalroles[@v] = @k;
 					}
 				  }
 				});
@@ -147,7 +147,7 @@ case 'update':
 
 			@rolesMembers = array()
 			foreach(@roleid: @rolename in @totalroles) {
-				array_set(@rolesMembers, @roleid, array())
+				@rolesMembers[@roleid] = array();
 			}
 			#  load in loop with info of that member's entire roles.
 			foreach(@memberid: @memberroles in @servermemberroles) {

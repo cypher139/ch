@@ -8,9 +8,7 @@ bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, 
 	@ip = reg_replace('[%][0]$', '', @ping['ip']);
 	@iplastping = import('ipbl.ping.IP.times')
 	if(!is_array(@iplastping)) { @iplastping = array() }
-	if(!array_index_exists(@iplastping, @ip)) {
-		array_set(@iplastping, @ip, (@time - 10000))
-	}
+	@iplastping[@ip] = (@time - 10000);
 	@ignore = false
 	if(array_contains(@serverConfig['Ping_Message_Ignore_IP'], @ip) || array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @ip)) { @ignore = true }
 	@superignore = array_contains(@serverConfig['Ping_Message_Super_Ignore_IP'], @ip)
@@ -116,8 +114,8 @@ bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, 
 			_discordBot_broadcast('bot', '--ping', @dMsg, 'bot', closure(@msgID){
 				@cacheID = import('DiscordBot.bot.msg.IP.Review')
 				if(!is_array(@cacheID)) { @cacheID = array() }
-				array_set(@cacheID, @msgID, @IPList)
-				array_set(@cacheID, 'lastedit', time())
+				@cacheID[@msgID] = @IPList;
+				@cacheID['lastedit'] = time();
 				if(array_size(@cacheID) > 400) {
 					@selectKey = array_keys(@cacheID)
 					array_sort(@selectKey, 'NUMERIC')
@@ -154,7 +152,7 @@ bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null
 	# How many accounts can be connected with the same IP address at any given time?
 		@concurrentList = import('Server.IP.concurrent')
 		if(!is_array(@concurrentList)) { @concurrentList = array() }
-		if(!array_index_exists(@concurrentList, @ip)) { array_set(@concurrentList, @ip, 0) }
+		if(!array_index_exists(@concurrentList, @ip)) { @concurrentList[@ip] = 0; }
 		if(@serverConfig['Concurrent_Accs_IP'] == @concurrentList[@ip]) {
 			@kickPlayer = true
 			@kickMsg = 'Too many Accounts are using this IP address.'
@@ -216,7 +214,7 @@ bind('player_join', array('id': 'ipbl.Monitor.Join', 'priority': 'MONITOR'), nul
 	@ip = reg_replace('[%][0]$', '', pinfo(player())[3]);
 	@concurrentList = import('Server.IP.concurrent');
 	if(!is_array(@concurrentList)) { @concurrentList = array(); }
-	if(!array_index_exists(@concurrentList, @ip)) { array_set(@concurrentList, @ip, 0); }
+	if(!array_index_exists(@concurrentList, @ip)) { @concurrentList[@ip] = 0; }
 	@concurrentList[@ip]++;
 	export('Server.IP.concurrent', @concurrentList);
 }
@@ -225,7 +223,7 @@ bind('player_quit', array('id': 'ipbl.Monitor.Quit', 'priority': 'MONITOR'), nul
 	@ip = reg_replace('[%][0]$', '', pinfo(player())[3]);
 	@concurrentList = import('Server.IP.concurrent');
 	if(!is_array(@concurrentList)) { @concurrentList = array(); }
-	if(!array_index_exists(@concurrentList, @ip)) { array_set(@concurrentList, @ip, 1); }
+	if(!array_index_exists(@concurrentList, @ip)) { @concurrentList[@ip] = 1; }
 	@concurrentList[@ip]--;
 	if(@concurrentList[@ip] == 0) { array_remove(@concurrentList, @ip); }
 	export('Server.IP.concurrent', @concurrentList);

@@ -9,7 +9,7 @@ export('DiscordBot.bot.msg.IP.Review', get_value('DiscordBot.bot.msg.IP.Review')
 bind('discord_reaction_added', array('id': 'DiscordBot.IP.React', 'priority': 'MONITOR'), null, @discord) {
 	# custom emoji given with <>
 	if(is_null(import('ipbl.config.dir'))) { die('IP Blacklist functions are not loaded, skipping') }
-	array_set(@discord, 'time', time());
+	@discord['time'] = time();
 	@serverConfig = import('ipbl.config.Server')
 	@botconfig = import('DiscordBot.config.Bot')
 # IP ping logs are only sent to the Primary guild.
@@ -56,7 +56,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.IP.React', 'priority': 'M
 	switch(string(@doAction)) {
 	case 'PingGetISP':
 		@e = false
-		if(!array_index_exists(@cacheID, 'i')) { array_set(@cacheID, 'i', array()) }
+		if(!array_index_exists(@cacheID, 'i')) { @cacheID['i'] = array(); }
 	# Check if cache reports the message was already acted upon
 		if(array_contains(@cacheID['i'], @discord['messageid'])) { die('i') }
 	# Action IPs
@@ -107,16 +107,16 @@ bind('discord_reaction_added', array('id': 'DiscordBot.IP.React', 'priority': 'M
 			_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': 'Sorry, The message selected is no longer in my review list!', @discord['serverid']), 'bot');
 			@cacheID['i'][] = @discord['messageid'];
 		}
-		array_set(@cacheID, 'lastedit', time());
+		@cacheID['lastedit'] = time();
 		export('DiscordBot.bot.msg.IP.Review', @cacheID);
 	case 'PingBlacklist':
 		if(!@isAdmin) {
 			_discordBot_broadcast(@discord['serverid'], '--ping', array('content': 'Sorry <@'.@discord['userid'].'>, this command is only for server moderators.', 'reference_id': @discord['messageid']), 'bot')
 			die();
 		}
-		if(!array_index_exists(@cacheID, 'c')) { array_set(@cacheID, 'c', array()) }
-		if(!array_index_exists(@cacheID, 'r')) { array_set(@cacheID, 'r', array()) }
-		array_set(@cacheID, 'lastedit', time())
+		if(!array_index_exists(@cacheID, 'c')) { @cacheID['c'] = array(); }
+		if(!array_index_exists(@cacheID, 'r')) { @cacheID['r'] = array(); }
+		@cacheID['lastedit'] = time();
 	# Check if cache reports the message was already acted upon
 		if(array_contains(@cacheID['c'], @discord['messageid'])) { die('c') }
 	# Action IPs
@@ -137,7 +137,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.IP.React', 'priority': 'M
 				# Check for player names, don't add if found.
 				@userdisplay = ''
 				if(array_index_exists(@ipuserdata, @ip) && !array_contains(@cacheID['r'], @discord['messageid'])) {
-					array_set(@reviewip, @ip, @ipuserdata[@ip]);
+					@reviewip[@ip] = @ipuserdata[@ip];
 					@userdisplay .= '\n'.@ip.': `'.array_implode(@ipuserdata[@ip], ', ').'`'
 					continue();
 				}
@@ -158,9 +158,9 @@ bind('discord_reaction_added', array('id': 'DiscordBot.IP.React', 'priority': 'M
 				_discordBot_broadcast(@discord['serverid'], '--ping', array('content': 'These IPs have connected with a player name; If you wish to confirm blacklisting these IPs, *react to this message*.'.@userdisplay, 'reference_id': @discord['messageid']), 'bot', closure(@msgID){
 					@cacheID = import('DiscordBot.bot.msg.IP.Review')
 					if(!is_array(@cacheID)) { @cacheID = array() }
-					if(!array_index_exists(@cacheID, 'r')) { array_set(@cacheID, 'r', array()) }
-					array_set(@cacheID, @msgID, array_keys(@reviewip))
-					array_set(@cacheID, 'lastedit', time())
+					if(!array_index_exists(@cacheID, 'r')) { @cacheID['r'] = array(); }
+					@cacheID[@msgID] = array_keys(@reviewip);
+					@cacheID['lastedit'] = time();
 					@cacheID['r'][] = @msgID;
 					if(array_size(@cacheID) > 400) {
 						@key = array_keys(@cacheID)

@@ -180,7 +180,7 @@ proc _register_sign_command(string @name, string @proc, array @options = array()
 	if(!array_index_exists(@options, 0)) { @options = array('event', 'sign') }
 	if(array_index_exists(@signCmds, @name)) { @rereg[] = @name; }
 	#Register command
-	array_set(@signCmds, @name, array('proc': @proc, 'options': @options))
+	@signCmds[@name] = array('proc': @proc, 'options': @options);
 	export('cypher139.sign.Commands', @signCmds);
 	if(array_size(@rereg) > 0) { console(color(14).'[Signs] '.color('r').'Re-registered sign commands: '.array_implode(@rereg, ', '), false); }
 	return(true);
@@ -195,7 +195,7 @@ proc _register_poll_file(string @name, string @proc, string @path, array @option
 	if(is_associative(@options)) { @options = array_normalize(@options) }
 	if(array_index_exists(@polls, @name)) { @rereg[] = @name; }
 	#Register file
-	array_set(@polls, @name, array('proc': @proc, 'last': time(), 'path': @path, 'options': @options))
+	@polls[@name] = array('proc': @proc, 'last': time(), 'path': @path, 'options': @options);
 	export('cypher139.poll.files', @polls);
 	if(array_size(@rereg) > 0) { console(color(14).'[File Poll] '.color('r').'Re-registered files: '.array_implode(@rereg, ', '), false); }
 	return(true);
@@ -525,7 +525,7 @@ proc _primus_database_add(@player, @type, @data, @option) {
 			} else {
 			#entry not found
 				#if array key not set, @array[key] does not work
-				array_set(@uuiddata, @data, array(pinfo(@player)[0], pinfo(@player)[1], pinfo(@player)[4]))
+				@uuiddata[@data] = array(pinfo(@player)[0], pinfo(@player)[1], pinfo(@player)[4]);
 				broadcast(color(7).'Welcome '.color('a').player().color(7).' to the server! It\'s their first time here!')
 			}
 			@update = true
@@ -536,7 +536,7 @@ proc _primus_database_add(@player, @type, @data, @option) {
 		case 'ip':		
 		# Setup Player IP Database
 			@ipdata = import('primus.database.IP')
-			if(!array_index_exists(@ipdata, '_hostname')) { array_set(@ipdata, '_hostname', array()) }
+			if(!array_index_exists(@ipdata, '_hostname')) { @ipdata['_hostname'] = array(); }
 			#entry found
 			if(@data == '' || @data == null) { @data = pinfo(@player)[3] }
 			if(@option == '' || @option == null) { @option = pinfo(@player)[10] }
@@ -553,11 +553,11 @@ proc _primus_database_add(@player, @type, @data, @option) {
 				}
 			} else {
 				#IP entry not found
-				array_set(@ipdata, @ip, array(@player))
+				@ipdata[@ip] = array(@player);
 				@update = true
 			}
 			if(@update == true) {
-				array_set(@ipdata['_hostname'], @ip, @option)
+				@ipdata['_hostname'][@ip] = @option;
 				store_value('primus.database.IP', @ipdata)
 				export('primus.database.IP', @ipdata)
 			}

@@ -54,7 +54,7 @@ proc _chat_load_config(@cfgtype) {
 	}
 	@loadTimes = import('Chat.config.load.time')
 	if(!is_array(@loadTimes)) { @loadTimes = array() }
-	array_set(@loadTimes, @cfgtype, time())
+	@loadTimes[@cfgtype] = time();
 	export('Chat.config.load.time', @loadTimes)
 	export('Chat.config.'.@cfgtype, @loadcfg)
 	return(@loadcfg)

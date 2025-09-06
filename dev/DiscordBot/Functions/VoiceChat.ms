@@ -50,15 +50,15 @@ proc _vc_user_joined(@discord, @type, @chan = array(), @vc) {
 	@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.Live')
 	if(!is_array(@stats)) { @stats = array('users': array(), 'channels': array()) }
 	if(!array_index_exists(@stats, 'channels', @chid)) {
-		array_set(@stats['channels'], @chid, array('active': array(), 'activetime': array(), 'start': time(), 'end': '', 'users': array(), 'channel': @channel, 'channelid': @chid))
+		@stats['channels'][@chid] = array('active': array(), 'activetime': array(), 'start': time(), 'end': '', 'users': array(), 'channel': @channel, 'channelid': @chid);
 	}	
 	if(!array_contains(@stats['channels'][@chid]['active'], @discord['userid'])) { 
 		@stats['channels'][@chid]['active'][] = @discord['userid']
 	}
 	if(!array_contains(@stats['channels'][@chid]['users'], @discord['userid'])) { 
-		array_set(@stats['channels'][@chid]['users'], @discord['userid'], @discord['username'])
+		@stats['channels'][@chid]['users'][@discord['userid']] = @discord['username'];
 	}
-	if(!array_index_exists(@stats['channels'][@chid], 'activetime', @discord['userid'])) { array_set(@stats['channels'][@chid]['activetime'], @discord['userid'], time()) }
+	if(!array_index_exists(@stats['channels'][@chid], 'activetime', @discord['userid'])) { @stats['channels'][@chid]['activetime'][@discord['userid']] = time(); }
 	@stats['channels'][@chid]['activetime'][@discord['userid']] = time()
 	@return = true
 	if(@move == false && array_contains(@vc['VC_Logs'], 'Join')) {
@@ -68,7 +68,7 @@ proc _vc_user_joined(@discord, @type, @chan = array(), @vc) {
 		} catch(NotFoundException @ex) {
 			export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
 		}
-		if(!array_index_exists(@userinfo, 'avatar')) { array_set(@userinfo, 'avatar', 'https://cdn.discordapp.com/embed/avatars/0.png') }
+		if(!array_index_exists(@userinfo, 'avatar')) { @userinfo['avatar'] = 'https://cdn.discordapp.com/embed/avatars/0.png'; }
 		@return = array(
 			'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username']),
 			'color': array('r': 66, 'g': 180, 'b': 129),
@@ -102,7 +102,7 @@ proc _vc_user_joined(@discord, @type, @chan = array(), @vc) {
 	# Get last time the bot pinged the role
 		@lastping = get_value('DiscordBot.VC.last.pings')
 		if(!is_array(@lastping)) { @lastping = array() }
-		if(!array_index_exists(@lastping, @vc['VC_Role_ID'])) { array_set(@lastping, @vc['VC_Role_ID'], 1230768000000) }
+		if(!array_index_exists(@lastping, @vc['VC_Role_ID'])) { @lastping[@vc['VC_Role_ID']] = 1230768000000; }
 		if(import('DiscordBot.VC.'.@vc['VC_Role_ID'].'ping.in.progress') != true) {
 			@timeout = 20000
 	# :angrypingemoji: 1 ping every 12 hours only!
@@ -144,9 +144,9 @@ proc _vc_user_joined(@discord, @type, @chan = array(), @vc) {
 						@stats = get_value('DiscordBot.'.@discord['serverid'].'.VC.Live')
 						if(!is_array(@stats)) { @stats = array('users': array(), 'channels': array()) }
 						if(!array_index_exists(@stats, 'channels', @chid)) {
-							array_set(@stats['channels'], @chid, array('active': array(), 'activetime': array(), 'start': (time() - @timeout), 'end': '', 'users': array(), 'channel': @channel, 'channelid': @chid))
+							@stats['channels'][@chid] = array('active': array(), 'activetime': array(), 'start': (time() - @timeout), 'end': '', 'users': array(), 'channel': @channel, 'channelid': @chid);
 						}
-						array_set(@stats['channels'][@chid], 'pinguser', @discord['username'])
+						@stats['channels'][@chid]['pinguser'] = @discord['username'];
 						store_value('DiscordBot.'.@discord['serverid'].'.VC.Live', @stats)
 					}
 				});
@@ -192,8 +192,8 @@ proc _vc_user_left(@discord, @type, @chan = array(), @vc) {
 	if(!is_array(@stats)) { @stats = array('users': array(), 'channels': array()) }
 # Remove user from active in call
 	if(array_contains(@stats['channels'][@chid]['active'], @discord['userid'])) { array_remove_values(@stats['channels'][@chid]['active'], @discord['userid']) }
-	if(!array_index_exists(@stats['channels'][@chid], 'time')) { array_set(@stats['channels'][@chid], 'time', array()) }
-	if(!array_index_exists(@stats['channels'][@chid], 'time', @discord['userid'])) { array_set(@stats['channels'][@chid]['time'], @discord['userid'], 0) }
+	if(!array_index_exists(@stats['channels'][@chid], 'time')) { @stats['channels'][@chid]['time'] = array(); }
+	if(!array_index_exists(@stats['channels'][@chid], 'time', @discord['userid'])) { @stats['channels'][@chid]['time'][@discord['userid']] = 0; }
 	@userTime = 0
 	if(array_index_exists(@stats['channels'][@chid], 'activetime', @discord['userid'])) { 
 		@userTime = time() - @stats['channels'][@chid]['activetime'][@discord['userid']]
@@ -212,15 +212,15 @@ proc _vc_user_left(@discord, @type, @chan = array(), @vc) {
 		} catch(NotFoundException @ex) {
 			export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
 		}
-		if(!array_index_exists(@userinfo, 'avatar')) { array_set(@userinfo, 'avatar', 'https://cdn.discordapp.com/embed/avatars/0.png') }
-		array_set(@return, 'Leave', array(
+		if(!array_index_exists(@userinfo, 'avatar')) { @userinfo['avatar'] = 'https://cdn.discordapp.com/embed/avatars/0.png'; }
+		@return['Leave'] = array(
 			'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username']),
 			'color': array('r': 253, 'g': 70, 'b': 15),
 			'description': '<@'.@discord['userid'].'> left voice channel: <#'.@chid.'>',
 			'thumbnail': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/1f4de.png',
 			'footer': array('text': 'ID '.@discord['userid']),
 			'timestamp': time()
-		))
+		);
 	}
 	store_value('DiscordBot.'.@discord['serverid'].'.VC.Live', @stats)
 # End of Call, or no?
@@ -259,7 +259,7 @@ proc _vc_user_left(@discord, @type, @chan = array(), @vc) {
 	} else {
 		@r2 = _vc_user_0_left(@discord, @channel, @chid);
 		if(is_array(@r2)) { 
-			array_set(@return, 'Completed', @r2)
+			@return['Completed'] = @r2;
 		}
 	}
 	return(@return)
@@ -429,7 +429,7 @@ bind('discord_voice_moved', array('id': 'DiscordBot.VC.Move'), null, @discord) {
 	} catch(NotFoundException @ex) {
 		export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
 	}
-	if(!array_index_exists(@userinfo, 'avatar')) { array_set(@userinfo, 'avatar', 'https://cdn.discordapp.com/embed/avatars/0.png') }
+	if(!array_index_exists(@userinfo, 'avatar')) { @userinfo['avatar'] = 'https://cdn.discordapp.com/embed/avatars/0.png'; }
 	@ret3 = array(
 	'color': array('r': 250, 'g': 235, 'b': 0),
 	'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username']),

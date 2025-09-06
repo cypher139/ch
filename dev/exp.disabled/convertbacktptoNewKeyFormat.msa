@@ -41,8 +41,8 @@ admin:/convertbacktp [$] = >>>
 			}
 		}
 		@savearray = array('S': @newData)
-		if(array_index_exists(@data, 'C')) { array_set(@savearray, 'C', @data['C']) }
-		if(array_index_exists(@data, 'A')) { array_set(@savearray, 'A', @data['A']) }
+		if(array_index_exists(@data, 'C')) { @savearray['C'] = @data['C']; }
+		if(array_index_exists(@data, 'A')) { @savearray['A'] = @data['A']; }
 		store_value(@key, @savearray)
 		@stats['keys']++
 	}

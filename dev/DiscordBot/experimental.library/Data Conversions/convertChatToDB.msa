@@ -36,7 +36,7 @@ admin:/discordbotdbconv [$clear='false'] [$type=0] [$] = >>>
 		if(!string_ends_with(@key, 'old.roles')) { continue() }
 		# msg(reg_match('[.]\\d+[.]', @key))
 		@userid = reg_replace('[.]', '', reg_match('[.]\\d+[.]', @key)[0])
-		array_set(@saveoldroles, @userid, @data)
+		@saveoldroles[@userid] = @data;
 		if(string($clear) == 'true') { clear_value(@key) }
 		if(player() == '~console') { msg(@key) }
 		@orcount++

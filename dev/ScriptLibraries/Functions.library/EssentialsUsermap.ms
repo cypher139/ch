@@ -17,7 +17,7 @@ proc _read_essentials_usermap(@option1) {
 	# playername (lowercase), uuid (dashes)
 	foreach(@line in @file) {
 		@data = reg_split(',', @line)
-		array_set(@euuid, reg_replace('-', '', @data[1]), reg_replace('^_', @floodgateprefix, @data[0]))
+		@euuid[reg_replace('-', '', @data[1])] = reg_replace('^_', @floodgateprefix, @data[0]);
 	}
 #	msg('3 '.@euuid)
 	export('primus.database.Essentials.usermap', @euuid)

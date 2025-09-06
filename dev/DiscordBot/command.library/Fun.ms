@@ -133,8 +133,8 @@ proc _discordBot_cmd_quote(@discord, @args) {
 		@quote = 'Cypher can cypher but not decypher\nCypher no decyphering'
 	}
 	@return = array()
-	if(@quote != '') { array_set(@return, 'content', @quote) }
-	if(@image != '') { array_set(@return, 'embeds', array(array('image': @image))) }
+	if(@quote != '') { @return['content'] = @quote; }
+	if(@image != '') { @return['embeds'] = array(array('image': @image)); }
 	return(@return)
 }
 

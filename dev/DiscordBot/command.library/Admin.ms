@@ -105,7 +105,7 @@ proc _discordBot_cmd_whois(@discord, @args) {
 			if(!array_index_exists(@joininfo, @userID)) {
 				@inv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())	
 				if(array_index_exists(@inv, @userID, 'code')) {
-					array_set(@joininfo, @userID, array('code': @inv[@userID]['code']))
+					@joininfo[@userID] = array('code': @inv[@userID]['code']);
 				}
 			}
 			if(array_index_exists(@joininfo, @userID, 'code')) {
@@ -142,7 +142,7 @@ proc _discordBot_cmd_whois(@discord, @args) {
 		@displayUR = 'None'
 		if(array_size(@userRoles) > 0) { @displayUR = '<@&'.array_implode(@userRoles, '> <@&').'>' }
 	#Get Avatar and embed color info
-		if(!array_index_exists(@userinfo, 'avatar')) { array_set(@userinfo, 'avatar', 'https://cdn.discordapp.com/embed/avatars/0.png') }
+		if(!array_index_exists(@userinfo, 'avatar')) { @userinfo['avatar'] = 'https://cdn.discordapp.com/embed/avatars/0.png'; }
 		@embed = array(
 		'author': array('icon_url': @userinfo['avatar'].'?size=40', 'name': @userinfo['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @userinfo['username'])),
 		'color': array('r': 109, 'g': 109, 'b': 109),
@@ -156,7 +156,7 @@ proc _discordBot_cmd_whois(@discord, @args) {
 		)
 		if(array_index_exists(@userinfo, 'color')) {
 			if(@userinfo['color'] != null) {
-				array_set(@embed, 'color', @userinfo['color'])
+				@embed['color'] = @userinfo['color'];
 			}
 		}
 		if(is_array(@leaderboard)) {
@@ -260,16 +260,16 @@ proc _discordBot_cmd_asremove(@discord, @args) {
 	if(!is_array(@count)) { 
 		@count = get_value('DiscordBot.bot.antispam.triggers')
 		if(!is_array(@count)) { @count = array('lastedit': 0, 'total': 0) }
-		if(!array_index_exists(@count, 'msgs')) { array_set(@count, 'msgs', array()) }
+		if(!array_index_exists(@count, 'msgs')) { @count['msgs'] = array(); }
 	}
 	if(!is_array(@asmembers)) { return(color(12).'No Antispam user data found for this server.') }
 	if(!array_index_exists(@asmembers, @userid)) { return(color(12).'Invalid User ID or User Not Found.') }
 	@asmembersR = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
 	if(!is_array(@asmembersR)) { @asmembersR = array() }
 	@username = @asmembers[@userid]['username']
-	array_set(@asmembers[@userid], 'removed', time())
-	array_set(@asmembers[@userid], 'removeuser', @discord['username'])
-	array_set(@asmembersR, @userid, @asmembers[@userid])
+	@asmembers[@userid]['removed'] = time();
+	@asmembers[@userid]['removeuser'] = @discord['username'];
+	@asmembersR[@userid] = @asmembers[@userid];
 	array_remove(@asmembers, @userid)
 	if(array_index_exists(@count, 'active', @discord['userid'])) { array_remove(@count['active'], @discord['userid']) }
 	store_value('DiscordBot.'.@discord['serverid'].'.antispam.members.removed', @asmembersR)

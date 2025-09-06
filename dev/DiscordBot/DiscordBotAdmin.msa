@@ -282,12 +282,12 @@ case 'checkforbots':
 			continue()
 		}
 		if(array_contains(@guildMembers, @id)) {
-			array_set(@results, @id, array('type': 'active', 'join': discord_member_info(@serverID, @id)['joined_at']))
+			@results[@id] = array('type': 'active', 'join': discord_member_info(@serverID, @id)['joined_at']);
 			continue()
 		}
 	#check #2: join logs
 		if(array_index_exists(@logjointimes, @id)) {
-			array_set(@results, @id, array('type': 'log', 'join': @logjointimes[@id]))
+			@results[@id] = array('type': 'log', 'join': @logjointimes[@id]);
 			continue()
 		}
 	}
@@ -309,7 +309,7 @@ case 'checkforbots':
 				if(array_index_exists(@membersformer, @id)) {
 					@info = @membersformer[@id]
 				}
-				if(!array_index_exists(@info, 'code')) { array_set(@info, 'code', 'Unknown') }
+				if(!array_index_exists(@info, 'code')) { @info['code'] = 'Unknown'; }
 				foreach(@k: @date in @r['join']) {
 					@r['join'][@k] = simple_date('MM/dd/yyyy HH:mm:ss.SSS', @date, 'UTC')
 				}

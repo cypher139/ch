@@ -236,7 +236,7 @@ switch(@action){
 					#is Even
 					foreach(@index: @v in @args) {
 						if(@index % 2 == 1 || @index < 2) { continue() }
-						array_set(@new, @v, @args[(@index + 1)])
+						@new[@v] = @args[(@index + 1)];
 					}
 				} else {
 					return(@prefix.color('c').'Not enough array arguments provided.')	

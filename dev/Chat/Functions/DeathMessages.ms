@@ -73,7 +73,7 @@ bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, 
 
 #debug save stats
 	#message sent and death types
-	array_set(@death, 'newmsg', @selectedmsg)
+	@death['newmsg'] = @selectedmsg;
 	@lastd = get_value('server.debug.stats.last.death')
 	if(!is_array(@lastd)) { @lastd = array(@death) }
 	array_insert(@lastd, @death, 0)

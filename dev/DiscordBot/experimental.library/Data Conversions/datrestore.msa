@@ -44,11 +44,11 @@ if(!is_array(@membersFR)) { @membersFR = array() }
 #Add old roles to database
 if(!array_index_exists(@membersFR, @userID)) {
 	msg(@prefix.color(10).'Adding '.@userID.' to former member roles data')
-	array_set(@membersFR, @userID, array('removed': time(), 'data': @oldRoles[@userID]))
+	@membersFR[@userID] = array('removed': time(), 'data': @oldRoles[@userID]);
 	store_value('DiscordBot.'.@serverID.'.members.former.roles', @membersFR)
 	@joininfo = get_value('DiscordBot.'.@serverID.'.Join.info')
 	if(array_index_exists(@joininfo, @userID)) {
-		array_set(@joininfo[@userID], 'return', 'true')
+		@joininfo[@userID]['return'] = 'true';
 		store_value('DiscordBot.'.@serverID.'.Join.info', @joininfo)
 	}
 } else {

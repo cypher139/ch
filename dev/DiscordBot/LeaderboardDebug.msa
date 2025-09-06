@@ -45,11 +45,11 @@ case 'lmd1':
 			} else { @adduser = true; }
 		}
 		if(@adduser) {
-			array_set(@adddateUsers, @userID, 0)
+			@adddateUsers[@userID] = 0;
 		}
 	}
 	@write = array('all': array('servers': array()));
-	array_set(@write['all']['servers'], @serverID, @adddateUsers);
+	@write['all']['servers'][@serverID] = @adddateUsers;
 	if(array_size(@adddateUsers) > 0) {
 		_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/LastMessageDateUserSearch.config.json', json_encode(@write), 'overwrite');
 		msg(color(11).array_size(@adddateUsers).color(14).' Users were found with missing Last Message dates.')
@@ -115,7 +115,7 @@ case 'wordup':
 			@usermsg = color(9).@leaderboard['members'][@id]['username'].': '.color(3).@oldwords
 			@count++;
 			if(!array_index_exists(@leaderboard, 'members', @id, 'words')) {
-				array_set(@leaderboard['members'][@id], 'words', 0)
+				@leaderboard['members'][@id]['words'] = 0;
 			}
 			if(@leaderboard['members'][@id]['words'] < @leaderboard['members'][@id]['msg_count']) {
 				@newwords = @leaderboard['members'][@id]['words'] + @leaderboard['members'][@id]['msg_count']
@@ -301,7 +301,7 @@ case 're':
 	
 case 'default':
 case 'd':
-	array_set(@leaderboard['members'], @id, array('time': (time() - 70000), 'level': 3, 'xp': 412, 'username': 'TESTNAME', 'message_count': 0))
+	@leaderboard['members'][@id] = array('time': (time() - 70000), 'level': 3, 'xp': 412, 'username': 'TESTNAME', 'message_count': 0);
 	export('DiscordBot.'.@serverID.'.Leaderboard', @leaderboard)
 	msg('Saved default for this ID')
 	
@@ -314,8 +314,8 @@ case 'prune':
 		try {
 			@userinfo = discord_member_info(@serverID, @userid)
 		} catch(NotFoundException @ex) {
-			array_set(@oldlb, @userid, @user)
-			array_set(@oldlb[@userid], 'removed', time())
+			@oldlb[@userid] = @user;
+			@oldlb[@userid]['removed'] = time();
 			array_remove(@leaderboard['members'], @userid)
 			msg('Removed: '.@user['username'].' <@'.@userid.'>')
 			@count++

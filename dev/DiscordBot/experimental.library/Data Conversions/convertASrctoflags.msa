@@ -21,7 +21,7 @@ foreach(@serverID in @servers) {
 	foreach(@userID: @userData in @asmembers) {
 		if(@userID == 'lastedit') { continue() }
 		if(!array_index_exists(@userData, 'rt') && array_index_exists(@userData, 'flags')) {
-			if(!array_index_exists(@results, 'Already Converted')) { array_set(@results, 'Already Converted', 0) }
+			if(!array_index_exists(@results, 'Already Converted')) { @results['Already Converted'] = 0; }
 			@results['Already Converted']++;
 			continue();
 		}
@@ -39,7 +39,7 @@ foreach(@serverID in @servers) {
 		array_remove(@asmembers[@userID], 'rt');
 		array_remove(@asmembers[@userID], 'rts');
 		@userFlags = array_unique(@userFlags);
-		array_set(@asmembers[@userID], 'flags', @userFlags);
+		@asmembers[@userID]['flags'] = @userFlags;
 		@results['Fixed']++;
 	}
 	msg(@serverID.': '.color(3).map_implode(@results, color(10).': ', color(8).', '.color(3)));

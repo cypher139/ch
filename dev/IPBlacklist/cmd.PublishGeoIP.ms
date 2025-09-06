@@ -118,17 +118,17 @@ console(@scReport.'   /   '.array_size(@checkIP))
 			@nomsg = array()
 			if(@ipdb[@ip]['c'] == '') { 
 				@nomsg[] = 'country';
-				array_set(@ipdb[@ip], 'c', '?')
+				@ipdb[@ip]['c'] = '?';
 			}
 			if(@ipdb[@ip]['asn'] == '') { 
 				@nomsg[] = 'ASN';
-				array_set(@ipdb[@ip], 'asn', 'None')
-				array_set(@ipdb[@ip], 'aso', 'Unknown: No Data Given')
+				@ipdb[@ip]['asn'] = 'None';
+				@ipdb[@ip]['aso'] = 'Unknown: No Data Given';
 			}
 			if(array_size(@nomsg) > 0) { _geoip_report_send_msg(@prefix.color(9).@ip.color(7).': no '.array_implode(@nomsg, ', ').'!', @player) }
-			if(!array_index_exists(@asnc, @ipdb[@ip]['asn'])) { array_set(@asnc, @ipdb[@ip]['asn'], array()) }
-			if(!array_index_exists(@asnrc, @ipdb[@ip]['asn'])) { array_set(@asnrc, @ipdb[@ip]['asn'], array()) }
-			if(!array_index_exists(@asnip, @ipdb[@ip]['asn'])) { array_set(@asnip, @ipdb[@ip]['asn'], array()) }
+			if(!array_index_exists(@asnc, @ipdb[@ip]['asn'])) { @asnc[@ipdb[@ip]['asn']] = array(); }
+			if(!array_index_exists(@asnrc, @ipdb[@ip]['asn'])) { @asnrc[@ipdb[@ip]['asn']] = array(); }
+			if(!array_index_exists(@asnip, @ipdb[@ip]['asn'])) { @asnip[@ipdb[@ip]['asn']] = array(); }
 			#List ASN under mc spam.
 			if(array_contains(@spnList, @ip)) { @spasnList[] = @ipdb[@ip]['asn'] }
 			#Auto blacklist ASNs if an IP is deemed obnoxious.
@@ -140,7 +140,7 @@ console(@scReport.'   /   '.array_size(@checkIP))
 			if(@ipdb[@ip]['rc'] != '') { 
 				@asnrc[@ipdb[@ip]['asn']][] = @ipdb[@ip]['rcn']
 			}
-			array_set(@asnlist, @ipdb[@ip]['asn'], @ipdb[@ip]['aso'])
+			@asnlist[@ipdb[@ip]['asn']] = @ipdb[@ip]['aso'];
 			@ipcount++
 			if(string_contains(@ip, ':')) { @v6ip[] = @ip; }
 		}
@@ -163,7 +163,7 @@ console(@scReport.'   /   '.array_size(@checkIP))
 	foreach(@asn: @cnarray in @asnc) {
 		if(@asn == 'None') { continue() }
 		foreach(@cn in @cnarray) {
-			if(!array_index_exists(@asncnlist, @cn)) { array_set(@asncnlist, @cn, array()) }
+			if(!array_index_exists(@asncnlist, @cn)) { @asncnlist[@cn] = array(); }
 			@countries[] = @cn
 			if(!array_contains(@asncnlist[@cn], @asn)) { @asncnlist[@cn][] = @asn }
 		}
@@ -175,7 +175,7 @@ console(@scReport.'   /   '.array_size(@checkIP))
 	foreach(@asn: @cnarray in @asnrc) {
 		if(@asn == 'None') { continue() }
 		foreach(@cn in @cnarray) {
-			if(!array_index_exists(@asnrcnlist, @cn)) { array_set(@asnrcnlist, @cn, array()) }
+			if(!array_index_exists(@asnrcnlist, @cn)) { @asnrcnlist[@cn] = array(); }
 			@rcountries[] = @cn
 			if(!array_contains(@asnrcnlist[@cn], @asn)) { @asnrcnlist[@cn][] = @asn }
 		}
@@ -222,9 +222,9 @@ console(@scReport.'   /   '.array_size(@checkIP))
 	@dASN = array()
 	foreach(@asn in @kASN) {
 		if(is_numeric(@asn)) { @asn = integer(@asn); }
-		array_set(@dASN, @asn, 0);
+		@dASN[@asn] = 0;
 		if(array_index_exists(@asnip, @asn)) {
-			array_set(@dASN, @asn, array_size(@asnip[@asn]));
+			@dASN[@asn] = array_size(@asnip[@asn]);
 		}
 	}
 	@jsoncfg = array('IP_Blacklist': array())
@@ -250,7 +250,7 @@ console(@scReport.'   /   '.array_size(@checkIP))
 	array_push_all(@ablasnList, @asnipover10);
 	@ablasnList = array_sort(array_unique(@ablasnList), 'REGULAR');
 	@extracfg = array('Spam_Player_ASNs': @spasnList, 'Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @ablasnList)
-	if(array_index_exists(@asnip, 'None')) { array_set(@extracfg, 'Unknown_ASN_IPs', @asnip['None']) }
+	if(array_index_exists(@asnip, 'None')) { @extracfg['Unknown_ASN_IPs'] = @asnip['None']; }
 	@jsoncfg = array_merge(@jsoncfg, @mancfgArray, @extracfg)
 	store_value('Server.ipbl.known.ASNs', @kASN);
 	store_value('Server.ipbl.known.mc.ASNs', @spasnList);

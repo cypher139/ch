@@ -23,9 +23,9 @@ proc _db_format_msg_attach(@discord, @url = false) {
 }
 
 bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notification'), null, @discord) {
-	array_set(@discord, 'time', time())
+	@discord['time'] = time();
 	@saveDM = array_deep_clone(@discord)
-	array_set(@discord, 'UseDM', true)
+	@discord['UseDM'] = true;
 # Command check: #Don't save or notify if this is a command message
 	@isCmd = _discordBot_iscommand(@discord)
 	if(@isCmd == true || is_consumed() == true) { die() }
@@ -43,10 +43,10 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	foreach(@serverID in import('DiscordBot.Servers')) {
 		@cfg = import('DiscordBot.config.'.@serverID)
 		if(@cfg['DM_Notify'] == true) {	@guildcfgNotify[] = @serverID }
-		array_set(@guildcfgCmd, @serverID, @cfg['CMD_Command_Prefix']);
-		array_set(@guildcfgChannel, @serverID, @cfg['Channels']['Log']);
-		array_set(@guildcfgURL, @serverID, @cfg['URL_Broadcast']);
-		if(array_index_exists(@cfg, 'DM_Notify_NonMember')) { array_set(@guildcfgNM, @serverID, @cfg['DM_Notify_NonMember']) } else { array_set(@guildcfgNM, @serverID, false) }
+		@guildcfgCmd[@serverID] = @cfg['CMD_Command_Prefix'];
+		@guildcfgChannel[@serverID] = @cfg['Channels']['Log'];
+		@guildcfgURL[@serverID] = @cfg['URL_Broadcast'];
+		if(array_index_exists(@cfg, 'DM_Notify_NonMember')) { @guildcfgNM[@serverID] = @cfg['DM_Notify_NonMember']; } else { @guildcfgNM[@serverID] = false; }
 		if(array_contains(discord_get_members(@serverID), @discord['userid'])) {
 			@userServers[] = @serverID
 			@gf++
@@ -61,11 +61,11 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	@userConfig = import('DiscordBot.DMs.user.settings')
 	if(is_array(@userConfig)) {
 		if(!array_index_exists(@userConfig, @discord['userid'])) {
-			array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+			@userConfig[@discord['userid']] = array('NotifyContent': true, 'URLReadback': false);
 		}	
 	} else {
 		@userConfig = array()
-		array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+		@userConfig[@discord['userid']] = array('NotifyContent': true, 'URLReadback': false);
 	}
 #AS: check if user is under Anti Spam
 	@isAS = import('DiscordBot.bot.antispam.triggers')
@@ -75,7 +75,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	}
 # Save recent DMs for future reference if needed
 	@newDM = array()
-	array_set(@newDM, @discord['time'], @discord['userid'])
+	@newDM[@discord['time']] = @discord['userid'];
 	if(!is_array(@recentDMs)) { @recentDMs = array() }
 	array_insert(@recentDMs, @newDM, 0)
 	
@@ -139,13 +139,13 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		@userinfo = array('avatar': @avatar)
 		@userinfo = discord_member_info(@serverID, @discord['userid']);
 		if(array_index_exists(@userinfo, 'avatar')) {
-			array_set(@msgembed[0], 'author', array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])));
-			array_set(@msgembed[0], 'thumbnail', @userinfo['avatar'].'?size=48');
+			@msgembed[0]['author'] = array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username']));
+			@msgembed[0]['thumbnail'] = @userinfo['avatar'].'?size=48';
 			array_remove(@msgembed[0], 'title');
 		}		
 		if(array_index_exists(@userinfo, 'color')) {
 			if(@userinfo['color'] != null) {
-				array_set(@msgembed[0], 'color', @userinfo['color'])
+				@msgembed[0]['color'] = @userinfo['color'];
 			}
 		}
 	#Limit message characters

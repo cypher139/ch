@@ -52,17 +52,17 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 	@membernames = import('DiscordBot.'.@discord['serverid'].'.members.names')
 	if(!is_array(@membernames)) { 
 		@membernames = array()
-		array_set(@membernames, @discord['username'], @discord['userid']) 
+		@membernames[@discord['username']] = @discord['userid']; 
 	}
 	@userConfig = import('DiscordBot.DMs.user.settings');
 	if(!is_array(@userConfig)) { @userConfig = get_value('DiscordBot.DMs.user.settings') }
 	if(is_array(@userConfig)) {
 		if(!array_index_exists(@userConfig, @discord['userid'])) {
-			array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+			@userConfig[@discord['userid']] = array('NotifyContent': true, 'URLReadback': false);
 		}	
 	} else {
 		@userConfig = array()
-		array_set(@userConfig, @discord['userid'], array('NotifyContent': true, 'URLReadback': false))
+		@userConfig[@discord['userid']] = array('NotifyContent': true, 'URLReadback': false);
 	}
 	
 	if(!array_index_exists(@cmdargs, 0)) { @cmdargs = array('view') }
@@ -97,7 +97,7 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 					return(false)
 				}
 			}
-			if(!array_index_exists(@userConfig, @userID)) {	array_set(@userConfig, @userID, array('NotifyContent': true, 'URLReadback': false))	}
+			if(!array_index_exists(@userConfig, @userID)) {	@userConfig[@userID] = array('NotifyContent': true, 'URLReadback': false);	}
 		}
 		switch(string(@cmdargs[0])) {
 		case 'notifycontent':
@@ -122,7 +122,7 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 			@userConfig[@userID]['URLReadback'] = false
 			@ret = 'Opt-out successful, Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix
 		}
-		array_set(@userConfig, 'lastedit', time());
+		@userConfig['lastedit'] = time();
 		export('DiscordBot.DMs.user.settings', @userConfig);
 		store_value('DiscordBot.DMs.user.settings', @userConfig);
 		return(@ret)
@@ -173,6 +173,10 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 		if(array_size(@test) != 2) { return(color(12).'Cannot parse user IDs given ('.array_size(@test).')') }
 		@id0 = @test[0];
 		@id1 = @test[1];
+### Debug
+# console(@test)
+# console(@id0)
+# console(@id1)
 	}
 	@botperms = discord_get_permissions(@discord['serverid'])
 	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {	return('NoPerms'); }
@@ -282,7 +286,7 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 		}
 	} else {
 	# adds from roles, not sets to!
-		array_set(@undoroles, @toID, @toroles)
+		@undoroles[@toID] = @toroles;
 		store_value('DiscordBot.'.@discord['serverid'].'.set.roles.undo.Transfer', @undoroles)
 		@toroles = array_merge(@toroles, @fromroles)
 	}
@@ -292,12 +296,12 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	@doSetRoles = _discordBot_set_roles(@discord['serverid'], @toID, 'set', @toroles, @logMsg, 'Transfer Roles');
 	if(@doSetRoles == false) { return('Error') }
 	#Save
-	array_set(@TRlog, @toID, array('time': time(), 'fromuser': @fromID, 'issuer': @discord['userid']))
+	@TRlog[@toID] = array('time': time(), 'fromuser': @fromID, 'issuer': @discord['userid']);
 	if(@undo == true) { array_remove(@TRlog, @toID) }
 	store_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer', @TRlog)
 	@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
 	if(array_index_exists(@joininfo, @toID)) {
-		array_set(@joininfo[@toID], 'return', 'true')
+		@joininfo[@toID]['return'] = 'true';
 		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)
 	}
 	@msgrolesreturn = color(10).@returnmsg.' for user '.color(3).@id1.color(10).'('.@toID.'), Roles set to:\n'.color('r').array_keys(@toroles)

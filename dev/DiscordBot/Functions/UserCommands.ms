@@ -36,7 +36,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	if(@isCmd == true) {
 		if(@userType == 'User') {
 			consume();
-			array_set(@discord, 'time', time())
+			@discord['time'] = time();
 			@isMention = _discordBot_ismention(@discord)
 			/*	
 			Returns:
@@ -59,8 +59,8 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 #
 # DM commands
 bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'priority': 'HIGH'), null, @discord) {
-	array_set(@discord, 'time', time())
-	array_set(@discord, 'UseDM', true)
+	@discord['time'] = time();
+	@discord['UseDM'] = true;
 	@botconfig = import('DiscordBot.config.Bot')
 	@servers = import('DiscordBot.Servers')
 	@userserver = 0
@@ -80,9 +80,9 @@ bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'prio
 	}
 	if(@isCmd == true) {
 		consume();
-		array_set(@discord, 'channel', @discord['userid']);
-		array_set(@discord, 'serverid', @userserver);
-		array_set(@discord, 'nickname', @discord['displayname']);
+		@discord['channel'] = @discord['userid'];
+		@discord['serverid'] = @userserver;
+		@discord['nickname'] = @discord['displayname'];
 		@return = _discordBot_handlecommand(@discord, 'dm', 'dm')
 		return(@return)
 	}

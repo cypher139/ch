@@ -21,7 +21,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 # Log time(s) user joined Server
 	@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times')
 	if(!is_array(@logJointimes)) { @logJointimes = array() }
-	if(!array_index_exists(@logJointimes, @discord['userid'])) { array_set(@logJointimes, @discord['userid'], array()) }
+	if(!array_index_exists(@logJointimes, @discord['userid'])) { @logJointimes[@discord['userid']] = array(); }
 	if(array_index_exists(@logJointimes, @discord['userid'], 0)) {
 		@prevjoinsMsgC = ' Joins: '.array_implode(@logJointimes[@discord['userid']], ', ').' '
 		@prevjoinsMsgD = '` -Joins: `'
@@ -46,9 +46,9 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 	@joinMessage['description'] = replace(@joinMessage['description'], '%User%', @userDisplaydc)
 	@joinMessage['description'] = replace(@joinMessage['description'], '%UserID%', @discord['userid'])
 	@joinPosition = array_size(discord_get_members(@discord['serverid'])) + 1;
-	array_set(@joinMessage, 'footer', array('icon_url': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/23-20e3.png', 'text': @joinPosition));
-	array_set(@joinMessage, 'timestamp', time())
-	# array_set(@joinMessage, 'thumbnail', '')
+	@joinMessage['footer'] = array('icon_url': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/23-20e3.png', 'text': @joinPosition);
+	@joinMessage['timestamp'] = time();
+	# @joinMessage['thumbnail'] = '';
 	@invMessage = @botconfig['Log_Messages_Member_Join']
 	if(array_index_exists(@config, 'Log_Messages_Member_Join')) { 
 		@invMessage = @config['Log_Messages_Member_Join']
@@ -66,19 +66,19 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				@previnv = get_value('DiscordBot.'.@discord['serverid'].'.Invites')
 				if(!is_array(@previnv)) {
 					@previnv = array()
-					foreach(@i: @invite in @raw) { array_set(@previnv, @invite['code'], @invite) }
+					foreach(@i: @invite in @raw) { @previnv[@invite['code']] = @invite; }
 					store_value('DiscordBot.'.@discord['serverid'].'.Invites', @previnv)
 				}
 				@inv = array_deep_clone(@previnv)
 				foreach(@i: @invite in @raw) {
-					array_set(@inv, @invite['code'], @invite)
+					@inv[@invite['code']] = @invite;
 					if(array_index_exists(@previnv, @invite['code'], 'leaves')) {
-						array_set(@inv[@invite['code']], 'leaves', @previnv[@invite['code']]['leaves'])	
+						@inv[@invite['code']]['leaves'] = @previnv[@invite['code']]['leaves'];	
 					}
 					if(array_index_exists(@previnv, @invite['code'], 'username')) {
-						array_set(@inv[@invite['code']], 'username', @previnv[@invite['code']]['username'])
+						@inv[@invite['code']]['username'] = @previnv[@invite['code']]['username'];
 					} else if(array_contains(@membersInfo, @invite['userid'])) {
-						array_set(@inv[@invite['code']], 'username', @membersInfo[@invite['userid']]['username'])
+						@inv[@invite['code']]['username'] = @membersInfo[@invite['userid']]['username'];
 					} 
 				}
 				@saveinv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv')
@@ -104,7 +104,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				if(array_size(@matches) > 1) {
 					@invMessage = '**%User%** [%UserID%] joined! I found multiple possible invites: \n`'.array_implode(@matches, '` `').'`'
 					@msgSuffix = 'Multiple invite codes matched!! \n'.@matches
-					array_set(@results, 'code', @matches)
+					@results['code'] = @matches;
 				}
 				if(array_size(@matches) == 1) {
 					@selectedCode = array_implode(@matches, '')
@@ -117,13 +117,13 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					}
 					if(array_index_exists(@inv, @selectedCode, 'username')) {
 						if(nequals_ic(@inviterinfo, @inv[@selectedCode]['username']) && @inviterinfo != '') {
-							array_set(@inv[@selectedCode], 'previousname', @inv[@selectedCode]['username'])
-							array_set(@inv[@selectedCode], 'username', @inviterinfo)
+							@inv[@selectedCode]['previousname'] = @inv[@selectedCode]['username'];
+							@inv[@selectedCode]['username'] = @inviterinfo;
 						}
 						@invitername = @inv[@selectedCode]['username']
 					} else if(@inviterinfo != '') {
 						@invitername = @inviterinfo
-						array_set(@inv[@selectedCode], 'username', @inviterinfo)
+						@inv[@selectedCode]['username'] = @inviterinfo;
 					} else {
 						@invitername = '<@'.@inv[@selectedCode]['userid'].'>'
 					}
@@ -145,7 +145,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 				} else {
 					@invMessage = replace(@invMessage, '%InviterID1%', '')
 				}
-				array_set(@saveinv, @discord['userid'], @results)
+				@saveinv[@discord['userid']] = @results;
 				export('DiscordBot.'.@discord['serverid'].'.Welcome.inv', @saveinv)
 				store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
 				# Logs
@@ -216,7 +216,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		@oldlb = get_value('DiscordBot.'.@discord['serverid'].'.members.former.leaderboard')
 		if(is_array(@leaderboard) && is_array(@oldlb)) {
 			if(array_index_exists(@oldlb, @discord['userid'])) {
-				array_set(@leaderboard['members'], @discord['userid'], @oldlb[@discord['userid']])
+				@leaderboard['members'][@discord['userid']] = @oldlb[@discord['userid']];
 				array_remove(@leaderboard['members'][@discord['userid']], 'removed')
 				@leaderboard['lastedit'] = @time
 				export('DiscordBot.'.@discord['serverid'].'.Leaderboard', @leaderboard)
@@ -274,7 +274,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			_discordBot_broadcast(@discord['serverid'], @config['Channels']['Welcome_Message'], @welcomeMsg, closure(@ex){
 				@msgids = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs')
 				if(!is_array(@msgids)) { @msgids = array() }
-				array_set(@msgids, @discord['userid'], @ex)
+				@msgids[@discord['userid']] = @ex;
 				export('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', @msgids)
 			});	
 		}
@@ -297,23 +297,23 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			_db_msg_Console('['.@discord['userid'].'] '.@discord['username'].' joined ... and left!??', @discord['serverid'])
 		}
 		if(!array_index_exists(@joininfo, @discord['userid']) && @isMember == true) { 
-			array_set(@joininfo, @discord['userid'], array())
-			array_set(@joininfo[@discord['userid']], 'time', @time);
-			array_set(@joininfo[@discord['userid']], 'user', @discord['username']);
-			array_set(@joininfo[@discord['userid']], 'return', @rejoiner);
-			array_set(@joininfo[@discord['userid']], 'position', @joinPosition);
+			@joininfo[@discord['userid']] = array();
+			@joininfo[@discord['userid']]['time'] = @time;
+			@joininfo[@discord['userid']]['user'] = @discord['username'];
+			@joininfo[@discord['userid']]['return'] = @rejoiner;
+			@joininfo[@discord['userid']]['position'] = @joinPosition;
 		}
 		if(array_index_exists(@inv, @discord['userid'])) { 
 			if(@isMember == true) {
 				foreach(@k: @v in @inv[@discord['userid']]) {
-					array_set(@joininfo[@discord['userid']], @k, @v);
+					@joininfo[@discord['userid']][@k] = @v;
 				}
 			}
 			array_remove(@inv, @discord['userid'])
 		}
 		if(array_index_exists(@wm, @discord['userid'])) { 
 			if(@isMember == true) {
-				array_set(@joininfo[@discord['userid']], 'wmid', @wm[@discord['userid']]);
+				@joininfo[@discord['userid']]['wmid'] = @wm[@discord['userid']];
 			}
 			array_remove(@wm, @discord['userid'])
 		}
@@ -344,7 +344,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 # Get number of leaves
 	@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'log.users.Join.Times')
 	if(!is_array(@logJointimes)) { @logJointimes = array() }
-	if(!array_index_exists(@logJointimes, @discord['userid'])) { array_set(@logJointimes, @discord['userid'], array()) }
+	if(!array_index_exists(@logJointimes, @discord['userid'])) { @logJointimes[@discord['userid']] = array(); }
 	@userLeaves = array_size(@logJointimes[@discord['userid']])
 	if(@userLeaves > 1) {
 		@displays['leaves'] = '-Leaves: '.@userLeaves
@@ -355,7 +355,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	@membersFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former.roles')
 	if(!is_array(@membersFR)) { @membersFR = array() }
 	if(array_index_exists(@membersRoles, @discord['userid'])) {
-		array_set(@membersFR, @discord['userid'], array('removed': time(), 'data': array_normalize(@membersRoles[@discord['userid']])))
+		@membersFR[@discord['userid']] = array('removed': time(), 'data': array_normalize(@membersRoles[@discord['userid']]));
 		array_remove(@membersRoles, @discord['userid'])
 		store_value('DiscordBot.'.@discord['serverid'].'.members.roles', @membersRoles)
 	}
@@ -394,17 +394,17 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		@wm = import('DiscordBot.'.@discord['serverid'].'.Welcome.msg.IDs', array())
 		@inv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())	
 		if(array_index_exists(@inv, @discord['userid']) || array_index_exists(@wm, @discord['userid'])) {
-			array_set(@joininfo, @discord['userid'], array())
-			array_set(@joininfo[@discord['userid']], 'time', time());
-			array_set(@joininfo[@discord['userid']], 'code', '');
-			array_set(@joininfo[@discord['userid']], 'user', @discord['username']);
+			@joininfo[@discord['userid']] = array();
+			@joininfo[@discord['userid']]['time'] = time();
+			@joininfo[@discord['userid']]['code'] = '';
+			@joininfo[@discord['userid']]['user'] = @discord['username'];
 		}
 		if(array_index_exists(@inv, @discord['userid'])) { 
 			foreach(@k: @v in @inv[@discord['userid']]) {
-				array_set(@joininfo[@discord['userid']], @k, @v);
+				@joininfo[@discord['userid']][@k] = @v;
 			}
 		}
-		if(array_index_exists(@wm, @discord['userid'])) { array_set(@joininfo[@discord['userid']], 'wmid', @wm[@discord['userid']]) }
+		if(array_index_exists(@wm, @discord['userid'])) { @joininfo[@discord['userid']]['wmid'] = @wm[@discord['userid']]; }
 	}
 	@wmres = ''
 	if(array_index_exists(@joininfo, @discord['userid'])) {
@@ -424,14 +424,14 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 				if(array_index_exists(@inv, @joininfo[@discord['userid']]['code'])) {
 					@displays['inviter'] = ' -Inviter: '.@joininfo[@discord['userid']]['inviter']
 					@displays['code'] = ' Invite: '.@joininfo[@discord['userid']]['code']
-					if(!array_index_exists(@inv, @joininfo[@discord['userid']]['code'], 'leaves')) { array_set(@inv[@joininfo[@discord['userid']]['code']], 'leaves', 0) }
+					if(!array_index_exists(@inv, @joininfo[@discord['userid']]['code'], 'leaves')) { @inv[@joininfo[@discord['userid']]['code']]['leaves'] = 0; }
 					@inv[@joininfo[@discord['userid']]['code']]['leaves']++
 					store_value('DiscordBot.'.@discord['serverid'].'.Invites', @inv)
 				}
 			}
 		}
-		array_set(@joininfoFR, @discord['userid'], @joininfo[@discord['userid']])
-		array_set(@joininfoFR[@discord['userid']], 'removed', time())
+		@joininfoFR[@discord['userid']] = @joininfo[@discord['userid']];
+		@joininfoFR[@discord['userid']]['removed'] = time();
 	# New Members:
 		if(time() < (@joininfo[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) {
 			# Remove leaderboard entry, but don't record in former entry
@@ -463,8 +463,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)	
 	} else {
 	#If no join info write roles data.
-		array_set(@joininfoFR, @discord['userid'], array('user': @discord['username']))
-		array_set(@joininfoFR[@discord['userid']], 'removed', time())
+		@joininfoFR[@discord['userid']] = array('user': @discord['username']);
+		@joininfoFR[@discord['userid']]['removed'] = time();
 		store_value('DiscordBot.'.@discord['serverid'].'.members.former', @joininfoFR)
 		store_value('DiscordBot.'.@discord['serverid'].'.members.former.roles', @membersFR)
 	}
@@ -480,8 +480,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		@leaveMessage['description'] = replace(@leaveMessage['description'], '%User%', @userDisplaydc)
 		@leaveMessage['description'] = replace(@leaveMessage['description'], '%UserID%', @discord['userid'])
 		@leaveMessage['description'] = replace(@leaveMessage['description'], '%Level%', @displays['level'])
-		if(@displays['position'] > 0) {	array_set(@leaveMessage, 'footer', array('icon_url': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/23-20e3.png', 'text': @displays['position'])); }
-		array_set(@leaveMessage, 'timestamp', time())
+		if(@displays['position'] > 0) {	@leaveMessage['footer'] = array('icon_url': 'https://twitter.github.io/twemoji/v/14.0.2/72x72/23-20e3.png', 'text': @displays['position']); }
+		@leaveMessage['timestamp'] = time();
 		_discordBot_broadcast(@discord['serverid'], @config['Channels']['Join_Log'], array('embeds': @leaveMessage));
 	}
 	@sendLogMsg = true
@@ -505,8 +505,8 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		if(@lbremove != 2) {
 			@oldlb = get_value('DiscordBot.'.@discord['serverid'].'.members.former.leaderboard')
 			if(!is_array(@oldlb)) { @oldlb = array() }
-			array_set(@oldlb, @discord['userid'], @leaderboard['members'][@discord['userid']])
-			array_set(@oldlb[@discord['userid']], 'removed', time())
+			@oldlb[@discord['userid']] = @leaderboard['members'][@discord['userid']];
+			@oldlb[@discord['userid']]['removed'] = time();
 			store_value('DiscordBot.'.@discord['serverid'].'.members.former.leaderboard', @oldlb)
 			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/Leaderboard_Removed.json', json_encode(@oldlb), 'Overwrite')
 			if(array_index_exists(@config, 'LB_Options', 'Web_Publish')) {

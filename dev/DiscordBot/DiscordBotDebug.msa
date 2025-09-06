@@ -258,9 +258,9 @@ case 'ndjoinlog':
 	@check = array()
 	foreach(@userid: @userdata in @LogJoinTimes) {
 		if(array_size(@userdata) < 2) { continue() }
-		array_set(@check, @userid, array())
+		@check[@userid] = array();
 		foreach(@i: @times in @userdata) {
-			if(!array_index_exists(@check, @userid, substr(@times,0,9))) { array_set(@check[@userid], substr(@times,0,9), 0) }
+			if(!array_index_exists(@check, @userid, substr(@times,0,9))) { @check[@userid][substr(@times,0,9)] = 0; }
 			@check[@userid][substr(@times,0,9)]++
 			if(@check[@userid][substr(@times,0,9)] > 1) { 
 				msg(@userid.' has multiple close joins: '.@LogJoinTimes[@userid])	
@@ -301,7 +301,7 @@ case 'addformerjoinlog':
 				}
 			}				
 		} else { 
-			array_set(@LogJoinTimes, @userid, array())
+			@LogJoinTimes[@userid] = array();
 		}
 		if(@ct == false) { continue() }
 		@LogJoinTimes[@userid][] = @userinfo['time'];
@@ -316,7 +316,7 @@ case 'findmultiplejoins':
 	@results = array()
 	foreach(@userid: @usertimes in @LogJoinTimes) {
 		if(array_size(@usertimes) > 1) {
-			array_set(@results, @userid, @usertimes)
+			@results[@userid] = @usertimes;
 		}
 	}
 	@color = 10
@@ -334,11 +334,11 @@ case 'findmultiplejoins':
 			foreach(@k: @date in @dates) {
 				@displayDates[] = simple_date('MM/dd/yyyy HH:mm:ss.SSS', @date, 'UTC')
 			}
-			if(!array_index_exists(@info, 'code')) { array_set(@info, 'code', '-') }
+			if(!array_index_exists(@info, 'code')) { @info['code'] = '-'; }
 			if(!array_index_exists(@info, 'user')) { 
 				@username = '?'
 				try(@username = discord_member_info(@serverID, @id)['username'])
-				array_set(@info, 'user', @username) 
+				@info['user'] = @username; 
 			}
 			@msg .= color(9).'| Username: '.@info['user'].color(8).' | Last invite code: '.@info['code'].color(11).' | Server joins: '.color(11).array_implode(@displayDates, ', ')
 			@sendMsg .= '\n'.@msg
