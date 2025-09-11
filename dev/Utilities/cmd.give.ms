@@ -18,7 +18,7 @@ register_command('give', array(
 				@actqty[] = @i;
 			}
 			@atype = 0
-			array_push(@actmaterials, '{<JSON Item Meta data>}', '|<YAML Item Meta data>', 'that', 'fill', 'refill', 'max', 'more')
+			array_push(@actmaterials, '{<JSON Item Meta data>}', '|<YAML Item Meta data>', 'that', 'fill', 'refill', 'max', 'more');
 			@usetabs = array('<No further arguments>');
 		#Compute Tabs for each arg position
 			switch(@argPos) {
@@ -57,7 +57,7 @@ register_command('give', array(
 			# Give: Get other player name:
 			if(@alias == 'give') {
 				if(array_size(@args) < 2) { 
-					msg(color(12).'You must specify a player and item.') 
+					msg(color(12).'You must specify a player and item.');
 					return(false);
 				}
 				if(array_contains_ic(all_players(), @args[0])) {

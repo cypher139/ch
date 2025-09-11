@@ -3,50 +3,50 @@
 admin:/convertchatipdb [$] = >>>
 	// Convert old data before 12/24
 	foreach(@type in array('ignore', 'blacklist')) {
-		@savenew = array()
-		@iplog = get_value('Server.pings.log.'.@type.'.IP')
+		@savenew = array();
+		@iplog = get_value('Server.pings.log.'.@type.'.IP');
 		if(!is_array(@iplog)) { die(); }
 		if(array_size(@iplog) <= 0) { die(); }
-		if(!array_index_exists(@iplog, 'ip')) { msg(color(10).@type.': You have already converted this data.') }
+		if(!array_index_exists(@iplog, 'ip')) { msg(color(10).@type.': You have already converted this data.'); }
 		foreach(@ip: @times in @iplog) {
 			if(@ip == 'ip') { continue(); }
 			if(@ip == 'isp') {
 				@savenew['isp'] = @times;
 				continue();
 			}
-			@newip = @iplog['ip'][@ip]
+			@newip = @iplog['ip'][@ip];
 			@savenew[reg_replace('[%][0]$', '', @newip)] = @times;
 		}
-		store_value('Server.pings.log.'.@type.'.IP.debug.old', @iplog)
-		store_value('Server.pings.log.'.@type.'.IP', @savenew)
-		msg('Converted '.@type)
+		store_value('Server.pings.log.'.@type.'.IP.debug.old', @iplog);
+		store_value('Server.pings.log.'.@type.'.IP', @savenew);
+		msg('Converted '.@type);
 	}
 	# 	Primus: 
 	# _hostname: ipnum: hostname _ip  numbers: usernames used
-	@savenew = array()
-	@iplog = get_value('primus.database.IP')
+	@savenew = array();
+	@iplog = get_value('primus.database.IP');
 	if(!is_array(@iplog)) { die(); }
 	if(array_size(@iplog) <= 0) { die(); }
-	if(!array_index_exists(@iplog, '_ip')) { die(color(10).'You have already converted primus data.') }
+	if(!array_index_exists(@iplog, '_ip')) { die(color(10).'You have already converted primus data.'); }
 	foreach(@ip: @times in @iplog) {
 		if(@ip == '_ip') { continue(); }
 		if(@ip == '_hostname') {
 			@savenew['_hostname'] = array();
 			foreach(@badipnum: @hostname in @times) {
-				@useip = @iplog['_ip'][@badipnum]
+				@useip = @iplog['_ip'][@badipnum];
 				@savenew['_hostname'][@useip] = @hostname;
 			}
 			continue();
 		}
 		if(!array_index_exists(@iplog, '_ip', @ip)) { 
-			msg(color(12).'Original Address for converted IP '.@ip.' was not found, skipping!') 
+			msg(color(12).'Original Address for converted IP '.@ip.' was not found, skipping!');
 			continue(); 
 		}
-		@newip = @iplog['_ip'][@ip]
+		@newip = @iplog['_ip'][@ip];
 		@savenew[reg_replace('[%][0]$', '', @newip)] = @times;
 	}
-	store_value('primus.database.IP.debug.old', @iplog)
-	store_value('primus.database.IP', @savenew)
-	export('primus.database.IP', @savenew)
-	msg('Converted primus')
+	store_value('primus.database.IP.debug.old', @iplog);
+	store_value('primus.database.IP', @savenew);
+	export('primus.database.IP', @savenew);
+	msg('Converted primus');
 <<<

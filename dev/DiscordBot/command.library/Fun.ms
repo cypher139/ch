@@ -1,161 +1,161 @@
 proc _discordBot_cmd_cypher(@discord) {
-	@return = ''
+	@return = '';
 	if(@discord['username'] != 'Cypher') {
-		@return = 'Cypher no Cyphing!'
+		@return = 'Cypher no Cyphing!';
 	} else {
-		@return = array('embeds': array(array('footer': array('text': 'Cypher was here'), 'image': 'https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif')))
+		@return = array('embeds': array(array('footer': array('text': 'Cypher was here'), 'image': 'https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif')));
 	}
-	return(@return)
+	return(@return);
 }
 
 
 proc _discordBot_cmd_say(@discord, @cmdargs) {
-	@return = ''
+	@return = '';
 	if(!array_index_exists(@cmdargs, 0)) {
-		return(array('embeds': array(array('image': 'https://media.tenor.com/Ks8QMnG25nMAAAAC/kevin-hart-say-what.gif'))))
+		return(array('embeds': array(array('image': 'https://media.tenor.com/Ks8QMnG25nMAAAAC/kevin-hart-say-what.gif'))));
 	}
 	switch(rand(1,6)) {
 	case 2:
-		@return = array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif')))
+		@return = array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif')));
 	case 4:
-		@return = array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif')))
+		@return = array('embeds': array(array('footer': array('text': 'no. XD'), 'image': 'https://media.tenor.com/pUW_A10-46MAAAAC/toddlers-and-tiaras-big-grin.gif')));
 	default:
-		@sayicons = array('https://media.tenor.com/qJUcFWzUWlIAAAAd/xtina-christina-aguilera.gif', 'https://media.tenor.com/nMkuF8c3DV0AAAAC/zootopia-fox.gif', 'https://media.tenor.com/EJieOpbWHS8AAAAi/i-have-nothing-to-say-real-housewives-of-beverly-hills.gif')
-		@return = array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username']))))
+		@sayicons = array('https://media.tenor.com/qJUcFWzUWlIAAAAd/xtina-christina-aguilera.gif', 'https://media.tenor.com/nMkuF8c3DV0AAAAC/zootopia-fox.gif', 'https://media.tenor.com/EJieOpbWHS8AAAAi/i-have-nothing-to-say-real-housewives-of-beverly-hills.gif');
+		@return = array('content': array_implode(@cmdargs, ' '), 'embeds': array(array('footer': array('icon_url': 'https://cdn.discordapp.com/emojis/511919340820627501.gif', 'text': 'requested by @'.@discord['username']))));
 	}
-	return(@return)
+	return(@return);
 }
 
 
 proc _discordBot_cmd_fakeban(@discord, @cmdargs, @type) {
-	@botconfig = import('DiscordBot.config.Bot')
-	@config = import('DiscordBot.config.'.@discord['serverid'])
-	@word = 'ban'
-	@fromuser = @discord['userid']
-	@target = ''
-	@test = ''
+	@botconfig = import('DiscordBot.config.Bot');
+	@config = import('DiscordBot.config.'.@discord['serverid']);
+	@word = 'ban';
+	@fromuser = @discord['userid'];
+	@target = '';
+	@test = '';
 	# Degrade if no arguments given
 	if(!array_index_exists(@cmdargs, 0)) {
-		@target = @discord['userid']
+		@target = @discord['userid'];
 	} else {
-		@target = to_lower(reg_replace('[<>@\\\\]+', '', @cmdargs[0]))
+		@target = to_lower(reg_replace('[<>@\\\\]+', '', @cmdargs[0]));
 		switch(@cmdargs[0]) {
 		case 'me':
 		case 'myself':
 		case 'i':
-			@target = @discord['userid']
+			@target = @discord['userid'];
 		case 'everyone':
 		case 'here':
-			return('yea no I don\'t do that to *everyone*, you\'re crazy!') 
+			return('yea no I don\'t do that to *everyone*, you\'re crazy!');
 		}
 	}
 	#compute Target
-	if(@discord['UseDM'] == true) {
+	if(@discord['UseDM'] === true) {
 		#DM support: Redirect to "bot <action> DM'er"
-		@fromuser = @botconfig['Bot_ID']
-		@target = @discord['userid']
+		@fromuser = @botconfig['Bot_ID'];
+		@target = @discord['userid'];
 	} else {
-		@targettype = _discordBot_cmd_proc_finduserID(@target, @discord)
+		@targettype = _discordBot_cmd_proc_finduserID(@target, @discord);
 		switch(string(@targettype)) {
 		case 'bot':
-			@target = @botconfig['Bot_ID']
+			@target = @botconfig['Bot_ID'];
 		case 'self':
-			@target = @discord['userid']
+			@target = @discord['userid'];
 		case 'notfound':
-			discord_private_message(@discord['userid'], 'Typo detected in user ID, using yourself instead :P')
-			@target = @discord['userid']
+			discord_private_message(@discord['userid'], 'Typo detected in user ID, using yourself instead :P');
+			@target = @discord['userid'];
 		case 'multiple':
-			return(false)
+			return(false);
 		default:
-			@target = @targettype
+			@target = @targettype;
 			if(!is_numeric(@targettype)) {
-				@target = @discord['userid']
+				@target = @discord['userid'];
 			}
 		}
 	}
 	if(!is_numeric(@target)) {
-		_db_msg_Console('Fake Ban: non-numeric target! '.@target, @discord['serverid'], 'debug')
-		@target = @discord['userid']
+		_db_msg_Console('Fake Ban: non-numeric target! '.@target, @discord['serverid'], 'debug');
+		@target = @discord['userid'];
 	}
 	#Select Word
-	@test2 = ''
+	@test2 = '';
 	if(!array_index_exists(@cmdargs, 1)) {
-		@cmdargs[] = @word
-		# if(!is_numeric(@cmdargs[1])) { @test2 = @cmdargs[1] }
+		@cmdargs[] = @word;
+		# if(!is_numeric(@cmdargs[1])) { @test2 = @cmdargs[1]; }
 	}
 	if(is_numeric(@cmdargs[1])) {
-		@word = 'crunches'
+		@word = 'crunches';
 	} else {
-		@word = reg_replace('^@', '', @cmdargs[1])
-		if(string_ends_with('here', to_lower(@word)) || string_ends_with('everyone', to_lower(@word))) { @word = 'ban' }
+		@word = reg_replace('^@', '', @cmdargs[1]);
+		if(string_ends_with('here', to_lower(@word)) || string_ends_with('everyone', to_lower(@word))) { @word = 'ban'; }
 	}
 	# Add plural if not present
-	@words = reg_replace('(?<!s)$', 's', @word)
+	@words = reg_replace('(?<!s)$', 's', @word);
 	#Target checks: bot or self
 	if(@target == @botconfig['Bot_ID']) {
-		return(array('embeds': array(array('footer': array('text': 'I identify as a different bot named '.@word),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))))
+		return(array('embeds': array(array('footer': array('text': 'I identify as a different bot named '.@word),'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))));
 	}
 	if(@target == @discord['userid']) {
-		return(array('content': 'You were really going to '.@word.' yourself?', 'embeds': array(array('image': 'https://media.tenor.com/6dPcTAmTgPUAAAAi/elmo-shrug.gif'))))
+		return(array('content': 'You were really going to '.@word.' yourself?', 'embeds': array(array('image': 'https://media.tenor.com/6dPcTAmTgPUAAAAi/elmo-shrug.gif'))));
 	}	
 
-	_db_msg_Console('<@'.@fromuser.'> '.@words.' <@'.@target.'>', @discord['serverid'])
+	_db_msg_Console('<@'.@fromuser.'> '.@words.' <@'.@target.'>', @discord['serverid']);
 # If person has been pinged recently, timeout another ban	
-	@lastping = import('DiscordBot.last.ping.'.@target)
+	@lastping = import('DiscordBot.last.ping.'.@target);
 	if(time() < (@lastping + 234567)) {
-		return('Hey, give it a rest <@'.@discord['userid'].'>!')
+		return('Hey, give it a rest <@'.@discord['userid'].'>!');
 	} else {
 		switch(rand(1,8)) {
 		case 2:
-			return(array('embeds': array(array('image': 'https://media.tenor.com/F08xoCTJwPcAAAAC/stepbrothers-hose.gif'))))
+			return(array('embeds': array(array('image': 'https://media.tenor.com/F08xoCTJwPcAAAAC/stepbrothers-hose.gif'))));
 		case 7:
-			return(array('embeds': array(array('image': 'https://media.tenor.com/t_CPo-CUWGAAAAAC/izzy-mlp.gif'))))
+			return(array('embeds': array(array('image': 'https://media.tenor.com/t_CPo-CUWGAAAAAC/izzy-mlp.gif'))));
 		default:
-			export('DiscordBot.last.ping.'.@target, time())
-			return('<@'.@fromuser.'> '.@words.' <@'.@target.'>')
+			export('DiscordBot.last.ping.'.@target, time());
+			return('<@'.@fromuser.'> '.@words.' <@'.@target.'>');
 		}
 	}
 }
 
 proc _discordBot_cmd_quote(@discord, @args) {
-	if(!array_index_exists(@args, 0)) { @args = array('none') }
-	@quote = ''
-	@image = ''
+	if(!array_index_exists(@args, 0)) { @args = array('none'); }
+	@quote = '';
+	@image = '';
 	switch(@args[0]) {
 	case 'poo':
 	# why is this?
-		@image = array_get_rand(array('https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif', 'https://media.tenor.com/hCl_7woCXdcAAAAC/good-job-pooping.gif', 'https://media.tenor.com/qe2PONg34GQAAAAC/rhino-poop.gif', 'https://media.tenor.com/GQQCv59WJzAAAAAC/white-chicks.gif', 'https://media.tenor.com/n7DjU3bi514AAAAC/poop.gif'))
+		@image = array_get_rand(array('https://media.tenor.com/RiMH8x8TCRIAAAAC/potty-hehasrisen.gif', 'https://media.tenor.com/hCl_7woCXdcAAAAC/good-job-pooping.gif', 'https://media.tenor.com/qe2PONg34GQAAAAC/rhino-poop.gif', 'https://media.tenor.com/GQQCv59WJzAAAAAC/white-chicks.gif', 'https://media.tenor.com/n7DjU3bi514AAAAC/poop.gif'));
 	case 'stoned':
-		@quote = 'Bruh you just deleted a long a*s comment I was posting because it was in the wrong channel (which I get) but dam that’s a b*tch and I wish it would maybe dm me a copy of what I said or something that could not make me have to type it all out again.'
+		@quote = 'Bruh you just deleted a long a*s comment I was posting because it was in the wrong channel (which I get) but dam that’s a b*tch and I wish it would maybe dm me a copy of what I said or something that could not make me have to type it all out again.';
 	case 'tatsu':
-		@image = 'https://cdn.discordapp.com/attachments/499672534812196874/676498575244394516/ol.PNG'
+		@image = 'https://cdn.discordapp.com/attachments/499672534812196874/676498575244394516/ol.PNG';
 	default:
-		@quote = 'Cypher can cypher but not decypher\nCypher no decyphering'
+		@quote = 'Cypher can cypher but not decypher\nCypher no decyphering';
 	}
-	@return = array()
+	@return = array();
 	if(@quote != '') { @return['content'] = @quote; }
 	if(@image != '') { @return['embeds'] = array(array('image': @image)); }
-	return(@return)
+	return(@return);
 }
 
 
 proc _discordBot_cmd_1to100(@discord, @args) {
-	@number = split('', rand(1,100))
-	@msg = ''
+	@number = split('', rand(1,100));
+	@msg = '';
 	foreach(@i in @number) {
 		switch(@i) {
 		case 0:
-			@msg .= ':zero: '
+			@msg .= ':zero: ';
 		case 1:
-			@msg .= ':one: '
+			@msg .= ':one: ';
 		case 2:
-			@msg .= ':two: '
+			@msg .= ':two: ';
 		case 3:
-			@msg .= ':three: '
+			@msg .= ':three: ';
 		case 4:
-			@msg .= ':four: '
+			@msg .= ':four: ';
 		case 5:
-			@msg .= ':five: '
+			@msg .= ':five: ';
 		case 6:
 			@msg .= ':six: '			
 		case 7:
@@ -163,66 +163,66 @@ proc _discordBot_cmd_1to100(@discord, @args) {
 		case 8:
 			@msg .= ':eight: '			
 		case 9:
-			@msg .= ':nine: '
+			@msg .= ':nine: ';
 		}
 	}
-	return(@msg)
+	return(@msg);
 }
 
 proc _discordBot_cmd_cointoss(@discord, @args) {
 	@count = 1
-	@numbers = array()
-	@msg = ''
+	@numbers = array();
+	@msg = '';
 	@heads = 0
 	@tails = 0
 	if(array_index_exists(@args, 0)) {
 		if(is_numeric(@args[0])) {
-			@count = @args[0]
+			@count = @args[0];
 		}
 	}
-	if(@count < 0) { @count = 0 }
-	if(@count > 50000) { @count == 123 }
+	if(@count < 0) { @count = 0; }
+	if(@count > 50000) { @count == 123; }
 	for(@i = 0, @i < @count, @i++) {
-		@rand = rand(1,100)
-		@numbers[] = @rand
-		if(@rand % 2 == 1) { @heads++ } else { @tails++ }
+		@rand = rand(1,100);
+		@numbers[] = @rand;
+		if(@rand % 2 == 1) { @heads++; } else { @tails++; }
 	}
 	if(@count == 0) {
-		@msg = array('embeds': array(array('footer': array('text': '0000000000000'), 'image': 'https://media.tenor.com/VLkOCkFolbQAAAAC/toss-coin-flip.gif')))
+		@msg = array('embeds': array(array('footer': array('text': '0000000000000'), 'image': 'https://media.tenor.com/VLkOCkFolbQAAAAC/toss-coin-flip.gif')));
 	} else if(@count == 1) {
-		if(@heads == 1) { @msg = '**Heads**' }
-		if(@tails == 1) { @msg = '**Tails**' }
+		if(@heads == 1) { @msg = '**Heads**'; }
+		if(@tails == 1) { @msg = '**Tails**'; }
 	} else {
-		@msg = '**'.@count.'** tosses yielded'
-		if(@heads > 0) { @msg .= '  **'.@heads.'** Heads' }
-		if(@tails > 0) { @msg .= '  **'.@tails.'** Tails' }
+		@msg = '**'.@count.'** tosses yielded';
+		if(@heads > 0) { @msg .= '  **'.@heads.'** Heads'; }
+		if(@tails > 0) { @msg .= '  **'.@tails.'** Tails'; }
 	}
 	if(!is_array(@msg)) {
-		return(array('content': ':cd: '.@msg, 'console': @numbers))
+		return(array('content': ':cd: '.@msg, 'console': @numbers));
 	}
-	return(@msg)
+	return(@msg);
 }
 
 proc _discordBot_cmd_fakeadmin(@discord) {	
-	@msg = false
+	@msg = false;
 	@config = import('DiscordBot.config.'.@discord['serverid'])	
-	if(@discord['UseDM'] == true) { return('really? This isn\'t a server!') }
-	@userroles = discord_member_get_roles(@discord['serverid'], @discord['username'])
-	if(@discord['admin'] == true) { discord_private_message(@discord['userid'], 'really? You\'re already a server Admin!') }
-	@botperms = discord_get_permissions(@discord['serverid'])
+	if(@discord['UseDM'] === true) { return('really? This isn\'t a server!'); }
+	@userroles = discord_member_get_roles(@discord['serverid'], @discord['username']);
+	if(@discord['admin'] === true) { discord_private_message(@discord['userid'], 'really? You\'re already a server Admin!'); }
+	@botperms = discord_get_permissions(@discord['serverid']);
 	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {	return('<@'.@discord['userid'].'> tried and failed to be a *'.@config['Fake_Admin_Rolename'].'*.'); }
-	@setType = 'add'
+	@setType = 'add';
 	if(array_contains(@userroles, @config['Fake_Admin_Role'])) {
-		discord_private_message(@discord['userid'], 'really? you trippin. you already a '.@config['Fake_Admin_Rolename'].'. Fine, I\'ll remove your admin status.')
-		@setType = 'remove'
-		@msg = true
+		discord_private_message(@discord['userid'], 'really? you trippin. you already a '.@config['Fake_Admin_Rolename'].'. Fine, I\'ll remove your admin status.');
+		@setType = 'remove';
+		@msg = true;
 	} else {
-		@setType = 'add'
-		@msg = '<@'.@discord['userid'].'> is now a **'.@config['Fake_Admin_Rolename'].'**!'
+		@setType = 'add';
+		@msg = '<@'.@discord['userid'].'> is now a **'.@config['Fake_Admin_Rolename'].'**!';
 	}
 	@doSetRoles = _discordBot_set_roles(@discord['serverid'], @discord['userid'], @setType, array(@config['Fake_Admin_Role']), 'Games: Fake Admin Role', 'Fake Admin Role');
-	if(@doSetRoles == false) { @msg = '<@'.@discord['userid'].'> tried and failed to be a *'.@config['Fake_Admin_Rolename'].'*.' }
-	return(@msg)
+	if(@doSetRoles === false) { @msg = '<@'.@discord['userid'].'> tried and failed to be a *'.@config['Fake_Admin_Rolename'].'*.'; }
+	return(@msg);
 }
 
 
@@ -234,32 +234,32 @@ proc _discordBot_cmd_codegen_pl(@discord, @args) {
 			@id = rand(25,150);
 			x_new_thread(@id.@time, closure(){
 				@results = array()		
-				array_resize(@results, rand(5, 15)) 
+				array_resize(@results, rand(5, 15));
 				foreach(@k: @v in @results) {
-					@results[@k] = _codegen(rand(6, 21), rand(0, 5), rand(0, 5))
+					@results[@k] = _codegen(rand(6, 21), rand(0, 5), rand(0, 5));
 				}
-				export(@id.@time, @results)
+				export(@id.@time, @results);
 			});	
-			x_thread_join(@id.@time, 7000)
-			@results = import(@id.@time)
-			if(!is_array(@results)) { return('Error') }
+			x_thread_join(@id.@time, 7000);
+			@results = import(@id.@time);
+			if(!is_array(@results)) { return('Error'); }
 			_db_msg_Console(@results, @discord['serverid'], 'debug');
 			@service = array_get_rand(array('your mom', '<redacted>', 'FTP'));
 			export(@id.@time, null);
-			return('Passwords for '.@service.': \n --: '.array_implode(@results, '\n --: '))
+			return('Passwords for '.@service.': \n --: '.array_implode(@results, '\n --: '));
 		} else {
-			return('NoCmd')
+			return('NoCmd');
 		}
 		case 3:
-			return(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))))
+			return(array('embeds': array(array('image': 'https://imgs.xkcd.com/comics/security.png'))));
 		default:
-			return(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))))
+			return(array('embeds': array(array('image': 'https://media.tenor.com/KDm053TyIgEAAAAC/portal.gif'))));
 	}
 }
 
 
 #Add Commands to List
-@c3lx = import('DiscordBot.Command.List', array())
+@c3lx = import('DiscordBot.Command.List', array());
 @mIu7 = array(
 	'cypher': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_cypher(@discord)); }),
 	'say': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_say(@discord, @args)); }),
@@ -271,5 +271,5 @@ proc _discordBot_cmd_codegen_pl(@discord, @args) {
 	'fakeban': array('alias': array('fban', 'fb'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_fakeban(@discord, @args)); }),
 	'listpasswords': array('alias': array('passwords', 'lp', 'passwordlist'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_codegen_pl(@discord)); })
 );
-@c3lx = array_merge(@c3lx, @mIu7)
-export('DiscordBot.Command.List', @c3lx)
+@c3lx = array_merge(@c3lx, @mIu7);
+export('DiscordBot.Command.List', @c3lx);

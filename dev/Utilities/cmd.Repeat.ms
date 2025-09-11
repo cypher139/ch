@@ -1,7 +1,7 @@
 # on Server startup:
-export('console.cmd.repeat.show', get_value('console.cmd.repeat.show'))
+export('console.cmd.repeat.show', get_value('console.cmd.repeat.show'));
 # get_commands() is a huge array. sort into a single array:
-@allcmds = array()
+@allcmds = array();
 foreach(@v in get_commands()) {
 	@allcmds[] = @v['name'];
 	array_push_all(@allcmds, @v['aliases']);
@@ -16,66 +16,66 @@ bind('player_command', array('id': 'cmd.Repeat', 'priority': 'HIGH'), null, @eve
 	@logtoConsole = import('console.cmd.repeat.show');
 	
 	#Show command back to the player who issued the command, if permitted to do so.
-	@sendcmd = import('player.'.@player['id'].'.cmd.repeat.show')
+	@sendcmd = import('player.'.@player['id'].'.cmd.repeat.show');
 	if(@sendcmd == null) {
-		@sendcmd = get_value('player.'.@player['id'].'.cmd.repeat.show')
-		export('player.'.@player['id'].'.cmd.repeat.show', @sendcmd)
+		@sendcmd = get_value('player.'.@player['id'].'.cmd.repeat.show');
+		export('player.'.@player['id'].'.cmd.repeat.show', @sendcmd);
 	}
 	
 	#Automatically remove extra slashes not recognized by CH Aliases or Registered Commands.
-	@allcmds = import('ch.all.commands')
+	@allcmds = import('ch.all.commands');
 	#Remove extra slashes and beginning spaces
 	if(!is_alias(@cmd[0])) {
 		if(!array_contains(@allcmds, reg_replace('^\\/', '', @cmd[0]))) {
-			if(@dev == true) { msg('r') }
+			if(@dev === true) { msg('r'); }
 		# Remove empty command slash
 			if(@cmd[0] == '/' && !array_index_exists(@cmd, 1)) {
-				if(@dev == true) { msg('r - "/"') }
-				cancel()
-				die()
+				if(@dev === true) { msg('r - "/"'); }
+				cancel();
+				die();
 			}
 		# Space after slash check
 			if(reg_count('^\\/*$', @cmd[0]) > 0 && array_index_exists(@cmd, 1)) {
 			# Added @cmd[1] check to allow for not calling WorldEdit's "//" command with extra arguments
 			# Remove space after slash
-				array_remove(@cmd, 0)
+				array_remove(@cmd, 0);
 				@cmd[0] = '/'.@cmd[0]
-				if(@dev == true) { msg('r "/ "') }
-				modify_event('command', array_implode(@cmd, ' '))
+				if(@dev === true) { msg('r "/ "'); }
+				modify_event('command', array_implode(@cmd, ' '));
 			}
 		# Extra Slashes
 			if(reg_count('^\\/\\/+', @cmd[0]) > 0) {
 				#Remove extra slash
-				@cmd[0] = reg_replace('^\\/\\/+', '\\/', @cmd[0])
-				if(@dev == true) {
-					msg('now: '.@cmd[0])
-					msg('a:  <'.array_implode(@cmd, ' ').'>')
+				@cmd[0] = reg_replace('^\\/\\/+', '\\/', @cmd[0]);
+				if(@dev === true) {
+					msg('now: '.@cmd[0]);
+					msg('a:  <'.array_implode(@cmd, ' ').'>');
 				}
-				modify_event('command', array_implode(@cmd, ' '))
+				modify_event('command', array_implode(@cmd, ' '));
 			}
 		} else {
 			# Remove invalid arguments from WorldEdit's "//"
 			if(reg_count('^\\/\\/$', @cmd[0]) > 0 && array_index_exists(@cmd, 1)) {
-				array_remove(@cmd, 0)
+				array_remove(@cmd, 0);
 				@cmd[0] = '/'.@cmd[0]
-				if(@dev == true) { msg('r-we "/ "') }
-				modify_event('command', array_implode(@cmd, ' '))
+				if(@dev === true) { msg('r-we "/ "'); }
+				modify_event('command', array_implode(@cmd, ' '));
 			}
 		}
 	}
-	@cmdDisplay = array_implode(@cmd, ' ')
-	if(@dev == true) { msg('o: '.@event['command'].'    n:'.@cmdDisplay) }
+	@cmdDisplay = array_implode(@cmd, ' ');
+	if(@dev === true) { msg('o: '.@event['command'].'    n:'.@cmdDisplay); }
 	
 	#List cmd used, with CH aliases showing as a different color.
 	@ac = 7
-	if(is_alias(@cmd[0])) { @ac = 3 } else { @ac = 6 }
+	if(is_alias(@cmd[0])) { @ac = 3; } else { @ac = 6; }
 	
-	@pData = import('player.'.@player['id'].'.last.command')
-	if(!is_array(@pData)) { @pData = array() }
+	@pData = import('player.'.@player['id'].'.last.command');
+	if(!is_array(@pData)) { @pData = array(); }
 
 	# Convert Number start at 1 to 0
 	if(array_index_exists(@cmd, 1)) {
-		if(is_numeric(@cmd[1]) && @cmd[1] < 10 && @cmd[1] > 0) { @cmd[1] = @cmd[1] - 1 }
+		if(is_numeric(@cmd[1]) && @cmd[1] < 10 && @cmd[1] > 0) { @cmd[1] = @cmd[1] - 1; }
 	}
 	# Is this a new command or repeat command?
 	switch(@cmd[0]){
@@ -85,42 +85,42 @@ bind('player_command', array('id': 'cmd.Repeat', 'priority': 'HIGH'), null, @eve
 		case '//.':	
 		case '/repeat':
 		case '/\'':
-			if(@logtoConsole == true) {
+			if(@logtoConsole === true) {
 				if(array_index_exists(@cmd, 1)) {
 					if(is_numeric(@cmd[1]) && @cmd[1] < 9) {
 						# Repeat Command
 						if(array_index_exists(@pData, @cmd[1])) {
-							if(is_alias(@pData[@cmd[1]])) { @ac = 3 } else { @ac = 6 }
-							console(color(7).@player['display'].' repeated '.color(@ac).@pData[@cmd[1]], false)
+							if(is_alias(@pData[@cmd[1]])) { @ac = 3; } else { @ac = 6; }
+							console(color(7).@player['display'].' repeated '.color(@ac).@pData[@cmd[1]], false);
 						}
 					} else {
 					# Repeat options
-						console(color(7).@player['display'].' used '.color(@ac).@cmdDisplay, false)
+						console(color(7).@player['display'].' used '.color(@ac).@cmdDisplay, false);
 					}
 				} else {
 				# Find ID from alias
 				@cmdID = 0
-				@hasdot = reg_count('[.]', @cmd[0])
+				@hasdot = reg_count('[.]', @cmd[0]);
 				if(@hasdot > 0) { @cmdID = @hasdot - 1; }
-				if(@cmd[0] == '//.') { @cmdID = 1 }
+				if(@cmd[0] == '//.') { @cmdID = 1; }
 				# Repeat Last command
 					if(array_index_exists(@pData, @cmdID)) {
-						if(is_alias(@pData[@cmdID])) { @ac = 3 } else { @ac = 6 }
-						console(color(7).@player['display'].' repeated '.color(@ac).@pData[@cmdID], false)
+						if(is_alias(@pData[@cmdID])) { @ac = 3; } else { @ac = 6; }
+						console(color(7).@player['display'].' repeated '.color(@ac).@pData[@cmdID], false);
 					}
 				}
 			}			
 		default:
 		# Save the last command this player used.
-			if(@logtoConsole == true) {
-				console(color(7).@player['display'].' used '.color(@ac).@cmdDisplay, false)
+			if(@logtoConsole === true) {
+				console(color(7).@player['display'].' used '.color(@ac).@cmdDisplay, false);
 			}
 			if(@sendcmd == 1) { #all cmds
-				if(!has_permission(@player['name'], 'commandhelper.alias.see.is.alias')) { @ac = 7 }
-				msg('> '.color(@ac).@cmdDisplay)
+				if(!has_permission(@player['name'], 'commandhelper.alias.see.is.alias')) { @ac = 7; }
+				msg('> '.color(@ac).@cmdDisplay);
 			}			
-			array_insert(@pData, @cmdDisplay, 0)
-			if(array_index_exists(@pData, 10)) { array_remove(@pData, 10) }
+			array_insert(@pData, @cmdDisplay, 0);
+			if(array_index_exists(@pData, 10)) { array_remove(@pData, 10); }
 			export('player.'.@player['id'].'.last.command', @pData)	
 	}
 }
@@ -165,7 +165,7 @@ register_command('repeat', array(
 			return(length(@arg) <= length(@value)
 					&& equals_ic(@arg, substr(@value, 0, length(@arg))));
 			});
-			# console(@atype)
+			# console(@atype);
 			return(@areturn);
 		},
 	'aliases': array('.', '\'', '/.', '..', '...'),
@@ -175,7 +175,7 @@ register_command('repeat', array(
 			@uuid = puuid(@player, 'dashless');
 			@id = 0;
 			@returnMsg = array(12, '?');
-			@name = 'Command'
+			@name = 'Command';
 			if(array_index_exists(@args, 0)) {
 				if(@args[-1] == 'arguments>') {
 					@back = array_size(@args) - 4;
@@ -193,7 +193,7 @@ register_command('repeat', array(
 					if(integer(@args[0]) < 0) {
 						@id = 0;
 					} else if(@args[0] - 1 > 9) {
-						msg(color(8).'['.color(9).@name.color(8).'] '.color(7).'Sorry, I don\'t remember that far back!')
+						msg(color(8).'['.color(9).@name.color(8).'] '.color(7).'Sorry, I don\'t remember that far back!');
 						return(false);
 					} else { @id = @args[0] - 1 }
 					if(@id > 9) { @id = 9; }
@@ -229,9 +229,9 @@ register_command('repeat', array(
 								return(false);
 							}
 						} else {
-							if(@set > 1) { @set = 0 } else {
+							if(@set > 1) { @set = 0; } else {
 								@set = !@set;
-						# console(@set)
+						# console(@set);
 							}
 						}
 						#alias specific
@@ -244,22 +244,22 @@ register_command('repeat', array(
 						store_value('player.'.@uuid.'.cmd.repeat.show', @set);
 						export('player.'.@uuid.'.cmd.repeat.show', @set);
 						@msgs = array('Any command you run will be '.color(9).'hidden'.color('r').' and not printed back to you in the chat.', 'Any command you run will be '.color(10).'shown'.color('r').' only to you in the chat.', ' The command re-run will be '.color(10).'shown'.color('r').' only to you in the chat.');
-						@returnMsg = array(6, @msgs[@set])
+						@returnMsg = array(6, @msgs[@set]);
 					case 'console':
 					case 'cc':
 						if(has_permission(@player, 'commandhelper.alias.admin')) {
-							@set = get_value('console.cmd.repeat.show')
-							if(!is_boolean(@set)) { @set = false }
+							@set = get_value('console.cmd.repeat.show');
+							if(!is_boolean(@set)) { @set = false; }
 							@set = !@set;
-							store_value('console.cmd.repeat.show', @set)
-							export('console.cmd.repeat.show', @set)
+							store_value('console.cmd.repeat.show', @set);
+							export('console.cmd.repeat.show', @set);
 							@msgs = array('Commands will '.color(12).'NOT broadcast'.color('r').' to the console via /repeat. This does not affect any command broadcast messages other plugins or the vanilla server may provide.', 'All commands will '.color(10).'be broadcast'.color('r').' to the console. This does not affect any command broadcast messages other plugins or the vanilla server may provide.');
-							@returnMsg = array(6, @msgs[@set])
+							@returnMsg = array(6, @msgs[@set]);
 						} else {
-							@returnMsg = array(12, color(3).'You do not have permissions to use this command option.')
+							@returnMsg = array(12, color(3).'You do not have permissions to use this command option.');
 						}
 					case 'moo':
-						@word = 'Unexpected action.'
+						@word = 'Unexpected action.';
 						if(array_index_exists(@args, 1)) { @word = @args[1]; }
 						@returnMsg = array(9, '\n'.color('r').moo(color(3).@word.color('r')));
 					case 'recent':
@@ -272,27 +272,27 @@ register_command('repeat', array(
 						} else {
 							@results = array(color(3).'Your '.array_size(@pData).' most recent Commands:');
 							@ac = 7
-							@useac = false
+							@useac = false;
 							if(has_permission(@player, 'commandhelper.alias.see.is.alias')) { @useac = true; }
 							foreach(@k: @v in @pData) {
 								if(@useac) {
-									if(is_alias(split(' ', @v)[0])) { @ac = 3 } else { @ac = 6 }
+									if(is_alias(split(' ', @v)[0])) { @ac = 3; } else { @ac = 6; }
 								}
 								@results[] = color(9).(@k + 1).' > '.color(@ac).@v;
 							}	
-							@returnMsg = array(6, array_implode(@results, '\n'))
+							@returnMsg = array(6, array_implode(@results, '\n'));
 						}
 					default:
-						@returnMsg = array(12, color(5).'Action specified not recognized.')
+						@returnMsg = array(12, color(5).'Action specified not recognized.');
 					}
 					msg(color(8).'['.color(@returnMsg[0]).@name.color(8).'] '.color(7).@returnMsg[1]);
 					return(true);
 				}
 			} else {
 				#No Args: Check if count in alias
-				@hasdot = reg_count('[.]', @alias)
+				@hasdot = reg_count('[.]', @alias);
 				if(@hasdot > 0) { @id = @hasdot - 1; }
-				if(@alias == '/.') { @id = 1 }
+				if(@alias == '/.') { @id = 1; }
 			}
 		#Common Args
 			@displayid = @id + 1;		
@@ -308,9 +308,9 @@ register_command('repeat', array(
 			if(!array_index_exists(@pData, @id)) { msg(color(8).'['.color(12).@name.color(8).'] '.color(12).'Recent Command #'.@displayid.' not found.'); return(true); }
 			#List cmd used, with CH aliases showing as a different color.
 			@ac = 6
-			if(is_alias(reg_split(' ', @pData[@id])[0])) { @ac = 3 }
-			if(!has_permission(@player, 'commandhelper.alias.see.is.alias')) { @ac = 7 }
-			#msg(@pData)
+			if(is_alias(reg_split(' ', @pData[@id])[0])) { @ac = 3; }
+			if(!has_permission(@player, 'commandhelper.alias.see.is.alias')) { @ac = 7; }
+			#msg(@pData);
 			msg(color(3).'Re-ran your last command. (#: '.@displayid.')');
 			if(@showcmd > 0) { msg('> '.color(@ac).@pData[@id]); }
 			run_cmd(@pData[@id]);

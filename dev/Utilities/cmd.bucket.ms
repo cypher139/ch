@@ -19,8 +19,8 @@ register_command('bucket', array(
 			case 0:
 		#Options
 				if(has_permission(@sender, 'commandhelper.alias.bucket.info')) {
-					@usetabs = array('Enable')
-					if(import('bucket.info.'.puuid(@sender, 'dashless')) == true) { @usetabs = array('Disable') }
+					@usetabs = array('Enable');
+					if(import('bucket.info.'.puuid(@sender, 'dashless')) === true) { @usetabs = array('Disable'); }
 				}
 			}
 		#Return tabs
@@ -33,42 +33,42 @@ register_command('bucket', array(
 	'executor':
 		closure(@alias, @sender, @args, @info) {
 			@name = 'Bucket';
-			if(player() == '~console') { die(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' is only available for in-game players.') }
+			if(player() == '~console') { die(color(7).'['.color(6).@name.color(7).'] '.color(7).@name.' is only available for in-game players.'); }
 			@player = _getplayerID(@sender);
 			if(!has_permission(@sender, 'commandhelper.alias.bucket.info')) {
-				msg('Unknown command. Type "/help" for help.')
+				msg('Unknown command. Type "/help" for help.');
 				return(true);
 			}
 			@enable = import('bucket.info.'.@player['id']);
-			if(!is_boolean(@enable)) { @enable = false }
-			if(@enable == true) {
-				export('bucket.info.'.@player['id'], false)
-				msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'Info display for '.@player['display'].color(10).' disabled.')
+			if(!is_boolean(@enable)) { @enable = false; }
+			if(@enable === true) {
+				export('bucket.info.'.@player['id'], false);
+				msg(color(7).'['.color(6).@name.color(7).'] '.color(7).'Info display for '.@player['display'].color(10).' disabled.');
 			} else {
-				export('bucket.info.'.@player['id'], !@enable)
+				export('bucket.info.'.@player['id'], !@enable);
 			#Give free bucket if none found
 				if(phas_item(@player['name'], array('name': 'BUCKET')) <= 0) {
-					pgive_item(@player['name'], array('qty': '1', 'name': 'BUCKET'))
-					msg(color(6).'You\'ve been given a free bucket!')
+					pgive_item(@player['name'], array('qty': '1', 'name': 'BUCKET'));
+					msg(color(6).'You\'ve been given a free bucket!');
 				}
 			#Add Bind at First Runtime
 				if(!has_bind('bucket.info')) {
 					bind('player_interact', array('id': 'bucket.info'), array('itemname': 'BUCKET'), @event) {
-						if(import('bucket.info.'.puuid(@event['player'], 'dashless')) == true) {
+						if(import('bucket.info.'.puuid(@event['player'], 'dashless')) === true) {
 							if(@event['action'] == 'left_click_block' || @event['action'] == 'right_click_block') {
-								cancel()
-								@id = ''
-								@idn = ''
+								cancel();
+								@id = '';
+								@idn = '';
 								if(is_numeric(@event['block'])) {
-									@id = _capitalize(data_name(@event['block']), true)
-									@idn = color(3).' ('.@event['block'].')'
+									@id = _capitalize(data_name(@event['block']), true);
+									@idn = color(3).' ('.@event['block'].')';
 								} else {
-									@id = _capitalize(@event['block'], true)
+									@id = _capitalize(@event['block'], true);
 									if(is_proc('_get_data_values')) {
-										@idn = color(3).' ('._get_data_values(@event['block']).')'
+										@idn = color(3).' ('._get_data_values(@event['block']).')';
 									} else { 
-										@idn = ''
-										console('Cannot get data_values info, proc is missing!')
+										@idn = '';
+										console('Cannot get data_values info, proc is missing!');
 									}
 								}
 							msg(color(7).'Block ID: '.color(11).@id.color(5).@idn.color(7).' (@'.color(8).integer(@event['location']['x']).','.integer(@event['location']['y']).','.integer(@event['location']['z']).'  Face: '.@event['facing'].color(7).')');

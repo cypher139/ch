@@ -9,24 +9,24 @@ bind('player_teleport', array('id': 'cmd.back.tp'), null, @tp) {
 	# Flag last teleport type
 	export('player.'.@uuid.'.cmd.back.default', 'tp');
 	#Set a return location for /back return, if last command isn't the backtp functions.
-	@lastcmd = import('player.'.@uuid.'.last.command')
-	if(!is_array(@lastcmd)) { @lastcmd = array('--') }
-	@lastreturn = import('player.'.@uuid.'.last.return.location')
-	if(!is_array(@lastreturn)) { @lastreturn = array() }
+	@lastcmd = import('player.'.@uuid.'.last.command');
+	if(!is_array(@lastcmd)) { @lastcmd = array('--'); }
+	@lastreturn = import('player.'.@uuid.'.last.return.location');
+	if(!is_array(@lastreturn)) { @lastreturn = array(); }
 	if(!string_starts_with(@lastcmd[0], '/back') || !array_index_exists(@lastreturn, 'world')) {
 		export('player.'.@uuid.'.last.return.location', @tp['from']);
 	}
 	#Don't save locations if the BackTP commands are running - prevents overwriting current location with previous when revisiting
-	if(import('player.'.@uuid.'.cmd.back.active') == true) { 
+	if(import('player.'.@uuid.'.cmd.back.active') === true) { 
 		export('player.'.@uuid.'.cmd.back.active', null); 
 		die();
 	}
 	#Record previous location
 	@mode = string(pmode(@tp['player']))[0];
-	if(!is_array(@lastloc)) { @lastloc = array(@tp['from']) }
+	if(!is_array(@lastloc)) { @lastloc = array(@tp['from']); }
 	if(!array_index_exists(@lastloc, @mode)) { @lastloc[@mode] = array(); }
 	array_insert(@lastloc[@mode], @tp['from'], 0);
-	if(array_index_exists(@lastloc, @mode, 10)) { array_remove(@lastloc[@mode], 10) }
+	if(array_index_exists(@lastloc, @mode, 10)) { array_remove(@lastloc[@mode], 10); }
 	store_value('player.'.@uuid.'.last.location', @lastloc);
 }
 
@@ -41,24 +41,24 @@ bind('player_death', array('id': 'cmd.back.deathtp', 'priority': 'MONITOR'), nul
 	# Save death point for /back [per mode] [mode key is first letter of mode name]
 		@here = ploc(@player);
 		@pdloc = get_value('player.'.@uuid.'.last.death.location');
-		if(!is_array(@pdloc)) { @pdloc = array() }
+		if(!is_array(@pdloc)) { @pdloc = array(); }
 		if(!array_index_exists(@pdloc, @mode)) { @pdloc[@mode] = array(@here); }
 		array_insert(@pdloc[@mode], @here, 0);
-		if(array_index_exists(@pdloc, @mode, 10)) { array_remove(@pdloc[@mode], 10) }
+		if(array_index_exists(@pdloc, @mode, 10)) { array_remove(@pdloc[@mode], 10); }
 		store_value('player.'.@uuid.'.last.death.location', @pdloc);
-		tmsg(@player, color(7).'Use the '.color(12).'/back'.color(7).' command to return to your death point.')
+		tmsg(@player, color(7).'Use the '.color(12).'/back'.color(7).' command to return to your death point.');
 		
 	# Save inventory [per mode]
 		@pddrops = get_value('player.'.@uuid.'.last.death.drops');
-		if(!is_array(@pddrops)) { @pddrops = array() }
+		if(!is_array(@pddrops)) { @pddrops = array(); }
 		if(!array_index_exists(@pddrops, @mode)) { @pddrops[@mode] = array(@drops); }
 		array_insert(@pddrops[@mode], @drops, 0);
-		if(array_index_exists(@pddrops, @mode, 10)) { array_remove(@pddrops[@mode], 10) }
+		if(array_index_exists(@pddrops, @mode, 10)) { array_remove(@pddrops[@mode], 10); }
 		store_value('player.'.@uuid.'.last.death.drops', @pddrops);
 		
 	# Save number of times died
-		@dc = get_value('DeathCount.players.death.counter')
-		if(!is_array(@dc)) { @dc = array() }
+		@dc = get_value('DeathCount.players.death.counter');
+		if(!is_array(@dc)) { @dc = array(); }
 		if(array_index_exists(@dc, @uuid)) {
 			@dc[@uuid]++
 		} else {
@@ -95,18 +95,18 @@ register_command('back', array(
 		#id
 				if(@alias == 'back') { @actqty[] = 'tp'; @actqty[] = 'deathtp'; @actqty[] = 'items'; @actqty[] = 'return'; }
 				@usetabs = @actqty;
-				@atype = 'a0'
+				@atype = 'a0';
 			case 1:
 		#mode
 				@usetabs = @actmodes;
 				# if(@args[0][0] == 'i') { 
 				if(@alias == 'back' && !is_numeric(@args[0])) { @usetabs = @actqty; }
 				if(@args[0][0] == 'r') { @usetabs = array('--'); }
-				@atype = 'a1'
+				@atype = 'a1';
 			case 2:
 				if(@alias == 'back' && !is_numeric(@args[0])) { @usetabs = @actmodes; }
 				if(@args[0][0] == 'r') { @usetabs = array('--'); }
-				@atype = 'a2'
+				@atype = 'a2';
 			}
 		#Return tabs
 			@areturn = array_filter(@usetabs, closure(@key, @value) {
@@ -120,9 +120,9 @@ register_command('back', array(
 	'executor':
 		closure(@alias, @sender, @args, @info) {
 			@player = @sender;
-			if(@sender == 'CONSOLE') { @player = '~console' }
+			if(@sender == 'CONSOLE') { @player = '~console'; }
 			@uuid = puuid(@player, 'dashless');
-			@cmd = 'tp'
+			@cmd = 'tp';
 			@cmdkey = array('tp': 'location', 'deathtp': 'death.location', 'items': 'death.drops', 'return': 'return.location');
 			@name = array('tp': 'BackTP', 'deathtp': 'DeathTP', 'items': 'DeathTP: ItemManagement', 'return': 'BackTP');
 			if(@alias == 'backitems') { @cmd = 'items'; }
@@ -169,7 +169,7 @@ register_command('back', array(
 			}
 			@id = 0
 			@mode = string(pmode(@player))[0];
-			if(array_index_exists(@args, 1)) { @mode = to_upper(@args[1])[0] }
+			if(array_index_exists(@args, 1)) { @mode = to_upper(@args[1])[0]; }
 			if(!string_starts_with(@mode, 'S') && !string_starts_with(@mode, 'C') && !string_starts_with(@mode, 'A')) {
 				msg(color(12).'['.color(7).@name[@cmd].color(12).'] '.color(7).'What game mode is that?!');
 				return(false);
@@ -182,15 +182,15 @@ register_command('back', array(
 						@id = 9;
 					} else { @id = @args[0] - 1 }
 				} else {
-					msg(color(8).'['.color(9).@name[@cmd].color(8).'] '.color(7).'Sorry, I don\'t remember that far back!')
+					msg(color(8).'['.color(9).@name[@cmd].color(8).'] '.color(7).'Sorry, I don\'t remember that far back!');
 					return(false);
 				}
 			}
 			@displayid = @id + 1;
 			
 			@pData = get_value('player.'._getplayerID(@player)['id'].'.last.'.@cmdkey[@cmd]);
-			if(@cmd == 'return') { @pData = import('player.'._getplayerID(@player)['id'].'.last.'.@cmdkey[@cmd]) }
-			if(!is_array(@pData)) { @pData = array() }
+			if(@cmd == 'return') { @pData = import('player.'._getplayerID(@player)['id'].'.last.'.@cmdkey[@cmd]); }
+			if(!is_array(@pData)) { @pData = array(); }
 			@returnMsg = array(12, '?');
 		#Commands
 			switch(@cmd) {
@@ -198,9 +198,9 @@ register_command('back', array(
 			#Teleport - Back
 				if(array_index_exists(@pData, @mode, @id, 'world')) {
 					export('player.'.@uuid.'.cmd.back.active', true); 
-					set_ploc(@pData[@mode][@id])
-					@s = 'back to where you were before teleporting'
-					if(@displayid > 1) { @s = 'to your previous teleport point #'.@displayid }
+					set_ploc(@pData[@mode][@id]);
+					@s = 'back to where you were before teleporting';
+					if(@displayid > 1) { @s = 'to your previous teleport point #'.@displayid; }
 					@returnMsg = array(6, 'Teleported you '.@s.'.');
 				} else {
 					@returnMsg = array(12, 'You don\'t have a saved teleport point #'.@displayid.' to teleport to!');
@@ -209,9 +209,9 @@ register_command('back', array(
 			#Teleport - Death
 				if(array_index_exists(@pData, @mode, @id, 'world')) {
 					export('player.'.@uuid.'.cmd.back.active', true); 
-					set_ploc(@pData[@mode][@id])
-					@s = 'last death point'
-					if(@displayid > 1) { @s = 'previous death point #'.@displayid }
+					set_ploc(@pData[@mode][@id]);
+					@s = 'last death point';
+					if(@displayid > 1) { @s = 'previous death point #'.@displayid; }
 					@returnMsg = array(6, 'Teleported to your '.@s.'.');
 				} else {
 					@returnMsg = array(12, 'You don\'t have a saved death point #'.@displayid.' to teleport to!');
@@ -220,19 +220,19 @@ register_command('back', array(
 			#Teleport - Death
 				if(array_index_exists(@pData, 'world')) {
 					export('player.'.@uuid.'.cmd.back.active', true); 
-					set_ploc(@pData)
+					set_ploc(@pData);
 					@returnMsg = array(6, 'Returned you to where you were before visiting previous teleport locations.');
 				} else {
 					@returnMsg = array(12, 'You don\'t have a return point to teleport to!');
 				}
 			case 'items':
-				@s = 'the last death'
-				if(@displayid > 1) { @s = 'previous death #'.@displayid }
+				@s = 'the last death';
+				if(@displayid > 1) { @s = 'previous death #'.@displayid; }
 			#Give Items
 				if(array_index_exists(@pData, @mode, @id, 0, 'name')) {
 					foreach(@item in @pData[@mode][@id]) {
 					#array: meta, qty, name
-						pgive_item(@player, @item)
+						pgive_item(@player, @item);
 					}
 					@returnMsg = array(5, 'Respawning your items from '.@s.'.');
 				} else {

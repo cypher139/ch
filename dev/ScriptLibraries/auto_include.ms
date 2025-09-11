@@ -1,171 +1,171 @@
 proc _msg_Admins(string @name = 'CommandHelper', string @type = 'info', string @message, string @consoleData = '', @skipPlayer) {
-	if(!@name) { @name = 'CH' }
-	@sendConsole = true
-	@sendPlayer = true
-	@logPath = 'Bot'
-	@prefix = color(8).'['.color(3).@name.color(8).'] '.color('r')
+	if(!@name) { @name = 'CH'; }
+	@sendConsole = true;
+	@sendPlayer = true;
+	@logPath = 'Bot';
+	@prefix = color(8).'['.color(3).@name.color(8).'] '.color('r');
 	switch(@type) {
 	case 'prefix':
 	case 'info':
 		@nc = 1
 	case 'server':
-		@prefix = color(6).'['.color(9).'Server'.color(6).'] '.color('r')
+		@prefix = color(6).'['.color(9).'Server'.color(6).'] '.color('r');
 	case 'debug':
-		@prefix .= color(14).'<debug> '.color('r')
+		@prefix .= color(14).'<debug> '.color('r');
 	case 'error':
-		@prefix .= color(12).'<error> '.color('r')
+		@prefix .= color(12).'<error> '.color('r');
 	case 'warning':
-		@prefix .= color(6).'<Warning> '.color('r')
+		@prefix .= color(6).'<Warning> '.color('r');
 	case 'd':
 	case 'bot':
-		@prefix = color(8).'['.color(5).'Bot'.color(8).'] '.color('r')
+		@prefix = color(8).'['.color(5).'Bot'.color(8).'] '.color('r');
 	case '-':
 	case 'none':
-		@prefix = ''
+		@prefix = '';
 	default:
-		@prefix = @type
+		@prefix = @type;
 	}
-	@message = @prefix.@message
-	if(import('Server.config.messages.Console_Messages', true) != true) { @sendConsole = false }
+	@message = @prefix.@message;
+	if(import('Server.config.messages.Console_Messages', true) != true) { @sendConsole = false; }
 	if(@type == 'debug') {
-		@sendConsole = false
-		@sendPlayer = false
-		if(import('Server.config.messages.Console_Debug') == true) { @sendConsole = true }
+		@sendConsole = false;
+		@sendPlayer = false;
+		if(import('Server.config.messages.Console_Debug') === true) { @sendConsole = true; }
 	}
 	if(@type == 'error') { 
-		_write_file('Log-Error-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.@consoleData.'\n', 'Append')
+		_write_file('Log-Error-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.@consoleData.'\n', 'Append');
 		@sendConsole = true;
 	}
-	if(@sendConsole == true) {
-		console(@message.@consoleData, false)
+	if(@sendConsole === true) {
+		console(@message.@consoleData, false);
 	} else {
-		_write_file('Log-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.@consoleData.'\n', 'Append')
+		_write_file('Log-Console.txt', '['.simple_date('MM-dd-yy HH:mm:ss', time()).']: '.@message.@consoleData.'\n', 'Append');
 	}
 	# Broadcast to MC server Admins, if available
-	if(function_exists('all_players') && @sendPlayer == true) {
+	if(function_exists('all_players') && @sendPlayer === true) {
 		foreach(@p in all_players()) {
-			if(has_permission(@p, 'admin.messages.receive.'.@type) && @p != @skipPlayer) { tmsg(@p, @message) }
+			if(has_permission(@p, 'admin.messages.receive.'.@type) && @p != @skipPlayer) { tmsg(@p, @message); }
 		}
 	}
 }
 
 proc _write_file(string @path, @content, @append, @option) {
-	if(length(@path) < 5) { return(false) }
+	if(length(@path) < 5) { return(false); }
 	if(!is_bytearray(@content)) {
-		if(length(@content) <= 0) { return(false) }
+		if(length(@content) <= 0) { return(false); }
 	}
-	@pf = '/'
-	@notpf = '\\\\'
-	@pathdrive = '/'
+	@pf = '/';
+	@notpf = '\\\\';
+	@pathdrive = '/';
 	#backslash escapes on regex: must add extra backslash
-	if(get_os() == 'WINDOWS') { @pf = '\\\\' @notpf = '/' @pathdrive = @path[0..1].'\\' }
-	@path = reg_replace('['.@notpf.']', @pf, @path)
-	@pathparent = reg_replace('[^'.@pf.']+$', '', @path)
-	@pathlayout = reg_match('(.+)(['.@pf.'].+)(['.@pf.'].+)$', @path)
-	@pathsplit = reg_split(@pf, @path)
-	array_remove(@pathsplit, 0)
-	# console(@pathlayout)
+	if(get_os() == 'WINDOWS') { @pf = '\\\\' @notpf = '/' @pathdrive = @path[0..1].'\\'; }
+	@path = reg_replace('['.@notpf.']', @pf, @path);
+	@pathparent = reg_replace('[^'.@pf.']+$', '', @path);
+	@pathlayout = reg_match('(.+)(['.@pf.'].+)(['.@pf.'].+)$', @path);
+	@pathsplit = reg_split(@pf, @path);
+	array_remove(@pathsplit, 0);
+	# console(@pathlayout);
 	# 1 = root path, 2 = /parent, 3 = /filename or current dir
-	if(!@append) { @append = 'default' }
-	@create = false
+	if(!@append) { @append = 'default'; }
+	@create = false;
 	switch(to_lower(string(@append)[0])) {
 	case 'c':
-		@append = 'OVERWRITE'
-		@create = true
+		@append = 'OVERWRITE';
+		@create = true;
 	case 'f':
 	case 'o':
-		@append = 'OVERWRITE'
+		@append = 'OVERWRITE';
 	case 't':
 	case 'a':
-		@append = 'APPEND'
+		@append = 'APPEND';
 	default:
-		@append = 'OVERWRITE'
+		@append = 'OVERWRITE';
 	}
 	if(extension_exists('CHFiles')) {
-		#Create Parent folder(s)
-		@pathbuild = @pathdrive
+		#Create Parent folder(s);
+		@pathbuild = @pathdrive;
 		for(@i = 0, @i < array_size(@pathsplit), @i++) {
 			try {
 				if(!is_dir(@pathbuild)) {
-					create_dir(@pathbuild)
+					create_dir(@pathbuild);
 				}
 			} catch(IOException @ex) {
 				# You do not have permission to view folder. -- Most likely checking early in path in unprivileged directories outside of CH's base-dir
 				if((@i + 1) == array_size(@pathsplit)) {
 					# Entire path was unavailable to CH, stop here.
-					console('Create Parent Folder: '.@ex)
-					return(false)
+					console('Create Parent Folder: '.@ex);
+					return(false);
 				}
 			}
-			@pathbuild .= @pf.@pathsplit[@i]
+			@pathbuild .= @pf.@pathsplit[@i];
 		}
 		# File check: 
 		#	Append: if file does not exist make an empty file 
 		#	Create mode: stop if file exists
 		try {
 			if(file_exists(@path)) {
-				if(@create == true) {
-					return(false)
+				if(@create === true) {
+					return(false);
 				}		
 			} else {
-				create_file(@path)
+				create_file(@path);
 			}
 		} catch(Exception @ex) {
-			console('Create file: '.@ex)
-			return(false)
+			console('Create file: '.@ex);
+			return(false);
 		}
 		try {
-			write_file(@path, @content, @append)
-			return(true)
+			write_file(@path, @content, @append);
+			return(true);
 		} catch(Exception @ex) {
-			msg('File not written, check console logs.')
-			console('Write file: '.@ex)
-			return(false)
+			msg('File not written, check console logs.');
+			console('Write file: '.@ex);
+			return(false);
 		}
 	}
 	if(extension_exists('CHFile')) {
 		try {
 			if(chf_file_exists(@path)) {
-				if(@create == true) {
-					return(false)
+				if(@create === true) {
+					return(false);
 				}		
 			} else {
-				chf_create_file(@path, true)
+				chf_create_file(@path, true);
 			}
 		} catch(Exception @ex) {
-			console('Create file: '.@ex)
-			return(false)
+			console('Create file: '.@ex);
+			return(false);
 		}
 		try {
 			if(is_bytearray(@content)) {
 				if(@option == 'gzip') {
-					chf_write_gzip_binary(@path, @content, @append)
+					chf_write_gzip_binary(@path, @content, @append);
 				} else {
-					chf_write_binary(@path, @content, @append)
+					chf_write_binary(@path, @content, @append);
 				}
 			} else {
-				chf_write(@path, @content, @append)
+				chf_write(@path, @content, @append);
 			}
-			return(true)
+			return(true);
 		} catch(Exception @ex) {
-			msg('File not written, check console logs.')
-			console('Write file: '.@ex)
-			return(false)
+			msg('File not written, check console logs.');
+			console('Write file: '.@ex);
+			return(false);
 		}	
 	}
 	if(in_cmdline_mode()) {
 		try {
 			x_write(@path, @content, @append)  
-			return(true)
+			return(true);
 		} catch(Exception @ex) {
-			msg('File not written, check console logs.')
-			console('Write file: '.@ex)
-			return(false)
+			msg('File not written, check console logs.');
+			console('Write file: '.@ex);
+			return(false);
 		}
 	} else {
-		msg('[Write file] No writing method was found.') 
-		console(color(12).'[Write file] No writing method was found. '.color(6).'Please install the CHFiles or CHFile extension.') 
-		return(false)
+		msg('[Write file] No writing method was found.');
+		console(color(12).'[Write file] No writing method was found. '.color(6).'Please install the CHFiles or CHFile extension.');
+		return(false);
 	}
 }
 
@@ -187,12 +187,11 @@ proc _register_sign_command(string @name, string @proc, array @options = array()
 }
 
 proc _register_poll_file(string @name, string @proc, string @path, array @options = array()) {
-	if(@name == '' || @name == null) { return(false) }
-	if(@proc == '' || @proc == null) { return(false) }
+	if(!@name || !@proc) { return(false); }
 	@rereg = array();
-	@polls = import('cypher139.poll.files')
-	if(!is_array(@polls)) { @polls = array() }
-	if(is_associative(@options)) { @options = array_normalize(@options) }
+	@polls = import('cypher139.poll.files');
+	if(!is_array(@polls)) { @polls = array(); }
+	if(is_associative(@options)) { @options = array_normalize(@options); }
 	if(array_index_exists(@polls, @name)) { @rereg[] = @name; }
 	#Register file
 	@polls[@name] = array('proc': @proc, 'last': time(), 'path': @path, 'options': @options);
@@ -203,64 +202,64 @@ proc _register_poll_file(string @name, string @proc, string @path, array @option
 
 
 proc _array_string_contains(array @array, string @needle, string @matchType = 'default', @returnType = 'boolean', @doKeys) {
-	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die() }
-	if(@needle == '') { throw('ms.lang.CastException', 'No string given.') die() }
-	@return = false
-	@returnArray = array()
-	if(@doKeys != '') {	@array = array_keys(@array) }
+	if(!is_array(@array)) { throw('ms.lang.CastException', 'Not an Array given.') die(); }
+	if(@needle == '') { throw('ms.lang.CastException', 'No string given.') die(); }
+	@return = false;
+	@returnArray = array();
+	if(@doKeys != '') {	@array = array_keys(@array); }
 	foreach(@haystack in @array) {
 		switch(@matchType) {
 		case 'min':
 		# Minimum matching: If needle string size is less than haystring string size continue, as otherwise in this case it's 99% false positive.
 		# i.e. ("everyone", "on") techincally it does contain 'on', but we were looking for the word "everyone" not words that can be made from it.
-			if(length(@haystack) > length(@needle)) { continue() }
+			if(length(@haystack) > length(@needle)) { continue(); }
 		case 'exact':
-			if(length(@haystack) != length(@needle)) { continue() }
+			if(length(@haystack) != length(@needle)) { continue(); }
 		}
 		if(string_contains_ic(@haystack, @needle)) {
-			@return = true
-			@returnArray[] = @haystack
-#			msg('i think '.@haystack.' is an option at: '.string_position(to_lower(@haystack), to_lower(@needle)))
+			@return = true;
+			@returnArray[] = @haystack;
+#			msg('i think '.@haystack.' is an option at: '.string_position(to_lower(@haystack), to_lower(@needle)));
 		}
 	} else {
-		console('Empty array given')
+		console('Empty array given');
 	}
 	switch(string(@returnType)) {
 	case 'array':
-		return(@returnArray)
+		return(@returnArray);
 	case 'boolean':
 	case 'true':
 	case 'false':
 	default:
-		return(@return)
+		return(@return);
 	}
 }
 
 # String Capitalization or underscore removal features
 proc _capitalize(@string, boolean @a = false, boolean @lower = true, boolean @u = true) {
-	if(is_boolean(@string)) { @string = string(@string) }
-	if(is_array(@string)) { @string = array_implode(@string, ' ') }
-	if(!is_string(@string)) { throw('CastException', 'Expected string in _capitalize(), but received a '.typeof(@string)) }
+	if(is_boolean(@string)) { @string = string(@string); }
+	if(is_array(@string)) { @string = array_implode(@string, ' '); }
+	if(!is_string(@string)) { throw('CastException', 'Expected string in _capitalize(), but received a '.typeof(@string)); }
 	switch(length(@string)) {
 	case 0:
-		return(@string)
+		return(@string);
 	case 1:
-		return(to_upper(@string))
+		return(to_upper(@string));
 	default:	
-		if(@lower) { @string = to_lower(@string) }
+		if(@lower) { @string = to_lower(@string); }
 		if(@u) {
 			if(reg_count('[_]', @string) > 0) {
-				@string = replace(@string, '_', ' ')
+				@string = replace(@string, '_', ' ');
 			}
 		}
 		if(@a) {
-			@astring = reg_split('\\s', @string)
-			foreach(@k: @v in @astring) { @astring[@k] = to_upper(@v[0]).@v[cslice(1, length(@v) - 1)] }
-			@string = array_implode(@astring, ' ')
+			@astring = reg_split('\\s', @string);
+			foreach(@k: @v in @astring) { @astring[@k] = to_upper(@v[0]).@v[cslice(1, length(@v) - 1)]; }
+			@string = array_implode(@astring, ' ');
 		} else {
 			@string = to_upper(@string[0]).@string[cslice(1, length(@string) - 1)]
 		}
-		return(@string)
+		return(@string);
 	}
 }
 
@@ -269,17 +268,17 @@ proc _is_even_number(@number, @round) {
 	switch(@round) {
 		case 'up':
 		case 'ceil':
-			@number = ceil(@number)
+			@number = ceil(@number);
 		case 'down':
 		case 'integer':
 		case 'int':
-			@number = integer(@number)
+			@number = integer(@number);
 		case 'round':
 		case 'r':
 		default:
 			@number = integer(round(@number))	
 	}
-	return(@number % 2 == 0)
+	return(@number % 2 == 0);
 }
 
 #Random Code Generation
@@ -288,9 +287,9 @@ proc _codegen(@length = 7, @t1 = 'full', @t2) {
 # Extra character types: 8bit or 16bit for their respective numbers.
 
 #--- User Input Checks
-	@string = array()
-	@chars = array()
-	@opt = array()
+	@string = array();
+	@chars = array();
+	@opt = array();
 	if(!@t1) { @t1 = 'full'; }
 	if(is_array(@t1)) {
 		if(is_associative(@t1)) {
@@ -409,11 +408,11 @@ proc _codegen(@length = 7, @t1 = 'full', @t2) {
 #returns array of name, displayname, nickname, and UUID
 proc _getplayerID(@findID, @retType = 'array', @dashType = 'dashless') {
 	if(function_exists('player')) {
-		@pid = array()
-		@uuiddata = import('primus.database.UUID')
-		if(!is_array(@uuiddata)) { @uuiddata = array() }
+		@pid = array();
+		@uuiddata = import('primus.database.UUID');
+		if(!is_array(@uuiddata)) { @uuiddata = array(); }
 		if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
-			@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
+			@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console');
 		} else {
 			try {
 				@pid['id'] = puuid(@findID, 'dashless');
@@ -422,150 +421,150 @@ proc _getplayerID(@findID, @retType = 'array', @dashType = 'dashless') {
 				#if ID not found: search uuid for playername
 				foreach(@k: @v in @uuiddata) {
 					if(equals_ic(@findID, @v[0])) { 
-						@pid['id'] = @k
-						break()
+						@pid['id'] = @k;
+						break();
 					}
 				}
 			}
 			#not sure what to return yet
-			if(!array_index_exists(@pid, 'id')) { @pid['id'] = null }
+			if(!array_index_exists(@pid, 'id')) { @pid['id'] = null; }
 				
 			#if found in database
 			if(array_index_exists(@uuiddata, @pid['id'])) {
-				@pid['name'] = @uuiddata[@pid['id']][0]
-				@pid['display'] = @uuiddata[@pid['id']][0]
-				if(ponline(@pid['name']) == true) {
+				@pid['name'] = @uuiddata[@pid['id']][0];
+				@pid['display'] = @uuiddata[@pid['id']][0];
+				if(ponline(@pid['name']) === true) {
 					@pid['nick'] = pinfo(@pid['name'])[4];
 				} else {
-					@pid['nick'] = @uuiddata[@pid['id']][2]	
+					@pid['nick'] = @uuiddata[@pid['id']][2];
 				}
 			} else {
 			#not found in database
-				if(ponline(@findID) == true) {
+				if(ponline(@findID) === true) {
 					@pid['display'] = pinfo(@findID)[0];
 					@pid['name'] = pinfo(@findID)[0];
 					@pid['nick'] = pinfo(@findID)[4];
 				} else {
-					@pid['display'] = @findID
-					@pid['name'] = @findID
+					@pid['display'] = @findID;
+					@pid['name'] = @findID;
 					@pid['nick'] = 'Player Offline'		
 				}
 			}
 		}
 		#Bedrock to Java players come in with name ".NAME", remove dot
 		if(reg_count('^[\\.].*', @pid['name']) == 1) {
-			@pid['display'] = reg_replace('^[\\.]', '', @pid['name'])
+			@pid['display'] = reg_replace('^[\\.]', '', @pid['name']);
 		}
 		switch(string(@retType)) {
 		case 'true':
 		case 'false':
 		case 'boolean':
-			if(@pid['id'] == null) { return(false) } else { return(true) }
+			if(@pid['id'] == null) { return(false); } else { return(true); }
 		case 'string':
 		case 'id':
-			return(@pid['id'])
+			return(@pid['id']);
 		case 'array':
-			return(@pid)
+			return(@pid);
 		}
 	} else {
-		return('Running in Command Line')
+		return('Running in Command Line');
 	}
 }
 
 #Find player NAME when given a UUID.
 proc _getplayerName(@findID) {
 	if(function_exists('player')) {
-		@pid = array()
-		@uuiddata = import('primus.database.UUID')
+		@pid = array();
+		@uuiddata = import('primus.database.UUID');
 		if(reg_count('^~?console$', @findID) > 0 || reg_count('^~?[Ss]erver$', @findID) > 0) {
-			@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console')
+			@pid = array('display': 'Console', 'name': '~console', 'id': 'console', 'nick': 'Server Console');
 		} else {
 			try {
 			#throws exception if player offline
-				@pid['name'] = player(@findID)
-				@pid['display'] = player(@findID) 
+				@pid['name'] = player(@findID);
+				@pid['display'] = player(@findID);
 				@pid['nick'] = pinfo(@pid['name'])[4]
-				@pid['id'] = @findID
+				@pid['id'] = @findID;
 			} catch(Exception @ex) {
 				#puuid/player throws exception if not found.
 				#if ID not found: search uuid for playername
 				foreach(@k: @v in @uuiddata) {
 					if(equals_ic(@findID, @k)) { 
-						@pid['id'] = @k 
-						@pid['name'] = @v[0] 
-						@pid['display'] = @v[0] 
-						@pid['nick'] = @v[2] 
-						break()
+						@pid['id'] = @k;
+						@pid['name'] = @v[0];
+						@pid['display'] = @v[0];
+						@pid['nick'] = @v[2];
+						break();
 					}
 				}
 			}
 			if(!array_index_exists(@pid, 'name')) {
-				@pid = array('display': 'null', 'name': null, 'id': null, 'nick': 'ID not Valid')
+				@pid = array('display': 'null', 'name': null, 'id': null, 'nick': 'ID not Valid');
 			}
 		}
-		return(@pid)
+		return(@pid);
 	} else {
-		return('Running in Command Line')
+		return('Running in Command Line');
 	}
 }
 
 proc _primus_database_add(@player, @type, @data, @option) {
-	if(@player == '' || @player == null) { return('No Player Given') }
+	if(@player == '' || @player == null) { return('No Player Given'); }
 	if(function_exists('player')) {
-		@update = false
+		@update = false;
 		switch(@type) {
 		case 'uuid':
 		# Setup Player UUID Database
-			if(@data == '' || @data == null) { @data = puuid(@player, 'dashless') }
-			@uuiddata = import('primus.database.UUID')
+			if(@data == '' || @data == null) { @data = puuid(@player, 'dashless'); }
+			@uuiddata = import('primus.database.UUID');
 			#entry found	
 			if(array_index_exists(@uuiddata, @data)) {
 									#Name, World location, Nickname
-				@uuiddata[@data] = array(pinfo(@player)[0], pinfo(@player)[1], pinfo(@player)[4])
+				@uuiddata[@data] = array(pinfo(@player)[0], pinfo(@player)[1], pinfo(@player)[4]);
 			} else {
 			#entry not found
 				#if array key not set, @array[key] does not work
 				@uuiddata[@data] = array(pinfo(@player)[0], pinfo(@player)[1], pinfo(@player)[4]);
-				broadcast(color(7).'Welcome '.color('a').player().color(7).' to the server! It\'s their first time here!')
+				broadcast(color(7).'Welcome '.color('a').player().color(7).' to the server! It\'s their first time here!');
 			}
-			@update = true
-			if(@update == true) {
-				store_value('primus.database.UUID', @uuiddata)
-				export('primus.database.UUID', @uuiddata)
+			@update = true;
+			if(@update === true) {
+				store_value('primus.database.UUID', @uuiddata);
+				export('primus.database.UUID', @uuiddata);
 			}
 		case 'ip':		
 		# Setup Player IP Database
-			@ipdata = import('primus.database.IP')
+			@ipdata = import('primus.database.IP');
 			if(!array_index_exists(@ipdata, '_hostname')) { @ipdata['_hostname'] = array(); }
 			#entry found
-			if(@data == '' || @data == null) { @data = pinfo(@player)[3] }
-			if(@option == '' || @option == null) { @option = pinfo(@player)[10] }
-			@ip = reg_replace('[%][0]$', '', @data)
+			if(@data == '' || @data == null) { @data = pinfo(@player)[3]; }
+			if(@option == '' || @option == null) { @option = pinfo(@player)[10]; }
+			@ip = reg_replace('[%][0]$', '', @data);
 			if(array_index_exists(@ipdata, @ip)) {
 				#IP entry found
 				if(array_contains(@ipdata[@ip], @player)) {
 					#both IP and player found
-					tmsg(@player, color('a').'Welcome back'.color(7).' to the server, glad you are here!')
+					tmsg(@player, color('a').'Welcome back'.color(7).' to the server, glad you are here!');
 				} else {
 					#IP entry found, but player not found
-					array_push(@ipdata[@ip], @player)
-					@update = true
+					array_push(@ipdata[@ip], @player);
+					@update = true;
 				}
 			} else {
 				#IP entry not found
 				@ipdata[@ip] = array(@player);
-				@update = true
+				@update = true;
 			}
-			if(@update == true) {
+			if(@update === true) {
 				@ipdata['_hostname'][@ip] = @option;
-				store_value('primus.database.IP', @ipdata)
-				export('primus.database.IP', @ipdata)
+				store_value('primus.database.IP', @ipdata);
+				export('primus.database.IP', @ipdata);
 			}
 		default:
-			return('Unsupported Action')
+			return('Unsupported Action');
 		}
-		return(true)
+		return(true);
 	} else {
-		return('Running in Command Line')
+		return('Running in Command Line');
 	}
 }

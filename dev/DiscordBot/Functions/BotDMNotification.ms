@@ -1,127 +1,127 @@
 # Notify connected servers of any DMs sent to the Bot.
 export('DiscordBot.DMs.user.settings', get_value('DiscordBot.DMs.user.settings'));
 proc _db_format_msg_attach(@discord, @url = false) {
-	@ret = @discord['message']
-	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @url == false) {
-		@ret = '<Sent a GIF>'
+	@ret = @discord['message'];
+	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @url === false) {
+		@ret = '<Sent a GIF>';
 	}
 	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
 		if(@discord['message'] == '') {
-			@ret = '<Sent a file> '
+			@ret = '<Sent a file> ';
 		} else {
-			@ret = @discord['message'].'\n <Also attached file:> '
+			@ret = @discord['message'].'\n <Also attached file:> ';
 		}
 		foreach(@num: @attach in @discord['attachments']) {
-			@adesc = ''
-			@filenum = 'File: '
-			if(@num != 0) { @filenum = '  File #'.(@num + 1).': ' }
-			if(@attach['description'] != '') { @adesc = color(3).'('.@attach['description'].')'.color('r') }
-			@ret .= @filenum.@attach['filename'].@adesc
+			@adesc = '';
+			@filenum = 'File: ';
+			if(@num != 0) { @filenum = '  File #'.(@num + 1).': '; }
+			if(@attach['description'] != '') { @adesc = color(3).'('.@attach['description'].')'.color('r'); }
+			@ret .= @filenum.@attach['filename'].@adesc;
 		}
 	}
-	return(@ret)
+	return(@ret);
 }
 
 bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notification'), null, @discord) {
 	@discord['time'] = time();
-	@saveDM = array_deep_clone(@discord)
+	@saveDM = array_deep_clone(@discord);
 	@discord['UseDM'] = true;
 # Command check: #Don't save or notify if this is a command message
-	@isCmd = _discordBot_iscommand(@discord)
-	if(@isCmd == true || is_consumed() == true) { die() }
+	@isCmd = _discordBot_iscommand(@discord);
+	if(@isCmd === true || is_consumed() === true) { die(); }
 #Else, not a command.
-	@botconfig = import('DiscordBot.config.Bot')
-	@guildcfgNotify = array()
-	@guildcfgCmd = array()
-	@guildcfgChannel = array()
-	@guildcfgURL = array()
-	@guildcfgNM = array()
+	@botconfig = import('DiscordBot.config.Bot');
+	@guildcfgNotify = array();
+	@guildcfgCmd = array();
+	@guildcfgChannel = array();
+	@guildcfgURL = array();
+	@guildcfgNM = array();
 	@userserver = 0
-	@userServers = array()
-	@avatar = 'https://cdn.discordapp.com/embed/avatars/0.png'
+	@userServers = array();
+	@avatar = 'https://cdn.discordapp.com/embed/avatars/0.png';
 	@gf = 0
 	foreach(@serverID in import('DiscordBot.Servers')) {
-		@cfg = import('DiscordBot.config.'.@serverID)
-		if(@cfg['DM_Notify'] == true) {	@guildcfgNotify[] = @serverID }
+		@cfg = import('DiscordBot.config.'.@serverID);
+		if(@cfg['DM_Notify'] === true) {	@guildcfgNotify[] = @serverID; }
 		@guildcfgCmd[@serverID] = @cfg['CMD_Command_Prefix'];
 		@guildcfgChannel[@serverID] = @cfg['Channels']['Log'];
 		@guildcfgURL[@serverID] = @cfg['URL_Broadcast'];
 		if(array_index_exists(@cfg, 'DM_Notify_NonMember')) { @guildcfgNM[@serverID] = @cfg['DM_Notify_NonMember']; } else { @guildcfgNM[@serverID] = false; }
 		if(array_contains(discord_get_members(@serverID), @discord['userid'])) {
-			@userServers[] = @serverID
+			@userServers[] = @serverID;
 			@gf++
-			@userserver = @serverID
+			@userserver = @serverID;
 			if(@gf < 2) {
 				@avatar = discord_member_info(@serverID, @discord['userid'])['avatar']
 			}
 		}
 	}
 # User settings
-	@recentDMs = get_value('DiscordBot.DMs.recent')
-	@userConfig = import('DiscordBot.DMs.user.settings')
+	@recentDMs = get_value('DiscordBot.DMs.recent');
+	@userConfig = import('DiscordBot.DMs.user.settings');
 	if(is_array(@userConfig)) {
 		if(!array_index_exists(@userConfig, @discord['userid'])) {
 			@userConfig[@discord['userid']] = array('NotifyContent': true, 'URLReadback': false);
 		}	
 	} else {
-		@userConfig = array()
+		@userConfig = array();
 		@userConfig[@discord['userid']] = array('NotifyContent': true, 'URLReadback': false);
 	}
 #AS: check if user is under Anti Spam
-	@isAS = import('DiscordBot.bot.antispam.triggers')
+	@isAS = import('DiscordBot.bot.antispam.triggers');
 	if(!is_array(@isAS)) { 
-		@isAS = get_value('DiscordBot.bot.antispam.triggers')
-		if(!is_array(@isAS)) { @isAS = array('active': array(), 'msgs': array(), 'lastedit': 0, 'total': 0) }
+		@isAS = get_value('DiscordBot.bot.antispam.triggers');
+		if(!is_array(@isAS)) { @isAS = array('active': array(), 'msgs': array(), 'lastedit': 0, 'total': 0); }
 	}
 # Save recent DMs for future reference if needed
-	@newDM = array()
+	@newDM = array();
 	@newDM[@discord['time']] = @discord['userid'];
-	if(!is_array(@recentDMs)) { @recentDMs = array() }
-	array_insert(@recentDMs, @newDM, 0)
+	if(!is_array(@recentDMs)) { @recentDMs = array(); }
+	array_insert(@recentDMs, @newDM, 0);
 	
-	@userDMs = get_value('DiscordBot.DMs.log.'.@discord['userid'])
-	if(!is_array(@userDMs)) { @userDMs = array() }
+	@userDMs = get_value('DiscordBot.DMs.log.'.@discord['userid']);
+	if(!is_array(@userDMs)) { @userDMs = array(); }
 	if(array_index_exists(@saveDM, 'attachments', 0, 'filename')) {
 		foreach(@num: @attach in @saveDM['attachments']) {
-			if(@attach['description'] == '') { array_remove(@saveDM['attachments'][@num], 'description') }
+			if(@attach['description'] == '') { array_remove(@saveDM['attachments'][@num], 'description'); }
 		}
 	} else { array_remove(@saveDM, 'attachments') }
-	array_remove(@saveDM, 'userid')
-	array_insert(@userDMs, @saveDM, 0)
-	_write_file(import('DiscordBot.logs.dir').'/DMs/UserDMs-'.@discord['userid'].'.json', json_encode(@userDMs), 'overwrite')
-	store_value('DiscordBot.DMs.recent', @recentDMs)
-	store_value('DiscordBot.DMs.log.'.@discord['userid'], @userDMs)
+	array_remove(@saveDM, 'userid');
+	array_insert(@userDMs, @saveDM, 0);
+	_write_file(import('DiscordBot.logs.dir').'/DMs/UserDMs-'.@discord['userid'].'.json', json_encode(@userDMs), 'overwrite');
+	store_value('DiscordBot.DMs.recent', @recentDMs);
+	store_value('DiscordBot.DMs.log.'.@discord['userid'], @userDMs);
 			
 # Message Display:
 	@mcMsg = _db_format_msg_attach(@discord, @botconfig['URL_Broadcast']);
 # Send DM notification to Minecraft and Console
-	if(@userConfig[@discord['userid']]['NotifyContent'] == true && !array_index_exists(@isAS, 'active', @discord['userid'])) {
+	if(@userConfig[@discord['userid']]['NotifyContent'] === true && !array_index_exists(@isAS, 'active', @discord['userid'])) {
 		_db_mc_broadcast(color(9).'[Discord Bot] New DM from ['.color(7).@discord['username'].color(9).'] Message: \n'.color(7).@mcMsg, 'players');
 	}
 	_db_msg_Console(color(9).'DM from '.color(11).@discord['username'].color('r').' <@'.@discord['userid'].'> '.color(9).'Message: \n'.color('r').@mcMsg, 'bot');
 	
 #Setup message URLs to embed and console
-	@urlembed = array()
+	@urlembed = array();
 	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
-		@urls = array()
+		@urls = array();
 		foreach(@num: @attach in @discord['attachments']) {
-			@adesc = ''
-			@filenum = 'File: '
-			if(@num != 0) { @filenum = 'File #'.(@num + 1).': ' }
-			if(@attach['description'] != '') { @adesc = color(3).'('.@attach['description'].')'.color('r') }
-			console(@filenum.@attach['filename'].@adesc.'\n'.color(1).@attach['url'], false)
+			@adesc = '';
+			@filenum = 'File: ';
+			if(@num != 0) { @filenum = 'File #'.(@num + 1).': '; }
+			if(@attach['description'] != '') { @adesc = color(3).'('.@attach['description'].')'.color('r'); }
+			console(@filenum.@attach['filename'].@adesc.'\n'.color(1).@attach['url'], false);
 			#
-			if(@botconfig['URL_Broadcast'] == true && @userConfig[@discord['userid']]['NotifyContent'] == true) {
-				_db_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], 'players')
+			if(@botconfig['URL_Broadcast'] === true && @userConfig[@discord['userid']]['NotifyContent'] === true) {
+				_db_mc_broadcast(color(8).'URL #'.(@num + 1).': '.@attach['url'], 'players');
 			}
-			array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false))
+			array_push(@urls, array('name': 'URL #'.(@num + 1), 'value': @attach['url'], 'inline': false));
 		}
-		@urlembed = array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/610596549327847434.gif', 'text': 'Use common sense, download at your own risk.'))
-		if(@userConfig[@discord['userid']]['URLReadback'] == true) {
+		@urlembed = array('fields': @urls, 'color': array('r': 0, 'g': 0, 'b': 255), 'thumbnail': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Breezeicons-places-32-folder-download.svg/32px-Breezeicons-places-32-folder-download.svg.png', 'description': 'File List', 'footer': array('icon_url': 'https://cdn.discordapp.com/emojis/610596549327847434.gif', 'text': 'Use common sense, download at your own risk.'));
+		if(@userConfig[@discord['userid']]['URLReadback'] === true) {
 			try {
-				discord_private_message(@discord['userid'], array('embeds': array(@urlembed)))
+				discord_private_message(@discord['userid'], array('embeds': array(@urlembed)));
 			} catch(Exception @ex) {
-				_db_msg_Console('[DiscordBot] URL Readback: '.color(12).@ex['classType'].': '.@ex['message'])
+				_db_msg_Console('[DiscordBot] URL Readback: '.color(12).@ex['classType'].': '.@ex['message']);
 			}
 		}
 	}	
@@ -129,14 +129,14 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 	foreach(@serverID in @guildcfgNotify) {
 	#Check: If user not a member of guild
 		if(!array_contains(@userServers, @serverID)) {
-			if(@guildcfgNM[@serverID] == false) {
-				continue()
+			if(@guildcfgNM[@serverID] === false) {
+				continue();
 			}
 		}
 		@dcMsg = _db_format_msg_attach(@discord, @guildcfgURL[@serverID]);
-		@msgembed = array(array('title': @discord['username'], 'color': array('r': 109, 'g': 109, 'b': 109), 'description': @dcMsg))
+		@msgembed = array(array('title': @discord['username'], 'color': array('r': 109, 'g': 109, 'b': 109), 'description': @dcMsg));
 	#Get Avatar and embed color info
-		@userinfo = array('avatar': @avatar)
+		@userinfo = array('avatar': @avatar);
 		@userinfo = discord_member_info(@serverID, @discord['userid']);
 		if(array_index_exists(@userinfo, 'avatar')) {
 			@msgembed[0]['author'] = array('icon_url': @userinfo['avatar'].'?size=40', 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username']));
@@ -150,34 +150,34 @@ bind('discord_private_message_received', array('id': 'DiscordBot.DMs.Notificatio
 		}
 	#Limit message characters
 		if(reg_count('[\\s\\S]{1,1920}', @dcMsg) > 1) {
-			@dcMsg = @dcMsg[cslice(0, 1910)].' ...'
+			@dcMsg = @dcMsg[cslice(0, 1910)].' ...';
 		}
 	# Include message content?
 		# Antispam: No, don't read back DM spam - some spammers also spam the message to bot when AS DM's to tell them that they are timed out.
 		if(array_index_exists(@isAS, 'active', @discord['userid'])) {
-			@oserver = ''
-			if(@serverID != @isAS['active'][@discord['userid']]) { @oserver = ' on another server' }
-			@dcMsg = '<<<Anti Spam protection is active for this user'.@oserver.'.>>>'
+			@oserver = '';
+			if(@serverID != @isAS['active'][@discord['userid']]) { @oserver = ' on another server'; }
+			@dcMsg = '<<<Anti Spam protection is active for this user'.@oserver.'.>>>';
 			if(array_contains(@isAS['msgs'][@discord['userid']], sha1(@discord['message']))) {
-				@dcMsg .= '\nThe same spam that triggered Anti Spam was just DMed to me.'
+				@dcMsg .= '\nThe same spam that triggered Anti Spam was just DMed to me.';
 			} else {
-				@dcMsg .= '\nTo avoid repeating spam their message is not displayed here.'
+				@dcMsg .= '\nTo avoid repeating spam their message is not displayed here.';
 			}
-		} else if(@userConfig[@discord['userid']]['NotifyContent'] == true) {	
+		} else if(@userConfig[@discord['userid']]['NotifyContent'] === true) {	
 		#Yes, include Urls if present
-			if(array_size(@urlembed) > 0) {	@msgembed[] = @urlembed }
+			if(array_size(@urlembed) > 0) {	@msgembed[] = @urlembed; }
 		} else {
 		# No, don't display content as requested
-			@msgtype = 'message content'
-			if(array_index_exists(@discord, 'attachments', 0, 'filename') && @saveDM['message'] == '') { @msgtype = 'attachment' }
-			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype .= 's' }
-			@dcMsg = '<<<user '.@msgtype.' not displayed>>>'
+			@msgtype = 'message content';
+			if(array_index_exists(@discord, 'attachments', 0, 'filename') && @saveDM['message'] == '') { @msgtype = 'attachment'; }
+			if(array_index_exists(@discord, 'attachments', 1, 'filename')) { @msgtype .= 's'; }
+			@dcMsg = '<<<user '.@msgtype.' not displayed>>>';
 		}
-		@dm1 = 'I received a DM!'
+		@dm1 = 'I received a DM!';
 		if(array_size(@userDMs) < 2) {
-			@dm1 = 'I received my first DM from '.@discord['username'].'!  `'.@discord['userid'].'`'
+			@dm1 = 'I received my first DM from '.@discord['username'].'!  `'.@discord['userid'].'`';
 		}
-		@msgembed[0]['description'] = @dcMsg
+		@msgembed[0]['description'] = @dcMsg;
 		_discordBot_broadcast(@serverID, @guildcfgChannel[@serverID], array('content': ':envelope_with_arrow:  '.@dm1, 'embeds': @msgembed), 'bot');
 	}
 }

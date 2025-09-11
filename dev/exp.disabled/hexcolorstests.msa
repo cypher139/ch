@@ -1,45 +1,45 @@
 #Debug actions, not meant for normal everyday usage, just bot maintenance.
 admin:/hexdebug [$action] [$] = >>>
-@name = 'Discord'
-@prefix = '['.@name.'] '
-@args = parse_args($)
-@action = to_lower(string($action))
-@botconfig = import('DiscordBot.config.Bot')
-@servers = import('DiscordBot.Servers')
-@serverID = @botconfig['Primary_Guild']
+@name = 'Discord';
+@prefix = '['.@name.'] ';
+@args = parse_args($);
+@action = to_lower(string($action));
+@botconfig = import('DiscordBot.config.Bot');
+@servers = import('DiscordBot.Servers');
+@serverID = @botconfig['Primary_Guild'];
 foreach(@arg in @args) {
 	if(array_contains(@servers, @arg)) {
-		@serverID = @arg
-		array_remove_values(@args, @arg)
-		break()
+		@serverID = @arg;
+		array_remove_values(@args, @arg);
+		break();
 	}
 }
 #pseudo array for actions that require event array
 # 777378696782657084 = ASCII: MINECRAFT
-@discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $)
-msg('Using Server ID: '.@serverID)
-include_dir('../ScriptLibraries/Functions.library')
+@discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $);
+msg('Using Server ID: '.@serverID);
+include_dir('../ScriptLibraries/Functions.library');
 
 switch(@action) {
 case 'megacheckfe':
 x_new_thread('cypher.rgb.fe', closure(){
-	@start = time()
-	@counts = array()
-	array_resize(@counts, 10, 0)
-	@ar = array()
-	array_resize(@ar, 256, 0)
-	@ag = array()
-	array_resize(@ag, 256, 0)
-	@ab = array()
-	array_resize(@ab, 256, 0)
+	@start = time();
+	@counts = array();
+	array_resize(@counts, 10, 0);
+	@ar = array();
+	array_resize(@ar, 256, 0);
+	@ag = array();
+	array_resize(@ag, 256, 0);
+	@ab = array();
+	array_resize(@ab, 256, 0);
 	@count = 0
 	@mmcount = 0
-	@runcheck = true
+	@runcheck = true;
 	if(@runcheck) {
 		foreach(@r in array_keys(@ar)) {
 			foreach(@g in array_keys(@ag)) {
 				foreach(@b in array_keys(@ab)) {
-					@rgb = array(@r, @g, @b)
+					@rgb = array(@r, @g, @b);
 					@c2 = _rgb_to_hex(@rgb);
 					if(length(@c2) != 6) {
 						@mmcount++;
@@ -47,46 +47,46 @@ x_new_thread('cypher.rgb.fe', closure(){
 					}
 					#dont msg as much
 					if(length(@c2) < 4 || length(@c2) > 6) {
-						msg(color(3).'('.@rgb[0].', '.@rgb[1].', '.@rgb[2].') '.color(12).' '.length(@c2).' chars: '.color(7).@c2)
+						msg(color(3).'('.@rgb[0].', '.@rgb[1].', '.@rgb[2].') '.color(12).' '.length(@c2).' chars: '.color(7).@c2);
 					}
 					@count++;
 				}
 			}
 		}
-		export('cypher.debug.fe', @counts)
+		export('cypher.debug.fe', @counts);
 	} else {
-		@counts = import('cypher.debug.fe')
+		@counts = import('cypher.debug.fe');
 		@mmcount = 1
 	}
-	msg('Checked: '.@count.', mismatches: '.@mmcount)
-	@countsmsg = ' '
+	msg('Checked: '.@count.', mismatches: '.@mmcount);
+	@countsmsg = ' ';
 	if(@mmcount > 0) {
 		foreach(@i: @num in @counts) {
-			msg(@i.'    '.@num)
-			@color = 'f'
-			if(@i > 0 && @num > 0) { @color = @i }
+			msg(@i.'    '.@num);
+			@color = 'f';
+			if(@i > 0 && @num > 0) { @color = @i; }
 			if(@num > 0) {
-				@countsmsg .= color(@color).@i.' chars: '.color(13).@num.'  '
+				@countsmsg .= color(@color).@i.' chars: '.color(13).@num.'  ';
 			}
 		}
-		msg(@countsmsg)
+		msg(@countsmsg);
 	}
 	@endtime = (time() - @start) / 1000
-	msg('Time Elapsed: '.@endtime.' seconds.')
+	msg('Time Elapsed: '.@endtime.' seconds.');
 });
 case 'megacheck':
 x_new_thread('cypher.rgb', closure(){
-	@start = time()
-	@counts = array()
-	array_resize(@counts, 10, 0)
+	@start = time();
+	@counts = array();
+	array_resize(@counts, 10, 0);
 	@count = 0
 	@mmcount = 0
-	@runcheck = true
+	@runcheck = true;
 	if(@runcheck) {
 		for(@r = 0, @r <= 255, @r++) {
 			for(@g = 0, @g <= 255, @g++) {
 				for(@b = 0, @b <= 255, @b++) {
-					@rgb = array(@r, @g, @b)
+					@rgb = array(@r, @g, @b);
 					@c2 = _rgb_to_hex(@rgb);
 					if(length(@c2) != 6) {
 						@mmcount++;
@@ -94,39 +94,39 @@ x_new_thread('cypher.rgb', closure(){
 					}
 					#dont msg as much
 					if(length(@c2) < 4 || length(@c2) > 6) {
-						msg(color(3).'('.@rgb[0].', '.@rgb[1].', '.@rgb[2].') '.color(12).' '.length(@c2).' chars: '.color(7).@c2)
+						msg(color(3).'('.@rgb[0].', '.@rgb[1].', '.@rgb[2].') '.color(12).' '.length(@c2).' chars: '.color(7).@c2);
 					}
 					@count++;
 				}
 			}
 		}
-		export('cypher.debug', @counts)
+		export('cypher.debug', @counts);
 	} else {
-		@counts = import('cypher.debug')
+		@counts = import('cypher.debug');
 		@mmcount = 1
 	}
-	msg('Checked: '.@count.', mismatches: '.@mmcount)
-	@countsmsg = ' '
+	msg('Checked: '.@count.', mismatches: '.@mmcount);
+	@countsmsg = ' ';
 	if(@mmcount > 0) {
 		foreach(@i: @num in @counts) {
-			msg(@i.'    '.@num)
-			@color = 'f'
-			if(@i > 0 && @num > 0) { @color = @i }
+			msg(@i.'    '.@num);
+			@color = 'f';
+			if(@i > 0 && @num > 0) { @color = @i; }
 			if(@num > 0) {
-				@countsmsg .= color(@color).@i.' chars: '.color(13).@num.'  '
+				@countsmsg .= color(@color).@i.' chars: '.color(13).@num.'  ';
 			}
 		}
-		msg(@countsmsg)
+		msg(@countsmsg);
 	}
 	@endtime = (time() - @start) / 1000
-	msg('Time Elapsed: '.@endtime.' seconds.')
+	msg('Time Elapsed: '.@endtime.' seconds.');
 });
 case 'colorcheck':
 	@0count = 0
 	@count = 0
 	@mmcount = 0
 	foreach(@member in discord_get_members(@serverID)) {
-		@info = discord_member_info(@serverID, @member)
+		@info = discord_member_info(@serverID, @member);
 		@c1 = null
 		@c2 = null
 		if(@info['color'] == null) {
@@ -136,13 +136,13 @@ case 'colorcheck':
 			@c2 = _rgb_to_hex(@info['color']);
 		}
 		if(length(@c2) < 6) {
-			msg(color(9).@info['username'].': '.color(3).'('.@info['color']['r'].', '.@info['color']['g'].', '.@info['color']['b'].') '.color(12).' < 6 chars: '.color(7).@c2)
+			msg(color(9).@info['username'].': '.color(3).'('.@info['color']['r'].', '.@info['color']['g'].', '.@info['color']['b'].') '.color(12).' < 6 chars: '.color(7).@c2);
 			@mmcount++;
 		}
 		@count++;
 	}
-	msg('Total members: '.array_size(discord_get_members(@serverID)))
-	msg('members with color: '.@count.', members no color: '.@0count.', mismatches: '.@mmcount)
+	msg('Total members: '.array_size(discord_get_members(@serverID)));
+	msg('members with color: '.@count.', members no color: '.@0count.', mismatches: '.@mmcount);
 default:
 msg('Action Not Recognized!')	
 }

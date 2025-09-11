@@ -3,21 +3,21 @@
 # - Then remove messages and alert admins if matching patterns were identified!
 
 # Autosave Keys
-@x8db = import('DiscordBot.db.save.keys', array())
-@x8db[] = 'antispam.members'
-@x8db[] = 'bot.antispam.triggers'
-export('DiscordBot.db.save.keys', array_unique(@x8db))
+@x8db = import('DiscordBot.db.save.keys', array());
+@x8db[] = 'antispam.members';
+@x8db[] = 'bot.antispam.triggers';
+export('DiscordBot.db.save.keys', array_unique(@x8db));
 
 # -------------
 
 proc _db_as_dm(@discord, @isFirst = false, @isCS = false) {
-	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
-	if(!is_array(@cacheMsgs)) { @cacheMsgs = array() }
-	if(@isCS == true) {
+	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages');
+	if(!is_array(@cacheMsgs)) { @cacheMsgs = array(); }
+	if(@isCS === true) {
 		# CS relay messages: Get matching msg id for this user on this server
 		@cacheID = import('DiscordBot.CS.UserMessage.relay.ID');
-		if(!is_array(@cacheID)) { @cacheID = array() }
-		if(!array_index_exists(@cacheID, @discord['serverid'], @discord['userid'])) { return(false) }
+		if(!is_array(@cacheID)) { @cacheID = array(); }
+		if(!array_index_exists(@cacheID, @discord['serverid'], @discord['userid'])) { return(false); }
 		@discord['id'] = @cacheID[@discord['serverid']][@discord['userid']];
 		@cacheID['lastedit'] = time();
 		array_remove(@cacheID[@discord['serverid']], @discord['userid']);
@@ -27,8 +27,8 @@ proc _db_as_dm(@discord, @isFirst = false, @isCS = false) {
 		if(array_index_exists(@config, 'Channels', 'CS')) { @discord['channelid'] = @config['Channels']['CS']; }
 	} else if(array_index_exists(@cacheMsgs, 'messages', @discord['id'], 'deleted')) {
 		#Normal Messages
-		if(@cacheMsgs['messages'][@discord['id']]['deleted'] == true) {
-			_db_msg_Console('[AntiSpam] Message ID '.@discord['id'].' already deleted?!  <first:'.@isFirst.'> [Channel: '.@discord['channel'].']', @discord['serverid'], 'debug')
+		if(@cacheMsgs['messages'][@discord['id']]['deleted'] === true) {
+			_db_msg_Console('[AntiSpam] Message ID '.@discord['id'].' already deleted?!  <first:'.@isFirst.'> [Channel: '.@discord['channel'].']', @discord['serverid'], 'debug');
 			return(false);
 		}
 	}
@@ -44,14 +44,14 @@ proc _db_as_dm(@discord, @isFirst = false, @isCS = false) {
 			return(@discord['id']);
 		# } catch(InsufficientPermissionException @ex) {
 		} catch(Exception @ex) {
-			_db_msg_Console('  ['.@discord['serverid'].'] [AntiSpam] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid'])
+			_db_msg_Console('  ['.@discord['serverid'].'] [AntiSpam] Cannot remove message "'.@discord['id'].'" from '.@discord['username'].' <@'.@discord['userid'].'> '.@ex['classType'].@ex['message'], @discord['serverid']);
 			return(false);
 		}
 	} else {
-		@nopermsMsg = 'AntiSpam: Not allowed to delete '.@discord['username'].'\'s spam messages.'
+		@nopermsMsg = 'AntiSpam: Not allowed to delete '.@discord['username'].'\'s spam messages.';
 		_db_msg_Console(@nopermsMsg, @discord['serverid'], 'error');
-		@config = import('DiscordBot.config.'.@discord['serverid'])
-		if(array_index_exists(@config, 'Nag_Server')) { _discordBot_broadcast(@discord['serverid'], @config['Nag_Server'], array('prefix': array('confirm', false), 'dm': true, 'content': @nopermsMsg), 'Bot') }
+		@config = import('DiscordBot.config.'.@discord['serverid']);
+		if(array_index_exists(@config, 'Nag_Server')) { _discordBot_broadcast(@discord['serverid'], @config['Nag_Server'], array('prefix': array('confirm', false), 'dm': true, 'content': @nopermsMsg), 'Bot'); }
 		return(false);
 	}
 }
@@ -59,8 +59,8 @@ proc _db_as_dm(@discord, @isFirst = false, @isCS = false) {
 # -------------
 
 bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'priority': 'HIGHEST'), null, @discord) {
-	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die() }
-	if(@discord['bot'] == true) { die() }
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
+	if(@discord['bot'] === true) { die(); }
 	@time = time();
 	@discord['time'] = @time;
 	@botconfig = import('DiscordBot.config.Bot');
@@ -78,31 +78,31 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	@dmtimeout = 60000
 	@asmembers = import('DiscordBot.'.@discord['serverid'].'.antispam.members');
 	if(!is_array(@asmembers)) { 
-		@asmembers = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members')
-		if(!is_array(@asmembers)) { @asmembers = array('lastedit': 0) }
-		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
+		@asmembers = get_value('DiscordBot.'.@discord['serverid'].'.antispam.members');
+		if(!is_array(@asmembers)) { @asmembers = array('lastedit': 0); }
+		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers);
 	}
-	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages')
-	if(!is_array(@cacheMsgs)) { @cacheMsgs = array() }
+	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages');
+	if(!is_array(@cacheMsgs)) { @cacheMsgs = array(); }
 	@newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
-	@adduser = false
-	@lastUserMsgs = array()
+	@adduser = false;
+	@lastUserMsgs = array();
 	if(array_index_exists(@cacheMsgs, 'user', @discord['userid'])) {
 		foreach(@userMsgID in @cacheMsgs['user'][@discord['userid']]) {
 			@lastUserMsgs[] = @cacheMsgs['messages'][@userMsgID];
 		}
 	}
 # Record channels user has talked on recently
-	@userchannels = import('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels')
-	if(!is_array(@userchannels)) { @userchannels = array() }
+	@userchannels = import('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels');
+	if(!is_array(@userchannels)) { @userchannels = array(); }
 	if(array_index_exists(@userchannels, @discord['userid'])) {
 		if(!array_contains(@userchannels[@discord['userid']], @discord['channelid'])) {
-			@userchannels[@discord['userid']][] = @discord['channelid']
-			export('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels', @userchannels)
+			@userchannels[@discord['userid']][] = @discord['channelid'];
+			export('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels', @userchannels);
 		}		
 	} else {		
 		@userchannels[@discord['userid']] = array(@discord['channelid']);
-		export('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels', @userchannels)
+		export('DiscordBot.'.@discord['serverid'].'.Cache.User.Channels', @userchannels);
 	}
 #Flag setup
 	@userFlags = array();
@@ -124,7 +124,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		# Check if URL links to an image (popular to avoid reupload for each spam message)
 			@fileExt = reg_match('[.](?<ext>[\\w]{0,5})(?:\\?|$|h|\\s)', @discord['message']);
 			if(array_index_exists(@fileExt, 'ext')) {
-				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt)) { @userFlags[] = 's-img' }
+				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt)) { @userFlags[] = 's-img'; }
 			}
 		}
 	}
@@ -133,7 +133,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		foreach(@at in @discord['attachments']) {
 			@fileExt = reg_match('[.](?<ext>[\\w]{0,5})(?:\\?|$)', @at['filename']);
 			if(array_index_exists(@fileExt, 'ext')) {
-				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt)) { @userFlags[] = 's-img' }
+				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt)) { @userFlags[] = 's-img'; }
 			}
 		}
 	}
@@ -143,8 +143,8 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	# message is blank check no longer present due to spam moving to posting only screenshots.
 	if(array_index_exists(@lastUserMsgs, 2)) {
 		if(@lastUserMsgs[0]['channelid'] != @discord['channelid'] && @lastUserMsgs[1]['channelid'] != @discord['channelid'] && @lastUserMsgs[0]['channelid'] != @lastUserMsgs[1]['channelid']) { @cidu3 = true; }
-		@dcount = import('DiscordBot.'.@discord['serverid'].'.antispam.dupecount')
-		if(!is_array(@dcount)) { @dcount = array() }
+		@dcount = import('DiscordBot.'.@discord['serverid'].'.antispam.dupecount');
+		if(!is_array(@dcount)) { @dcount = array(); }
 		if(!array_index_exists(@dcount, @discord['userid'])) { @dcount[@discord['userid']] = array('f': 0, 'c': 0); }
 		# Set a new rolling 12 second period:
 		if(@dcount[@discord['userid']]['f'] < @time) {
@@ -157,7 +157,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	# Last message is the same as current:
 		if(@lastUserMsgs[0]['message'] == @discord['message']) {
 			## <<Add extra count>>: Current message is same yet posted on different channel. Can be indicative of spam same message on all available channels.
-			if(@lastUserMsgs[0]['channelid'] != @discord['channelid']) { @dcount[@discord['userid']]['c']++ }
+			if(@lastUserMsgs[0]['channelid'] != @discord['channelid']) { @dcount[@discord['userid']]['c']++; }
 			## <<Add extra count>>: Message contains a URL link. Can be indicative of spam same message on all available channels.
 			# if(reg_count('([\\w+]+\\:\\/\\/)?([\\w\\d-]+\\.)*[\\w-]+[\\.\\:]\\w+([\\/\\?\\=\\&\\#.]?[\\w-]+)*\\/?', @discord['message']) > 0) {
 			if(array_contains(@userFlags, 's-url')) {
@@ -192,31 +192,31 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		}
 	### If the counter reaches 5, trigger anti spam
 		if(@dcount[@discord['userid']]['c'] > 5) {
-			@adduser = true
+			@adduser = true;
 			if(array_size(@userFlags) < 1) { @userFlags[] = 'dupe'; }
 		}
-		export('DiscordBot.'.@discord['serverid'].'.antispam.dupecount', @dcount)
+		export('DiscordBot.'.@discord['serverid'].'.antispam.dupecount', @dcount);
 	}	
 # Checks for New Users:
 	# --- Returning users: Bypass new user checks ---
-	@newreturn = import('DiscordBot.'.@discord['serverid'].'.is.new.member')
+	@newreturn = import('DiscordBot.'.@discord['serverid'].'.is.new.member');
 	@checknewuser = true;
-	if(!is_array(@newreturn)) { @newreturn = array() }
+	if(!is_array(@newreturn)) { @newreturn = array(); }
 	if(array_index_exists(@newreturn, @discord['userid'])) {
-		if(@newreturn[@discord['userid']] == true) { @checknewuser = false; }
+		if(@newreturn[@discord['userid']] === true) { @checknewuser = false; }
 	}
-	if(@newuser == true && @checknewuser == true) {
+	if(@newuser === true && @checknewuser === true) {
 	# New user has talked on most channels - unlikely unless spamming. **Set limit to around number of channels @everyone can talk on.**
 		if(array_size(@userchannels[@discord['userid']]) >= @config['AS_New_User_Channel_Limit']) {
-			@adduser = true
+			@adduser = true;
 			@userFlags[] = 'newlimit'.@config['AS_New_User_Channel_Limit']
 		}
 	# New user pinged @here or @everyone
-		@checkmsg = parse_args(@discord['message'])
+		@checkmsg = parse_args(@discord['message']);
 		foreach(@word in @checkmsg) {
 			if(to_lower(@word) == '@here' || to_lower(@word) == '@everyone') {
-				@adduser = true
-				@userFlags[] = 'newglobalping'
+				@adduser = true;
+				@userFlags[] = 'newglobalping';
 				@flagDesc['newglobalping'] = replace(@flagDesc['newglobalping'], '%word%', @word);
 			}
 		}
@@ -224,7 +224,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 # Ignore Checks:
 	# Message sent in a No XP (ignored) channel
 	if(array_index_exists(@config, 'AS_Ignore_NoXP')) {
-		if(@config['AS_Ignore_NoXP'] == true) {
+		if(@config['AS_Ignore_NoXP'] === true) {
 			if(array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channel']) || array_contains(@config['LB_Options']['NoXP_Channels'], @discord['channelid'])) {
 				@adduser = false;
 			}
@@ -238,7 +238,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 ##### -------------------
 # Add user to Triggered state:
 
-	if(@adduser == true) {
+	if(@adduser === true) {
 		@userFlags = array_unique(@userFlags);
 		if(!array_index_exists(@asmembers, @discord['userid'])) {
 			@asmembers[@discord['userid']] = array('flags': @userFlags, 'log': false, 'rtime': @time, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0);
@@ -250,12 +250,12 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 
 	if(array_index_exists(@asmembers, @discord['userid'])) {
 		consume();
-		@actiontaken = '\n- *Actions taken:*'
+		@actiontaken = '\n- *Actions taken:*';
 	# Record total server triggers
-		@count = import('DiscordBot.bot.antispam.triggers')
+		@count = import('DiscordBot.bot.antispam.triggers');
 		if(!is_array(@count)) { 
-			@count = get_value('DiscordBot.bot.antispam.triggers')
-			if(!is_array(@count)) { @count = array('lastedit': 0, 'total': 0) }
+			@count = get_value('DiscordBot.bot.antispam.triggers');
+			if(!is_array(@count)) { @count = array('lastedit': 0, 'total': 0); }
 			if(!array_index_exists(@count, 'msgs')) { @count['msgs'] = array(); }
 			if(!array_index_exists(@count, 'active')) { @count['active'] = array(); }
 		}
@@ -265,26 +265,26 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	# Record User message hash (for DMs to verify if same spam was DM'ed to bot)
 		if(!array_index_exists(@count, 'msgs', @discord['userid'])) { @count['msgs'][@discord['userid']] = array(); }
 		if(!array_contains(@count['msgs'][@discord['userid']], sha1(@discord['message']))) {
-			@count['msgs'][@discord['userid']][] = sha1(@discord['message'])
+			@count['msgs'][@discord['userid']][] = sha1(@discord['message']);
 		}
 	# Record user is active under Anti Spam
 		if(!array_index_exists(@count, 'active', @discord['userid'])) {
 			@count['active'][@discord['userid']] = @discord['serverid'];
 		}
-		@count['lastedit'] = @time
-		export('DiscordBot.bot.antispam.triggers', @count)
+		@count['lastedit'] = @time;
+		export('DiscordBot.bot.antispam.triggers', @count);
 	# If user's first trigger:
 		if(@asmembers[@discord['userid']]['triggercount'] < 2) {
 			@msgcount = 0
 		# Delete messages recorded in the user's cached messages?
-			if(@config['AS_Remove_Messages'] == true) {
+			if(@config['AS_Remove_Messages'] === true) {
 				if(array_contains(@userFlags, 'newlimit'.@config['AS_New_User_Channel_Limit']) || array_contains(@userFlags, 'newglobalping')) {
 				# New User: Remove last 5 mins of messages
 					@dmtimeout = 300000
 				}
 				#more messages option: remove last 30 mins
 				if(array_index_exists(@config, 'AS_Remove_User_Messages')) {
-					if(@config['AS_Remove_User_Messages'] == true) {
+					if(@config['AS_Remove_User_Messages'] === true) {
 						@dmtimeout = 1800000
 					}
 				}
@@ -295,13 +295,13 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 					if(@message['time'] > (@time - @dmtimeout) || array_contains(@count['msgs'][@discord['userid']], sha1(@message['message']))) {
 						@rmIDs[] = @message['id']; 
 						@return = _db_as_dm(@message, true);
-						if(@return != false) { @msgcount++ }
+						if(@return != false) { @msgcount++; }
 					}
 				}
 			#Remove CS relayed messages
 				foreach(@server in import('DiscordBot.Servers')) {
 					@s_cfg = import('DiscordBot.config.'.@server);
-					if(@s_cfg['Cross_Server_Messages'] != true) { continue() }
+					if(@s_cfg['Cross_Server_Messages'] != true) { continue(); }
 					@returnC = _db_as_dm(array('serverid': @server, 'username': @discord['username'], 'userid': @discord['userid']), true, true);
 					if(@returnC != false) {
 						@msgcount++;
@@ -311,29 +311,29 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				_db_msg_Console('AntiSpam: Removed Message IDs: '.array_implode(@rmIDs, ', '), @discord['serverid'], 'debug');
 			}
 			if(@msgcount > 0) {
-				@actiontaken .= ' <Deleted '.@msgcount.' of user\'s recent messages>'
+				@actiontaken .= ' <Deleted '.@msgcount.' of user\'s recent messages>';
 			}
 		# Timeout user
-			if(@config['AS_Timeout_User'] == true) {
-				@actiontaken .= ' <24 Hour Timeout set for user>'
+			if(@config['AS_Timeout_User'] === true) {
+				@actiontaken .= ' <24 Hour Timeout set for user>';
 				discord_request('PATCH', 'guilds/'.@discord['serverid'].'/members/'.@discord['userid'], array('communication_disabled_until': simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', (time() + 86400000), 'UTC')), 
 				closure(@ex) { _discordBot_broadcast(@discord['serverid'], '--admin', 'Successfully set timeout on user `'.@discord['nickname'].'` for the next 24 hours.') }, 
-				closure(@ex) { _db_msg_Console('AntiSpam: Set Timeout failed for '.@discord['username'].'\n'.@ex, @discord['serverid'], 'error') }
+				closure(@ex) { _db_msg_Console('AntiSpam: Set Timeout failed for '.@discord['username'].'\n'.@ex, @discord['serverid'], 'error'); }
 				);
 			}
 		#Brand user?
-			if(@config['AS_Brand_User'] == true) {
+			if(@config['AS_Brand_User'] === true) {
 				try {
-					discord_member_set_nickname(@discord['serverid'], @discord['userid'], 'SPAMMER: '.@discord['nickname'])
-					@actiontaken .= ' <Set Nickname to spammer>'
+					discord_member_set_nickname(@discord['serverid'], @discord['userid'], 'SPAMMER: '.@discord['nickname']);
+					@actiontaken .= ' <Set Nickname to spammer>';
 				} catch(InsufficientPermissionException @ex) {
-					_db_msg_Console('AntiSpam: Not allowed to set spam nickname for '.@discord['username'], @discord['serverid'], 'error')
+					_db_msg_Console('AntiSpam: Not allowed to set spam nickname for '.@discord['username'], @discord['serverid'], 'error');
 				} catch(Exception @ex) {
-					_db_msg_Console('AntiSpam: nickname:\n'.@ex, @discord['serverid'], 'error')
+					_db_msg_Console('AntiSpam: nickname:\n'.@ex, @discord['serverid'], 'error');
 				}
 			}
 		# Message Admins, and DM user.
-			if(@actiontaken == '\n- *Actions taken:*') { @actiontaken = '' }
+			if(@actiontaken == '\n- *Actions taken:*') { @actiontaken = ''; }
 			@s = '';
 			@prDisA = array();
 			@prDisB = array();
@@ -343,7 +343,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			foreach(@r in @userFlags) {
 				@f = @r;
 				if(reg_count('[0-9]$', @r) > 0) {
-					@f = substr(@r, 0, (length(@r) - 1))
+					@f = substr(@r, 0, (length(@r) - 1));
 				}
 				if(string_starts_with(@f, 's-')) {
 					@prDisB[] = @flagDesc[@f];
@@ -354,17 +354,17 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			@prDis = array_implode(@prDisA, ', ');
 			if(array_size(@prDisA) > 1) { @s = 's'; }
 			if(array_size(@prDisB) > 0) { @prDis .= '\n*Messages '.array_implode(@prDisB, ', ').'.*'; }
-			@logMsg = array('content': '__**Anti Spam alert**__\nUser <@'.@discord['userid'].'> [`'.@discord['username'].'`  `'.@discord['userid'].'`] triggered Anti Spam protection!\n- *Protection Reason'.@s.':* '.@prDis.@actiontaken)
-			@userinfo = array()
+			@logMsg = array('content': '__**Anti Spam alert**__\nUser <@'.@discord['userid'].'> [`'.@discord['username'].'`  `'.@discord['userid'].'`] triggered Anti Spam protection!\n- *Protection Reason'.@s.':* '.@prDis.@actiontaken);
+			@userinfo = array();
 			try {
 				@userinfo = discord_member_info(@discord['serverid'], @discord['userid']);
 			} catch(NotFoundException @ex) {
-				export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid'])
+				export('DiscordBot.debug.user.not.found.'.@discord['userid'], @discord['serverid']);
 			}
-			if(@config['AS_Log_ShowUserInfo'] == true && array_index_exists(@userinfo, 'userid')) {
-				@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid'])
-				@displayUR = 'None'
-				if(array_size(@userRoles) > 0) { @displayUR = '<@&'.array_implode(@userRoles, '> <@&').'>' }
+			if(@config['AS_Log_ShowUserInfo'] === true && array_index_exists(@userinfo, 'userid')) {
+				@userRoles = discord_member_get_roles(@discord['serverid'], @discord['userid']);
+				@displayUR = 'None';
+				if(array_size(@userRoles) > 0) { @displayUR = '<@&'.array_implode(@userRoles, '> <@&').'>'; }
 				@logMsg['embeds'] = array();
 			#Get Avatar and embed color info
 				if(!array_index_exists(@userinfo, 'avatar')) { @userinfo['avatar'] = 'https://cdn.discordapp.com/embed/avatars/0.png'; }
@@ -381,22 +381,22 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				),
 				'footer': array('text': 'ID: '.@discord['userid']),
 				'timestamp': time()
-				)
+				);
 				if(array_index_exists(@userinfo, 'color')) {
 					if(@userinfo['color'] != null) {
 						@logMsg['embeds'][0]['color'] = @userinfo['color'];
 					}
 				}
-				@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard')
+				@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard');
 				if(is_array(@leaderboard)) {
 					if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { 
 						if(@leaderboard['members'][@discord['userid']]['level'] > 0) {
-							@logMsg['embeds'][0]['fields'][] = array('name': 'Leaderboard Level', 'value': @leaderboard['members'][@discord['userid']]['level'], 'inline': true)
+							@logMsg['embeds'][0]['fields'][] = array('name': 'Leaderboard Level', 'value': @leaderboard['members'][@discord['userid']]['level'], 'inline': true);
 						}	
 					}
 				}
-				@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info')
-				if(!is_array(@joininfo)) { @joininfo = array() }
+				@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info');
+				if(!is_array(@joininfo)) { @joininfo = array(); }
 				if(!array_index_exists(@joininfo, @discord['userid'])) {
 					@inv = import('DiscordBot.'.@discord['serverid'].'.Welcome.inv', array())	
 					if(array_index_exists(@inv, @discord['userid'], 'code')) {
@@ -404,14 +404,14 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 					}
 				}
 				if(array_index_exists(@joininfo, @discord['userid'], 'code')) {
-					@code = @joininfo[@discord['userid']]['code']
-					if(is_array(@joininfo[@discord['userid']]['code'])) { @code = array_implode(@joininfo[@discord['userid']]['code'], ', ') }
-					if(@code != '') { @logMsg['embeds'][0]['fields'][] = array('name': 'Invite', 'value': @code, 'inline': true) }
+					@code = @joininfo[@discord['userid']]['code'];
+					if(is_array(@joininfo[@discord['userid']]['code'])) { @code = array_implode(@joininfo[@discord['userid']]['code'], ', '); }
+					if(@code != '') { @logMsg['embeds'][0]['fields'][] = array('name': 'Invite', 'value': @code, 'inline': true); }
 				}
-				@logMsg['embeds'][0]['fields'][] = array('name': 'Roles ['.array_size(@userRoles).']', 'value': @displayUR, 'inline': false)
+				@logMsg['embeds'][0]['fields'][] = array('name': 'Roles ['.array_size(@userRoles).']', 'value': @displayUR, 'inline': false);
 			}
-			if(@asmembers[@discord['userid']]['log'] == false) {
-				_db_msg_Console(color(14).@discord['username'].color(8).' <@'.@discord['userid'].'>'.color(7).' triggered Anti Spam protection. Reason'.@s.': '.color(9).@prDis, @discord['serverid'])
+			if(@asmembers[@discord['userid']]['log'] === false) {
+				_db_msg_Console(color(14).@discord['username'].color(8).' <@'.@discord['userid'].'>'.color(7).' triggered Anti Spam protection. Reason'.@s.': '.color(9).@prDis, @discord['serverid']);
 				_discordBot_broadcast(@discord['serverid'], '--admin', @logMsg);
 				@announceMsg = @botconfig['AS_General_Announcement'];
 				if(array_index_exists(@config, 'AS_General_Announcement')) { @announceMsg = @config['AS_General_Announcement']; }
@@ -421,30 +421,30 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 					}
 				}
 				if(@announceMsg != '') { _discordBot_broadcast(@discord['serverid'], '--announce', @announceMsg); }
-				@subMsg = ''
+				@subMsg = '';
 				if(array_contains(@userFlags, 'newlimit'.@config['AS_New_User_Channel_Limit']) || array_contains(@userFlags, 'newglobalping')) {
-					@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times')
-					if(!is_array(@logJointimes)) { @logJointimes = array() }
-					if(!array_index_exists(@logJointimes, @discord['userid'], 1)) { @subMsg = '\n\nIf you have recently rejoined the server with a new account, ask the moderators to use my `transferroles` command to bypass this AntiSpam protection.' }
+					@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times');
+					if(!is_array(@logJointimes)) { @logJointimes = array(); }
+					if(!array_index_exists(@logJointimes, @discord['userid'], 1)) { @subMsg = '\n\nIf you have recently rejoined the server with a new account, ask the moderators to use my `transferroles` command to bypass this AntiSpam protection.'; }
 				}
 				_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('prefix': 'death', 'dm': true, 'content': 'Your recent activity at the server "'.@guildInfo['name'].'" has triggered their Anti Spam protection. You will need to message the moderators to reinstate access.'.@subMsg));
-				@asmembers[@discord['userid']]['log'] = true
+				@asmembers[@discord['userid']]['log'] = true;
 			}
 		}
 	#Actions for each trigger:
-		if(@config['AS_Remove_Messages'] == true) {
+		if(@config['AS_Remove_Messages'] === true) {
 			_db_as_dm(@discord);
 		}
 ### DEBUG -------
-		@asMsgs = get_value('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', array())
+		@asMsgs = get_value('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', array());
 		if(!array_index_exists(@asMsgs, @discord['userid'])) { @asMsgs[@discord['userid']] = array(); }
-		array_insert(@asMsgs[@discord['userid']], @discord, 0)
-		store_value('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', @asMsgs)
+		array_insert(@asMsgs[@discord['userid']], @discord, 0);
+		store_value('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', @asMsgs);
 #### -------
-		@asmembers['lastedit'] = @time
+		@asmembers['lastedit'] = @time;
 		@asmembers[@discord['userid']]['rtime'] = @time;
 		@asmembers[@discord['userid']]['triggercount']++
-		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers)
+		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers);
 	}
 	# } else {
 	#User OK 

@@ -3,12 +3,12 @@
 # 8/1: deprecated reason codes to user flags, allowing for multiple reasons!
 # this will convert your old database format into the new flags format
 admin:/updatedbas [$] = >>>
-@servers = import('DiscordBot.Servers')
-	# @asmembers, @discord['userid'], array('rt': @reasonCode, 'log': false, 'rtime': @time, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0))
-@convert = array('rt': array(0: 'Unknown', 1: 'newlimit', 2: 'newglobalping', 3: 'dupe', 4: 'dupe'), 'rts': array(0: 'Unknown', 1: 's-chan3', 2: 's-url', 3: 's-img'))
+@servers = import('DiscordBot.Servers');
+	# @asmembers, @discord['userid'], array('rt': @reasonCode, 'log': false, 'rtime': @time, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0));
+@convert = array('rt': array(0: 'Unknown', 1: 'newlimit', 2: 'newglobalping', 3: 'dupe', 4: 'dupe'), 'rts': array(0: 'Unknown', 1: 's-chan3', 2: 's-url', 3: 's-img'));
 
 foreach(@serverID in @servers) {
-	@msg = @serverID.': fixed: '
+	@msg = @serverID.': fixed: ';
 	@results = array('Fixed': 0);
 	@asmembers = import('DiscordBot.'.@serverID.'.antispam.members');
 	if(!is_array(@asmembers)) {
@@ -19,7 +19,7 @@ foreach(@serverID in @servers) {
 		continue();
 	}
 	foreach(@userID: @userData in @asmembers) {
-		if(@userID == 'lastedit') { continue() }
+		if(@userID == 'lastedit') { continue(); }
 		if(!array_index_exists(@userData, 'rt') && array_index_exists(@userData, 'flags')) {
 			if(!array_index_exists(@results, 'Already Converted')) { @results['Already Converted'] = 0; }
 			@results['Already Converted']++;
@@ -29,7 +29,7 @@ foreach(@serverID in @servers) {
 		@userFlags[] = @convert['rt'][@userData['rt']];
 		if(array_index_exists(@userData, 'rts')) {
 			foreach(@i: @r in split('', @userData['rts'])) {
-				if(@r < 1) { continue() }
+				if(@r < 1) { continue(); }
 				@userFlags[] = @convert['rts'][@r];
 			}
 		}

@@ -29,17 +29,17 @@
 #
 # Misc
 /lw = /listwarps
-#/adopt $data = /spawnmob wolf:tame $data player()
+#/adopt $data = /spawnmob wolf:tame $data player();
 
 # Uhoh! I need a short command to help me now!
 /b [$data] = /butcher $data
 /g = /god
 /h [$player] = >>>
 @player = $player
-if($player == '' || $player == null) { @player = player() }
-if(!array_contains_ic(all_players(), @player)) { die(color('c').'No player by that name found.') }
-set_phealth(@player, 20)
-set_phunger(@player, 20)
+if($player == '' || $player == null) { @player = player(); }
+if(!array_contains_ic(all_players(), @player)) { die(color('c').'No player by that name found.'); }
+set_phealth(@player, 20);
+set_phunger(@player, 20);
 <<<
 
 #
@@ -51,13 +51,13 @@ set_phunger(@player, 20)
 /foodi = /give player() pork 3
 
 citizen:/ow [$] = >>>
-run_cmd('/butcher '.$)
-call_alias(/td)
-call_alias(/h)
+run_cmd('/butcher '.$);
+call_alias(/td);
+call_alias(/h);
 <<<
 
 citizen:/f [$] = >>>
-run_cmd('/butcher '.$)
-call_alias(/td)
-call_alias(/h)
+run_cmd('/butcher '.$);
+call_alias(/td);
+call_alias(/h);
 <<<

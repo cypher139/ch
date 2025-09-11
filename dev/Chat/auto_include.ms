@@ -1,74 +1,74 @@
 ### Functions
 
 proc _chat_load_config(@cfgtype) {
-	if(@cfgtype == '' || @cfgtype == null) { @cfgtype = 'Server' }
-	@loadcfg = ''
+	if(@cfgtype == '' || @cfgtype == null) { @cfgtype = 'Server'; }
+	@loadcfg = '';
 	try {
-		@loadcfg = yml_decode(read(import('Chat.config.dir').'/'.@cfgtype.'.yml'))
+		@loadcfg = yml_decode(read(import('Chat.config.dir').'/'.@cfgtype.'.yml'));
 	} catch(IOException @ex) {
 		_msg_Admins('Chat', 'error', color(12).@cfgtype.' Config file could not be read. ', @ex['message']);
-		return(false)
+		return(false);
 	} catch(FormatException @ex) {
 		_msg_Admins('Chat', 'error', color(12).@cfgtype.' Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message'])); 
-		return(false)
+		return(false);
 	} catch(Exception @ex) {
 		_msg_Admins('Chat', 'error', color(12).'There was an error with the '.@cfgtype.' Config file. ', @ex['message']); 
-		return(false)
+		return(false);
 	}
 #Checks:
 	switch(string(@cfgtype)) {
 	case 'Death_Messages':
 		if(!is_array(@loadcfg)) { 
-			_msg_Admins('Chat', 'error', 'Death Messages List file is not properly formatted.') 
-			return(false)
+			_msg_Admins('Chat', 'error', 'Death Messages List file is not properly formatted.');
+			return(false);
 		}
 	case 'Server':
-		if(!array_index_exists(@loadcfg, 'v')) { _msg_Admins('Chat', 'error', color(12).'Server Config is too old, please update.') return('OldConfig') }
+		if(!array_index_exists(@loadcfg, 'v')) { _msg_Admins('Chat', 'error', color(12).'Server Config is too old, please update.') return('OldConfig'); }
 		if(@loadcfg['v'] < import('chatmodifier.cfg.version', array(0,0,0))[0]) {
 			_msg_Admins('Chat', 'error', color(12).'Server Config for "'.@cfgtype.'" is outdated, please update.');
-			return('OldConfig')
+			return('OldConfig');
 		}
 		if(array_index_exists(@loadcfg, 'Not_Configured')) {
 			_msg_Admins('Chat', 'warning', color(14).'Server Config file is still using the default values. Please configure it to your needs!');
-			return(false)
+			return(false);
 		}
 	case 'Discord':
 	case 'Bot':
 	case 'App':
 		if(!is_proc('db_msg_Console')) { 
 			_msg_Admins('Chat', 'error', color(12).'To interact with Discord server install the DiscordBot script!');
-			return(false)
+			return(false);
 		}
 	case 'IPBlacklist':
 		if(!is_proc('_geoip_lookup')) { 
 			_msg_Admins('Chat', 'error', color(12).'To interact with IP Blacklist data, install the IP Blacklist script!');
-			return(false)
+			return(false);
 		}
 	case 'Experimental':
 	case 'ex':
-		@servercfg = import('Chat.config.Server')
-		@loadcfg = array_merge(@loadcfg, @servercfg)
+		@servercfg = import('Chat.config.Server');
+		@loadcfg = array_merge(@loadcfg, @servercfg);
 	default:
 		_msg_Admins('Chat', 'error', color(14).'config file given not recognized.');
-		return(false)
+		return(false);
 	}
-	@loadTimes = import('Chat.config.load.time')
-	if(!is_array(@loadTimes)) { @loadTimes = array() }
+	@loadTimes = import('Chat.config.load.time');
+	if(!is_array(@loadTimes)) { @loadTimes = array(); }
 	@loadTimes[@cfgtype] = time();
-	export('Chat.config.load.time', @loadTimes)
-	export('Chat.config.'.@cfgtype, @loadcfg)
-	return(@loadcfg)
+	export('Chat.config.load.time', @loadTimes);
+	export('Chat.config.'.@cfgtype, @loadcfg);
+	return(@loadcfg);
 }
 
 proc _rainbow(@msg, @type, @returntype) {
-	if(@msg == '') { return(color('c').'You didn\'t say anything!!') }
-	@msg = strip_colors(@msg)
-	@colors = array(6,7,9,'a','b','c','d','e','f')
+	if(@msg == '') { return(color('c').'You didn\'t say anything!!'); }
+	@msg = strip_colors(@msg);
+	@colors = array(6,7,9,'a','b','c','d','e','f');
 	switch(@type) {
 		case 'all':
-			@colors = array(0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f')
+			@colors = array(0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f');
 		case 'ps2':
-			@colors = array(3,7,8,9,'b','d','f')
+			@colors = array(3,7,8,9,'b','d','f');
 		# case 'normal':
 		#Standard Rainbow chat: This will select a new random color for every letter in the message.
 		# case 'doubles':
@@ -77,173 +77,173 @@ proc _rainbow(@msg, @type, @returntype) {
 		#selects a new random color for every word in the message.
 		# default:
 		#fabulous light colors: 6abcdef
-			@colors = array(6,7,9,'a','b','c','d','e','f')
+			@colors = array(6,7,9,'a','b','c','d','e','f');
 	}
 	@i = 0
-	@string = ''
+	@string = '';
 	#words: color first word.
-	@color = array_get_rand(@colors)
+	@color = array_get_rand(@colors);
 	foreach(@k: @char in @msg) {
-#	msg('k:'.@k)
-	@regc = ''
+#	msg('k:'.@k);
+	@regc = '';
 	#words: need to change color on whitespace only, everyone else continue() if punctuation / spaces, as don't need to colorize those.
 		if(@type == 'words') { 
-			@regc = '\\S'
+			@regc = '\\S';
 			#set initial color, since foreach only starts at first whitespace.
 			if(@k == 0) { 
 				if(@returntype == '' || @returntype == null) {	
-					@string = color(@color)
+					@string = color(@color);
 				} else {
 					@string = '\u0026'.@color
 				}
 			}
 		} else { 
-			@regc = '\\W'
+			@regc = '\\W';
 		}
 		#Not an approved color change character, save and continue
 		if(reg_count(@regc, @char) > 0) {
-			@string .= @char
-			continue()
+			@string .= @char;
+			continue();
 		}
 
 		if(@type == 'doubles') {
-			if(_is_even_number(@i) == true) { @color = array_get_rand(@colors) }
+			if(_is_even_number(@i) === true) { @color = array_get_rand(@colors); }
 		} else {
-			@color = array_get_rand(@colors)
+			@color = array_get_rand(@colors);
 		}
 		#chat() crashes client if color() is used, with "illegal characters in chat', switch to unicode char
 		@colortype = '\u0026'.@color
 		if(@returntype == '' || @returntype == null) {		
-			@colortype = color(@color)
+			@colortype = color(@color);
 		}
-#		msg('"'.@char.'" :'.@i.'    c: <'.@color.'>')
-		@string .= @colortype.@char
+#		msg('"'.@char.'" :'.@i.'    c: <'.@color.'>');
+		@string .= @colortype.@char;
 		#counter for actual characters encountered, for doubles
 		@i++
 	}
-	return(@string)
+	return(@string);
 }
 
 #fabulous light colors: 6abcdef
-#			@string, @string.'\u0026'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i = @i + 1)
+#			@string, @string.'\u0026'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i++;);
 
 #ichat +healthbar replacement
 proc _healthbar(@health, string @fullchar = '|', string @emptychar = '.') {
-	@mchar = ':'
+	@mchar = ':';
 	if(is_numeric(@health)) { 
-		@health = ceil(@health)
+		@health = ceil(@health);
 	} else { 
 		if(function_exists('pinfo')) {
-			@health = ceil(pinfo(@health)[5])
+			@health = ceil(pinfo(@health)[5]);
 		} else {
-			return('No data given')
+			return('No data given');
 		}
 	}
-	@healthodd = ceil(@health / 2)
-	@healthbar = array(0,0,0,0,0,0,0,0,0,0,0)
+	@healthodd = ceil(@health / 2);
+	@healthbar = array(0,0,0,0,0,0,0,0,0,0,0);
 	@color = 8
 	#dead.
-	if(@health == 0) { @color = 8 }
+	if(@health == 0) { @color = 8; }
 	#red: 1-4 hearts
-	if(@health >= 1 && @health <= 8) { @color = 4 }
+	if(@health >= 1 && @health <= 8) { @color = 4; }
 	#yellow: 5-7 hearts
-	if(@health >= 9 && @health <= 15) { @color = 14 }
+	if(@health >= 9 && @health <= 15) { @color = 14; }
 	#green: 8-10 hearts
-	if(@health >= 16 && @health <= 20) { @color = 2 }
+	if(@health >= 16 && @health <= 20) { @color = 2; }
 	#blue: Somehow, more than 10 hearts
-	if(@health >= 21) { @color = 11 }
+	if(@health >= 21) { @color = 11; }
 	#for each heart (2 phealth points):
 	foreach(@k: @v in @healthbar) {
-		@char = ''
-		if(@k == 0) { continue() }
-		if(@k <= @healthodd) { @char = @fullchar }
+		@char = '';
+		if(@k == 0) { continue(); }
+		if(@k <= @healthodd) { @char = @fullchar; }
 		#middle char:
 		# mod(@number, 2) == 0
-		if(@health % 2 == 1 && @k == @healthodd) { @char = @mchar } 
+		if(@health % 2 == 1 && @k == @healthodd) { @char = @mchar; } 
 		if(@k > @healthodd) { 
 			@color = 0 
-			@char = @emptychar
+			@char = @emptychar;
 		}
 		@healthbar[@k] = color(@color).@char
 	}
-	array_remove(@healthbar, 0)
-	return(array_implode(@healthbar, ''))
+	array_remove(@healthbar, 0);
+	return(array_implode(@healthbar, ''));
 }
 
 proc _message_check_ban_mentions(@message, @from, @option) {
-	@config = import('Chat.config.Server')
+	@config = import('Chat.config.Server');
 # Check if player said banned Discord mention
-	@msga = parse_args(@message)
-	@msgban = ''
-	if(in_cmdline_mode() == false) { @from = _getplayerID(@from) }
-	@prefix = color(6).'['.color(9).'Server'.color(6).'] '
+	@msga = parse_args(@message);
+	@msgban = '';
+	if(in_cmdline_mode() === false) { @from = _getplayerID(@from); }
+	@prefix = color(6).'['.color(9).'Server'.color(6).'] ';
 	foreach(@entry in @config['Banned_Mentions']) {
 		if(_array_string_contains(@msga, @entry)) {
 			if(function_exists('player')) {
-				@prevmentions = get_value('server.player.'.@from['id'].'all.ping.mention')
-				store_value('server.player.'.@from['id'].'.all.ping.mention', @prevmentions + 1)
+				@prevmentions = get_value('server.player.'.@from['id'].'all.ping.mention');
+				store_value('server.player.'.@from['id'].'.all.ping.mention', @prevmentions + 1);
 				if(array_contains(get_offline_players(), @from['name'])) { 
-					if(@config['Message_On_Mention'] == true) { tmsg(@from['name'], color('c').'[Chat] Do not mention "'.@entry.'".') }
-					if(@config['Kick_On_Mention'] == true) { 
-						pkick(@from['name'], '[Chat] Do not mention "'.@entry.'".')
-						@msgbantype = 'kicked'
-						if(@prevmentions > @config['Ban_On_Mention_Number'] && @config['Ban_On_Repeat_Mention'] == true) {
-							set_pbanned(@from['name'], true, '[Chat] You have used disallowed mentions several times.')
-							@msgbantype = 'banned'
+					if(@config['Message_On_Mention'] === true) { tmsg(@from['name'], color('c').'[Chat] Do not mention "'.@entry.'".'); }
+					if(@config['Kick_On_Mention'] === true) { 
+						pkick(@from['name'], '[Chat] Do not mention "'.@entry.'".');
+						@msgbantype = 'kicked';
+						if(@prevmentions > @config['Ban_On_Mention_Number'] && @config['Ban_On_Repeat_Mention'] === true) {
+							set_pbanned(@from['name'], true, '[Chat] You have used disallowed mentions several times.');
+							@msgbantype = 'banned';
 						}
-						@msgban = '  Offending player `'.@from['name'].'` was '.@msgbantype.'.'
+						@msgban = '  Offending player `'.@from['name'].'` was '.@msgbantype.'.';
 					}
 				}
 				_msg_Admins('Chat', @prefix, color(7).'Message from '.@from['display'].' contained a mention of "'.@entry.'".'.@msgban);
 			} else {
-				if(@config['Message_On_Mention'] == true) { 
+				if(@config['Message_On_Mention'] === true) { 
 					try {
-						discord_private_message(@from, '[Chat] Do not mention "'.@entry.'".')
+						discord_private_message(@from, '[Chat] Do not mention "'.@entry.'".');
 					} catch(Exception @ex) {
-						console(@prefix.'Could not DM user: '. @ex, false)
+						console(@prefix.'Could not DM user: '. @ex, false);
 					}
 				}
 				_msg_Admins('Chat', @prefix, color(7).'Message from '.@from.' contained a mention of "'.@entry.'".');
 			}		
-			return(array('mention': @entry, 'kickmsg': @msgban))
+			return(array('mention': @entry, 'kickmsg': @msgban));
 		}
 	}
-return(null)
+return(null);
 }
 
 # new error message: :dp: +
 
 proc _chat_mc_broadcast(@msg, @args) {
 	if(function_exists('broadcast')) {
-		if(@args == '' || @args == null) { @args = all_players() }
-		broadcast(@msg, @args)
+		if(@args == '' || @args == null) { @args = all_players(); }
+		broadcast(@msg, @args);
 	} else {
-		console(@msg, false)
+		console(@msg, false);
 	}
 }
 
 proc _chat_death_msg_format(@player, @msg, @opponent, @weapon) {
-	if(@player == '' || @player == null) { return(color('d').'FAIL (no player?)') }
-	if(@msg == '' || @msg == null) { return(color('d').'FAIL (what death?)') }
+	if(@player == '' || @player == null) { return(color('d').'FAIL (no player?)'); }
+	if(@msg == '' || @msg == null) { return(color('d').'FAIL (what death?)'); }
 #Death message colors.
 	#Color of victim's name.
-	@colorplayer = '&7'
+	@colorplayer = '&7';
 	#Color of message.
-	@colormsg = '&c'
+	@colormsg = '&c';
 	#Color of alternate item, such as the person/entity who killed the victim.
-	@coloralt = '&9'
+	@coloralt = '&9';
 	#Color of weapon used in a PvP battle
 	@colorweapon = '&3'	
 #Format %Variables% found in message
-	@return = replace(@msg, '%dm_weapon%', @weapon)
-	@return = replace(@return, '%dm_opponent%', @opponent)
-	@return = replace(@return, '%dm_player%', @player)
-	@return = replace(@return, '%dm_color_alt%', @coloralt)
-	@return = replace(@return, '%dm_color_msg%', @colormsg)
-	@return = replace(@return, '%dm_color_player%', @colorplayer)
-	@return = replace(@return, '%dm_color_weapon%', @colorweapon)
+	@return = replace(@msg, '%dm_weapon%', @weapon);
+	@return = replace(@return, '%dm_opponent%', @opponent);
+	@return = replace(@return, '%dm_player%', @player);
+	@return = replace(@return, '%dm_color_alt%', @coloralt);
+	@return = replace(@return, '%dm_color_msg%', @colormsg);
+	@return = replace(@return, '%dm_color_player%', @colorplayer);
+	@return = replace(@return, '%dm_color_weapon%', @colorweapon);
 
-	return(@return)
+	return(@return);
 }
 
 
@@ -254,21 +254,21 @@ proc _chat_death_msg_format(@player, @msg, @opponent, @weapon) {
 	
 	
 proc _wish_finder(@type, @message, @player, @option1) {
-	@name = 'Wish'
-	@dev = false
+	@name = 'Wish';
+	@dev = false;
 	try { 
-		@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish') 
+		@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish');
 	} catch(Exception @ex) {
-		console(@ex)
+		console(@ex);
 	}
-	@primaryword = import('wish.words.primary', 'wish')
-	@secondaryword = import('wish.words.secondary', 'i')
-	@usesecondaryword = true
-	@lastchatter = ''
-	if(@option1 == '') { @usesecondaryword = true } else { @usesecondaryword = false } 
+	@primaryword = import('wish.words.primary', 'wish');
+	@secondaryword = import('wish.words.secondary', 'i');
+	@usesecondaryword = true;
+	@lastchatter = '';
+	if(@option1 == '') { @usesecondaryword = true; } else { @usesecondaryword = false } 
 	
-	if(@message == '' || @message  == null) { return(array('wish': 'fail', 'message': 'Message Not Given')) }
-	if(@type == '' || @type  == null) { return(array('wish': 'fail', 'message': 'Type Not Given')) }
+	if(@message == '' || @message  == null) { return(array('wish': 'fail', 'message': 'Message Not Given')); }
+	if(@type == '' || @type  == null) { return(array('wish': 'fail', 'message': 'Type Not Given')); }
 	if(@player == '' || @player == null) { return(array('wish': 'fail', 'message': 'Player Not Given')) } else {
 #Load Last Chat	
 		switch(@type) {
@@ -276,58 +276,58 @@ proc _wish_finder(@type, @message, @player, @option1) {
 		case 'game':
 		case 'minecraft':
 			try( 
-				@player = player(@player)
+				@player = player(@player);
 			,@fail,
-				return(array('wish': 'fail', 'message': 'Player Name Not Found'))
-			)
-			@lastchatter = import('wish.last.player.chat')
+				return(array('wish': 'fail', 'message': 'Player Name Not Found'));
+			);
+			@lastchatter = import('wish.last.player.chat');
 		case 'discord':
-			@lastchatter = import('Chat.Discord.last.message')
+			@lastchatter = import('Chat.Discord.last.message');
 		}
 	}
-	if(!is_array(@lastchatter)) { @lastchatter = array(array('player': '~default1', 'message': '0')) }
+	if(!is_array(@lastchatter)) { @lastchatter = array(array('player': '~default1', 'message': '0')); }
 	
-	@messagewords = reg_split(' ', @message)
-	@iswish = false
-	@target = false
-	@ifound = false
+	@messagewords = reg_split(' ', @message);
+	@iswish = false;
+	@target = false;
+	@ifound = false;
 	#Detect First Trigger Word. if not found in message, ignore event.
 	#accounts for out-of-order trigger words, i.e. i <bad word> wish or i <arguments>, that is my wish
 	if(array_contains_ic(@messagewords, @primaryword)) {
-		@ifound = true
-		if(@usesecondaryword == false) { @iswish = true }
+		@ifound = true;
+		if(@usesecondaryword === false) { @iswish = true; }
 	}
 	#Detect Second Trigger Word. if not found in message, ignore event.
-	if(@ifound == true && array_contains_ic(@messagewords, @secondaryword) && @usesecondaryword == true) {
-		@iswish = true
+	if(@ifound === true && array_contains_ic(@messagewords, @secondaryword) && @usesecondaryword === true) {
+		@iswish = true;
 	}
-	if(@iswish == false) { return(array('wish': false, 'message': 'Not a Wish')) }
+	if(@iswish === false) { return(array('wish': false, 'message': 'Not a Wish')); }
 
 
-	if(@dev == true) { msg(color(7).'[DEV] msg: '.color('f').@messagewords) }
+	if(@dev === true) { msg(color(7).'[DEV] msg: '.color('f').@messagewords); }
 
 
-	@registeredactions = array('kick', 'die', 'kill', 'dead', 'off', 'dust', 'death', 'fly', 'flew', 'google', 'googling', 'explode', 'explosion', 'friend', 'friends', 'artist', 'poop')
-	@action = ''
-	@otherplayer = ''
+	@registeredactions = array('kick', 'die', 'kill', 'dead', 'off', 'dust', 'death', 'fly', 'flew', 'google', 'googling', 'explode', 'explosion', 'friend', 'friends', 'artist', 'poop');
+	@action = '';
+	@otherplayer = '';
 	foreach(@word in @messagewords) {
 	#Find Other Player Name
-		if(array_contains_ic(all_players(), @word)) { @otherplayer = player(@word) }
+		if(array_contains_ic(all_players(), @word)) { @otherplayer = player(@word); }
 	#Find if a Supported action was mentioned
-		if(array_contains_ic(@registeredactions, @word)) { @action = to_lower(@word) }
-#		if(@dev == true) { msg(color(7).'[DEV] gameplay: '.color('r').'Word #'.@key.': "'.@word.'"') }
+		if(array_contains_ic(@registeredactions, @word)) { @action = to_lower(@word); }
+#		if(@dev === true) { msg(color(7).'[DEV] gameplay: '.color('r').'Word #'.@key.': "'.@word.'"'); }
 	}
-	if(@action == '') { return(array('wish': false, 'message': 'registered action not found')) }
+	if(@action == '') { return(array('wish': false, 'message': 'registered action not found')); }
 
 
 # Find target player to perform action on:
-	@targettype = ''
+	@targettype = '';
 	foreach(@key: @word in @messagewords) {
 	# If another player was specified in the message, override checks and use that.
 		if(@otherplayer != '') {
-			@target = @otherplayer
+			@target = @otherplayer;
 			@targettype = 3
-			break()
+			break();
 		}
 	#You were Referring to a recent player
 		if(reg_count('^[YyFfUuIi][^\\W][OoUuDd]*[UuIi]*[Oo]*[CcTt]*[YySs]*$', @word) > 0) {
@@ -338,103 +338,103 @@ proc _wish_finder(@type, @message, @player, @option1) {
 			#Checking recent chat for last player name who chatted
 			foreach(@v in @lastchatter) {
 				if(@v['player'] != @player) {
-					if(!ponline(@v['player'])) { continue() }
-					@target = @v['player']
+					if(!ponline(@v['player'])) { continue(); }
+					@target = @v['player'];
 					@targettype = 1
 				}
 			}	
 			# If the player was were hit by a player in the last minute, use that player as target.
-			@pvpr = import('Wish.player.'.puuid(@player, 'dashless').'recent.PvP.damage', array('damager': @player, 'time': 123456789))
+			@pvpr = import('Wish.player.'.puuid(@player, 'dashless').'recent.PvP.damage', array('damager': @player, 'time': 123456789));
 			if(time() < @pvpr['time'] + 45000) {
-				@target = @pvpr['damager']
+				@target = @pvpr['damager'];
 				@targettype = 2
 			}
 			# No match, redirect to yourself.
-			if(@target == false) {
-				@target = @player
+			if(@target === false) {
+				@target = @player;
 				@targettype = 0
-				if(@dev == true) { msg(color(7).'[DEV] player: '.color('f').'No other players online, or no players matching that name! Using @player') }
+				if(@dev === true) { msg(color(7).'[DEV] player: '.color('f').'No other players online, or no players matching that name! Using @player'); }
 			}
-			break(2)
+			break(2);
 		case 'discord':
 		#check recent discord chat for match username
 		#check if is mc or discord username
-		export('test', 'test')
+		export('test', 'test');
 		}
 		}
 	# Referring to yourself
 		if(reg_count('^[IiMm]+[eE]*$', @word) > 0) {
 		#i, me
-			if(@dev == true) { msg(color(7).'[DEV] player: '.color('f').'It\'s all on you man.') }
-			@target = @player
+			if(@dev === true) { msg(color(7).'[DEV] player: '.color('f').'It\'s all on you man.'); }
+			@target = @player;
 			@targettype = 0
 		}
 	}	
 		
-if(@dev == true) {
-	msg(color(7).'[DEV] last chat: '.color('r').@lastchatter[0]['player'].':  '.@lastchatter[0]['message'])
-	msg(color(7).'[DEV] gameplay: '.color(3).array('wish': @iswish, 'target': @target, 'targettype': @targettype, 'action': @action))
+if(@dev === true) {
+	msg(color(7).'[DEV] last chat: '.color('r').@lastchatter[0]['player'].':  '.@lastchatter[0]['message']);
+	msg(color(7).'[DEV] gameplay: '.color(3).array('wish': @iswish, 'target': @target, 'targettype': @targettype, 'action': @action));
 }
-return(array('wish': @iswish, 'target': @target, 'action': @action, 'message': 'Success'))
+return(array('wish': @iswish, 'target': @target, 'action': @action, 'message': 'Success'));
 }
 
 
 
 proc _wish_granter(@action, @target, @player, @option1) {
-	@name = 'Wish'
-	@prefix = color('e').'['.color(6).@name.color('e').'] '.color(6)
-	@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish')
-	if(@action == '' || @action  == null) { return(array('success': 'fail', 'message': 'Action Not Given')) }
+	@name = 'Wish';
+	@prefix = color('e').'['.color(6).@name.color('e').'] '.color(6);
+	@dev = import('ch.player.'.puuid(@player, 'dashless').'.dev.scripts.wish');
+	if(@action == '' || @action  == null) { return(array('success': 'fail', 'message': 'Action Not Given')); }
 	if(@target == '' || @target == null) { 
-		@target = player()
+		@target = player();
 	} else {
-		try( 
-			@target = player(@target)
-		,@fail,
-			return(array('success': 'fail', 'message': 'target Name Not Found'))
-		)
+		try{
+			@target = player(@target);
+		} catch(Exception @ex) {
+			return(array('success': 'fail', 'message': 'target Name Not Found'));
+		}
 	}
 
-	@returnmsg = @prefix.color(6).@player.'s wish was refused.'
+	@returnmsg = @prefix.color(6).@player.'s wish was refused.';
 	switch(to_lower(@action)) {
 	# Only one action is performed per proc call
 		case 'kick':
-			@kickmsg = @prefix.'Your wish has been granted.'
-			if(@target == player()) { @kickmsg = @prefix.@player.'s wish has been granted' }
-			pkick(@target, @kickmsg)
+			@kickmsg = @prefix.'Your wish has been granted.';
+			if(@target == player()) { @kickmsg = @prefix.@player.'s wish has been granted'; }
+			pkick(@target, @kickmsg);
 		case 'die':
 		case 'kill':
 		case 'dead':
 		case 'dust':
 		case 'death':
-			@returnmsg = @prefix.color(6).@player.'\'s wish has been granted.'
-			set_timeout(1000, closure(pkill(@target)))
+			@returnmsg = @prefix.color(6).@player.'\'s wish has been granted.';
+			set_timeout(1000, closure(pkill(@target)));
 		case 'fly':
 		case 'flew':
 		case 'off':
-			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
-			runas('~console', '/rocket '.@target)
+			@returnmsg = @prefix.color(6).@player.'s wish has been granted.';
+			runas('~console', '/rocket '.@target);
 		case 'google':
 		case 'googling':
-			@returnmsg = @prefix.color(6).@player.'s wish was not granted.'
+			@returnmsg = @prefix.color(6).@player.'s wish was not granted.';
 			/*
-			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
-			@gkey = ''
+			@returnmsg = @prefix.color(6).@player.'s wish has been granted.';
+			@gkey = '';
 			foreach(@key: @word in @messagewords) {
 				if(@word == 'google',
-					@gkey = @key
+					@gkey = @key;
 					#Break, in case the search query contains "google", in which case we need the first instance of "google" here.
-					break()
-				)
+					break();
+				);
 			}
-			msg('g'.@gkey)
-			msg(array_size(@messagewords))
-			@skey1 = @gkey + 1
+			msg('g'.@gkey);
+			msg(array_size(@messagewords));
+			@skey1 = @gkey + 1;
 			@skey2 = array_size(@messagewords) - 1
 			@skey3 = @messagewords[cslice(@gkey + 1, array_size(@messagewords) - 1)]
-			msg(@skey3)
-			@googlemsg = array_implode(@skey3, '+')
-			@returnmsg = @prefix.color(6).'Googling: '.color(3).array_implode(@skey3)
+			msg(@skey3);
+			@googlemsg = array_implode(@skey3, '+');
+			@returnmsg = @prefix.color(6).'Googling: '.color(3).array_implode(@skey3);
 #not working, keeps 403ing/TOS
 #				http_request('https://cse.google.com/cse?cx=partner-pub-9300639326172081%3Aqi7dvj9mh31&ie=UTF-8&num=5&output=xml_no_dtd&safe=high&q='.@googlemsg, closure(@response){
 #				      console(@response['body']);
@@ -442,45 +442,45 @@ proc _wish_granter(@action, @target, @player, @option1) {
 */
 		case 'explode':
 		case 'explosion':
-			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
-			@ploc = ploc(@target)
-			@ploc[1] = @ploc[1] + 1
-			@ploc['y'] = @ploc['y'] + 1
-			explosion(@ploc, 4, false)
+			@returnmsg = @prefix.color(6).@player.'s wish has been granted.';
+			@ploc = ploc(@target);
+			@ploc[1]++;
+			@ploc['y']++;
+			explosion(@ploc, 4, false);
 		case 'friend':
 		case 'friends':
-			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
-			@ploc = ploc(@target)
-			spawn_entity('CREEPER', 2, @ploc)
+			@returnmsg = @prefix.color(6).@player.'s wish has been granted.';
+			@ploc = ploc(@target);
+			spawn_entity('CREEPER', 2, @ploc);
 		case 'artist':
-			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
-			@ploc = ploc(@target)
-			@ploc[1] = @ploc[1] + 1
-			@ploc['y'] = @ploc['y'] + 1
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'black')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'red')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'green')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'brown')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'blue')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'purple')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'cyan')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'light_gray')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'gray')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'pink')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'lime')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'yellow')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'light_blue')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'magenta')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'orange')); })
-			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'white')); })
+			@returnmsg = @prefix.color(6).@player.'s wish has been granted.';
+			@ploc = ploc(@target);
+			@ploc[1]++;
+			@ploc['y']++;
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'black')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'red')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'green')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'brown')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'blue')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'purple')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'cyan')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'light_gray')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'gray')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'pink')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'lime')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'yellow')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'light_blue')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'magenta')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'orange')); });
+			spawn_entity('sheep', 1, @ploc, closure(@id){ set_entity_spec(@id, array('color': 'white')); });
 		case 'poop':
-			drop_item(@target, array('name': 'DIRT', 'qty': 3, 'meta': null), true)
-			@returnmsg = @prefix.color(6).@player.'s wish has been granted.'
+			drop_item(@target, array('name': 'DIRT', 'qty': 3, 'meta': null), true);
+			@returnmsg = @prefix.color(6).@player.'s wish has been granted.';
 #No Action Found
 		default:
-			return(array('success': false, 'message': 'Action Not Found'))
+			return(array('success': false, 'message': 'Action Not Found'));
 	}
-	play_sound(puuid(@player), array('sound': 'ENTITY_EXPERIENCE_ORB_PICKUP', 'volume': '16'))
-	play_sound(puuid(@target), array('sound': 'ENTITY_EXPERIENCE_ORB_PICKUP', 'volume': '16'))
-	return(array('success': true, 'message': @returnmsg))
+	play_sound(puuid(@player), array('sound': 'ENTITY_EXPERIENCE_ORB_PICKUP', 'volume': '16'));
+	play_sound(puuid(@target), array('sound': 'ENTITY_EXPERIENCE_ORB_PICKUP', 'volume': '16'));
+	return(array('success': true, 'message': @returnmsg));
 }

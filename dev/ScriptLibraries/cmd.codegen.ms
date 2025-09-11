@@ -33,7 +33,7 @@ register_command('codegen', array(
 			for(@i = 1, @i <= 100, @i++) {
 				@actqty[] = @i;
 			}
-			@actcmds = array('Lower', 'Upper', 'Number', 'Symbol', 'All', '8bit', '16bit')
+			@actcmds = array('Lower', 'Upper', 'Number', 'Symbol', 'All', '8bit', '16bit');
 			@usetabs = array('<No further arguments>');
 		#Compute Tabs for each arg position
 			switch(@argPos) {
@@ -57,7 +57,7 @@ register_command('codegen', array(
 				case '8bit':
 				case 'n16':
 				case '16bit':
-					@usetabs = array('<Selected type does not support further arguments>')
+					@usetabs = array('<Selected type does not support further arguments>');
 				}
 				@atype = 'a2';
 			}
@@ -72,9 +72,9 @@ register_command('codegen', array(
 	'aliases': array('code'),
 	'executor':
 		closure(@alias, @sender, @args, @info) {
-			@name = 'CodeGen'
-			@cmd = ''
-			if(@sender == 'CONSOLE') { @sender = '~console' }
+			@name = 'CodeGen';
+			@cmd = '';
+			if(@sender == 'CONSOLE') { @sender = '~console'; }
 			if(array_index_exists(@args, 0)) {
 				if(@args[-1] == 'arguments>') {
 					@back = array_size(@args) - 4;
@@ -109,7 +109,7 @@ register_command('codegen', array(
 				x_new_thread('CodeGenerator', closure(){
 					@code = _codegen(@length, @args[cslice(@slice, array_size(@args) - 1)]);
 					msg(color(7).'['.color(6).'CodeGen'.color(7).'] '.color(7).'Random generated code at '.simple_date('HH:mm:ss.S z').':');
-					msg(@code)
+					msg(@code);
 				});
 				return(true);
 			}

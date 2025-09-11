@@ -84,7 +84,7 @@ switch(@action){
 			store_value('sign.player.'.@player['id'].'.savedsign.undo.loc', @here)	
 			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'This sign used to say:\n'.color('r').array_implode(@oldsigntext, '\n'))
 			@savedsign = get_value('sign.player.'.@player['id'].'.savedsign')
-			if(!is_array(@savedsign)) { @savedsign = reg_split(', ', @savedsign) }
+			if(!is_array(@savedsign)) { @savedsign = reg_split(', ', @savedsign); }
 			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Loaded sign text!')
 			set_sign_text(@here, @savedsign)
 			msg(color(14).'['.color(6).@name.color(14).'] '.color(7).'Saved sign! This sign now says:\n'.color('r').array_implode(@savedsign, '\n'))

@@ -1,7 +1,7 @@
-# Version Check
+# Extension Version Check
 if(extension_exists('CHFiles')) {
-	@version = reg_replace('[^0-9.]+', '', extension_info()['CHFiles']['version'])
-	@requiredVersion = array(2, 3, 2)
+	@version = reg_replace('[^0-9.]+', '', extension_info()['CHFiles']['version']);
+	@requiredVersion = array(2, 3, 2);
 		foreach(@place: @num in split('.', @version)) {
 		if(@num < @requiredVersion[@place]) {
 			console(color(12).'Installed CHFiles version is too low. Update to '.color(14).array_implode(@requiredVersion, '.'));
@@ -11,28 +11,28 @@ if(extension_exists('CHFiles')) {
 }
 # Poll registered files for changes, call loader if changed. Requires CHFiles
 set_cron('2 * * * *', closure(){ 
-	@files = import('cypher139.poll.files')
-	if(!is_array(@files)) { @files = array() }
-	@update = false
+	@files = import('cypher139.poll.files');
+	if(!is_array(@files)) { @files = array(); }
+	@update = false;
 	foreach(@file: @opt in @files) {
-		if(!is_array(@opt)) { continue() }
+		if(!is_array(@opt)) { continue(); }
 		if(function_exists('file_last_modified')) {	
 			if(!is_file(@opt['path'])) {
-				console(color(14).'[File Poll] File '.@file.' was not found.')
-				continue()
+				console(color(14).'[File Poll] File '.@file.' was not found.');
+				continue();
 			}
-			# opt: array('proc': @proc, 'last': time(), 'path': @path, 'options': @options))
-			@newedit = file_last_modified(@opt['path'])
+			# opt: array('proc': @proc, 'last': time(), 'path': @path, 'options': @options));
+			@newedit = file_last_modified(@opt['path']);
 			if(@newedit > @opt['last']) {
-				call_proc(@opt['proc'], @file)
-				@files[@file]['last'] = time()
-				@update = true
-				console(color(3).'[File Poll] Reloading File '.@file)
+				call_proc(@opt['proc'], @file);
+				@files[@file]['last'] = time();
+				@update = true;
+				console(color(3).'[File Poll] Reloading File '.@file);
 			}
 		}
 	} else { continue() }
-	if(@update == true) {
-		export('cypher139.poll.files', @files)
+	if(@update === true) {
+		export('cypher139.poll.files', @files);
 	}
 	return(true);
 });
@@ -41,37 +41,37 @@ set_cron('2 * * * *', closure(){
 if(!in_cmdline_mode()) {
 	#Minecraft server startup: set UUID and IP databases
 	if(is_array(get_value('primus.database.UUID'))) {
-		export('primus.database.UUID', get_value('primus.database.UUID'))
+		export('primus.database.UUID', get_value('primus.database.UUID'));
 	} else {
-		export('primus.database.UUID', array('testid': array(1, 5, 10)))
+		export('primus.database.UUID', array('testid': array(1, 5, 10)));
 	}
 	if(is_array(get_value('primus.database.IP'))) {
-		export('primus.database.IP', get_value('primus.database.IP'))
+		export('primus.database.IP', get_value('primus.database.IP'));
 	} else {
-		export('primus.database.IP', array(1000123: array()))
+		export('primus.database.IP', array(1000123: array()));
 	}
 }
 #Setup Dev messages and update player database
 bind('player_join', array('id': 'cypher139.login'), null, @login) {
 #Event playername may sometimes return null? more testing needed
-	@player = player()
-	@puuid = puuid(@player, 'dashless')
-	@jointime = time()
-	export('Server.player.'.@puuid.'.last.join', @jointime)
+	@player = player();
+	@puuid = puuid(@player, 'dashless');
+	@jointime = time();
+	export('Server.player.'.@puuid.'.last.join', @jointime);
 
 # Are you a dev for Cypher's scripts on this server?
 # Enables dev message settings.
-	@ds = get_value('ch.player.'.@puuid.'.dev.scripts')
+	@ds = get_value('ch.player.'.@puuid.'.dev.scripts');
 	@dsall = null
-	if(!is_array(@ds)) { @ds = array() }
-	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false }
+	if(!is_array(@ds)) { @ds = array(); }
+	if(array_contains(@ds, 'all')) { @dsall = true} else { @dsall = false; }
 	#Older scripts / blanket enable/Disable.
-	export('ch.player.'.@puuid.'.developer', @dsall)
+	export('ch.player.'.@puuid.'.developer', @dsall);
 	#Newer scripts, look for ...scripts.scriptname
 	foreach(@script in @ds) {
-		export('ch.player.'.@puuid.'.dev.scripts.'.@script, true)
+		export('ch.player.'.@puuid.'.dev.scripts.'.@script, true);
 	}
-	export('ch.player.'.@puuid.'.dev.scripts', @ds)
+	export('ch.player.'.@puuid.'.dev.scripts', @ds);
 
 # Setup Player UUID Database
 	_primus_database_add(@player, 'uuid');
@@ -85,13 +85,13 @@ bind('player_interact', array('id': 'cypher139.sign.cmd'), null, @event) {
 #Check for Clicking on a sign
 	# Pre 1.13 if(reg_count('(63|68)(:[0-9]*)?', @event['block']) > 0) {
 	if(!is_null(@event['block']) && string_ends_with(@event['block'], '_SIGN')) {
-		@signCmds = import('cypher139.sign.Commands')
+		@signCmds = import('cypher139.sign.Commands');
 		if(!is_array(@signCmds)) { return() } 
-		@signtext = get_sign_text(@event['location'])
-		@command = reg_replace('\\[\\]', '', to_lower(@signtext[0]))
+		@signtext = get_sign_text(@event['location']);
+		@command = reg_replace('[\\[\\]]', '', strip_colors(to_lower(@signtext[0])));
 	# Run a command if found
 		if(array_index_exists(@signCmds, @command)) {
-			@options = array_deep_clone(@signCmds[@command]['options'])
+			@options = array_deep_clone(@signCmds[@command]['options']);
 			foreach(@index: @option in @options) {
 				if(@option == 'event') { @options[@index] = @event }
 				if(@option == 'player') { @options[@index] = player() }
@@ -118,14 +118,14 @@ bind('player_quit', array('id': 'cypher139.logout'), null, @quit) {
 		'bucket.info.%u%',
 		'gameMode.player.%u%.lock'
 	);
-	@time = time()
-	@player = player()
-	@puuid = puuid(@player, 'dashless')
+	@time = time();
+	@player = player();
+	@puuid = puuid(@player, 'dashless');
 	# removes dev message settings.
-	@ds = get_value('ch.player.'.@puuid.'.dev.scripts')
-	if(!is_array(@ds)) { @ds = array() }
+	@ds = get_value('ch.player.'.@puuid.'.dev.scripts');
+	if(!is_array(@ds)) { @ds = array(); }
 	foreach(@script in @ds) {
-		export('ch.player.'.@puuid.'.dev.scripts.'.@script, null)
+		export('ch.player.'.@puuid.'.dev.scripts.'.@script, null);
 	}
 	foreach(@key in @removeKeys) {
 		@rk = replace(@key, '%u%', @puuid);

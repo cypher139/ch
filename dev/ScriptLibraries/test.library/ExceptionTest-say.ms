@@ -3,13 +3,13 @@
 * Useful for testing exception handler.
 */
 bind('server_command', array('id': 'Chat.Discord.msg.Send2.Console', 'priority': 'MONITOR'), array('prefix': 'say', 'type': 'console'), @event) {
-	@channel = 'test'
+	@channel = 'test';
 	# Automatically chat on last channel a message was received on.
-	@lastmsg = array('channel': 'test', 'time': 23987465)
+	@lastmsg = array('channel': 'test', 'time': 23987465);
 	if(is_array(@lastmsg)) {
 			if(time() < (@lastmsg[0]['time'] + 234567)) {
-				@channel = @lastmsg[0]['channel']
+				@channel = @lastmsg[0]['channel'];
 			}	
 		}
-	console('f')
+	console('f');
 }	

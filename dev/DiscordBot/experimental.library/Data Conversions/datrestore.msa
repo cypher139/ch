@@ -1,71 +1,71 @@
 #Debug actions, if former member roles were not saved in persistance, this grabs the data from json backups.
 # NOT FOR NORMAL BOT USAGE. Only install and use if an error occured and you need to restore roles to a member who rejoined and the bot didn't have the data already in persistance.
 admin:/dbdatrestore [$] = >>>
-if(!function_exists('is_dir')) { die(color(12).'CHFiles extension is required to use this command.') }
-@prefix = '[DiscordBot] '
-@args = parse_args($)
-@botconfig = import('DiscordBot.config.Bot')
-@servers = import('DiscordBot.Servers')
-@serverID = @botconfig['Primary_Guild']
+if(!function_exists('is_dir')) { die(color(12).'CHFiles extension is required to use this command.'); }
+@prefix = '[DiscordBot] ';
+@args = parse_args($);
+@botconfig = import('DiscordBot.config.Bot');
+@servers = import('DiscordBot.Servers');
+@serverID = @botconfig['Primary_Guild'];
 @userID = 0
 @datecode = 0
-@dcdash = ''
+@dcdash = '';
 foreach(@arg in @args) {
 	if(array_contains(@servers, @arg)) {
-		@serverID = @arg
-		array_remove_values(@args, @arg)
-		continue()
+		@serverID = @arg;
+		array_remove_values(@args, @arg);
+		continue();
 	}
 	if(is_numeric(@arg)) {
 		switch(length(@arg)) {
 		case 4:
-			msg(@prefix.'Datecodes need to use format: MMDDYY')
+			msg(@prefix.'Datecodes need to use format: MMDDYY');
 		case 6:
 			if(is_dir(import('DiscordBot.logs.dir').'/'.@serverID.'/'.substr(@arg, 0, 2).substr(@arg, 4).'/')) {
-				@dcdash = substr(@arg, 0, 2).'-'.substr(@arg, 2, 4).'-'.substr(@arg, 4)
+				@dcdash = substr(@arg, 0, 2).'-'.substr(@arg, 2, 4).'-'.substr(@arg, 4);
 				if(is_file(import('DiscordBot.logs.dir').'/'.@serverID.'/'.substr(@arg, 0, 2).substr(@arg, 4).'/'.@serverID.'_'.@dcdash.'_0007_membersRoles.json')) {
-					@datecode = substr(@arg, 0, 2).substr(@arg, 4)
+					@datecode = substr(@arg, 0, 2).substr(@arg, 4);
 				}
 			}
 		case 17:
 		case 18:
 		case 19:
-			@userID = @arg
+			@userID = @arg;
 		}
 	}		
 }
-msg('Using Server ID: '.@serverID)
+msg('Using Server ID: '.@serverID);
 if(@userID == 0 || @datecode == 0) {
-	die(@prefix.color(12).'Datecode (format: MMDDYY) or UserID (numeric ID only) was not provided.') 
+	die(@prefix.color(12).'Datecode (format: MMDDYY) or UserID (numeric ID only) was not provided.');
 }
-@oldRoles = json_decode(read(import('DiscordBot.logs.dir').'/'.@serverID.'/'.@datecode.'/'.@serverID.'_'.@dcdash.'_0007_membersRoles.json'))
-@membersFR = get_value('DiscordBot.'.@serverID.'.members.former.roles')
-if(!is_array(@membersFR)) { @membersFR = array() }
+@oldRoles = json_decode(read(import('DiscordBot.logs.dir').'/'.@serverID.'/'.@datecode.'/'.@serverID.'_'.@dcdash.'_0007_membersRoles.json'));
+@membersFR = get_value('DiscordBot.'.@serverID.'.members.former.roles');
+if(!is_array(@membersFR)) { @membersFR = array(); }
 #Add old roles to database
 if(!array_index_exists(@membersFR, @userID)) {
-	msg(@prefix.color(10).'Adding '.@userID.' to former member roles data')
+	msg(@prefix.color(10).'Adding '.@userID.' to former member roles data');
 	@membersFR[@userID] = array('removed': time(), 'data': @oldRoles[@userID]);
-	store_value('DiscordBot.'.@serverID.'.members.former.roles', @membersFR)
-	@joininfo = get_value('DiscordBot.'.@serverID.'.Join.info')
+	store_value('DiscordBot.'.@serverID.'.members.former.roles', @membersFR);
+	@joininfo = get_value('DiscordBot.'.@serverID.'.Join.info');
 	if(array_index_exists(@joininfo, @userID)) {
 		@joininfo[@userID]['return'] = 'true';
-		store_value('DiscordBot.'.@serverID.'.Join.info', @joininfo)
+		store_value('DiscordBot.'.@serverID.'.Join.info', @joininfo);
 	}
 } else {
-	msg(@prefix.color(12).@userID.' was not found.')
-	die()
+	msg(@prefix.color(12).@userID.' was not found.');
+	die();
 }
 #if is a member now add roles:
-@srvmem = discord_get_members(@serverID)
+@srvmem = discord_get_members(@serverID);
 if(array_contains(@srvmem, @userID)) {
-	@currentroles = discord_member_get_roles(@serverID, @userID)
+	@currentroles = discord_member_get_roles(@serverID, @userID);
 	if(array_index_exists(@membersFR, @userID)) {
-		array_push_all(@currentroles, @membersFR[@userID]['data'])
+		array_push_all(@currentroles, @membersFR[@userID]['data']);
 		@doSetRoles = _discordBot_set_roles(@serverID, @userID, 'set', @currentroles, 'Member Rejoined, Previous Roles Restored', 'datrestore');
-		if(@doSetRoles == true) {
-			msg(@prefix.color(2).@userID.'\'s Previous roles were restored.')
+		if(@doSetRoles === true) {
+			msg(@prefix.color(2).@userID.'\'s Previous roles were restored.');
 		} else {
-			msg(@prefix.color(12).'Setting '.@userID.'\'s Previous roles failed!')
+			msg(@prefix.color(12).'Setting '.@userID.'\'s Previous roles failed!');
 		}
 	}
 }

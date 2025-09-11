@@ -1,28 +1,28 @@
 # This imports the MangaeInvite bot server invite data, for use with a CH based invite log system. Requires manual additions of codes to the import json file.
 # If you are using the ManageInvite bot, you can visit their API, download a json of your current invite data, add the relevant invite codes to each array, and then use this command to finish importing into cypher139's Discord bot
 admin:/importmi [$guild] [$] = >>>
-@name = 'Discord'
+@name = 'Discord';
 @serverID = 0
-@prefix = 'DB Import Invites'
-@args = parse_args($)
-@config = import('DiscordBot.config.Bot')
+@prefix = 'DB Import Invites';
+@args = parse_args($);
+@config = import('DiscordBot.config.Bot');
 if(array_contains(@args, 'help')) {
-	msg('This imports the MangaeInvite bot server invite data, for use with a CH based invite log system. Requires manual additions of codes.')
-	die()
+	msg('This imports the MangaeInvite bot server invite data, for use with a CH based invite log system. Requires manual additions of codes.');
+	die();
 }
 #Guild ID Setup
 if(!is_numeric($guild)) {
-	@guildNick = import('DiscordBot.Servers.Nicknames', array())
+	@guildNick = import('DiscordBot.Servers.Nicknames', array());
 	switch(to_lower($guild)) {
 	case 'default':
 	case 'primary':
 	case '-':
-		@serverID = @botconfig['Primary_Guild']
+		@serverID = @botconfig['Primary_Guild'];
 	default:
 		foreach(@sid: @nick in @guildNick) {
 			if(to_lower($guild) == to_lower(@nick)) {
-				@serverID = @sid
-				break()
+				@serverID = @sid;
+				break();
 			}
 		}
 	}
@@ -31,18 +31,18 @@ if(!is_numeric($guild)) {
 		@serverID = $guild
 	}
 }
-if(!is_numeric(@serverID) || @serverID <= 0) { die(color(12).'['.@prefix.'] Guild is not recognized by DiscordBot. Check the Server ID or nickname given.') }
-@config = import('DiscordBot.config.'.@serverID)
+if(!is_numeric(@serverID) || @serverID <= 0) { die(color(12).'['.@prefix.'] Guild is not recognized by DiscordBot. Check the Server ID or nickname given.'); }
+@config = import('DiscordBot.config.'.@serverID);
 
-@importedData = array()
+@importedData = array();
 	try { 
 		@importedData = json_decode(read(import('DiscordBot.config.dir').'/response_mi_'.@serverID.'.json'))['data']
 	} catch(Exception @ex) {
-		die(@ex['message'])
+		die(@ex['message']);
 	}
-_db_msg_Console(@importedData, @serverID, 'debug')
+_db_msg_Console(@importedData, @serverID, 'debug');
 if(@importedData[0]['guildID'] != @id) {
-	die(color(12).'['.@prefix.'] Guild given does not match Guild in imported data! Check the Server ID given in the json filename.')
+	die(color(12).'['.@prefix.'] Guild given does not match Guild in imported data! Check the Server ID given in the json filename.');
 }
 
 #code
@@ -50,11 +50,11 @@ if(@importedData[0]['guildID'] != @id) {
 # leaves = leaves
 # inviter = username
 # userid = userID
-@inv = array()
+@inv = array();
 foreach(@i: @data in @importedData) {
 	if(!array_index_exists(@data, 'code')) {
-		msg('Cannot import index '.@i.' from user '.@data['userID'].', no code given. ['.@data['regular'].' - '.@data['leaves'].']') 
-		continue()
+		msg('Cannot import index '.@i.' from user '.@data['userID'].', no code given. ['.@data['regular'].' - '.@data['leaves'].']');
+		continue();
 	}
 	if(!array_index_exists(@inv, @data['code'])) { @inv[@data['code']] = array(); }
 	@inv[@data['code']]['code'] = @data['code'];
@@ -63,7 +63,7 @@ foreach(@i: @data in @importedData) {
 	if(array_index_exists(@data, 'username')) { @inv[@data['code']]['username'] = @data['username']; }
 	if(array_index_exists(@data, 'regular')) { @inv[@data['code']]['uses'] = @data['regular']; }
 }
-msg(color(10).'Imported saved ManageInvite bot data'.color('r').', now checking current invites:')
+msg(color(10).'Imported saved ManageInvite bot data'.color('r').', now checking current invites:');
 try {
 	discord_retrieve_invites(@id, closure(@raw) { 
 		foreach(@i: @invite in @raw) {
@@ -73,17 +73,17 @@ try {
 				@inv[@invite['code']]['channelid'] = @invite['channelid'];	
 			} else { @inv[@invite['code']] = @invite; }
 		}
-		store_value('DiscordBot.'.@id.'.Invites', @inv)
-		msg(color(10).'Current Invite data added and saved.')
+		store_value('DiscordBot.'.@id.'.Invites', @inv);
+		msg(color(10).'Current Invite data added and saved.');
 	});
 } catch(InsufficientPermissionException @ex) {
 	if(string_ends_with(@ex['message'], 'MANAGE_SERVER')) {
-		msg(color('c').'Sorry, bot does not have permission to view invites!')
-		store_value('DiscordBot.'.@id.'.Invites', @inv)
+		msg(color('c').'Sorry, bot does not have permission to view invites!');
+		store_value('DiscordBot.'.@id.'.Invites', @inv);
 	} else {
-		die(@ex['message'])
+		die(@ex['message']);
 	}
 } catch(Exception @ex) {
-	die('[importmi] '.@ex['message'], false)
+	die('[importmi] '.@ex['message'], false);
 }
 <<<

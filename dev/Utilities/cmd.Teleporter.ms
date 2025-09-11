@@ -1,58 +1,58 @@
 # Turn pressure plates (or redstone and farm land) into your own personal teleporter!
 bind('pressure_plate_activated', array('id': 'triangle.teleporter', 'priority': 'MONITOR'), null, @event) {
-	@uuid = puuid(player(), 'dashless')
-	@dev = import('ch.player.'.@uuid.'.dev.scripts.tp')
-	@prefix = color('#ffcc00').'['.color(7).'Teleporter'.color('#ffcc00').'] '
+	@uuid = puuid(player(), 'dashless');
+	@dev = import('ch.player.'.@uuid.'.dev.scripts.tp');
+	@prefix = color('#ffcc00').'['.color(7).'Teleporter'.color('#ffcc00').'] ';
 	# 2 modes: mode 1: teleport on press. mode 2: on press say warpname on hotbar, warp on release
-	if(@event['macrotype'] != 'player') { console('whut?') }
-	@useBlock = false
-	@supportedBlocks = array('REDSTONE_ORE', 'FARMLAND', 'PRESSURE_PLATE')
+	if(@event['macrotype'] != 'player') { console('whut?'); }
+	@useBlock = false;
+	@supportedBlocks = array('REDSTONE_ORE', 'FARMLAND', 'PRESSURE_PLATE');
 	foreach(@i: @block in @supportedBlocks) {
-		if(string_ends_with(get_block(@event['location']), @block) == true) { @useBlock = true }
+		if(string_ends_with(get_block(@event['location']), @block) === true) { @useBlock = true; }
 	}
-	if(@useBlock == false) {
+	if(@useBlock === false) {
 # Debug: collecting event data
-		@otherblocks = get_value('ch.dev.data.event.pressure_plate.types')
-		if(!is_array(@otherblocks)) { @otherblocks = array() }
+		@otherblocks = get_value('ch.dev.data.event.pressure_plate.types');
+		if(!is_array(@otherblocks)) { @otherblocks = array(); }
 		if(!array_contains(@otherblocks, get_block(@event['location']))) { 
-			@otherblocks[] = get_block(@event['location'])
-			store_value('ch.dev.data.event.pressure_plate.types', @otherblocks)
-			console(color(12).'New: '.color(8).' pressure_plate_activated event occured on a '.get_block(@event['location']))
-			console(color(8).'Current types found:  '.array_implode(@otherblocks, ', '))
+			@otherblocks[] = get_block(@event['location']);
+			store_value('ch.dev.data.event.pressure_plate.types', @otherblocks);
+			console(color(12).'New: '.color(8).' pressure_plate_activated event occured on a '.get_block(@event['location']));
+			console(color(8).'Current types found:  '.array_implode(@otherblocks, ', '));
 		}
-		if(@dev == true) { msg(color(12).'Note: '.color(8).'pressure_plate_activated event occured on a '.get_block(@event['location'])) }
-		die()
+		if(@dev === true) { msg(color(12).'Note: '.color(8).'pressure_plate_activated event occured on a '.get_block(@event['location'])); }
+		die();
 	}
-	#msg(@event)
+	#msg(@event);
 
-	@allteleporters = get_value('server.Teleporters.registered')
-	if(!is_array(@allteleporters)) { @allteleporters = array() }
+	@allteleporters = get_value('server.Teleporters.registered');
+	if(!is_array(@allteleporters)) { @allteleporters = array(); }
 
 	#location array: key is x.y.z all whole numbers
-	@implodeloc = integer(@event['location']['x']).'.'.integer(@event['location']['y']).'.'.integer(@event['location']['z'])
+	@implodeloc = integer(@event['location']['x']).'.'.integer(@event['location']['y']).'.'.integer(@event['location']['z']);
 
 # Save command
-	if(import('player.'.@uuid.'.command.teleporter.set') == true) {
-		@setargs = import('player.'.@uuid.'.command.teleporter.set.args')
-		store_value('server.Teleporters.registered.undo', @allteleporters)
+	if(import('player.'.@uuid.'.command.teleporter.set') === true) {
+		@setargs = import('player.'.@uuid.'.command.teleporter.set.args');
+		store_value('server.Teleporters.registered.undo', @allteleporters);
 
 		@newtpInfo = array('type': get_block(@event['location']), 'location': @setargs['location'], 'registrar': player(), 'name': @setargs['name'], 'activetime': @setargs['time'], 'allowedGroups': null, 'uses': 0);
 		if(array_index_exists(@allteleporters, pworld(), @implodeloc)) {
 			@allteleporters[pworld()][@implodeloc] = @newtpInfo;
 		} else {
-			array_set(@allteleporters[pworld()], @implodeloc, @newtpInfo);
+			@allteleporters[pworld()][@implodeloc] = @newtpInfo;
 		}
-		store_value('server.Teleporters.registered', @allteleporters)
-		export('player.'.@uuid.'.command.teleporter.set', null)
-		export('player.'.@uuid.'.command.teleporter.set.args', null)
-		msg(@prefix.color(6).'Teleporter Bound and Online!')
-		die()
+		store_value('server.Teleporters.registered', @allteleporters);
+		export('player.'.@uuid.'.command.teleporter.set', null);
+		export('player.'.@uuid.'.command.teleporter.set.args', null);
+		msg(@prefix.color(6).'Teleporter Bound and Online!');
+		die();
 	}
 
 # Info command
-	if(import('player.'.@uuid.'.command.teleporter.info') == true) {
+	if(import('player.'.@uuid.'.command.teleporter.info') === true) {
 		@return = _cmd_teleporter_info(player(), @event['location']);
-		export('player.'.@uuid.'.command.teleporter.info', null)
+		export('player.'.@uuid.'.command.teleporter.info', null);
 		die(@return);
 	}
 
@@ -61,20 +61,20 @@ bind('pressure_plate_activated', array('id': 'triangle.teleporter', 'priority': 
 	if(array_index_exists(@allteleporters, pworld(), @implodeloc, 'location')) {
 		#time check
 		if(reg_count(':', @allteleporters[pworld()][@implodeloc]['activetime']) > 0) {
-			@tptime = split(':', @allteleporters[pworld()][@implodeloc]['activetime'])
+			@tptime = split(':', @allteleporters[pworld()][@implodeloc]['activetime']);
 			if(get_world_time(pworld()) < @tptime[0] || get_world_time(pworld()) > @tptime[1]) {
-				die(color(6).'Teleporter is out of order. Come back another time!')
+				die(color(6).'Teleporter is out of order. Come back another time!');
 			}
 		}
-		set_ploc(@allteleporters[pworld()][@implodeloc]['location'])
+		set_ploc(@allteleporters[pworld()][@implodeloc]['location']);
 		@allteleporters[pworld()][@implodeloc]['uses'] = @allteleporters[pworld()][@implodeloc]['uses'] + 1
-		store_value('server.Teleporters.registered', @allteleporters)
+		store_value('server.Teleporters.registered', @allteleporters);
 
-		@tpmsg = color(6).'You have been Teleported!'
+		@tpmsg = color(6).'You have been Teleported!';
 		if(@allteleporters[pworld()][@implodeloc]['name'] != null) {
-			@tpmsg = color(6).'You have used the "'.color(9).@allteleporters[pworld()][@implodeloc]['name'].color(6).'" Teleporter!'
+			@tpmsg = color(6).'You have used the "'.color(9).@allteleporters[pworld()][@implodeloc]['name'].color(6).'" Teleporter!';
 		}
-		msg(@tpmsg)
+		msg(@tpmsg);
 	}
 
 }
@@ -93,7 +93,7 @@ register_command('teleporter', array(
 			@actplayers = all_players();
 			@atype = 0;
 			@actoptions = array('Lock', 'Unlock', 'Adventure', 'Survival', 'Creative', 'Spectator', 'Per-Mode-Inventory');
-			@actcmds = array('Set', 'Info')
+			@actcmds = array('Set', 'Info');
 			@usetabs = array('<No further arguments>');
 		#Compute Tabs for each arg position
 			switch(@argPos) {
@@ -121,8 +121,8 @@ register_command('teleporter', array(
 	'aliases': array('tper', 'triangle', '/\\'),
 	'executor':
 		closure(@alias, @sender, @args, @info) {
-			@name = 'Teleporter'
-			@cmd = 'info'
+			@name = 'Teleporter';
+			@cmd = 'info';
 			if(array_index_exists(@args, 0)) {
 				if(@args[-1] == 'arguments>') {
 					@back = array_size(@args) - 4;
@@ -134,8 +134,8 @@ register_command('teleporter', array(
 				}
 			}
 			if(array_index_exists(@args, 0)) {
-				@cmd = @args[0]
-				array_remove(@args, 0)
+				@cmd = @args[0];
+				array_remove(@args, 0);
 			}
 		#Sub Commands
 			if(!has_permission(@sender, 'commandhelper.alias.teleporter.'.@cmd)) { 

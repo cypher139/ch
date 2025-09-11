@@ -1,23 +1,23 @@
 if(is_proc('_discordBot_send_mc_chat')) {
 	set_cron('* * * * *', closure(){
-		@reaperxpdata = import('expbank.reaper.xp.msg', array())
-		@cmsg = ''
-		@dmsg = ''
+		@reaperxpdata = import('expbank.reaper.xp.msg', array());
+		@cmsg = '';
+		@dmsg = '';
 		@mc = 0
 		foreach(@m: @data in @reaperxpdata) {
-			@Mob = _capitalize(@m, true)
-			@count = 'A'
-			@s = ''
-			@sentence = ' and dropped '
+			@Mob = _capitalize(@m, true);
+			@count = 'A';
+			@s = '';
+			@sentence = ' and dropped ';
 			if(@data['c'] > 1) { @count = @data['c']; @s = 's'; @sentence = ', dropping a total of '; }
-			@cline = '\n'
-			@dline = '\n:skull_crossbones: '
+			@cline = '\n';
+			@dline = '\n:skull_crossbones: ';
 			if(@mc == 0) { @cline = ''; @dline = '' }
-			@cmsg .= @cline.@count.' '.@Mob.@s.' died'.@sentence.@data['x'].' XP.'
-			@dmsg .= @dline.@count.' '.@Mob.@s.' died'.@sentence.@data['x'].' XP.'
+			@cmsg .= @cline.@count.' '.@Mob.@s.' died'.@sentence.@data['x'].' XP.';
+			@dmsg .= @dline.@count.' '.@Mob.@s.' died'.@sentence.@data['x'].' XP.';
 			@mc++
 		}
-		export('expbank.reaper.xp.msg', null)
+		export('expbank.reaper.xp.msg', null);
 		if(@cmsg != '') { console(@cmsg, false) }
 		if(@dmsg != '') { _discordBot_send_mc_chat('death', @dmsg); }
 	});
