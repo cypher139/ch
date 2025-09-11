@@ -18,8 +18,8 @@ if(is_proc('_discordBot_send_mc_chat')) {
 			@mc++
 		}
 		export('expbank.reaper.xp.msg', null);
-		if(@cmsg != '') { console(@cmsg, false) }
-		if(@dmsg != '') { _discordBot_send_mc_chat('death', @dmsg); }
+		if(@cmsg != '') { console(@cmsg, false); }
+		if(@dmsg != '') { _discordBot_send_mc_chat(array('event': 'expbank-death-xp-drops', 'emoji': 'death'), @dmsg); }
 	});
 } else {
 	set_cron('@daily', closure(){

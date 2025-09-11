@@ -27,6 +27,18 @@ foreach(@arg in @args) {
 @discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $);
 msg('Using Server ID: '.@serverID);
 switch(@action) {
+case 'cacheserver':
+	@useID = array();
+	if(array_index_exists(@args, 0)) {
+		foreach(@i: @arg in @args) {
+			if(!is_numeric(@arg)) { msg('Server names are not supported in this command.'); continue(); }
+			@useID[] = @arg;
+		}
+	} else { @useID = @serverID; }
+	_discordBot_cache_server_info(@useID);
+	@idDisplay = @useID;
+	if(is_array(@useID)) { @idDisplay = array_implode(@useID, ', '); }
+	msg(color(14).'Sent server IDs '.color(11).@idDisplay.color(14).' to server info caching.');
 case 'latestsnowflake':
 	@colorPicker = array(6,9,13,2,14,11);
 	msg(color(13).'Latest Message Snowflakes:');

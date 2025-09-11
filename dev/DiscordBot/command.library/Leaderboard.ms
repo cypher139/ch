@@ -25,7 +25,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 		@levelxp = _discordBot_lb_levelXP(@discord['serverid'], @config['LB_Options']['XP_Type']);
 	}
 	if(@serverInfo == null) {
-		_discordBot_get_server_info(@discord['serverid'])
+		_discordBot_cache_server_info(@discord['serverid']);
 		@serverInfo = import('DiscordBot.Servers.Info.'.@discord['serverid']);
 		# @serverIcon = 'https://cdn.discordapp.com/embed/avatars/0.png';
 	}

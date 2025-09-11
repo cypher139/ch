@@ -147,6 +147,20 @@ Role_Colors:
   Server Admin: ba3e39
 # Shall we receive messages from Minecraft players in your server's designated Minecraft channel?
 Minecraft_Messages: true
+# (Optional) Which in-game events shall you want to receive messages for?
+#  <To only enable Specific event messages, uncomment the below line:>
+# Minecraft_Event_Messages:
+# To enable a event's message, uncomment its line below.
+# - join
+# - leave
+# - death-pvp
+# - death
+# - advancement
+# - recipe
+#### The events below are related to events generated in additional scripts from cypher139!
+# - quarry-blocks
+# - expbank-death-xp-drops
+#
 # Shall we receive messages from other Discord server's Minecraft channels in your server's designated Minecraft channel?
 Cross_Server_Messages: true
 # Which channels are allowed to send messages to the Minecraft server? (Applies only if your server is the bot's Primary Guild!)
@@ -169,6 +183,9 @@ Channels_Send:
 Use_Emojis: true
 # Should we only convert emoji if the emoji is from your server?
 Use_Other_Emojis: true
+# Should we show the name of the server the emoji is from, if we are not a member of that server?
+# (Requires server's emojis to be cached with the bot)
+Emojis_Show_NonMember_Name: false
 #
 # Cross Server Options:
 # Prefix user to the beginning of message, if false prefixes server name instead.

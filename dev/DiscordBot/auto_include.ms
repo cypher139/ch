@@ -257,7 +257,8 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 			if(array_size(@prevcfg) > 0 && @init === false) {
 				_discordBot_set_activity();
 			}
-		case 'Experimental':
+		case 'AdvancementTrophies':
+			noop();
 		case 'ex':
 			@dcfg = import('DiscordBot.config.Bot');
 			@loadcfg = array_merge(@loadcfg, @dcfg);
@@ -274,23 +275,84 @@ proc _db_load_config(@cfgtype, @init = false, @prefix = 'DiscordBot') {
 	return(@loadcfg);
 }
 
-proc _discordBot_get_server_info(@serverID) {
-	if(@serverID == null || @serverID == '') { die() }
-	if(!is_numeric(@serverID)) { die() }
-	@time = time()
-	@id = rand(123, 465)
+proc _discordBot_cache_server_info(@serverIDs) {
+	@getapp = false;
+	if(!@serverIDs) { @serverIDs = discord_get_servers(); @getapp = true; }
+	if(!is_array(@serverIDs)) { @serverIDs = array(@serverIDs); }
+	@time = time();
+	@id = rand(123, 465);
 	x_new_thread(@id.@time, closure(){
-		discord_request('GET', 'guilds/'.@serverID.'/preview', null, closure(@data){ 
-			# console(@data)
-			@data['retrieved'] = time();
-			export('DiscordBot.Servers.Info.'.@serverID, @data)
-			store_value('DiscordBot.'.@serverID.'.guild.Info', @data)
-		}, closure(@data){ 
-			_db_msg_Console(color(12).'Cannot retrieve Guild info for guild "'.@serverID.'". \n'.color(7).@data, @serverID)
-		});
+		@knownServers = get_value('DiscordBot.cache.known.Server.ID');
+		if(!@knownServers) { @knownServers = array(); }
+		@ksSize = array_size(@knownServers);
+		foreach(@serverID in @serverIDs) {
+			if(!is_numeric(@serverID)) { continue(); }
+			discord_request('GET', 'guilds/'.@serverID.'/preview', null, closure(@serverInfo){ 
+				# _db_msg_Console(@serverInfo, @serverID, 'debug');
+				@serverInfo['retrieved'] = time();
+				if(array_contains(discord_get_servers(), @serverID)) {
+					export('DiscordBot.Servers.Info.'.@serverID, @serverInfo);
+				}
+				store_value('DiscordBot.'.@serverID.'.guild.Info', @serverInfo);
+				if(!array_contains(@knownServers, @serverID)) { @knownServers[] = @serverID; }
+				if(array_size(@knownServers) > @ksSize) {
+					export('DiscordBot.cache.known.Server.ID', @knownServers);
+					store_value('DiscordBot.cache.known.Server.ID', @knownServers);
+					_discordBot_cache_emojis();
+				}
+			}, closure(@data){ 
+				_db_msg_Console(color(12).'Cannot retrieve Guild info for guild "'.@serverID.'". \n'.color(7).@data, @serverID, 'error');
+			});
+		}
+		#App data: Emoji
+		if(@getapp) {
+			@botconfig = import('DiscordBot.config.Bot');
+			discord_request('GET', 'applications/'.@botconfig['Bot_ID'].'/emojis', null, closure(@appinfo){ 
+				# _db_msg_Console(@appinfo, 'debug');
+				foreach(@i: @d in @appinfo['items']) {
+					array_remove(@appinfo['items'][@i], 'user');
+				}
+				export('DiscordBot.App.Emojis', array('name': @botconfig['Bot_Name'], 'emojis': @appinfo['items'], 'retrieved': time()));
+				store_value('DiscordBot.App.Emojis', array('name': @botconfig['Bot_Name'], 'emojis': @appinfo['items'], 'retrieved': time()));
+			}, closure(@data){ 
+				_db_msg_Console(color(12).'Cannot retrieve App emoji info. \n'.color(7).@data, 'error');
+			});
+		}
 	});
-	x_thread_join(@id.@time, 7000)
-	return(import('DiscordBot.Servers.Info.'.@serverID))
+	return(true);
+}
+
+proc _discordBot_cache_emojis() {
+	@cacheEmojis = array();
+	@check = import('DiscordBot.cache.known.Server.ID');
+	if(!@check) { @check = get_value('DiscordBot.cache.known.Server.ID'); }
+	if(!@check) { @check = discord_get_servers(); }
+	if(!array_contains(@check, 'app')) { @check[] = 'app'; }
+	foreach(@serverID in @check) {
+		# load info
+		@key = array('DiscordBot.Servers.Info.'.@serverID, 'DiscordBot.'.@serverID.'.guild.Info');
+		if(@serverID == 'app') { @key = array('DiscordBot.App.Emojis', 'DiscordBot.App.Emojis'); }
+		@info = import(@key[0]);
+		if(!@info) {@info = get_value(@key[1]); }
+		if(!@info) {@info = array(); }
+		if(!array_index_exists(@info, 'emojis')) { continue(); }
+		# for each emoji add to master list and push id to v
+		foreach(@index: @emoji in @info['emojis']) {
+			if(array_index_exists(@cacheEmojis, @emoji['name'])) {
+				@cacheEmojis[@emoji['name']][] = @serverID;
+			} else {
+				@cacheEmojis[@emoji['name']] = array(@serverID);
+			}
+		}
+	}
+	# Convert single arrays to string
+	foreach(@e: @d in @cacheEmojis) {
+		if(array_size(@d) < 2) {
+			@cacheEmojis[@e] = @d[0];
+		}
+	}
+	export('DiscordBot.cache.Emojis', @cacheEmojis);
+	store_value('DiscordBot.cache.Emojis', @cacheEmojis);
 }
 
 proc _db_get_user_nick(@userID, @serverID, @username) {
@@ -639,7 +701,7 @@ proc _db_sanitize_message(@message, @userType, @serverID, @from, @dm) {
 					break();
 				}
 			}
-		);
+		)
 	case 'minecraft':
 	case 'console':
 		@sanitize['Markdown'] = true;
@@ -731,56 +793,82 @@ proc _db_sanitize_message(@message, @userType, @serverID, @from, @dm) {
 	return(@return);
 }
 
-proc _discordBot_find_emoji(string @findEmoji, @originationGuild, @skipGuild) {
-	@botconfig = import('DiscordBot.config.Bot')
-	@checkServers = array()
-	@findEmoji = replace(@findEmoji, ':', '')
-	@r2 = false
-	# If given, Search origin guild first
-	if(is_numeric(@originationGuild) && length(@originationGuild) > 15) {
-		@checkServers = array(@originationGuild)
-	} else if(@originationGuild == null || @originationGuild == '') {
-		@checkServers = discord_get_servers()
-		@r2 = true
-	} else { 
-		_db_msg_Console('Emoji: guild must be numeric', 'debug')
-		die()
+proc _discordBot_find_emoji(string @findEmoji, @useGuild, @useOther = true) {
+	@botconfig = import('DiscordBot.config.Bot');
+	@checkServers = import('DiscordBot.cache.known.Server.ID');
+	if(!@checkServers) { 
+		@checkServers = get_value('DiscordBot.cache.known.Server.ID');
+		export('DiscordBot.cache.known.Server.ID', @checkServers);
 	}
-	@results = array('NotFound': 'Not Found')
-	foreach(@serverID in @checkServers) {
-		if(@serverID == @skipGuild) { continue() }
-		@serverInfo = import('DiscordBot.Servers.Info.'.@serverID)
-		if(@serverInfo == null) { 
-			# Loading info if not present in previous config setup, as we can use their emoji even if bot doesn't participate in that guild
-			_discordBot_get_server_info(@serverID)
-			@serverInfo = import('DiscordBot.Servers.Info.'.@serverID, array())
+	if(!@checkServers) { @checkServers = discord_get_servers(); }
+	if(!array_contains(@checkServers, 'app')) { @checkServers[] = 'app'; }
+	@cacheEmojis = import('DiscordBot.cache.Emojis');
+	@results = array('NotFound': 'Not Found');
+	if(!is_numeric(@useGuild)) { @useGuild = 0; }
+	@serverID = @useGuild;
+	if(!is_array(@cacheEmojis)) { @cacheEmojis = get_value('DiscordBot.cache.Emojis'); }
+	if(!is_array(@cacheEmojis)) { return(@results); }
+	@findEmoji = replace(@findEmoji, ':', '');
+	#Dash suffix: Dash is not allowed in emoji names, used here to specify a specific server or app, if so required.
+	if(string_contains(@findEmoji, '-')) {
+		@suffix = split('-', @findEmoji)[1];
+		@findEmoji = split('-', @findEmoji)[0];
+		@serverNick = import('DiscordBot.Servers.Nicknames');
+		if(@suffix == 'app') {
+			@serverID = 'app';
+		} else if(array_index_exists(@serverNick, @suffix)) {
+			@serverID = @suffix;
+		} else {
+			@serverID = array_index(@serverNick, @suffix);
 		}
-		if(!array_index_exists(@serverInfo, 'emojis')) { continue() }
-		foreach(@index: @emoji in @serverInfo['emojis']) {
-			# msg(@findEmoji.' -- '.@emoji['name'])
-			if(@findEmoji == @emoji['name']) {
-				@results = @emoji
-				@results['guild'] = @serverID; 
-				break()
-			}
+		if(!@serverID) { _db_msg_Console('Emoji: Server ID suffix not recognized! If possible, using random server ID.', 'warning'); }
+	}
+	#Valid Server ID with cached info required to get Emoji Data.
+	if(!array_contains(@checkServers, @serverID)) { return(@results); }	
+	# Emoji name not found
+	if(!array_index_exists(@cacheEmojis, @findEmoji)) { return(@results); }
+	# If set serverID does not have requested emoji, get the correct server ID. (multiple: random);
+	if(is_array(@cacheEmojis[@findEmoji])) {
+		if(!array_contains(@cacheEmojis[@findEmoji], @serverID)) {
+			@serverID = array_get_rand(@cacheEmojis[@findEmoji]);
+		}
+	} else if(@cacheEmojis[@findEmoji] != @serverID) {
+		@serverID = @cacheEmojis[@findEmoji];
+	}
+	# Don't send emoji data if guild requested only their own emojis and found emoji is not from that guild.
+	if(!@useOther) {
+		if(@useGuild != @serverID && @serverID != 'app') { return(@results); }
+	}
+	# Load emoji info and send result
+	_db_msg_Console('Find Emoji: :'.@findEmoji.': '.@serverID, 'debug');
+	@key = array('DiscordBot.Servers.Info.'.@serverID, 'DiscordBot.'.@serverID.'.guild.Info');
+	if(@serverID == 'app') { @key = array('DiscordBot.App.Emojis', 'DiscordBot.App.Emojis'); }
+	@emojiInfo = import(@key[0]);
+	if(!@emojiInfo) { @emojiInfo = get_value(@key[1]); }
+	if(!@emojiInfo) { @emojiInfo = array(); }
+	if(!array_index_exists(@emojiInfo, 'emojis')) { continue(); }
+	foreach(@index: @emoji in @emojiInfo['emojis']) {
+		if(@findEmoji == @emoji['name']) {
+			@results = @emoji;
+			@results['server'] = @serverID;
+			@results['index'] = @index;
+			@results['servername'] = @emojiInfo['name'];
+			if(@serverID == 'app') { @results['isbotmember'] = true; } else { @results['isbotmember'] = array_contains(discord_get_servers(), @serverID); }
+			break();
 		}
 	}
-	#If single guild checked, redo check for all bot guilds
-	if(array_index_exists(@results, 'NotFound') && array_size(@checkServers) < 2 && @r2 == false) { 
-		@return2 = _discordBot_find_emoji(@findEmoji, null, @originationGuild) 
-		return(@return2)
-	}
-	return(@results)
+# console(@results);
+	return(@results);
 }
 
 
 proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
-	#array Format: 0: yes, 1: no, 2:, 3:
-	@msgPrefixes = array('console': ':desktop:', 'mcuser': '`[%p%]`', 'death': array(':skull_crossbones:', ':angel:'), 'trophy': array(':trophy:', ':onion:'), 'paper': ':page_facing_up:', 'command': ':desktop:', 'confirm': array(':white_check_mark:', ':x:', ':question:', ':no_entry:'))
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false); }
 	@prefixErrorMsg = 'A Message to send encountered an issue: ';
 	@msgType = 'b';
 	@msgPrefix = '';
+	# Prefix array Format: 0: fail (false), 1: success (true), 2+: optional, format varies per prefix. i.e. 2: question, 3: deny
+	@msgPrefixes = array('console': ':desktop:', 'mcuser': '`[%p%]`', 'death': array(':angel:', ':skull_crossbones:'), 'trophy': array(':onion:', ':trophy:', ':PS5Hidden:', ':PS5Bronze:', ':PS5Silver:', ':PS5Gold:', ':PS5Plat:'), 'paper': ':page_facing_up:', 'command': ':desktop:', 'confirm': array(':x:', ':white_check_mark:', ':question:', ':no_entry:'));
 	@botconfig = import('DiscordBot.config.Bot');
 	# Load Primary Guild if none given
 	if(@serverID == '' || @serverID == null || @serverID == 'bot') { @serverID = @botconfig['Primary_Guild']; }
@@ -823,8 +911,8 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 		case 'server':
 		case 'console':
 			@userType = 'Console';
-		# cases: 'admin' 'announce' 'log' 'ping' 'bot' 'none' 'death' 'trophy' 'paper' 'command' 'confirm'
 			@msgPrefix = @msgPrefixes['console'];
+		# cases: 'admin' 'announce' 'log' 'ping' 'bot' 'none' 'death' 'trophy' 'paper' 'command' 'confirm'
 		default:
 			@userType = 'Bot';
 		}
@@ -931,17 +1019,15 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 				}
 				if(array_index_exists(@msgPrefixes, @check)) {
 					if(is_array(@msgPrefixes[@check])) {
-						@msgPrefix = @msgPrefixes[@check][0];
+						@msgPrefix = @msgPrefixes[@check][1];
 						if(is_array(@v)) {
 							if(array_index_exists(@v, 1)) {
-								if(@v[1] == true) {
-									@msgPrefix = @msgPrefixes[@check][0];
-								} else if(@v[1] == false) {
+								if(@v[1] === true) {
 									@msgPrefix = @msgPrefixes[@check][1];
+								} else if(@v[1] === false) {
+									@msgPrefix = @msgPrefixes[@check][0];
 								} else if(is_numeric(@v[1]) && array_index_exists(@msgPrefixes, @check, @v[1])) {
-									@msgPrefix = @msgPrefixes[@check][@v[1]]
-								} else {
-									@msgPrefix = @msgPrefixes[@check][1] 
+									@msgPrefix = @msgPrefixes[@check][@v[1]];
 								}
 							}
 						}
@@ -949,7 +1035,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 				}
 			}
 			@msg3 .= color(@msgkcolors[@dbgcolor]).@msgk.' '.color('r');
-			if(!array_contains(array('content', 'embeds', 'reference_id', 'allowed_mentions'), @k)) { array_remove(@message, @k) }
+			if(!array_contains(array('content', 'embeds', 'reference_id', 'allowed_mentions'), @k)) { array_remove(@message, @k); }
 		}
 		if(!array_index_exists(@message, 'content') && !array_index_exists(@message, 'embeds') && @msgType != 'join' && @msgType != 'leave') {
 			@msg3 .= 'unsupported';
@@ -991,23 +1077,33 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 				@message['allowed_mentions'] = array('parse': @sanitize['allowed_mentions']);
 			}
 		}
-	# Emojify
-		if(@config['Use_Emojis'] == true) {		
-			foreach(@emoji in reg_match_all('[:][^\\s./]+[:]', @message['content'])) {
-				#returns: {{0: :match:}}
-				@emojiID = _discordBot_find_emoji(@emoji[0], @serverID)
-				if(array_index_exists(@emojiID, 'NotFound')) { continue() }
-				#Check if emoji belongs to this guild and conversion is allowed:
-				if(@emojiID['guild'] != @serverID && @config['Use_Other_Emojis'] == false) { continue() }
-				#Convert emoji :emoji: markdown to bot version:
-				@useAnimation = ''
-				if(@emojiID['animated'] == true) { @useAnimation = 'a' }
-				@message['content'] = replace(@message['content'], @emoji[0], '<'.@useAnimation.':'.@emojiID['name'].':'.@emojiID['id'].'>')
-			}
-		}	
 	# Add Message prefixes:
 		if(@msgPrefix != '') {
-			@message['content'] = @msgPrefix.' '.@message['content']
+			@message['content'] = @msgPrefix.' '.@message['content'];
+		}
+	# Emojify
+		if(@config['Use_Emojis'] === true) {		
+			foreach(@emoji in reg_match_all('[:][^\\s./]+[:]', @message['content'])) {
+				@convertEmoji = true;
+				#returns: {{0: :match:}}
+				@emojiID = _discordBot_find_emoji(@emoji[0], @serverID, @config['Use_Other_Emojis']);
+				if(array_index_exists(@emojiID, 'NotFound')) { continue(); }
+				#At this time cannot display emojis if bot is not a member of that server. Emoji Cache still allows for non-member servers to be added
+				if(@emojiID['isbotmember'] === false) {
+					@convertEmoji = false;
+					if(array_index_exists(@config, 'Emojis_Show_NonMember_Name')) {
+						if(@config['Emojis_Show_NonMember_Name']) {
+							@message['content'] = replace(@message['content'], @emoji[0], @emoji[0].' ^^Emoji from *'.@emojiID['servername'].'*^^');
+						}
+					}
+				}
+				if(@convertEmoji) {
+					#Convert emoji :emoji: markdown to bot version:
+					@useAnimation = '';
+					if(@emojiID['animated'] === true) { @useAnimation = 'a'; }
+					@message['content'] = replace(@message['content'], @emoji[0], '<'.@useAnimation.':'.@emojiID['name'].':'.@emojiID['id'].'>');
+				}
+			}
 		}
 	#Add MC player name
 		if(@userType == 'Minecraft') {
@@ -1201,10 +1297,8 @@ proc _discordBot_edit_message(@raw, @from, @serverID, @channel, @msgID, @type, @
 		if(@config['Use_Emojis'] === true) {		
 			foreach(@emoji in reg_match_all('[:][^\\s./]+[:]', @message['content'])) {
 				#returns: {{0: :match:}}
-				@emojiID = _discordBot_find_emoji(@emoji[0], @serverID)
-				if(array_index_exists(@emojiID, 'NotFound')) { continue() }
-				#Check if emoji belongs to this guild and conversion is allowed:
-				if(@emojiID['guild'] != @serverID && @config['Use_Other_Emojis'] == false) { continue() }
+				@emojiID = _discordBot_find_emoji(@emoji[0], @serverID, @config['Use_Other_Emojis']);
+				if(array_index_exists(@emojiID, 'NotFound')) { continue(); }
 				#Convert emoji :emoji: markdown to bot version:
 				@useAnimation = '';
 				if(@emojiID['animated'] === true) { @useAnimation = 'a'; }
@@ -1286,28 +1380,41 @@ proc _db_mc_broadcast(@msg, @args, @cr = false, @checkPermission = null) {
 	return(true);
 }
 
-proc _discordBot_send_mc_chat(string @prefix, string @message = '', string @player = '', string @overrideChannel = null) {
-	@type = 'Bot'
-	@nm = false
-	switch(@prefix) {
-	case 'bot':
-		@prefix = ''
-	case 'event':
-	case 'join':
-	case 'leave':
-		@type = @prefix
-		@prefix = ''
-		@nm = true
-	case 'mc':
-	case 'user':
-	case 'console':
-	case '':
-		@type = 'user'
+proc _discordBot_send_mc_chat(@prefix, string @message = '', string @player = '', string @overrideChannel = null) {
+	@type = 'Bot';
+	@nm = false;
+	@event = '';
+	if(is_array(@prefix)) {
+		if(array_index_exists(@prefix, 'event')) {
+			@event = @prefix['event'];
+			if(array_index_exists(@prefix, 'emoji')) {
+				@prefix = @prefix['emoji'];
+			} else {
+				@prefix = '';
+			}
+		} else { throw('CastException', 'Event type requires array: event and emoji'); }
 	}
-	if(!@nm) {
-		if(@message == '' || @message == null) { return(false) }
+	if(!is_array(@prefix)) {
+		switch(@prefix) {
+		case 'bot':
+			@prefix = '';
+		case 'event':
+			throw('CastException', 'Event type requires array: event and emoji');
+		case 'join':
+		case 'leave':
+			@event = @prefix;
+			@type = @prefix;
+			@prefix = '';
+			@nm = true;
+		case 'mc':
+		case 'user':
+		case 'console':
+		case '':
+			@type = 'user';
+		}
 	}
-	if(@player == '' || @player == null) {
+	if(!@nm) { if(!@message) { return(false); } }
+	if(!@player) {
 		if(function_exists('player')) { 
 			@player = player();
 		} else {
@@ -1324,6 +1431,11 @@ proc _discordBot_send_mc_chat(string @prefix, string @message = '', string @play
 		@config = import('DiscordBot.config.'.@serverID);
 # Send message to guild's MC channel, if configured
 		if(@config['Minecraft_Messages'] === false) { continue(); }
+		# Configurable event messages per server
+		if(@event != '' && array_index_exists(@config, 'Minecraft_Event_Messages')) {
+			if(!array_contains(@config['Minecraft_Event_Messages'], @event)) { continue(); }
+		}
+		@channel = @config['Channels']['Minecraft'];
 		# Primary Guild only: Accept channel overrides, if channel is in approved list
 		if(@serverID == @botconfig['Primary_Guild']) {
 			if(@overrideChannel != '' && @overrideChannel != null) {
@@ -1542,7 +1654,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			@debugstats = array('size': array(), 'nf': 0, 'af': 0, 'fails': 0);
 		#Guild Infos
 			x_new_thread('DiscordBotUpdateGuildInfo'.rand(1153,5407), closure(){
-				_discordBot_get_server_info(@serverID);
+				_discordBot_cache_server_info(@serverID);
 			});
 			if(array_index_exists(@lastUpdateTime, @serverID)) {
 				if(import('DiscordBot.'.@serverID.'.CacheUpdate') != true) { continue(); }

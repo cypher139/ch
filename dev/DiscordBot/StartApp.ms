@@ -83,6 +83,8 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 				set_cron('0 1 * * 0,3', closure(){ _discordBot_update_members() });
 				set_cron('7 0 * * 0', closure(){ _discordBot_backup_guild_data() });
 				set_cron('1 0 * * *', closure(){ _discordBot_clean_cache() });
+				set_cron('1 1 * * *', closure(){ _discordBot_cache_server_info() });
+				set_cron('1 5 * * *', closure(){ _discordBot_cache_emojis() });
 				set_cron('@daily', closure(){
 					_db_msg_Console(color(14).simple_date('[MM/dd]', time()).color(7).' Today\'s starting snowflake: '.color(5).lshift((time() - 1420070400000), 22), 'debug');
 				});
