@@ -28,15 +28,11 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 # Message: is from user or bot?
 	@msgUserisBot = false;
 	try {
-		@msgUserisBot = discord_member_info(@discord['serverid'], @msgUserID)['bot']
+		@msgUserisBot = discord_member_info(@discord['serverid'], @msgUserID)['bot'];
 	} catch(NotFoundException @ex) {
-		#try to find if a webhook. if such found continue
-		@kw = import('DiscordBot.webhooks.list', array(array(), array()));
-		if(array_contains(@kw[0], @msgUserID)) {
-			@msgUserisBot = true;
-		} else {
-			@checkwebhook = _discordBot_iswebhook(@msgUserID);
-		}
+		# Try to find if a webhook. if such found continue
+		@msgUserisBot = true;
+		@msgUserisBot = _discordBot_iswebhook(@msgUserID);
 	}
 #Setup User message entry
 	if(@discord['bot'] === true || @discord['webhook'] === true || @msgUserisBot === true) { @userType = 'bot'; }
@@ -120,9 +116,9 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 
 bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
-	@idtime = rshift(@discord['id'], 22) + 1420070400000
+	@idtime = rshift(@discord['id'], 22) + 1420070400000;
 	@time = time();
-	@diff = @time - @idtime
+	@diff = @time - @idtime;
 	@discord['time'] = @time;
 	@userType = 'User';
 	if(@discord['bot']) { @userType = 'Bot'; }
@@ -134,9 +130,18 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@memberInfo = array('color': @embedColor, 'avatar': 'https://cdn.discordapp.com/embed/avatars/0.png');
 	if(@discord['webhook'] === true) {
 		@iswebhook = _discordBot_iswebhook(@discord['userid']);
-		@kwdata = import('DiscordBot.webhooks.data', array());
-		if(array_index_exists(@kwdata, @discord['userid'])) {
-			@memberInfo = @kwdata[@discord['userid']];
+		@kwCache = import('DiscordBot.webhooks.cache.data', array());
+		if(!array_index_exists(@kwCache, @discord['userid'])) {
+			@kwData = get_value('DiscordBot.webhooks.data');
+			if(array_index_exists(@kwData, @discord['userid'])) {
+				@kwCache[@discord['userid']] = @kwData[@discord['userid']];
+				export('DiscordBot.webhooks.cache.data', @kwCache);
+			}
+		}
+		if(array_index_exists(@kwCache, @discord['userid'])) {
+			if(!array_index_exists(@kwCache, @discord['userid'], 'noPermission')) {
+				@memberInfo = @kwCache[@discord['userid']];
+			}
 		}
 	} else {
 		try {

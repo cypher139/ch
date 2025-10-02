@@ -278,7 +278,7 @@ proc _is_even_number(@number, @round) {
 		default:
 			@number = integer(round(@number))	
 	}
-	return(@number % 2 == 0);
+	return(@number % 2 === 0);
 }
 
 #Random Code Generation
@@ -398,6 +398,117 @@ proc _codegen(@length = 7, @t1 = 'full', @t2) {
 		}
 	}
 	return(array_implode(@string, ''));
+}
+
+proc _progressbar(@value, @size, @chars, @colormode = 'over', @fillempty = true) {
+	if(!is_array(@size)) { @size = array(); }
+	if(!is_array(@chars)) { @chars = array(); }
+	#min, max, bar length
+	if(is_associative(@size) || array_size(@size) != 3) { @size = array(0, 20, 10); }
+	#Full, partial, empty
+	if(is_associative(@chars) || array_size(@chars) != 3) { @chars = array('|', ':', '.'); }
+	if(is_numeric(@value)) {
+		#Negative not supported
+		if(@value < 0) { return(color(11).string_multiply(@chars[2], @size[2])); }
+		@value = ceil(@value);
+	} else {
+		if(function_exists('pinfo')) {
+			try {
+				@value = ceil(pinfo(@value)[5]);
+			} catch(Exception @ex) {
+				@value = 'NotFound';
+			}
+		}
+	}
+	if(!is_numeric(@value)) { throw('CastException', 'Non-Numeric value given to the progress bar.'); }
+	@bar = '';
+	@colors = array();
+	@colorIndex = 0;
+	@getColorIndex = iclosure(@ex) {
+		@c = 0;
+		switch(@ex) {
+		case 0:
+			@c = 0;
+		case 1..20:
+			@c = 1;
+		case 21..35:
+			@c = 2;
+		case 36..40:
+			@c = 3;
+		case 41..50:
+			@c = 4;
+		case 51..60:
+			@c = 5;
+		case 61..75:
+			@c = 6;
+		case 76..80:
+			@c = 7;
+		case 81..100:
+			@c = 8;
+		default:
+			@c = 9;
+		}
+		return(@c);
+	}
+	# Set Colors to use:
+	# 0, 1-20, 21-35, 36-40, 41-50, 51-60, 61-75, 76-80, 81-100, 101+%
+	switch(@colormode){
+	case 'rainbow':
+		@colors = array(8, 12, 6, 14, 10, 11, 9, 13, 13, 5);
+	case 'under':
+	case 'r-under':
+		@colors = array(8, 2, 2, 14, 14, 14, 14, 4, 4, 11);
+	case 0..15:
+	case 'f':
+		array_resize(@colors, 10, @colormode);
+		@colors[0] = 8;
+		@colors[9] = 11;
+	case 'r-over':
+	case 'over':
+	default:
+		@colors = array(8, 4, 4, 14, 14, 14, 14, 2, 2, 11);
+	}
+	@colorIndex = @getColorIndex(integer((@value / @size[1]) * 100));
+	@sectorPts = @size[1] / @size[2];
+	@fillLength = @value / @sectorPts;
+	@multiColor = string_starts_with(@colormode, 'r');
+# Assemble Bar
+	#Full
+	if(!@multiColor) { @bar .= color(@colors[@colorIndex]); }
+	@bar .= string_multiply(@chars[0], integer(@fillLength));
+	#Middle
+	if(is_double(@fillLength)) {
+		if(@fillLength - integer(@fillLength) > .4) { @bar .= @chars[1]; }
+	}
+	#Empty
+	if(@fillempty && length(strip_colors(@bar)) < @size[2]) { 
+		if(@multiColor) { 
+			@bar .= string_multiply(@chars[2], @size[2] - length(@bar)); 
+		} else {
+			@bar .= string_multiply(color(@colors[0]).@chars[2], @size[2] - length(strip_colors(@bar))); 
+		}
+	}
+# Colorize and Return Bar
+	if(!@multiColor) {
+		return(@bar);
+	} else if(@colorIndex === 9) {
+		# Out of range
+		return(color(@colors[9]).@bar);
+	} else {
+		# Add Colors for each position
+		@bar2 = '';
+		foreach(@i: @c in split('', @bar)) {
+			@j = @i + 1;
+			#empty
+			if(@c === @chars[2]) {
+				@bar2 .= color(@colors[0]).@c;
+				continue();
+			}
+			@posPercent = integer((@sectorPts * @j) / @size[1] * 100);
+			@bar2 .= color(@colors[@getColorIndex(@posPercent)]).@c;
+		}
+		return(@bar2);
+	}
 }
 
 

@@ -124,7 +124,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		# Check if URL links to an image (popular to avoid reupload for each spam message)
 			@fileExt = reg_match('[.](?<ext>[\\w]{0,5})(?:\\?|$|h|\\s)', @discord['message']);
 			if(array_index_exists(@fileExt, 'ext')) {
-				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt)) { @userFlags[] = 's-img'; }
+				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt['ext'])) { @userFlags[] = 's-img'; }
 			}
 		}
 	}
@@ -133,7 +133,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		foreach(@at in @discord['attachments']) {
 			@fileExt = reg_match('[.](?<ext>[\\w]{0,5})(?:\\?|$)', @at['filename']);
 			if(array_index_exists(@fileExt, 'ext')) {
-				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt)) { @userFlags[] = 's-img'; }
+				if(array_contains(array('png', 'jpg', 'jpeg', 'webp', 'gif', 'webm'), @fileExt['ext'])) { @userFlags[] = 's-img'; }
 			}
 		}
 	}
@@ -435,16 +435,17 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		if(@config['AS_Remove_Messages'] === true) {
 			_db_as_dm(@discord);
 		}
-### DEBUG -------
-		@asMsgs = get_value('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', array());
-		if(!array_index_exists(@asMsgs, @discord['userid'])) { @asMsgs[@discord['userid']] = array(); }
-		array_insert(@asMsgs[@discord['userid']], @discord, 0);
-		store_value('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', @asMsgs);
-#### -------
 		@asmembers['lastedit'] = @time;
 		@asmembers[@discord['userid']]['rtime'] = @time;
 		@asmembers[@discord['userid']]['triggercount']++
 		export('DiscordBot.'.@discord['serverid'].'.antispam.members', @asmembers);
+### DEBUG -------
+		@asMsgs = get_value('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages');
+		if(!is_array(@asMsgs)) { @asMsgs = array(); }
+		if(!array_index_exists(@asMsgs, @discord['userid'])) { @asMsgs[@discord['userid']] = array(); }
+		array_insert(@asMsgs[@discord['userid']], @discord, 0);
+		store_value('DiscordBot.'.@discord['serverid'].'.debug.ASTrigger.Messages', @asMsgs);
+#### -------
 	}
 	# } else {
 	#User OK 

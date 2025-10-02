@@ -1180,17 +1180,12 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 			#Dm only Users
 			@isBot = false;
 			try {
-				@isBot = discord_member_info(@serverID, @channel)['bot']
+				@isBot = discord_member_info(@serverID, @channel)['bot'];
 			} catch(NotFoundException @ex) {
-				@isBot = '??';
-				@kw = import('DiscordBot.webhooks.list', array(array(), array()));
-				if(array_contains(@kw[0], @channel)) {
-					@isBot = true;
-				} else {
-					@checkwebhook = _discordBot_iswebhook(@channel);
-				}
+				@isBot = true;
+				@isBot = _discordBot_iswebhook(@channel);
 			}
-			if(@isBot != false) { return(false); }
+			if(@isBot !== false) { return(false); }
 			#Split msg
 			if(array_index_exists(@split, 0)) {
 				foreach(@i: @msg in @split) {
@@ -2557,53 +2552,85 @@ proc _discordBot_ismention(@discord, @regexPrefix = '^') {
 }
 
 proc _discordBot_iswebhook(@search) {
-	if(!is_numeric(@search)) {throw('ms.lang.CastException', 'Webhook Search only supports numeric ID searches.'); }
-	@return = null
-	@wList = import('DiscordBot.webhooks.list', array());
+	if(!is_numeric(@search)) { throw('CastException', 'Webhook Search only supports numeric ID searches.'); }
+	@isWebhook = null;
+	@update = true;
+	@wList = import('DiscordBot.webhooks.list');
+	if(!@wList) { @wList = get_value('DiscordBot.webhooks.list'); }
+	if(!@wList) { @wList = array(); }
 	if(!array_index_exists(@wList, 1)) { @wList = array(array(), array()); }
-	if(array_contains(@wList[0], @search)) { return(true) }	
-	if(array_contains(@wList[1], @search)) { return(false); }
-	discord_request('GET', 'webhooks/'.@search, null,
-		closure(@ex) {
-			console('new');
-			#Valid, and data found
-			@kw = import('DiscordBot.webhooks.list', array(array(), array()));
-			@kw[0][] = @search;
-			export('DiscordBot.webhooks.list', @kw);
-			@kwdata = import('DiscordBot.webhooks.data', array());
-			# application_id: , avatar: , channel_id: , guild_id: , id: , name: , type: , user: {accent_color: , avatar: , avatar_decoration_data: , banner: , banner_color: , bot: , clan: , discriminator: , flags: , global_name: , id: , public_flags: , username: }
-			@kwdata[@search] = @ex;
-			@kwdata[@search]['retrieved'] = time();
-			@kwdata[@search]['bot'] = true;
-			@kwdata[@search]['color'] = array('b': 200, 'g': 0, 'r': 0);
-			@kwdata[@search]['displayname'] = @ex['name'];
-			@kwdata[@search]['joined_at'] = rshift(@ex['id'], 22) + 1420070400000;
-			@kwdata[@search]['userid'] = @ex['id'];
-			@kwdata[@search]['username'] = @ex['user']['username'];
-			@kwdata[@search]['avatar'] = 'https://cdn.discordapp.com/avatars/'.@ex['id'].'/'.@ex['user']['avatar'].'.png';
-			export('DiscordBot.webhooks.data', @kwdata);
-			_db_msg_Console('Webhook search: '.@search.'\n'.@ex, @ex['guild_id'], 'debug');
-		},
-		closure(@ex) {
-		console(@ex);
-			# 10015: Unknown Webhook - not a valid webhook ID
-			if(string_contains(@ex, '10015')) {
-				@kw = import('DiscordBot.webhooks.list', array(array(), array()));
-				if(!array_index_exists(@kw, @search)) { _db_msg_Console('Webhook search: ID given is not a Webhook.', 'debug'); }
-				@kw[1][] = @search;
-				export('DiscordBot.webhooks.list', @kw);
-			}
-			# 50013: Missing Permissions - IS valid, but bot is missing permission to view data.
-			if(string_contains(@ex, '50013')) {
-				@kw = import('DiscordBot.webhooks.list', array(array(), array()));
-				if(!array_index_exists(@kw, @search)) { _db_msg_Console('Webhook search: '.@search.' is a Webhook, however the bot does not have server permissions to view user data.', 'debug'); }
-				@kw[0][] = @search;
-				export('DiscordBot.webhooks.list', @kw);
+	if(array_contains(@wList[0], @search)) { @isWebhook = true; }	
+	if(array_contains(@wList[1], @search)) { @isWebhook = false; }
+	if(@isWebhook !== false) {
+		@kwCache = import('DiscordBot.webhooks.cache.data', array());
+		if(!array_index_exists(@kwCache, @search)) {
+			@kwData = get_value('DiscordBot.webhooks.data');
+			if(!is_array(@kwData)) { @kwData = array(); }
+			if(array_index_exists(@kwData, @search)) {
+				@kwCache[@search] = @kwData[@search];
+				export('DiscordBot.webhooks.cache.data', @kwCache);
 			}
 		}
-	);
+		if(array_index_exists(@kwCache, @search)) {
+			if(@kwCache[@search]['retrieved'] < (time() - 1209600000)) { @update = true; } else { @update = false; }
+		} else { @update = true; }
+	} else { @update = false; }
+	if(@update) {
+		discord_request('GET', 'webhooks/'.@search, null,
+			closure(@ex) {
+				#Valid, and data found
+				@wData = get_value('DiscordBot.webhooks.data');
+				if(!@wData) { @wData = array(); }
+				@addType = array('Update', 10);
+				if(!array_contains(@wList[0], @search)) {
+					@wList[0][] = @search;
+					export('DiscordBot.webhooks.list', @wList);
+					store_value('DiscordBot.webhooks.list', @wList);
+					@addType = array('Add', 14);
+				}
+				# application_id: , avatar: , channel_id: , guild_id: , id: , name: , type: , user: {accent_color: , avatar: , avatar_decoration_data: , banner: , banner_color: , bot: , clan: , discriminator: , flags: , global_name: , id: , public_flags: , username: }
+				@wData[@search] = @ex;
+				@wData[@search]['retrieved'] = time();
+				@wData[@search]['bot'] = true;
+				@wData[@search]['color'] = array('b': 200, 'g': 0, 'r': 0);
+				@wData[@search]['displayname'] = @ex['name'];
+				@wData[@search]['joined_at'] = rshift(@ex['id'], 22) + 1420070400000;
+				@wData[@search]['userid'] = @ex['id'];
+				@wData[@search]['username'] = @ex['user']['username'];
+				@wData[@search]['avatar'] = 'https://cdn.discordapp.com/avatars/'.@ex['id'].'/'.@ex['user']['avatar'].'.png';
+				store_value('DiscordBot.webhooks.data', @wData);
+				export('DiscordBot.webhooks.cache.data', null);
+				_db_msg_Console(color(@addType[1]).@addType[0].color('r').' Webhook: '.@search.'\n'.@ex, @ex['guild_id'], 'debug');
+			},
+			closure(@ex) {
+				# 10015: Unknown Webhook - not a valid webhook ID
+				if(string_contains(@ex, '10015')) {
+					if(!array_contains(@wList[1], @search)) {
+						_db_msg_Console('Webhook search: '.@search.' is Not a Webhook.', 'debug');
+						@wList[1][] = @search;
+						export('DiscordBot.webhooks.list', @wList);
+						store_value('DiscordBot.webhooks.list', @wList);
+					}
+				} else if(string_contains(@ex, '50013')) {
+				# 50013: Missing Permissions - IS valid, but bot is missing permission to view data.
+					if(!array_contains(@wList[0], @search)) {
+						_db_msg_Console('Webhook search: '.@search.' is a Webhook, however the bot does not have server permissions to view user data.', 'warning');
+						@wList[0][] = @search;
+						export('DiscordBot.webhooks.list', @wList);
+						store_value('DiscordBot.webhooks.list', @wList);
+					}
+					@wData = get_value('DiscordBot.webhooks.data');
+					if(!@wData) { @wData = array(); }
+					@wData[@search] = array('bot': true, 'joined_at': rshift(@search, 22) + 1420070400000, 'retrieved': time(), 'noPermission': true);
+					store_value('DiscordBot.webhooks.data', @wData);
+				} else {
+					_db_msg_Console('Webhook search: '.@ex, 'debug');
+				}
+			}
+		);
+	}
 	#if this proc returns null: data still processing, and this tick is invalid to get this data.
-	return(null);
+	return(@isWebhook);
 }
 
 
@@ -2895,28 +2922,28 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 			@sendReturnMsg = false;
 		case 'NoCmd':
 			@returnMsg['content'] = 'A required command module is not installed.';
-			@returnMsg['prefix'][1] = 1
+			@returnMsg['prefix'][1] = 1;
 			@return = false;
 		case 'NotAdmin':
 			@returnMsg['content'] = 'This command is restricted to use by Admin only.';
-			@returnMsg['prefix'][1] = 3
+			@returnMsg['prefix'][1] = 3;
 			@return = false;
 		case 'NoUserFound':
 			@returnMsg['content'] = 'User ID given not found on server.';
-			@returnMsg['prefix'][1] = 2
+			@returnMsg['prefix'][1] = 2;
 			@return = false;
 		case 'NoPerms':
 			@returnMsg['content'] = 'I did not have permission to finish this command!';
-			@returnMsg['prefix'][1] = 2
+			@returnMsg['prefix'][1] = 2;
 			@discord['SendChannel'] = 'admin';
 			@return = false;
 		case 'NotEnabled':
 			@returnMsg['content'] = 'This feature is not enabled on this server.';
-			@returnMsg['prefix'][1] = 1
+			@returnMsg['prefix'][1] = 1;
 			@return = false;
 		case 'Error':
 			@returnMsg['content'] = 'An error occured in the command, see logs.';
-			@returnMsg['prefix'][1] = 1
+			@returnMsg['prefix'][1] = 1;
 			@return = false;
 		case 'pong':
 			@timeElapsed = (time() - @discord['time']);

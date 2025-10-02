@@ -91,7 +91,7 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		if(@discord['serverid'] == @botconfig['Primary_Guild']) {
 			if(array_contains(@config['Channels_Receive'], @discord['channel']) || array_contains(@config['Channels_Receive'], @discord['channelid'])) { 
 				@sendtoMC = true;
-				@checkPermission = 'DiscordBot.chat.channel.'.@discord['channel']
+				@checkPermission = 'DiscordBot.chat.channel.'.@discord['channel'];
 			}
 		}
 		if(@sendtoMC === true && is_consumed() === false && @config['Minecraft_Messages'] === true) {
@@ -127,9 +127,9 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 				}
 			}
 		#Send
-			@sendmsg = color('#'.@usernamecolor).'['.@userDisplay.'] '.color(7).@discord['message']
+			@sendmsg = color('#'.@usernamecolor).'['.@userDisplay.'] '.color(7).@discord['message'];
 			if(@discord['bot'] === true) {
-				@sendmsg = color(@usernamecolor).'[Bot]'.@sendmsg
+				@sendmsg = color(@usernamecolor).'[Bot]'.@sendmsg;
 			}
 			@sendto = 'players';
 			if(@config['Console_Messages_Chat'] === true) { @sendto = ''; }

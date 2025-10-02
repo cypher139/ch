@@ -16,7 +16,7 @@ proc _discordBot_cmd_whois(@discord, @args) {
 		case 'extra':
 			@showExtraInfo = true;
 		case 'all':
-			@Placeholder = true;
+			noop();
 		default:
 			if(is_numeric(@arg) && length(@arg) > 12) {
 				if(array_contains(@serverMembers, @arg)) {
@@ -443,12 +443,17 @@ proc _discordBot_cmd_error(@discord, @args) {
 
 #Add Commands to list
 @c3lx = import('DiscordBot.Command.List', array());
-@mIu7 = array(	
-	'whois': array('alias': array('who', 'is'), 'admin': false, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_whois(@discord, @args)); }),
-	'welcomerolesfinder': array('alias': array('wrf'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_wrf(@discord, @args)); }),
-	'asremove': array('alias': array('as'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_asremove(@discord, @args)); }),
-	'geoiplookup': array('alias': array('geoip'), 'admin': false, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_geoiplookup(@discord, @args)); }),
-	'getperms': array('alias': array('checkpermissions'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_getperms(@discord, @args)); }),
+@mIu7 = array(
+	'whois': array('alias': array('who', 'is'), 'admin': false, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_whois(@discord, @args)); },
+			'help': 'Get various info about a user in the server, such as join date, leaderboard XP, and more!', 'usage': '<User name, @mention, userID, or self> [Additional Users] [extra]', 'usagenote': 'Use the argument "Extra" to see even more cool stats!\n If you are a server admin, more info that is useful to admins (all join dates, etc.) is included.'),
+	'welcomerolesfinder': array('alias': array('wrf'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_wrf(@discord, @args)); },
+			'help': 'Checks all users of your server in search of which users have only "Welcome roles" awarded upon join, or no roles at all. If you are a server admin, a list of matching Users is sent in a DM to you.', 'usage': '<none/welcome> [hideid] [noDM]'),
+	'asremove': array('alias': array('as'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_asremove(@discord, @args)); },
+			'help': 'Removes a Discord User from the bot\'s AntiSpam restrictions. Must specify User ID.', 'usage': '<User ID>'),
+	'geoiplookup': array('alias': array('geoip'), 'admin': false, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_geoiplookup(@discord, @args)); },
+			'help': 'Get basic Geo IP information for an IP Address, such as ASN ID and the organization name.', 'usage': '<IP Address> [2nd IP] [3rd IP] [4th IP] [5th IP]', 'usagenote': 'Checking LAN or otherwise non-public IPs might get you sent a meme.'),
+	'getperms': array('alias': array('checkpermissions'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_getperms(@discord, @args)); },
+			'help': 'Verify any server the bot is connected to has the permissions needed for each function of the bot.', 'usage': '<Server ID>'),
 	'errdebug': array('alias': array('error'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_error(@discord, @args)); })
 );
 @c3lx = array_merge(@c3lx, @mIu7);

@@ -117,7 +117,7 @@ case 'getweb':
 	if(@res === false) { @msg = 'is '.color(12).'NOT'.color('f').' a webhook.'; }
 	if(@res == null) { die('Requesting data. Due to tick processing repeat this command in a few seconds to view results.'); }
 	msg(@args[0].' '.@msg);
-	@kwdata = import('DiscordBot.webhooks.data', array());
+	@kwdata = get_value('DiscordBot.webhooks.data', array());
 	if(array_index_exists(@kwdata, @args[0])) { msg(@kwdata[@args[0]]); }
 # 10015: Unknown Webhook
 # 50013: Missing Permissions

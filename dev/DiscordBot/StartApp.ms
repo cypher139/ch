@@ -55,9 +55,6 @@ if(in_cmdline_mode()) {
         include(@pathparent.'/ScriptLibraries/auto_include.ms');
     }
 	# External Scripts
-	if(array_contains(ls(@pathparent), 'codegen')) {
-		include(@pathparent.'/codegen/auto_include.ms');
-	}
 	# Core Functions
 	include('auto_include.ms');
 } else {
@@ -80,11 +77,11 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 			@ret8901 = _db_load_guilds(discord_get_servers());
 			# If successful: Setup initial tasks
 			if(@ret8901 === true) {
-				set_cron('0 1 * * 0,3', closure(){ _discordBot_update_members() });
-				set_cron('7 0 * * 0', closure(){ _discordBot_backup_guild_data() });
-				set_cron('1 0 * * *', closure(){ _discordBot_clean_cache() });
-				set_cron('1 1 * * *', closure(){ _discordBot_cache_server_info() });
-				set_cron('1 5 * * *', closure(){ _discordBot_cache_emojis() });
+				set_cron('0 1 * * 0,3', closure(){ _discordBot_update_members(); });
+				set_cron('7 0 * * 0', closure(){ _discordBot_backup_guild_data(); });
+				set_cron('1 0 * * *', closure(){ _discordBot_clean_cache(); });
+				set_cron('1 1 * * *', closure(){ _discordBot_cache_server_info(); });
+				set_cron('1 5 * * *', closure(){ _discordBot_cache_emojis(); });
 				set_cron('@daily', closure(){
 					_db_msg_Console(color(14).simple_date('[MM/dd]', time()).color(7).' Today\'s starting snowflake: '.color(5).lshift((time() - 1420070400000), 22), 'debug');
 				});
@@ -92,6 +89,7 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 				export('DiscordBot.Bot.Info', @ret8902);
 				_write_file(import('DiscordBot.logs.dir').'/Bot-Started.txt', simple_date('MM-dd-yy_HHmm', time()).'\n', 'append');
 				_discordBot_set_activity();
+				if(!is_array(import('DiscordBot.webhooks.list'))) { export('DiscordBot.webhooks.list', get_value('DiscordBot.webhooks.list')); }
 				foreach(@k: @v in @return8762['Allowed_Mentions']) {
 					@w = to_upper(@v);
 					if(array_contains(array('USER', 'ROLE', 'EVERYONE'), @w)) {
@@ -122,4 +120,4 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 		#Note: DOES include .disabled
 		include_dir('Functions', true);
 	}
-}
+} else { console(color(12).'[DiscordBot] Installed CHDiscord version is too low. Update to '.array_implode(@requiredVersion, '.'), false); }

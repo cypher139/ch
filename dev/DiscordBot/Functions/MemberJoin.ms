@@ -153,6 +153,8 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 					_discordBot_broadcast(@discord['serverid'], @config['Channels']['Join_Log'], array('embeds': @joinMessage));
 				}
 				if(@sendLogMsg === true) {
+					@invMessage = replace(@invMessage, '%User%', @userDisplaydc);
+					@invMessage = replace(@invMessage, '%UserID%', @discord['userid']);
 					_discordBot_broadcast(@discord['serverid'], '--log', @invMessage);
 				}
 				_db_msg_Console(@consolejoinMsg.' '.@msgSuffix, @discord['serverid']);

@@ -40,7 +40,7 @@ bind('player_chat', array('id': 'Chat.formatter'), null, @chat) {
 	if(@chatoptions['colorize'] == '' || @chatoptions['colorize'] == null, @chatoptions['colorize'] = true);
     #Health
 	@hb = '';
-	if(@groupinfo[@group]['showhealth'] == true) { @hb = color(0).'('._healthbar(@player['name']).color(0).')'; }
+	if(@groupinfo[@group]['showhealth'] == true) { @hb = color(0).'('._progressbar(@player['name']).color(0).')'; }
 	
 	#Group options
 	# Set nickname

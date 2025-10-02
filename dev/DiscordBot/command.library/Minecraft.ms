@@ -12,7 +12,7 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 	if(@discord['admin'] === true) { 
 		@useList = true;
 	} else {	
-		try (
+		try {
 			@userRoles = discord_member_get_roles(@discord['serverid'], @discord['username']);
 			foreach(@rolename: @roleid in @userRoles) {
 				if(equals_ic(@config['Whitelist_Role'], @rolename) || @config['Whitelist_Role'] == @roleid) {
@@ -20,7 +20,9 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 					break();
 				}
 			}
-		);
+		} catch (Exception @ex) {
+			noop();
+		}
 	}
 	if(@useList === false) {
 		return('This keycard has expired: please check The Coffee Shop for a new keycard.');
@@ -57,7 +59,7 @@ proc _discordBot_cmd_mcwhitelist(@discord, @args) {
 		@adminmsg = '\n(Total whitelistings from '.@discord['username'].': '.@wllog['uses'][@discord['userid']].')';
 		_discordBot_broadcast(@discord['serverid'], '--admin', '**'.@discord['username'].'**'.@return.@adminmsg);
 		_db_msg_Console(color(9).@discord['username'].color(10).@return.color('r').@adminmsg, @discord['serverid']);
-		@return = ':white_check_mark: '.@return
+		@return = ':white_check_mark: '.@return;
 	}
 	if(array_size(@stats['AlreadyListed']) > 0) {
 		@s = '';
@@ -88,18 +90,15 @@ if(!array_index_exists(@args, 1)) {return('Error'); }
 #index: 0 - -2: item name, -1: qty
 @array = @args[1..-1];
 @mcreturn = _cmd_giveitem(@args[0], @args[1..-1], @discord['nickname']);
-
-#index: 0 - -2: item name, -1: qty
-@array = @args[1..-1];
-
-@mcreturn = _cmd_giveitem(@args[0], @args[1..-1], @discord['nickname']);
 return(@mcreturn);
 }
 #Add Commands to list
 @c3lx = import('DiscordBot.Command.List', array());
 @mIu7 = array(	
-	'whitelist': array('alias': array('mc-whitelist'), 'admin': false, 'category': 'Minecraft', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_mcwhitelist(@discord, @args)); }),
-	'give': array('alias': array('mc-give'), 'admin': false, 'category': 'Minecraft', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_mcgive(@discord, @args)); })
+	'whitelist': array('alias': array('mc-whitelist'), 'admin': false, 'category': 'Minecraft', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_mcwhitelist(@discord, @args)); },
+			'help': 'Whitelist your friends and favorite Minecraft players from the comfort of your Discord client!', 'usage': '<user name> [2nd user] [3rd user, etc.]', 'usagenote': 'Your Discord account must be a server admin, or have the Whitelist role to use this command. Each Discord account is allowed only a few uses of this command.'),
+	'give': array('alias': array('mc-give'), 'admin': false, 'category': 'Minecraft', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_mcgive(@discord, @args)); },
+			'help': 'Gives an online player on the Minecraft server an inventory item.', 'usage': '<player> <Item Name or pre-1.13 ID> <Quantity (1)>', 'mcperm': array('flags': array('r'), 'cmd': '/give', 'perm': 'commandhelper.alias.creative'))
 );
 @c3lx = array_merge(@c3lx, @mIu7);
 export('DiscordBot.Command.List', @c3lx);

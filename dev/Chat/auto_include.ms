@@ -127,48 +127,6 @@ proc _rainbow(@msg, @type, @returntype) {
 #fabulous light colors: 6abcdef
 #			@string, @string.'\u0026'.array(6,7,9,a,b,c,d,e,f)[rand(9)].substr(@msg, @i++;);
 
-#ichat +healthbar replacement
-proc _healthbar(@health, string @fullchar = '|', string @emptychar = '.') {
-	@mchar = ':';
-	if(is_numeric(@health)) { 
-		@health = ceil(@health);
-	} else { 
-		if(function_exists('pinfo')) {
-			@health = ceil(pinfo(@health)[5]);
-		} else {
-			return('No data given');
-		}
-	}
-	@healthodd = ceil(@health / 2);
-	@healthbar = array(0,0,0,0,0,0,0,0,0,0,0);
-	@color = 8
-	#dead.
-	if(@health == 0) { @color = 8; }
-	#red: 1-4 hearts
-	if(@health >= 1 && @health <= 8) { @color = 4; }
-	#yellow: 5-7 hearts
-	if(@health >= 9 && @health <= 15) { @color = 14; }
-	#green: 8-10 hearts
-	if(@health >= 16 && @health <= 20) { @color = 2; }
-	#blue: Somehow, more than 10 hearts
-	if(@health >= 21) { @color = 11; }
-	#for each heart (2 phealth points):
-	foreach(@k: @v in @healthbar) {
-		@char = '';
-		if(@k == 0) { continue(); }
-		if(@k <= @healthodd) { @char = @fullchar; }
-		#middle char:
-		# mod(@number, 2) == 0
-		if(@health % 2 == 1 && @k == @healthodd) { @char = @mchar; } 
-		if(@k > @healthodd) { 
-			@color = 0 
-			@char = @emptychar;
-		}
-		@healthbar[@k] = color(@color).@char
-	}
-	array_remove(@healthbar, 0);
-	return(array_implode(@healthbar, ''));
-}
 
 proc _message_check_ban_mentions(@message, @from, @option) {
 	@config = import('Chat.config.Server');

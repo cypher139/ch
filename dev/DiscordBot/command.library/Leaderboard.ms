@@ -45,7 +45,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 		case 'extra':
 			@showExtraInfo = true;
 		case 'all':
-			@Placeholder = true;
+			noop();
 		case 'roles':
 			if(@showRoles || @config['LB_Options']['Use_Role_Rewards'] === false) { continue(); }
 			@index = array_keys(@config['LB_Options']['Role_Rewards']);
@@ -55,19 +55,27 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			@uLevel = 0
 			if(array_index_exists(@leaderboard['members'], @discord['userid'])) { @uLevel = @leaderboard['members'][@discord['userid']]['level']; }
 			@roles = array(
-			# 'author': array('icon_url': 'https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'.@serverInfo['icon'].'.'.@serverIconType, 'name': @leaderboard['Guild_Name'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @leaderboard['Guild_Name'])),
 			'author': array('icon_url': @uInfo['avatar'].'?size=40', 'name': @uDisplay, 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @uDisplay.' '.@leaderboard['Guild_Name'])),
 			'title': @leaderboard['Guild_Name'].' Level Roles',
 			'color': @uInfo['color'],
 			'thumbnail':'https://cdn.discordapp.com/icons/'.@discord['serverid'].'/'.@serverInfo['icon'].'.'.@serverIconType.'?size=48',
 			'description': '<@'.@discord['userid'].'>\'s Level:‎ ‎ ‎ ‎ ‎ ‎‎‎‎‎**'.@leaderboard['members'][@discord['userid']]['level'].'**',
 			'fields': array(),
-			'footer': array('text': array_size(@index).' Entries')
+			'footer': array('text': '')
 			);
+			@unlockCount = 0;
 			foreach(@i: @num in @index) {
 				@unlocked = '';
-				if(@uLevel >= @num) { @unlocked = 'UN'; }
-				@roles['fields'][] = array('name': 'Level '.@num, 'value': '***'.@unlocked.'LOCKED***\n**|** <@&'.@config['LB_Options']['Role_Rewards'][@num]['RoleID'].'>', 'inline': true);
+				@uF = '';
+				if(@uLevel >= @num) { @unlocked = 'UN'; @unlockCount++; @uF = '*';}
+				@roleIDindex = array('<@&', 'RoleID', '>');
+				if(@discord['UseDM'] === true) { @roleIDindex = array('', 'RoleName', ''); }
+				@roles['fields'][] = array('name': 'Level '.@num, 'value': '**'.@uF.@unlocked.'LOCKED'.@uF.'**\n**|** '.@roleIDindex[0].@config['LB_Options']['Role_Rewards'][@num][@roleIDindex[1]].@roleIDindex[2], 'inline': true);
+			}
+			if(@unlockCount < array_size(@index)) { 
+				@roles['footer']['text'] = @unlockCount.' Unlocked Roles | '.array_size(@index).' Total'; 
+			} else {
+				@roles['footer']['text'] = 'All '.@unlockCount.' Roles Unlocked!';
 			}
 			@return['embeds'][] = @roles;
 			@showRoles = true;
@@ -80,10 +88,12 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			@userIDs[] = @lbTop[2]['id'];
 		case 'fourth':
 			@userIDs[] = @lbTop[3]['id'];
+		case 'fifth':
+			@userIDs[] = @lbTop[4]['id'];
 		default:
 			if(is_numeric(@arg) && length(@arg) < 6) {
 				if(array_index_exists(@lbTop, (@arg - 1))) {
-					@userIDs[] = @lbTop[(@arg - 1)]['id']
+					@userIDs[] = @lbTop[(@arg - 1)]['id'];
 				}
 			} else {
 				@usercheckargs[] = @arg;
@@ -140,7 +150,11 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 	}
 
 # Format display
-	foreach(@userID in @userIDs) {
+	foreach(@i: @userID in @userIDs) {
+		if(@i > 3) {
+			@return['content'] = 'Woah there, not so many requests at once! I can only show the first few usernames:';
+			break();
+		}
 		if(!array_index_exists(@leaderboard['members'], @userID)) { continue(); }
 		@userInfo = discord_member_info(@discord['serverid'], @userID);
 		@userDisplay = _db_get_user_nick(@discord['serverid'], @userID, @userInfo['username']);
@@ -152,13 +166,17 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			}
 		}
 		@userLevel = @leaderboard['members'][@userID]['level'];
-		@earnedXP = 0
-		@remainXP = 0
-		@totalXP = 0
+		@earnedXP = 0;
+		@remainXP = 0;
+		@totalXP = 0;
+		@earnedXPPercent = 0;
 		if(array_index_exists(@levelxp, (@userLevel + 1))) {
-			@remainXP = @levelxp[(@userLevel + 1)] - @leaderboard['members'][@userID]['xp']
-			@earnedXP = @leaderboard['members'][@userID]['xp'] - @levelxp[@userLevel]
-			@totalXP = @levelxp[(@userLevel + 1)] - @levelxp[@userLevel]
+			@remainXP = @levelxp[(@userLevel + 1)] - @leaderboard['members'][@userID]['xp'];
+			@earnedXP = @leaderboard['members'][@userID]['xp'] - @levelxp[@userLevel];
+			@totalXP = @levelxp[(@userLevel + 1)] - @levelxp[@userLevel];
+			@earnedXPPercent = round(@earnedXP / @totalXP, 2);
+			if(integer(@earnedXPPercent) > 0) { @earnedXPPercent = 0; }
+			@earnedXPPercent = integer(@earnedXPPercent * 100);
 		} else {
 			@earnedXP = @leaderboard['members'][@userID]['xp'];
 			@remainXP = 'Max';
@@ -174,7 +192,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 		'fields': array(
 			array('name': 'XP', 'value': @leaderboard['members'][@userID]['xp'].' xp', 'inline': true),
 			array('name': 'Messages', 'value': @leaderboard['members'][@userID]['msg_count'], 'inline': true),
-			array('name': 'Level Up', 'value': @earnedXP.' / '.@totalXP.' xp\n'.'[progress]', 'inline': false),
+			array('name': 'Level Up', 'value': @earnedXP.' / '.@totalXP.' xp\n['.strip_colors(_progressbar(@earnedXP, array(0, @totalXP, 15), array('=', '>', '⠀'))).'] *'.@earnedXPPercent.'%*', 'inline': false),
 		),
 		'footer': array('text': 'Retrieved'),
 		'timestamp': time()
@@ -190,7 +208,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 			@embed['fields'][] = array('name': 'All XP', 'value': '*Bot Spam:* '.@leaderboard['members'][@userID]['all_xp'][0].'\n  *Multiple Messages in 1 Min:* '.@leaderboard['members'][@userID]['all_xp'][1].'\n Normal XP: '.@leaderboard['members'][@userID]['all_xp'][2], 'inline': true);
 			if(@discord['admin'] === true) {
 				@embed['fields'][] = array('name': 'Avatar', 'value': '[Avatar]('.@userInfo['avatar'].')', 'inline': true);
-				@embed['fields'][] = array('name': 'HTML Color', 'value': @leaderboard['members'][@userID]['color'], 'inline': true);
+				@embed['fields'][] = array('name': 'RGB Color', 'value': array_implode(@leaderboard['members'][@userID]['color'], ', '), 'inline': true);
 				if(array_index_exists(@leaderboard, 'members', @userID, 'tag')) {
 					@embed['fields'][] = array('name': 'User Tag', 'value': @leaderboard['members'][@userID]['tag'].'\n note: feature deprecated', 'inline': true);
 				}
@@ -207,7 +225,7 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 		@return['embeds'][] = @embed;
 	}
 	if(!array_index_exists(@return, 'embeds', 0)) { @return = 'Um, yea i didn\'t find a matching Leaderboard entry!'; }
-	# console(@return);
+	# dev: _db_msg_Console(@return, @discord['serverid'], 'debug');
 	return(@return);
 }
 
@@ -215,7 +233,11 @@ proc _discordBot_cmd_viewlb(@discord, @cmdargs) {
 #Add Commands to List
 @c3lx = import('DiscordBot.Command.List', array());
 @mIu7 = array(	
-	'viewleaderboard': array('alias': array('viewlb', 'lb', 'rank'), 'admin': false, 'category': 'Leaderboard', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_viewlb(@discord, @args)); })
+	'viewleaderboard': array('alias': array('viewlb', 'lb', 'rank'), 'admin': false, 'category': 'Leaderboard', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_viewlb(@discord, @args)); },
+			'help': 'View your Leaderboard rankings for users on this server! Shows XP earned, level, rank number, and more!', 'usage': '<user name, or rank number> [2nd user, etc.] [top] [roles] [extra]',
+			'usagenote': 'Type a rank number to see the info of the user in that rank.\n "extra" shows info such as last message time, ignored XP accrued, avatar, and more!\n"roles" shows the roles available via leveling up in the Leaderboard, and your current attainment status of the roles!\n"top" shows the #1 ranked user. use Second, Third, etc to see relevant ranks as well.'),
+	'lbroles': array('alias': '', 'admin': false, 'category': 'Leaderboard', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_viewlb(@discord, array('roles'))); },
+			'help': 'View your unlocked Rank roles via earned XP from the Leaderboard system, and see which ones are still yet to be obtained!')
 );
 @c3lx = array_merge(@c3lx, @mIu7);
 export('DiscordBot.Command.List', @c3lx);

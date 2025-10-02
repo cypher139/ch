@@ -100,7 +100,7 @@ proc _discordBot_cmd_fakeban(@discord, @cmdargs, @type) {
 	}	
 
 	_db_msg_Console('<@'.@fromuser.'> '.@words.' <@'.@target.'>', @discord['serverid']);
-# If person has been pinged recently, timeout another ban	
+# If person has been pinged recently, timeout another ban
 	@lastping = import('DiscordBot.last.ping.'.@target);
 	if(time() < (@lastping + 234567)) {
 		return('Hey, give it a rest <@'.@discord['userid'].'>!');
@@ -227,8 +227,11 @@ proc _discordBot_cmd_fakeadmin(@discord) {
 
 
 proc _discordBot_cmd_codegen_pl(@discord, @args) {	
+	@service = '';
+	if(array_size(@args) < 5) {	@service = array_implode(@args, ' '); }
 	switch(rand(1,4)) {
 		case 2:
+		if(!@service) { @service = array_get_rand(array('your mom', '<redacted>', 'FTP', 'ssh', 'your blog')); }
 		if(is_proc('_codegen')) {
 			@time = time();
 			@id = rand(25,150);
@@ -244,7 +247,6 @@ proc _discordBot_cmd_codegen_pl(@discord, @args) {
 			@results = import(@id.@time);
 			if(!is_array(@results)) { return('Error'); }
 			_db_msg_Console(@results, @discord['serverid'], 'debug');
-			@service = array_get_rand(array('your mom', '<redacted>', 'FTP'));
 			export(@id.@time, null);
 			return('Passwords for '.@service.': \n --: '.array_implode(@results, '\n --: '));
 		} else {
@@ -261,15 +263,24 @@ proc _discordBot_cmd_codegen_pl(@discord, @args) {
 #Add Commands to List
 @c3lx = import('DiscordBot.Command.List', array());
 @mIu7 = array(
-	'cypher': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_cypher(@discord)); }),
-	'say': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_say(@discord, @args)); }),
-	'poo': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_quote(@discord, array('poo'))); }),
-	'quote': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_quote(@discord, @args)); }),
-	'cointoss': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_cointoss(@discord, @args)); }),
-	'1to100': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_1to100(@discord, @args)); }),
-	'fakeadmin': array('alias': array('sudo', 'makemeadmin'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_fakeadmin(@discord)); }),
-	'fakeban': array('alias': array('fban', 'fb'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_fakeban(@discord, @args)); }),
-	'listpasswords': array('alias': array('passwords', 'lp', 'passwordlist'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_codegen_pl(@discord)); })
+	'cypher': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_cypher(@discord)); },
+			'help': 'Tease Cypher (the bot developer).'),
+	'say': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_say(@discord, @args)); },
+			'help': 'Makes the bot repeat back whatever you said to it! Beware though, the bot might get sassy instead.', 'usage': '<words to repeat back>'),
+	'poo': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_quote(@discord, array('poo'))); },
+			'help': '<Note to self: remove placeholder text> the f*k is wrong with you!?'),
+	'quote': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_quote(@discord, @args)); },
+			'help': 'Make the bot say pre-programmed silly and fun quotes!', 'usage': '<Name of quote>', 'usagenote': 'Quote Names:\n poo, stoned, tatsu'),
+	'cointoss': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_cointoss(@discord, @args)); },
+			'help': 'Toss a (virtual) coin to help you decide your next move.', 'usage': '[Number of coin tosses]', 'usagenote': 'Why would you want to try 50,000 coin tosses anyways?'),
+	'1to100': array('alias': '', 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_1to100(@discord, @args)); },
+			'help': 'Picks a number for you between 1 and 100.'),
+	'fakeadmin': array('alias': array('sudo', 'makemeadmin'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_fakeadmin(@discord)); },
+			'help': 'Unleash your (imaginary) Admin powers upon your fellow Discordians! Awards the designated fake admin role to you: a role with no real power but all the fame of power.', 'usagenote': 'With illusions of great power still comes great responsibility.\nToo Much? Enter command again to remove the special role.'),
+	'fakeban': array('alias': array('fban', 'fb'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_fakeban(@discord, @args)); },
+			'help': 'Prank your friends by sending them a \'you have been banned\' message with this command!', 'usage': '<Username>', 'usagenote': 'Don\'t worry, this doesn\'t actually perform any real actions... or does it? With illusions of great power still comes great responsibility.'),
+	'listpasswords': array('alias': array('passwords', 'lp', 'passwordlist'), 'admin': false, 'category': 'Fun', 'cmd': closure(@discord) { return(_discordBot_cmd_codegen_pl(@discord)); },
+			'help': 'Generates a fake list of randomly generated passwords for various web services and your mom.', 'usage': '[service name]', 'usagenote': 'These are all randomly generated and totally not real.')
 );
 @c3lx = array_merge(@c3lx, @mIu7);
 export('DiscordBot.Command.List', @c3lx);

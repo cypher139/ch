@@ -104,9 +104,9 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 		case 'nc':
 			@userConfig[@userID]['NotifyContent'] = !@userConfig[@userID]['NotifyContent']
 			if(@userConfig[@userID]['NotifyContent'] === true) {
-				@ret = 'Content of '.@userType.' DMs with me shall be displayed'.@suffix
+				@ret = 'Content of '.@userType.' DMs with me shall be displayed'.@suffix;
 			} else {
-				@ret = 'Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix	
+				@ret = 'Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix;
 			}
 		case 'urlreadback':
 		case 'url':
@@ -114,13 +114,13 @@ proc _discordBot_cmd_dmoptions(@discord, @cmdargs) {
 			if(@userConfig[@userID]['URLReadback'] === true) {
 				@ret = 'I\'ll message the URL of attachments in '.@userType.' DMs with me.';
 			} else {
-				@ret = 'Ok, no more useless URL messages in '.@userType.' DMs with me.'	
+				@ret = 'Ok, no more useless URL messages in '.@userType.' DMs with me.';
 			}
 		case 'opt-out':
 		case 'optout':
 			@userConfig[@userID]['NotifyContent'] = false;
 			@userConfig[@userID]['URLReadback'] = false;
-			@ret = 'Opt-out successful, Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix
+			@ret = 'Opt-out successful, Content of '.@userType.' DMs with me *won\'t* be displayed'.@suffix;
 		}
 		@userConfig['lastedit'] = time();
 		export('DiscordBot.DMs.user.settings', @userConfig);
@@ -221,12 +221,20 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	} catch(Exception @ex) {
 		return(color(12).'To ID Not Found on Server: '.@ex['message']);
 	}
-	
+	@selfadmin = false;
+	if(@discord['admin'] === true && @discord['userid'] == @toID) { @selfadmin = true; }
 	# One transfer per user
-	if(array_index_exists(@TRlog, @toID) && @undo === false) {
+	if(array_index_exists(@TRlog, @toID, 'r') && @undo === false) {
 		#ignore if admin and yourself
-		if(@discord['admin'] === true && @discord['userid'] == @toID) { @selfadmin = 1; } else {
-			return(color(12).'Only one roles transfer is allowed per user account.');
+		if(!@selfadmin) {
+			return(color(12).@id1.' has already received roles in a role transfer, and cannot receive roles again. Only one roles transfer is allowed per user account.');
+		}
+	}
+	# One transfer transaction per sender
+	if(array_index_exists(@TRlog, @fromID, 's') && @undo === false) {
+		#ignore if admin and yourself
+		if(!@selfadmin) {
+			return(color(12).@id0.' has already performed a roles transfer to another user and cannot send roles again.');
 		}
 	}
 
@@ -255,7 +263,7 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 				} else {
 					return(color(12).'From ID was Not Found on Server or internal cache!');
 				}
-			} else { return(color(12).'From ID was Not Found on Server; internal storage not initialized!') }
+			} else { return(color(12).'From ID was Not Found on Server; internal storage not initialized!'); }
 		}
 	}
 	# Admin roles nag
@@ -270,7 +278,7 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	if(@fromroleAdmin === true) {
 		@suffix = 'Message the server moderation team to reinstate any server access.';
 		if(@discord['admin'] === true) { @suffix = 'Please verify this person before awarding any admin roles.'; }
-		@returnmsg = color(14).'A Server Admin role was detected! For security reasons I\'m not awarding that role. '.@suffix.'\n'.color(10).@returnmsg
+		@returnmsg = color(14).'A Server Admin role was detected! For security reasons I\'m not awarding that role. '.@suffix.'\n'.color(10).@returnmsg;
 	}
 	
 	@logMsg = 'Transfer Roles: From: '.@id0.'('.@fromID.') To: '.@id1.'('.@toID.')';
@@ -296,8 +304,9 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	@doSetRoles = _discordBot_set_roles(@discord['serverid'], @toID, 'set', @toroles, @logMsg, 'Transfer Roles');
 	if(@doSetRoles === false) { return('Error'); }
 	#Save
-	@TRlog[@toID] = array('time': time(), 'fromuser': @fromID, 'issuer': @discord['userid']);
-	if(@undo === true) { array_remove(@TRlog, @toID); }
+	@TRlog[@toID]['r'] = array('time': time(), 'fromuser': @fromID, 'issuer': @discord['userid']);
+	@TRlog[@fromID]['s'] = array('time': time(), 'touser': @toID, 'issuer': @discord['userid']);
+	if(@undo === true) { array_remove(@TRlog[@TRlog[@toID]['fromuser']], 's'); array_remove(@TRlog[@toID], 'r'); }
 	store_value('DiscordBot.'.@discord['serverid'].'.log.roles.Transfer', @TRlog);
 	@joininfo = get_value('DiscordBot.'.@discord['serverid'].'.Join.info');
 	if(array_index_exists(@joininfo, @toID)) {
@@ -312,9 +321,12 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 #Add Commands to List
 @c3lx = import('DiscordBot.Command.List', array());
 @mIu7 = array(	
-	'codegen': array('alias': array('code', 'gibberish', 'generatecode', 'password'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_codegen(@discord, @args)); }),
-	'dmoptions': array('alias': array('dm'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_dmoptions(@discord, @args)); }),
-	'transferroles': array('alias': array('trroles'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_transferroles(@discord, @args)); })
+	'codegen': array('alias': array('code', 'gibberish', 'generatecode', 'password'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_codegen(@discord, @args)); },
+			'help': 'Generate a random set of letters, numbers and symbols.', 'usage': '[Code length (8)] [Code type (full)] [Code type 2] [Code type 3] [dm]', 'usagenote': '"dm": Send the code to only your DMs for extra privacy.. as much as could be afforded on a social media platform\n Code types: Lowercase, Uppercase, Number, Symbol, 8bit, 16bit, or Full (which is lower,upper,number)'),
+	'dmoptions': array('alias': array('dm'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_dmoptions(@discord, @args)); },
+			'help': 'Configure Notfication Privacy Options regarding when you DM the bot.', 'usage': '<options: notifycontent, urlreadback, opt-out>', 'usagenote': 'When you send a DM to the bot, a notification of your DM is sent to each server\'s log channel. You may request that the message content is not displayed in the notification.\n"notifycontent": Toggles displaying your message content in the DM notifications.\n"urlreadback": Toggles DM\'ing you a link to the last sent DM\'s attachments.\n"opt-out": Sets notifycontent and url readback to disabled. You cannot opt-out of sending the notification.'),
+	'transferroles': array('alias': array('trroles'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_transferroles(@discord, @args)); },
+			'help': 'Transfer Discord server roles from one account to another. Useful for users reconnecting with your server after they had to switch to a new account.', 'usage': '<From Username or User ID, or undo> <To Username or User ID>', 'usagenote': '-- For server security, any designated server admin roles are not given in the transfer. If you are expecting such a role contact the server\'s moderation team.\n-- Only ONE role transfer is allowed per receiving Discord account.\n-- If the From user has since left the server, the bot will make an effort to search through it\'s internal role cache to find the roles the user had. Depending on the time elapsed this effort may not be successful.\n"undo" as the from username: Undoes a transfer roles transaction for the specified "to" username, and restores the roles of the "to" user to their previous state before the transfer occured.')
 );
 @c3lx = array_merge(@c3lx, @mIu7);
 export('DiscordBot.Command.List', @c3lx);

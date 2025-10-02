@@ -40,7 +40,7 @@ foreach(@k: @v in @args) {
 	if(is_numeric(@v) || _array_string_contains(all_players(), @v)) {
 		@hbmsg = '';
 		if(!is_numeric(@v)) { @hbmsg = '\'s'; }
-		msg(color('#aadd00').@v.@hbmsg.' health:'.color(8).' <'._healthbar(@v).color(8).'>');
+		msg(color('#aadd00').@v.@hbmsg.' health:'.color(8).' <'._progressbar(@v).color(8).'>');
 		if(@dev == true && !is_numeric(@v)) {
 			msg(pinfo(@v)[5].'   ('.integer(pinfo(@v)[5]).')');
 			msg('odd: '.ceil(integer(pinfo(@v)[5]) / 2));

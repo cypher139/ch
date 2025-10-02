@@ -1,0 +1,39 @@
+# If you used DiscordBot's Transfer roles command before a format change on commit 10/1/2025:
+# this will convert your old database format into the new send and receive format
+admin:/updatedbtr [$] = >>>
+@servers = import('DiscordBot.Servers');
+
+foreach(@serverID in @servers) {
+	@msg = @serverID.': fixed: ';
+	@results = array('Fixed': 0);
+	@trLog = get_value('DiscordBot.'.@serverID.'.log.roles.Transfer');
+	if(!is_array(@trLog)) { 
+		msg(color(10).'No Transfer roles for server: '.@serverID);
+		continue();
+	}
+	foreach(@userID: @userData in @trLog) {
+		if(@userID == 'lastedit') { continue(); }
+		@t2 = false;
+		if(array_index_exists(@userData, 'r') && array_index_exists(@userData, 'fromuser')) { 
+			if(!array_index_exists(@results, 'Transfer on Old and New')) { @results['Transfer on Old and New'] = 0; }
+			@results['Transfer on Old and New']++;
+			msg(@serverID.': '.@userID.' has both old and new data!');
+			@t2 = true;
+		}
+		if(array_index_exists(@userData, 'r') && !array_index_exists(@userData, 'fromuser')) {
+			if(!array_index_exists(@results, 'Already Converted')) { @results['Already Converted'] = 0; }
+			@results['Already Converted']++;
+			continue();
+		}
+		if(@t2) {
+			@r1 = array('time': @userData['time'], 'fromuser': @userData['fromuser'], 'issuer': @userData['issuer']);
+			@trLog[@userID] = array('r': @userData['r'], 'r1': @r1);
+		} else {
+			@trLog[@userID] = array('r': @userData);
+		}
+		@results['Fixed']++;
+	}
+	msg(@serverID.': '.color(3).map_implode(@results, color(10).': ', color(8).', '.color(3)));
+	store_value('DiscordBot.'.@serverID.'.log.roles.Transfer', @trLog);
+}
+<<<
