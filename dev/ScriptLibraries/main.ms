@@ -30,7 +30,7 @@ set_cron('2 * * * *', closure(){
 				console(color(3).'[File Poll] Reloading File '.@file);
 			}
 		}
-	} else { continue() }
+	}
 	if(@update === true) {
 		export('cypher139.poll.files', @files);
 	}

@@ -5,7 +5,7 @@
 @envtype = '';
 # Path Setup
 @pf = '/';
-if(get_os() == 'WINDOWS') { @pf = '\\'; }
+if(get_os() === 'WINDOWS') { @pf = '\\'; }
 @path = '';
 if(in_cmdline_mode()) {
 	@envtype = 'cmd';
@@ -22,8 +22,7 @@ export('ipbl.logs.dir', file_resolve(@path.@pf.'Logs'));
 # Load configs on server start
 _ipbl_load_config('Server');
 _ipbl_load_config('IPBlacklist');
-# _ipbl_save_config('block');
-_register_poll_file('IPBlacklist', '_ipbl_load_config', import('ipbl.config.dir').'/IPBlacklist.yml');
+_ipbl_load_config('UUIDBlacklist');
 
 # Conversions:
 if(has_value('Chat.server.bl.known.ASNs')) {

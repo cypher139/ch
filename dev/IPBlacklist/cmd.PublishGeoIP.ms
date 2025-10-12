@@ -7,8 +7,32 @@ proc _geoip_report_send_msg(@msg, @player, @msgConsole) {
 	if(@player != '~console' && function_exists('msg')) { msg(@msg); }
 }
 proc _geoip_asn_report(boolean @scan = true, boolean @consoleReport = false, boolean @gencfg = true) {
+#threaded, due to shell call for single IP would process ~25 IPs/second
 x_new_thread('GeoIPASNReport'.time(), closure(){
-#threaded due to shell call for single IP would process ~25 IPs/second
+	@comment = array(
+	'start': array(
+		'',
+		'<<This configuration list is automatically generated, to make changes use the proper server commands.>>',
+		''),
+	'sources': array(
+		'Sources:',
+		'- Logs of connection attempts on my own or friend\'s servers.',
+		'- CommandHelper\'s server_ping event picked up on when port scanner scan found the MC server port.',
+		'- Reddit reports: https://www.reddit.com/r/Minecraft/comments/12ip3gd/who_is_shepan/ ; https://www.reddit.com/r/admincraft/comments/134m8gu/random_users_constantly_fake_disconnecting_from/ ; https://www.reddit.com/r/admincraft/comments/18qh0op/i_get_why_im_being_scanned_but_why_is_the_same/'),
+	'obnoxious': array(
+		'Obnoxious Pingers',
+		'These IPs keep frequently pinging the server and typically never actually connect in-game. Recommend blocking this section of IPs at the firewall level.',
+		'format: f: Frequency, i: ISP, u: Minecraft Username, p: Number of pings observed.'),
+	'blocks': array(
+		'Ranges of IPs to disallow access to server:',
+		'Useful for catching datacenter blocks of IPs'),
+	'ip': array(
+		'',
+		'Main IP Blacklist:',
+		'Player names, if an actual connection via Mojang auth was tried, are listed separately.',
+		'Most of these IPs are from "security" companies scanning for vulnerable ports, or VPN host IPs that the script kiddies were using.')
+	);
+#
 	@prefix = color(8).'['.color(1).'GeoIP Report'.color(8).']'.color('r').' ';
 	@prefixError = color(12).'['.color(7).'GeoIP Report'.color(12).']'.color('r').' ';
 	@player = '~console';
@@ -42,11 +66,25 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 			@sourceCount++;
 		}
 	}
+	#IPv6 yml Parse Check
+	foreach(@index: @ip in @checkIP) {
+		if(is_array(@ip)) {
+			if(array_size(@ip) > 1) { throw(FormatException, 'Please re-check your IP Blacklist config, as IP entries are misaligned.'); }
+			@ip = array_implode(array_keys(@ip), '');
+			if(string_ends_with(@ip, ':')) { 
+				@ip .= ':';
+				# @ip .= 0;
+			}
+			_msg_Admins('IP Blacklist', 'warning', color(5).'Correcting '.color(9).'array'.color(5).' in IP: '.color(3).@ip, ' ('.@checkIP[@index].')');
+			@checkIP[@index] = @ip;
+		}
+		# if(string_ends_with(@ip, ':')) { @checkIP[@index] .= 0; }
+	}
 	@checkIP = array_sort(array_unique(@checkIP, false), 'REGULAR');
 	@serverConfig = import('ipbl.config.Server');
 	@writeDir = import('ipbl.logs.dir');
 	@gitpublish = true;
-	if(array_index_exists(@serverConfig, 'Git_Dir')) { @writeDir = @serverConfig['Git_Dir'];} else { @gitpublish = false }
+	if(array_index_exists(@serverConfig, 'Git_Dir')) { @writeDir = @serverConfig['Git_Dir']; } else { @gitpublish = false; }
 	@time = time();
 	@raw = false;
 	@ipdb = array();
@@ -54,38 +92,37 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 	@asnc = array();
 	@asnrc = array();
 	@asnip = array();
-	@ipcount = 0
-	@asnnicks = array();
+	@ipcount = 0;
 	@asnipover10 = array();
 	@ablasnList = array();
 	@v6ip = array();
-	try {
-		@asnnicks = yml_decode(read(import('ipbl.config.dir').'/ASN_ISP_Names.yml'));
-	} catch(IOException @ex) {
-		_geoip_report_send_msg(@prefixError.color(12).'ASN ISP Nicknames file could not be read. ', @player, @ex['message']);
-	} catch(FormatException @ex) {
-		_geoip_report_send_msg(@prefixError.color(12).'ASN ISP Nicknames file is improperly formatted.', @player, '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']));
-	} catch(Exception @ex) {
-		_geoip_report_send_msg(@prefixError.color(12).'There was an error with the ASN ISP Nicknames file. ', @player, @ex['message']);
-	}
-	@mancfg = '';
-	@mancfgArray = array('Spam_Player_Names': array());
-	try {
-		@mancfg = read(import('ipbl.config.dir').'/Template-IP.yml');
-		@mancfgArray = yml_decode(@mancfg);
-	} catch(IOException @ex) {
-		_geoip_report_send_msg(@prefixError.color(12).'Template-IP Config file could not be read. ', @player, @ex['message']);
-		die();
-	} catch(FormatException @ex) {
-		_geoip_report_send_msg(@prefixError.color(12).'Template-IP Config file is improperly formatted.', @player, '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']));
-		die();
-	} catch(Exception @ex) {
-		_geoip_report_send_msg(@prefixError.color(12).'There was an error with the Template-IP Config file. ', @player, @ex['message']);
-		die();
+	@loadFiles = array('ASN_ISP_Names': 'ASN_ISP_Names', 'Spam_Player_Names': 'Spam_Player_Names', 'Obnoxious': 'Obnoxious_IPs', 'IP_Block_Blacklist': 'IP_Block_Blacklist');
+	@fileData = array();
+	@rawfileData = array('Spam_Player_Names': array());
+	foreach(@n in @loadFiles) {	
+		try {
+			@tmp = read(import('ipbl.config.dir').'/'.@n.'.yml');
+			if(array_index_exists(@rawfileData, @n)) { @rawfileData[@n] = @tmp; }
+			@fileData = array_merge(@fileData, yml_decode(@tmp));
+			@tmp = null;
+		} catch(IOException @ex) {
+			if(array_index_exists(@rawfileData, @n)) {
+				continue();
+			} else {
+				_geoip_report_send_msg(@prefixError.color(12).@n.' file could not be read. ', @player, @ex['message']);
+				die();
+			}
+		} catch(FormatException @ex) {
+			_geoip_report_send_msg(@prefixError.color(12).@n.' file is improperly formatted.', @player, '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message']));
+			die();
+		} catch(Exception @ex) {
+			_geoip_report_send_msg(@prefixError.color(12).@n.' file had an error. ', @player, @ex['message']);
+			die();
+		}
 	}
 	@spnList = array();
 	@spasnList = array();
-	foreach(@spname: @spIPs in @mancfgArray['Spam_Player_Names']) {
+	foreach(@spname: @spIPs in @fileData['Spam_Player_Names']) {
 		if(is_array(@spIPs)) {
 			array_push_all(@spnList, @spIPs);
 		} else {
@@ -106,33 +143,39 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 			die();
 		}
 		@scReport = integer(array_size(@checkIP) * .10);
+		@s5 = 1;
 console(@scReport.'   /   '.array_size(@checkIP));
 		foreach(@i: @ip in @checkIP) {
-			if(@i % @scReport == 0) { _geoip_report_send_msg(@prefix.color(8).'Checked '.color(5).@i.color(8).' of '.color(1).array_size(@checkIP).color(8).' IPs.', @player); }
+			if(@i % @scReport < 1) { 
+				_geoip_report_send_msg(@prefix.color(8).'['.color(3).strip_colors(_progressbar(@s5, array(0, 10, 10), array('-', '.', ' '))).color(8).'] Checked '.color(5).@i.color(8).' of '.color(1).array_size(@checkIP).color(8).' IPs.', @player);
+				@s5++;
+			}
 			if(@ip == 'raw') { continue(); }
 			if(xor(string_contains(@ip, '.'), string_contains(@ip, ':')) === false) {
 				_geoip_report_send_msg(@prefixError.color(12).'Not a valid IP: '.@ip, @player);
 				continue();
 			}
-			@listIPData = color(14).'['.@ip.'] '.color(3);
-			@nomsg = array();
-			if(@ipdb[@ip]['c'] == '') { 
-				@nomsg[] = 'country';
+			@listIPData = color(14).'['.@ip.'] '.color(3);		
+			if(@ipdb[@ip]['c'] === '') { 
+				@nomsg['c'][] = @ip;
 				@ipdb[@ip]['c'] = '?';
 			}
-			if(@ipdb[@ip]['asn'] == '') { 
-				@nomsg[] = 'ASN';
+			if(@ipdb[@ip]['asn'] === '') { 
+				@nomsg['a'][] = @ip;
 				@ipdb[@ip]['asn'] = 'None';
 				@ipdb[@ip]['aso'] = 'Unknown: No Data Given';
 			}
-			if(array_size(@nomsg) > 0) { _geoip_report_send_msg(@prefix.color(9).@ip.color(7).': no '.array_implode(@nomsg, ', ').'!', @player); }
 			if(!array_index_exists(@asnc, @ipdb[@ip]['asn'])) { @asnc[@ipdb[@ip]['asn']] = array(); }
 			if(!array_index_exists(@asnrc, @ipdb[@ip]['asn'])) { @asnrc[@ipdb[@ip]['asn']] = array(); }
 			if(!array_index_exists(@asnip, @ipdb[@ip]['asn'])) { @asnip[@ipdb[@ip]['asn']] = array(); }
 			#List ASN under mc spam.
 			if(array_contains(@spnList, @ip)) { @spasnList[] = @ipdb[@ip]['asn']; }
-			#Auto blacklist ASNs if an IP is deemed obnoxious.
-			if(array_contains(array_keys(@mancfgArray['Obnoxious']), @ip)) { @ablasnList[] = @ipdb[@ip]['asn']; }
+			#Auto blacklist ASNs if an IP is deemed obnoxious, and save IP for later sorting.
+			if(array_index_exists(@fileData, 'Obnoxious', @ip)) { 
+				@ablasnList[] = @ipdb[@ip]['asn'];
+				#
+				@fileData['Obnoxious'][@ip]['i'] = @ipdb[@ip]['aso'];
+			}
 			#Add IP
 			@asnip[@ipdb[@ip]['asn']][] = @ip;
 			#List all given country codes, in case one entry differs in review
@@ -141,7 +184,7 @@ console(@scReport.'   /   '.array_size(@checkIP));
 				@asnrc[@ipdb[@ip]['asn']][] = @ipdb[@ip]['rcn'];
 			}
 			@asnlist[@ipdb[@ip]['asn']] = @ipdb[@ip]['aso'];
-			@ipcount++
+			@ipcount++;
 			if(string_contains(@ip, ':')) { @v6ip[] = @ip; }
 		}
 	} else {
@@ -154,6 +197,7 @@ console(@scReport.'   /   '.array_size(@checkIP));
 		@asnrc = @data[3];
 		@asnip = @data[4];
 		@spasnList = @data[7];
+		@ablasnList = @data[8];
 	}
 	store_value('ipbl.Publish.count', array_size(@checkIP));
 	@countries = array();
@@ -190,7 +234,7 @@ console(@scReport.'   /   '.array_size(@checkIP));
 		@space = '';
 		if(length(@asn) < 6) { @space = string_multiply(' ', (6 - length(@asn))); }
 		@asnnick = '';
-		if(array_index_exists(@asnnicks, 'ASN_ISP_Names', @asn)) { @asnnick = '\n'.color(14).'      : '.color(8).' [AKA: '.@asnnicks['ASN_ISP_Names'][@asn].']'; }
+		if(array_index_exists(@fileData, 'ASN_ISP_Names', @asn)) { @asnnick = '\n'.color(14).'      : '.color(8).' [AKA: '.@fileData['ASN_ISP_Names'][@asn].']'; }
 		@msg = color(14).@asn.@space.': '.color(3).@aso.color(7).color(@ipcolor).' <IPs: '.color(10).array_size(@asnip[@asn]).color(7).'>'.@asnnick
 		@rmsg = '';
 		if(array_size(array_unique(@asnrc[@asn])) > 0) { @rmsg = color(14).' Reg Country Codes: '.array_size(array_unique(@asnrc[@asn])); }
@@ -204,10 +248,10 @@ console(@scReport.'   /   '.array_size(@checkIP));
 	@reportmsg[] = color(2).'List of Country Codes: '.array_implode(@countries, ' ');
 	@reportmsg[] = color(5).'List of Registered Country Codes: '.array_implode(@rcountries, ' ');
 #General Stats
-	@ipsizecolor = 3
+	@ipsizecolor = 3;
 	if(array_size(@checkIP) != @ipcount) { @ipsizecolor = 12; }
 	@reportmsg[] = color(3).'IPs: '.color(@ipsizecolor).@ipcount.color(3).', ASNs: '.array_size(@asnlist).','.color(6).' Countries: '.array_size(@countries).','.color(13).' Reg Countries: '.array_size(@rcountries);
-	store_value('ipbl.scan.results', array(@ipcount, @asnlist, @asnc, @asnrc, @asnip, @countries, @rcountries, @spasnList));
+	store_value('ipbl.scan.results', array(@ipcount, @asnlist, @asnc, @asnrc, @asnip, @countries, @rcountries, @spasnList, @ablasnList));
 	if(@consoleReport) { console(array_implode(@reportmsg, '\n'), false); }
 # More Detail CSV reports:
 	@asnipreport = 'ASN, IP Addresses';
@@ -230,14 +274,18 @@ console(@scReport.'   /   '.array_size(@checkIP));
 	@jsoncfg = array('IP_Blacklist': array());
 	foreach(@asn: @iplist in @asnip) {
 		@asnnick = '';
-		if(array_index_exists(@asnnicks, 'ASN_ISP_Names', @asn)) { @asnnick = ' <'.@asnnicks['ASN_ISP_Names'][@asn].'>'; }
+		if(array_index_exists(@fileData, 'ASN_ISP_Names', @asn)) { @asnnick = ' <'.@fileData['ASN_ISP_Names'][@asn].'>'; }
 		@asnipreport .= '\n'.@asn.@asnnick.','.array_implode(@iplist, ',');
-		@newcfg .= '\n# ('.@asn.') '.@asnlist[@asn].@asnnick.'\n- '.array_implode(@iplist, '\n- ');
 		array_push_all(@jsoncfg['IP_Blacklist'], @iplist);
 		if(array_size(@iplist) > 9) {
 			if(is_numeric(@asn)) { @asn = integer(@asn); }
 			@asnipover10[] = @asn;
 		}
+		# yml specific:
+		foreach(@i: @p in @iplist) {
+			if(string_contains(@p, ':')) { @iplist[@i] = '\''.@p.'\''; }
+		}
+		@newcfg .= '\n# ('.@asn.') '.@asnlist[@asn].@asnnick.'\n- '.array_implode(@iplist, '\n- ');
 	}
 	foreach(@cn: @asns in @asncnlist) {
 		@asncnreport .= '\n'.@cn.','.array_implode(@asns, ',');
@@ -246,14 +294,37 @@ console(@scReport.'   /   '.array_size(@checkIP));
 		@asnrcnreport .= '\n'.@cn.','.array_implode(@asns, ',');
 	}
 	array_sort(@jsoncfg['IP_Blacklist'], 'REGULAR');
+	#Obnoxious array: sorting by ASN for file
+	#Save index & normalize
+	@tmp = array_deep_clone(@fileData['Obnoxious']);
+	foreach(@ip: @data in @tmp) {
+		@tmp[@ip]['a'] = @ip;
+	}
+	@tmp = array_normalize(@tmp);
+	#Sort by a-z asn
+	array_sort(@tmp, closure(@left, @right){
+		return(string_compare_ic(@left['i'], @right['i']));
+	});
+	# Convert back to associative via string replaces. Why?
+	@fileOB = yml_encode(array('Obnoxious': array('%i%': @tmp)), true);
+	foreach(@line in split('\n', @fileOB)) {
+		if(string_starts_with(@line, '  - a:')) {
+			@fileOB = replace(@fileOB, @line.'\n', '  '.@line[7..].':\n');
+		}
+	}
+	@tmp = null;
+	@fileOB = replace(@fileOB, '\'%i%\':', '# Sorted by ASN');
 	# Final array setup
 	array_push_all(@ablasnList, @asnipover10);
 	@ablasnList = array_sort(array_unique(@ablasnList), 'REGULAR');
 	@extracfg = array('Spam_Player_ASNs': @spasnList, 'Discovered_ASNs': @dASN, 'Auto_Blacklist_ASNs': @ablasnList);
 	if(array_index_exists(@asnip, 'None')) { @extracfg['Unknown_ASN_IPs'] = @asnip['None']; }
-	@jsoncfg = array_merge(@jsoncfg, @mancfgArray, @extracfg);
+	if(array_index_exists(@fileData, 'ASN_ISP_Names')) { array_remove(@fileData, 'ASN_ISP_Names'); }
+	@jsoncfg = array_merge(@jsoncfg, @fileData, @extracfg);
 	store_value('Server.ipbl.known.ASNs', @kASN);
 	store_value('Server.ipbl.known.mc.ASNs', @spasnList);
+	if(array_size(@nomsg['a']) > 0) { _geoip_report_send_msg(@prefix.color(14).': no ASN for IPs: '.color(8).array_implode(@nomsg['a'], ', '), @player); }
+	if(array_size(@nomsg['c']) > 0) { _geoip_report_send_msg(@prefix.color(14).': no Country for IPs: '.color(8).array_implode(@nomsg['c'], ', '), @player); }
 #Auto_Generate new blacklist for IP_Blacklist config file. Does not run for previous scan replays.
 	@prevhash = get_value('ipbl.Publish.hash');
 	if(sha1(@jsoncfg['IP_Blacklist']) != @prevhash && @gencfg === true && @scan === true) {
@@ -266,16 +337,15 @@ console(@scReport.'   /   '.array_size(@checkIP));
 		_write_file(@writeDir.'/Reports/Current-ASNs.csv', 'Current ASNs\n'.array_implode(array_keys(@asnip), '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/Known-ASNs.csv', 'Known ASNs\n'.array_implode(@kASN, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/Known-MC-ASNs.csv', 'Known Minecraft centric spam ASNs\n'.array_implode(@spasnList, '\n'), 'overwrite');
-		_write_file(@writeDir.'/Reports/Obnoxious_IPs.yml', yml_encode(@mancfgArray['Obnoxious'], true), 'overwrite');
-		_write_file(@writeDir.'/Reports/IP_Block_Blacklist.yml', yml_encode(@mancfgArray['IP_Block_Blacklist'], true), 'overwrite');
-		_write_file(@writeDir.'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
+		_write_file(@writeDir.'/Reports/Obnoxious_IPs.yml', '# '.array_implode(@comment['obnoxious'], '\n# ').'\n'.@fileOB, 'overwrite');
+		_write_file(import('ipbl.config.dir').'/Obnoxious_IPs.yml', '# '.array_implode(@comment['obnoxious'], '\n# ').'\n'.@fileOB, 'overwrite');
+		_write_file(@writeDir.'/Reports/IP_Block_Blacklist.yml', '# '.array_implode(@comment['blocks'], '\n# ').'\n'.yml_encode(array('IP_Block_Blacklist': @fileData['IP_Block_Blacklist']), true), 'overwrite');
+		_write_file(@writeDir.'/IPBlacklist.yml', '# '.array_implode(@comment['start'], '\n# ').'\n# '.array_implode(@comment['sources'], '\n# ').'\n#\n# '.array_implode(@comment['obnoxious'], '\n# ').'\n'.@fileOB.'#\n'.@rawfileData['Spam_Player_Names'].'\n#\n# '.array_implode(@comment['blocks'], '\n# ').'\n'.yml_encode(array('IP_Block_Blacklist': @fileData['IP_Block_Blacklist']), true).'#\n# '.array_implode(@comment['ip'], '\n# ').'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		_write_file(@writeDir.'/IPBlacklist.json', json_encode(@jsoncfg), 'overwrite');
 		_write_file(@writeDir.'/block.txt', array_implode(@jsoncfg['IP_Blacklist'], '\n'), 'Overwrite');
 		@addMsg = @prefix.'Wrote report files to Git folder.';
 		if(@sourceCount > 1) { @addMsg .= ' Total Sources Used: '.@sourceCount; }
-		export('ipbl.config.IPBlacklist', @jsoncfg);
 		_ipbl_save_config(@jsoncfg);
-		# _write_file(import('ipbl.config.dir').'/IPBlacklist.yml', @mancfg.'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		console(color(8).@addMsg, false);
 		@reportmsg[] = color(2).@addMsg;
 		if(@gitpublish) {
@@ -298,7 +368,7 @@ console(@scReport.'   /   '.array_size(@checkIP));
 			@reportmsg[] = @addMsg;
 		}
 	}
-	if(@player != '~console') { msg(array_implode(@reportmsg, '\n'), false); }
+	if(@player !== '~console') { msg(array_implode(@reportmsg, color('r').'\n')); }
 	return(true);
 });
 }
@@ -320,7 +390,7 @@ if(function_exists('register_command')) {
 	register_command('geoipasnreport', array(
 		'description': 'Admin: Generate report of Blacklisted IP address ASNs.',
 		'usage': color(8).'Examples: /geoipasnreport <true to scan, false to use previous result> <true to list report to console> <true to write config files and reports>',
-		'permission': 'ipbl.Admin.cmd.geoIPasn',
+		'permission': 'ipbl.commands.geoIPasn',
 		'noPermMsg': 'Unknown command. Type "/help" for help.',
 		'tabcompleter':
 			closure(@alias, @sender, @args, @info) {
@@ -334,13 +404,13 @@ if(function_exists('register_command')) {
 				case 0:
 			#1st arg:
 					@usetabs = array('Run a new Scan?', 'true', 'false');
-					if(!has_permission(@sender, 'ipbl.Admin.cmd.geoIPasn')) { @usetabs = @actnp; }
+					if(!has_permission(@sender, 'ipbl.commands.geoIPasn')) { @usetabs = @actnp; }
 				case 1:
 					@usetabs = array('Write report to Console?', 'true', 'false');
-					if(!has_permission(@sender, 'ipbl.Admin.cmd.geoIPasn')) { @usetabs = @actnp; }
+					if(!has_permission(@sender, 'ipbl.commands.geoIPasn')) { @usetabs = @actnp; }
 				case 2:
 					@usetabs = array('Write config files to disk?', 'true', 'false');
-					if(!has_permission(@sender, 'ipbl.Admin.cmd.geoIPasn')) { @usetabs = @actnp; }
+					if(!has_permission(@sender, 'ipbl.commands.geoIPasn')) { @usetabs = @actnp; }
 				}
 			#Return tabs
 				@areturn = array_filter(@usetabs, closure(@key, @value) {
@@ -366,7 +436,7 @@ if(function_exists('register_command')) {
 						@useArgs[@i] = @b;
 					}
 				}
-				if(!has_permission(player(), 'ipbl.Admin.cmd.geoIPasn')) {
+				if(!has_permission(player(), 'ipbl.commands.geoIPasn')) {
 					msg(color(12).'['.color(7).@name.color(12).'] '.color(12).'You do not have permission '.color(7).'to run the GeoIP ASN report.'); 
 					return(true);
 				}

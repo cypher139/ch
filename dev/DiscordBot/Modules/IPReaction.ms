@@ -146,7 +146,6 @@ bind('discord_reaction_added', array('id': 'DiscordBot.IP.React', 'priority': 'M
 			}
 		#Write
 		if(array_size(@addip) > 0) {
-			export('ipbl.config.IPBlacklist', @blacklistIP);
 			_ipbl_save_config(@blacklistIP);
 		}
 		#Log

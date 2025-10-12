@@ -49,7 +49,7 @@ bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, 
 # Ignored IP: Log internally, don't (immediately) message.
 	if(@ignore === true) { 
 		_ipbl_pings_write_log(@ping, 'ignore', @superignore);
-		@pinglevel = 0 
+		@pinglevel = 0;
 	}
 # Admin Ping Messages:
 	@adminPingMessage = color(6).'['.color(9).'Server'.color(6).'] '.color(7).'Received ping from %fi%'.@ip.@msgdisplay.'%fi% %IPDB%%links%';
@@ -63,7 +63,7 @@ bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, 
 			# if(@ipdb[@ip]['c'] != '') { @listIPData .= ' '.'Country: '.@ipdb[@ip]['c']; }
 			if(@ipdb[@ip]['asn'] != '') {
 				@listIPData .= ' ASN: '.@ipdb[@ip]['asn']
-				@addemoji = 0
+				@addemoji = 0;
 				if(array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb[@ip]['asn'])) {
 					if(@blacklistIP['Discovered_ASNs'][@ipdb[@ip]['asn']] > 0) { @addemoji = 1; } else { @addemoji = 3; }
 				}
@@ -72,9 +72,8 @@ bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, 
 				}
 				if(array_index_exists(@blacklistIP, 'Auto_Blacklist_ASNs')) {
 					if(array_contains(@blacklistIP['Auto_Blacklist_ASNs'], @ipdb[@ip]['asn'])) {
-						@addemoji = 2
+						@addemoji = 2;
 						@blacklistIP['IP_Blacklist'][] = @ip;
-						export('ipbl.config.IPBlacklist', @blacklistIP);
 						_ipbl_save_config(@blacklistIP);
 					}
 				}
@@ -98,7 +97,7 @@ bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, 
 	if(@serverConfig['Ping_Message_Discord'] === true && @pinglevel > 1) {
 		@IPList = array(@ip);
 		@lookup = '';
-		@IPType = 4
+		@IPType = 4;
 		if(string_contains(@ip, ':')) { @IPType = 6; }
 		if(array_index_exists(@serverConfig, 'Ping_Message_Lookup_Links', @IPType)) {
 			foreach(@link: @url in @serverConfig['Ping_Message_Lookup_Links'][@IPType]) {
@@ -133,6 +132,7 @@ bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, 
 bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null, @event) {	
 	@serverConfig = import('ipbl.config.Server');
 	@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+	@blUUID = import('ipbl.config.UUIDBlacklist', array('UUID_Blacklist': array()));
 	@ipdata = import('primus.database.IP');
 	@ip = reg_replace('[%][0]$', '', @event['ip']);
 	if(!is_array(@ipdata)) { @ipdata = array(); }
@@ -160,11 +160,11 @@ bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null
 			@otherplayers = array();
 			foreach(@accname in all_players()) {
 				if(pinfo(@accname)[3] = @event['ip']) {
-					@otherplayers[] = pinfo(@accname)[0]
+					@otherplayers[] = pinfo(@accname)[0];
 				}
 			}
 			@players = '%f'.array_implode(@otherplayers, ', ').'%f';
-			@adminMsg = color(7).'%f'.@event['player'].'%f tried to connect with IP %f'.color(9).@ip.color(7).'%f; however '.@serverConfig['Concurrent_Accs_IP'].' accounts are already connected using the same IP address: '.@players
+			@adminMsg = color(7).'%f'.@event['player'].'%f tried to connect with IP %f'.color(9).@ip.color(7).'%f; however '.@serverConfig['Concurrent_Accs_IP'].' accounts are already connected using the same IP address: '.@players;
 		}
 	# If many accounts have previously connected using the same IP address, should we automatically kick joins from this IP?
 		if(@serverConfig['Kick_Multiple_Accs_IP'] === true) {
@@ -173,7 +173,7 @@ bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null
 					@kickPlayer = true;
 					@kickMsg = 'This server does not allow players to use multiple Alternate Accounts.';
 					@kickType .= '2';
-					@adminMsg = color(7).'%f'.@event['player'].'%f tried to connect; this server does not allow more than '.@serverConfig['Allowed_Account_Amount'].' accounts using the same IP address. (IP: %f'.color(9).@ip.'%f) '.color(7).@playersMsg
+					@adminMsg = color(7).'%f'.@event['player'].'%f tried to connect; this server does not allow more than '.@serverConfig['Allowed_Account_Amount'].' accounts using the same IP address. (IP: %f'.color(9).@ip.'%f) '.color(7).@playersMsg;
 				}
 			}
 		}
@@ -184,7 +184,7 @@ bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null
 		@kickPlayer = true;
 		@kickMsg = 'You have been Banned.';
 		@kickType .= '3';
-		@adminMsg = color(7).@event['player'].' tried to connect using '.color(12).'Blacklisted IP address:  '.color(9).@ip.' '.color(7).@playersMsg
+		@adminMsg = color(7).@event['player'].' tried to connect using '.color(12).'Blacklisted IP address:  '.color(9).@ip.' '.color(7).@playersMsg;
 	}
 	foreach(@block in @blacklistIP['IP_Block_Blacklist']) {
 		@startBlock = string(reg_replace('[\\/][0-9]+', '', @block));
@@ -192,7 +192,34 @@ bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null
 			@kickPlayer = true;
 			@kickMsg = 'You have been Banned.';
 			@kickType .= '4';
-			@adminMsg = color(7).@event['player'].' tried to connect using IP address '.color(9).@ip.color(7).' that is part of a '.color(12).'Blacklisted IP Block. '.color(7).@playersMsg
+			@adminMsg = color(7).@event['player'].' tried to connect using IP address '.color(9).@ip.color(7).' that is part of a '.color(12).'Blacklisted IP Block. '.color(7).@playersMsg;
+		}
+	}
+# Blacklisted player UUIDs: Disallow Login
+# Note that this does not handle 'lost connection' logins, as CH events do not fire that early in login process
+	if(array_index_exists(@blUUID['UUID_Blacklist'], @event['uuid'])) {
+		@kickPlayer = true;
+		@kickMsg = 'You have been Banned.';
+		@kickType .= '5';
+		if(@playersMsg !== '') { @playersMsg = ' - using IP Address '.@ip.' which has connected with: '.@playersMsg; } 
+		@adminMsg = color(7).@event['player'].' tried to connect using a '.color(12).'Blacklisted player UUID:  '.color(9).@event['uuid'].' '.color(7).@playersMsg;
+		# Add ip to spam player names:
+		@spn = array();
+		try {
+			@spn= yml_decode(read(import('ipbl.config.dir').'/Spam_Player_Names.yml'))['Spam_Player_Names'];
+		} catch(Exception @ex) {
+			_msg_Admins('IP Blacklist', 'error', color(12).'There was an error with the Spam_Player_Names IP Config file.', @ex);
+		}
+		if(array_size(@spn) > 0) {
+			if(array_index_exists(@spn, @event['player'])) {
+				if(is_array(@spn[@event['player']])) {
+					if(!array_contains(@spn[@event['player']], @ip)) { @spn[@event['player']][] = @ip; }
+				} else if(@ip !== @spn[@event['player']]) {
+					@array = array(@spn[@event['player']], @ip);
+					@spn[@event['player']] = @array;
+				}
+			} else { @spn[@event['player']] = @ip; }
+			_write_file(import('ipbl.config.dir').'/Spam_Player_Names.yml', yml_encode(array('Spam_Player_Names': @spn), true), 'overwrite');
 		}
 	}
 #Handle Player Kick and Admin messages
