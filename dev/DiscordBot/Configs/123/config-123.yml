@@ -1,6 +1,6 @@
 # discordBot Guild Configuration
 # Config version number
-v: 15
+v: 16
 # General admin
 Server_Nickname: "Your Server"
 #
@@ -45,16 +45,7 @@ Console_Messages: true
 Console_Messages_Chat: false
 # Send Bot debug messages for events that occur regarding this server?
 Console_Debug: false
-
-# Certain modules may react to these emojis being used:
-Reaction_Actions:
-#Type using the Formats:
-#Default emoji:  🪪: action
-#custom Emoji:  Emoji:numericID: action
-# What emoji should be used on a ping message to get ISP data from database? (requires shell command)
-   🪪: PingGetISP
-# What emoji should be used on a ping message to add that IP to Chat's IP Blacklist file?
-  :Peacemaker:12345: PingBlacklist
+ 
 #
 # Member Joins and Leaves
 # Upon Member join or Leave, Send embed message to server facing join log?
@@ -76,16 +67,17 @@ Log_Invites: true
 DM_Notify: true
 # Show Bot DM notification if the user is *not* a server member?
 DM_Notify_NonMember: false
-
+# When a member joins, how much time elapses (in milliseconds) before they are no longer considered a new join?
+# <Used for Antispam and Welcome Messages>
+# Note: Discord considers joins to be new for a period of 1 week. (604800000ms)
+New_User_Time: 604800000
+#
 #todo
 Minecraft_Messages_Admin: true
 #
 #
 # Anti Spam
-# When a member joins, how much time elapses before Anti spam no longer considers them a new join? (in millseconds)
-# Note: Discord considers joins to be new for a period of 1 week (604800000ms).
-AS_New_User_Time: 604800000
-# How many different channels can a new user post on, before Anti Spam considers them to be a spammer?
+# How many different channels can a New user post on, before Anti Spam considers them to be a spammer?
 AS_New_User_Channel_Limit: 7
 # Upon a User triggering Anti Spam, delete their spam messages?
 AS_Remove_Messages: true
@@ -97,6 +89,17 @@ AS_Timeout_User: true
 AS_Brand_User: true
 # Log various User Info in the Spam alert message?
 AS_Log_ShowUserInfo: true
+# Safe URLs:
+# What sites are allowed on "safe URL sources only" channels?
+AS_Safe_URL_Sites:
+  - cdn.discordapp.com
+  - tenor.com
+  - youtube.com
+# **Optional** What channels are only allowed to have these safe URLs?
+AS_Safe_URL_Channels:
+  - roles-request
+# **Optional** How many non-Alphabet characters can be included in a message? (includes URLs, non-English characters, etc! If you speak non-English languages test before using this option)
+# AS_Non_Words_Limit: 50
 # **Optional** If enabled, does not add user to AntiSpam effects if the message was sent in an "no XP" channel. (Requires Leaderboard config of noXP channels)
 # AS_Ignore_NoXP: true
 #General Alert to all server members. Useful to tell users to keep their accounts safe, and to inform users of why many channels may have missing unread messages.
@@ -235,6 +238,15 @@ CMD_Args_Display_Limit: 5
 # Message User if the command is not found?
 # "true" to always message, "false" to not message, "repeat" to only message if the command is tried twice.
 CMD_Not_Found_Message_Action: repeat
+# Commands can also be activated via Reactions. Specify which commands activate on what emoji(s) below:
+Reaction_Actions:
+#Supported Formats:
+# Default emoji:  unicode emoji: action
+# Custom Emoji:  EmojiName:numericID: action
+# Example:    🪪: geoiplookup
+  ❔: help
+  💩: poo
+  1️⃣: 1to100
 
 #
 # Command Options
@@ -322,11 +334,8 @@ Welcome_Roles_Restore: true
 # Welcome Message: Post a message upon member join.
 Welcome_Send_Message: true
 Welcome_Send_DM: false
-# Channel to post message is configured under the Channels list
-#
-# How long (in milliseconds) should we wait before we don't delete the welcome message on new joiner's leave?
-# Default: 4 days hours = 345600000
-Welcome_Message_Timeout: 345600000
+# - Channel to post message is configured under the Channels list.
+# - Welcome messages are not removed once user is no longer considered new.
 # What should we say to the new Discord members?
 Welcome_Message: "Welcome %UserID% to *our server*! \n Come introduce yourself by chatting below."
 # What should we DM the new Discord member?

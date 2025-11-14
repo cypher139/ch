@@ -72,18 +72,18 @@ case 'copyroles':
 	@config = import('DiscordBot.config.'.@serverID);
 	@fromroleAdmin = false;
 	@returnmsg = color(10).'Copying Roles of "'.@args[0].'" to User "'.color(3).@args[1].'" ';
-	if(!array_index_exists(@args, 0)) { return(color(12).'Specify the Discord user ID to copy from!'); }
-	if(!array_index_exists(@args, 1)) { return(color(12).'Specify the Discord user ID to copy to!'); }
+	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord user ID to copy from!'); }
+	if(!array_index_exists(@args, 1)) { die(color(12).'Specify the Discord user ID to copy to!'); }
 	if(!array_index_exists(@args, 2)) { @args[] = 'none'; }
 	if(!is_numeric(@args[0]) || !is_numeric(@args[1])) {
-		return(color(12).'Discord Usernames are not supported in this command.');
+		die(color(12).'Discord Usernames are not supported in this command.');
 	}
 	# To User check
 	@toroles = array();
 	try {
 		@toroles = discord_member_get_roles(@serverID, @args[0]);
 	} catch(Exception @ex) {
-		return(color(12).'from ID Not Found on Server: '.@ex['message']);
+		die(color(12).'from ID Not Found on Server: '.@ex['message']);
 	}
 	# Remove Admin roles and/or higher than bot roles
 	@hr = import('DiscordBot.bot.roles.higher', array());
@@ -159,7 +159,7 @@ case 'chmem':
 case 'ram':
 case 'he':
 	@v = array();
-	@slice1 = 11
+	@slice1 = 11;
 	if(array_contains(@args, 'all')) {
 		@v = get_values('DiscordBot.');
 	} else {
@@ -167,12 +167,12 @@ case 'he':
 		@slice1 = 30
 		if(length(@serverID) > 18) { @slice1 = 31; }
 	}
-	@truecount = 0
-	@changedcount = 0
+	@truecount = 0;
+	@changedcount = 0;
 	@truemsg = color(8).'None Found';
 	@changedmsg = '';
 	@falsemsg = '';
-	@falsecount = 0
+	@falsecount = 0;
 	@returnmsg = color(9).'Values in RAM:';
 	foreach(@key: @data in @v) {
 		@result = '';
@@ -196,13 +196,65 @@ case 'he':
 	msg(@returnmsg);
 case 'allservers':
 	msg(discord_get_servers());
+case 'dlemoji':
+	_download_file('DiscordEmoji.EmojiUtils.cs', import('DiscordBot.config.dir'), 'https://raw.githubusercontent.com/DSharpPlus/DSharpPlus/refs/heads/master/DSharpPlus/Entities/Emoji/')
+case 'reademoji':
+	@time = time();
+	@id = rand(123, 465);
+	x_new_thread(@id.@time, closure(){
+		@startTime = time();
+		@data = array();
+		@dataName = array();
+		@isName = false;
+		foreach(@ln: @line in split('\n', read(import('DiscordBot.config.dir').'/DiscordEmoji.EmojiUtils.cs'))) {
+			if(string_contains(@line, 'DiscordNameLookup = new')) { @isName = true; }
+			if(!string_contains(@line, '[')) { continue(); }
+			@ar = reg_split('\\=(?=[^=]*$)', reg_replace('[\\s"\\[\\]]', '', @line));
+			# if(string_contains(@ar[1], ':')) { break(); }
+			# msg(@ar)
+			@ar[1] = reg_replace(',$', '', @ar[1]);
+			if(@isName) { @dataName[@ar[0]] = @ar[1]; } else { @data[@ar[0]] = @ar[1]; }
+			# if(@ln == 30) {break()}
+		}
+		@timeElapsed = time() - @startTime;
+		msg(color(3).'Foreach Time elapsed: '.@timeElapsed.'ms.');
+		_write_file(import('DiscordBot.config.dir').'/DiscordEmojis.json', json_encode(@data), 'overwrite');
+		_write_file(import('DiscordBot.config.dir').'/DiscordEmojisNameLookup.json', json_encode(@dataName), 'overwrite');
+		store_value('DiscordBot.App.Default.Emojis', @data);
+		@timeElapsed = time() - @startTime;
+		msg(color(3).'Write Time elapsed: '.@timeElapsed.'ms.');
+	});
+case 'reademoji2':
+	msg(json_decode(read(import('DiscordBot.config.dir').'/DiscordEmojis.json'))) 
 case 'react':
-	@channelID = import('DiscordBot.debug.cmd.react.id.channel');
-	@msgID = import('DiscordBot.debug.cmd.react.id.message');
+	if(!array_index_exists(@args, 0)) { @args[] = 0; }
+	if(!array_index_exists(@args, 1)) { @args[] = 0; }
+	@channelID = if(is_numeric(@args[0]), @args[0], import('DiscordBot.debug.cmd.react.id.channel'));
+	@msgID = if(is_numeric(@args[1]), @args[1], import('DiscordBot.debug.cmd.react.id.message'));
 	if(is_array(@channelID)) { @channelID = @channelID[0]; }
 	if(is_array(@msgID)) { @msgID = @msgID[0]; }
-	discord_request('PUT', 'channels/'.@channelID.'/messages/'.@msgID.'/reactions/%E2%9C%85/@me', null, closure(@ex) { console('reaction success: \n'.@ex) }, closure(@ex) { console('reaction failed: \n'.@ex) });
-	discord_request('PUT', 'channels/'.@channelID.'/messages/'.@msgID.'/reactions/%E2%9D%8C/@me', null, closure(@ex) { console('reaction success: \n'.@ex) }, closure(@ex) { console('reaction failed: \n'.@ex) });
+	if(!@channelID) { die(color(12).'Channel ID not provided.'); }
+	if(!@msgID) { die(color(12).'Message ID not provided.'); }
+	@emoji = 'join';
+	@method = 'a';
+	foreach(@i: @arg in @args) {
+		switch(@arg){
+		case 'add':
+		case 'a':
+		case 'put':
+			@method = 'PUT';
+			array_remove(@args, @i);
+		case 'remove':
+		case 'r':
+		case 'delete':
+			@method = 'DELETE';
+			array_remove(@args, @i);
+		default:
+			@emoji = @arg;
+		}
+	}
+	@ret = _discordBot_add_reaction(@serverID, @channelID, @msgID, @emoji, @method);
+	if(@ret) { msg(color(10).'Sent Reaction to Bot'); } else { msg(color(12).'Reaction Failed, '.color('r').'see Console logs for more.'); }
 case 'backup':
 	_discordBot_backup_guild_data();
 case 'update':
@@ -358,13 +410,26 @@ case 'findmultiplejoins':
 	}
 	msg(@sendMsg);
 case 'snowflaketime':
-	if(!array_index_exists(@args, 0)) { @args[] = @botconfig['Bot_ID']; }
-	if(!is_numeric(@args[0])) { die(color(12).'Snowflakes must be a number.'); }
-	msg('Snowflake: '.@args[0]);
-	@snowtime = rshift(integer(@args[0]), 22) + 1420070400000
-	msg('Timestamp: '.@snowtime);
-	msg(color(10).'Date: '.simple_date('MM/dd/yyyy HH:mm:ss.SSS', @snowtime, 'UTC'));
-	msg(color(11).'ISO8601: '.simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', @snowtime, 'UTC'));
+	@ret = array();
+	@tf = 'UTC';
+	foreach(@i: @a in @args) {
+		if(string_starts_with(@a, 'GMT')) { 
+			@tf = @a;
+			array_remove(@args, @i);
+		}
+	}
+	foreach(@i: @s in @args) {
+		if(@i < 1) { @ret[] = color(8).'------'; }
+		@s = replace(@s, ',', '');
+		if(!is_numeric(@s)) { die(color(12).'Not a Snowflake: '.@s.'; Snowflakes must be a number.'); }
+		@ret[] = 'Snowflake: '.@s;
+		@snowtime = rshift(integer(@s), 22) + 1420070400000;
+		@ret[] = 'Timestamp: '.@snowtime;
+		@ret[] = color(5).'Date ('.@tf.'): '.color(13).simple_date('MM/dd/yyyy HH:mm:ss.SSS', @snowtime, 'UTC');
+		@ret[] = color(9).'ISO8601: '.color(3).simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', @snowtime, 'UTC');
+		@ret[] = color(8).'------';
+	}
+	msg(array_implode(@ret, '\n'));
 case 'findoldestdiscord':
 	@serverMembers = discord_get_members(@serverID);
 	array_sort(@serverMembers, 'NUMERIC');

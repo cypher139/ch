@@ -357,11 +357,11 @@ proc _discordBot_cache_emojis() {
 
 proc _db_get_user_nick(@userID, @serverID, @username) {
 	@botconfig = import('DiscordBot.config.Bot');
-	if(@userID == null || @userID == '') { throw('ms.lang.CastException', 'User ID not given to nick display'); }
-	if(@username == null || @username == '') { throw('ms.lang.CastException', 'User name not given to nick display'); }
-	if(@serverID == null || @serverID == '') { @serverID = @botconfig['Primary_Guild']; }
-	if(!is_numeric(@userID)) { return(@username); }
-	if(!is_numeric(@serverID)) { return(@username); }
+	if(!@userID) { throw('ms.lang.CastException', 'User ID not given to nick display'); }
+	if(!@username) { @username = @userID; }
+	if(!@serverID) { @serverID = @botconfig['Primary_Guild']; }
+	if(!is_numeric(@userID) && @username != @userID) { return(@username); }
+	if(!is_numeric(@serverID) && @username != @userID) { return(@username); }
 	@memberInfo = array();
 	try {
 		@memberInfo = discord_member_info(@serverID, @userID);
@@ -401,7 +401,7 @@ proc _db_check_perms(@check, @serverID, @channelID) {
 	return(@return);
 }
 
-proc _discordBot_db_autosave(string @usekey = '', @option) {
+proc _discordBot_db_autosave(string @usekey = '', @direction = 'save', @option) {
 	# _db_msg_Console('Autosaving', 'debug');
 	@botconfig = import('DiscordBot.config.Bot');
 	@prefix = 'DiscordBot.';
@@ -409,44 +409,70 @@ proc _discordBot_db_autosave(string @usekey = '', @option) {
 	@allKeys = import(@prefix.'db.save.keys', array());
 	@time = time();
 	@results = array('null': array(), 'na': array(), 'noTS': array(), 'nolb': array(), 'saved': array(), 'nochange': array());
-	if(@usekey != '') { @allKeys = array(@usekey); }
+	if(@usekey !== '') { @allKeys = array(@usekey); }
 	if(array_size(@allKeys) <= 0) { return(false); }
 	@botSaved = array();
-	foreach(@serverID in import('DiscordBot.Servers')) {
+	@allServers = import('DiscordBot.Servers');
+	if(is_null(@allServers)) {
+		if(@direction === 'load' && string_starts_with(@usekey, 'bot')) { @allServers = array('load'); } else { return('BotNotStarted') }
+	}
+	foreach(@serverID in @allServers) {
 		@config = import(@prefix.'config.'.@serverID);
 		foreach(@e in @allKeys) {
 			@gp = @serverID.'.';
-			if(string_starts_with(@e, 'bot')) { 
+			if(string_starts_with(@e, 'bot')) {
 				@gp = '';
 				if(array_contains(@botSaved, @e)) { continue(); } else { @botSaved[] = @e; }
 			}
 			@saveKey = import(@prefix.@gp.@e);
-			#Checks
-			if(is_null(@saveKey)) { @results['null'][] = @gp.@e; continue() }
-			if(!is_array(@saveKey)) { @results['na'][] = @gp.@e; continue() }
-			if(!array_index_exists(@saveKey, 'lastedit')) { @results['noTS'][] = @gp.@e; continue() }
-			if(@e == 'Leaderboard' && @config['LB_Enable'] != true) { @results['nolb'][] = @gp.@e; continue() }
-			# actions
-			if(@saveKey['lastedit'] > (@time - @botconfig['AutoSave_Wait'])) {
-				store_value(@prefix.@gp.@e, @saveKey);
-				@results['saved'][] = @gp.@e;
-				if(@e == 'Leaderboard') {
-					@guildName = @serverID;
-					if(array_index_exists(@saveKey, 'guild')) { @guildName = reg_replace('\\s', '_', @saveKey['guild']['name']); }
-					_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Leaderboard_'.@guildName.'.json', json_encode(@saveKey), 'overwrite');
-					if(array_index_exists(@config, 'LB_Options', 'Web_Publish')) {
-						if(@config['LB_Options']['Web_Publish'] === true) {
-							_write_file(@botconfig['LB_Web_Path'].'/'.@serverID.'/Leaderboard_'.@serverID.'.json', json_encode(@saveKey), 'overwrite');
-						}
+			# LOAD
+			switch(@direction) {
+			case 'load':
+				@load = true;
+				if(!has_value(@prefix.@gp.@e)) { @results['null'][] = @gp.@e; continue(); }
+				@loadKey = get_value(@prefix.@gp.@e);
+				if(is_null(@loadKey)) { @results['null'][] = @gp.@e; continue(); }
+				if(!is_array(@loadKey)) { @results['na'][] = @gp.@e; continue(); }
+				if(!array_index_exists(@loadKey, 'lastedit')) { @results['noTS'][] = @gp.@e; continue(); }
+				if(is_array(@saveKey)) {
+					if(array_index_exists(@saveKey, 'lastedit')) {
+						if(@loadKey['lastedit'] >= @saveKey['lastedit']) { @results['nochange'][] = @gp.@e; @load = false; }
 					}
 				}
-			} else {
-				@results['nochange'][] = @gp.@e;
+				if(@load) {
+					@results['saved'][] = @gp.@e;			
+					export(@prefix.@gp.@e, @loadKey);
+				}
+			case 'save':
+				# Checks
+				if(is_null(@saveKey)) { @results['null'][] = @gp.@e; continue(); }
+				if(!is_array(@saveKey)) { @results['na'][] = @gp.@e; continue(); }
+				if(!array_index_exists(@saveKey, 'lastedit')) { @results['noTS'][] = @gp.@e; continue(); }
+				if(@e === 'Leaderboard' && @config['LB_Enable'] !== true) { @results['nolb'][] = @gp.@e; continue(); }
+				# Actions
+				if(@saveKey['lastedit'] > (@time - @botconfig['AutoSave_Wait'])) {
+					store_value(@prefix.@gp.@e, @saveKey);
+					@results['saved'][] = @gp.@e;
+					if(@e == 'Leaderboard') {
+						@guildName = @serverID;
+						if(array_index_exists(@saveKey, 'guild')) { @guildName = reg_replace('\\s', '_', @saveKey['guild']['name']); }
+						_write_file(import('DiscordBot.logs.dir').'/'.@serverID.'/Leaderboard_'.@guildName.'.json', json_encode(@saveKey), 'overwrite');
+						if(array_index_exists(@config, 'LB_Options', 'Web_Publish')) {
+							if(@config['LB_Options']['Web_Publish'] === true) {
+								_write_file(@botconfig['LB_Web_Path'].'/'.@serverID.'/Leaderboard_'.@serverID.'.json', json_encode(@saveKey), 'overwrite');
+							}
+						}
+					}
+				} else {
+					@results['nochange'][] = @gp.@e;
+				}
+			default:
+				return(false);
 			}
 		}
 	}
-	export(@prefix.'db.autosave.time', @time);
-	export(@prefix.'db.autosave.results', @results);
+	export(@prefix.'db.auto'.@direction.'.time', @time);
+	export(@prefix.'db.auto'.@direction.'.results', @results);
 	# return(@results);
 	return(true);
 }
@@ -468,7 +494,7 @@ proc _discordBot_clean_cache(@exptime = 0, @guildlist, @option) {
 			}
 			# Clean Command messages cache: (key expected to be message ID);
 			# to add would require array sort by key highest first, get 100 most recent ids then foreach add each index in this order up to limit into new array and save that.
-			foreach(@statkey: @key in array('cmd': 'Cache.Cmd.Messages', 'cmdret': 'Cache.Cmd.Messages.return', 'cmdreply': 'Cache.Messages.Command.Replies', 'bot': 'Cache.Messages.Bot.sent')) {
+			foreach(@statkey: @key in array('cmd': 'Cache.Messages.Command', 'cmdreply': 'Cache.Messages.Command.Replies', 'bot': 'Cache.Messages.Bot.sent')) {
 				@clean = import('DiscordBot.'.@serverID.'.'.@key);
 				if(!is_array(@clean)) { export('DiscordBot.'.@serverID.'.'.@key, null) continue(); }
 				@serverstats[@statkey] = array(array_size(@clean),0,array_size(@clean));
@@ -584,7 +610,7 @@ proc _discordBot_set_roles(@serverID, @userID, @type, array @roles, string @audi
 	if(!is_array(@srvstats)) { @srvstats = array(); }
 	if(!array_index_exists(@srvstats, 'setroles')) { @srvstats['setroles'] = array(); }
 	if(!array_index_exists(@srvstats, 'setroles', @cmd)) { @srvstats['setroles'][@cmd] = 0; }
-	@srvstats['setroles'][@cmd]++
+	@srvstats['setroles'][@cmd]++;
 #Backup Previous Roles
 	@rolesBackup = get_value('DiscordBot.'.@serverID.'.set.roles.undo')	
 	if(!is_array(@rolesBackup)) { @rolesBackup = array(); }
@@ -593,7 +619,7 @@ proc _discordBot_set_roles(@serverID, @userID, @type, array @roles, string @audi
 		@userRoles = discord_member_get_roles(@serverID, @userID);
 	} catch(Exception @ex) {
 		@checkwebhook = import('DiscordBot.webhooks.list', array(array(), array()));
-		@msg = color(12).'User ID "'.@userID.'" does not exist?\n'.@ex
+		@msg = color(12).'User ID "'.@userID.'" does not exist?\n'.@ex;
 		if(array_contains(@checkwebhook[0], @userID)) {
 			@msg = color(12).'"'.@cmd.'" tried setting permissions on a webhook.';
 		}
@@ -646,7 +672,7 @@ proc _discordBot_set_roles(@serverID, @userID, @type, array @roles, string @audi
 		_db_msg_Console(@nopermsMsg, @serverID, 'warning');
 		@config = import('DiscordBot.config.'.@serverID);
 		if(array_index_exists(@config, 'Nag_Server')) {	_discordBot_broadcast(@serverID, @config['Nag_Server'], array('prefix': array('confirm', false), 'dm': true, 'content': @nopermsMsg), 'Bot'); }
-		console(@ex);
+		_db_msg_Console(@ex, @serverID, 'debug');
 		return(false);
 	} catch(NotFoundException @ex) {
 		@id = '';
@@ -794,6 +820,12 @@ proc _db_sanitize_message(@message, @userType, @serverID, @from, @dm) {
 }
 
 proc _discordBot_find_emoji(string @findEmoji, @useGuild, @useOther = true) {
+	@defaultEmojis = import('DiscordBot.App.Default.Emojis');
+	if(!is_array(@defaultEmojis)) { @defaultEmojis = get_value('DiscordBot.App.Default.Emojis'); }
+	if(!is_array(@defaultEmojis)) { @defaultEmojis = array(); }
+	#Default check
+	@findDefaultEmoji = if(string_starts_with(@findEmoji, ':'), '', ':').@findEmoji.if(string_ends_with(@findEmoji, ':'), '', ':');
+	@isDefaultEmoji = array_index_exists(@defaultEmojis, @findDefaultEmoji);
 	@botconfig = import('DiscordBot.config.Bot');
 	@checkServers = import('DiscordBot.cache.known.Server.ID');
 	if(!@checkServers) { 
@@ -803,7 +835,7 @@ proc _discordBot_find_emoji(string @findEmoji, @useGuild, @useOther = true) {
 	if(!@checkServers) { @checkServers = discord_get_servers(); }
 	if(!array_contains(@checkServers, 'app')) { @checkServers[] = 'app'; }
 	@cacheEmojis = import('DiscordBot.cache.Emojis');
-	@results = array('NotFound': 'Not Found');
+	@results = if(@isDefaultEmoji, array('UseDefault': true, 'code': @defaultEmojis[@findDefaultEmoji]), array('NotFound': 'Not Found'));
 	if(!is_numeric(@useGuild)) { @useGuild = 0; }
 	@serverID = @useGuild;
 	if(!is_array(@cacheEmojis)) { @cacheEmojis = get_value('DiscordBot.cache.Emojis'); }
@@ -823,11 +855,14 @@ proc _discordBot_find_emoji(string @findEmoji, @useGuild, @useOther = true) {
 		}
 		if(!@serverID) { _db_msg_Console('Emoji: Server ID suffix not recognized! If possible, using random server ID.', 'warning'); }
 	}
-	#Valid Server ID with cached info required to get Emoji Data.
-	if(!array_contains(@checkServers, @serverID)) { return(@results); }	
-	# Emoji name not found
-	if(!array_index_exists(@cacheEmojis, @findEmoji)) { return(@results); }
-	# If set serverID does not have requested emoji, get the correct server ID. (multiple: random);
+	# No Custom Emoji name found. If this is a Default Emoji, we also return here.
+	if(!array_index_exists(@cacheEmojis, @findEmoji)) { 
+		if(array_index_exists(@results, 'code')) { @results['apiURL'] = _db_unicode_to_url(@defaultEmojis[@findDefaultEmoji]); }
+		return(@results); 
+	}
+	# Custom Emoji:
+	# Server ID requires valid cache info to get Custom Emoji Data.
+	# If suggested serverID does not have requested emoji, get the correct server ID. (multiple matches: Pick at random)
 	if(is_array(@cacheEmojis[@findEmoji])) {
 		if(!array_contains(@cacheEmojis[@findEmoji], @serverID)) {
 			@serverID = array_get_rand(@cacheEmojis[@findEmoji]);
@@ -840,20 +875,21 @@ proc _discordBot_find_emoji(string @findEmoji, @useGuild, @useOther = true) {
 		if(@useGuild != @serverID && @serverID != 'app') { return(@results); }
 	}
 	# Load emoji info and send result
-	_db_msg_Console('Find Emoji: :'.@findEmoji.': '.@serverID, 'debug');
-	@key = array('DiscordBot.Servers.Info.'.@serverID, 'DiscordBot.'.@serverID.'.guild.Info');
-	if(@serverID == 'app') { @key = array('DiscordBot.App.Emojis', 'DiscordBot.App.Emojis'); }
+	_db_msg_Console('Find Emoji: '.@findEmoji.' <server:'.@serverID.'>', 'debug');
+	@key = if(@serverID === 'app', array('DiscordBot.App.Emojis', 'DiscordBot.App.Emojis'), array('DiscordBot.Servers.Info.'.@serverID, 'DiscordBot.'.@serverID.'.guild.Info'));
 	@emojiInfo = import(@key[0]);
 	if(!@emojiInfo) { @emojiInfo = get_value(@key[1]); }
 	if(!@emojiInfo) { @emojiInfo = array(); }
-	if(!array_index_exists(@emojiInfo, 'emojis')) { continue(); }
+	if(!array_index_exists(@emojiInfo, 'emojis')) { @emojiInfo['emojis'] = array(); }
 	foreach(@index: @emoji in @emojiInfo['emojis']) {
 		if(@findEmoji == @emoji['name']) {
-			@results = @emoji;
+			@results = @emoji[];
+			# console(@emojiInfo)
 			@results['server'] = @serverID;
 			@results['index'] = @index;
 			@results['servername'] = @emojiInfo['name'];
 			if(@serverID == 'app') { @results['isbotmember'] = true; } else { @results['isbotmember'] = array_contains(discord_get_servers(), @serverID); }
+			if(@results['isbotmember'] === true) { @results['apiURL'] = @emoji['name'].':'.@emoji['id']; }
 			break();
 		}
 	}
@@ -861,6 +897,46 @@ proc _discordBot_find_emoji(string @findEmoji, @useGuild, @useOther = true) {
 	return(@results);
 }
 
+proc _discordBot_add_reaction(@serverID, @channelID, @msgID, @char = ':white_check_mark:', @method = 'add', @userID = '@me') {
+	if(!array_contains(import('DiscordBot.Servers'), @serverID)) { _db_msg_Console('Add reaction: invalid Server ID: '.@serverID, 'error'); return(false); }
+	if(!is_numeric(@channelID)) { _db_msg_Console('Add reaction: invalid Channel ID: '.@channelID, 'error'); return(false); }
+	if(!is_numeric(@msgID)) { _db_msg_Console('Add reaction: invalid Message ID: '.@msgID, 'error'); return(false); }
+	@methodDisplay = 'Added';
+	if(!@char) { @char = ':join:'; }
+	switch(@method){
+	case 'remove':
+	case 'r':
+	case 'delete':
+		if(!is_numeric(@userID)) { @userID = '@me'; }
+		@hasPerm = _db_check_perms('delete', @serverID, @channelID);
+		if(!@hasPerm && @userID !== '@me') {
+			_db_msg_Console(color(12).'Bot does not have permission to remove user reactions on channel '.@channelID, @serverID, 'error'); 
+			return(false);
+		}
+		@method = 'DELETE';
+		@methodDisplay = 'Removed';
+	case 'add':
+	case 'a':
+	case 'put':
+	default:
+		@userID = '@me';
+		@method = 'PUT';
+		@methodDisplay = 'Added';
+	}
+	@isUC = if(reg_count('[^\\u0000-\\u007F]+', @char) > 0, true, false);
+	if(reg_count('^[\\\\]?[Uu][+]?', @char) > 0) { @isUC = true; }
+	@getEmojiURL = if(@isUC, array('apiURL': _db_unicode_to_url(@char)), _discordBot_find_emoji(@char));
+	if(!array_index_exists(@getEmojiURL, 'apiURL')) {
+		#custom: not member
+		if(array_index_exists(@getEmojiURL, 'isbotmember')) {
+			if(@getEmojiURL['isbotmember'] === false) { _db_msg_Console(color(12).'I can\'t use reaction "'.@char.'"! '.color('r').'I\'ve known of the server that this emoji comes from, '.color(14).'but to use it I need to be a member of that server!', @serverID, 'error'); return(false); }
+		}
+		if(array_index_exists(@getEmojiURL, 'NotFound')) { _db_msg_Console(color(12).'I can\'t use that reaction! '.color('r').'Yea, I have no idea what "'.@char.'" emoji is. Check your capitalzation!', @serverID, 'error'); return(false); }
+		if(array_index_exists(@getEmojiURL, 'UseDefault')) { @getEmojiURL['apiURL'] = _db_unicode_to_url(@getEmojiURL['code']); }
+	}
+	discord_request(@method, 'channels/'.@channelID.'/messages/'.@msgID.'/reactions/'.@getEmojiURL['apiURL'].'/'.@userID, null, closure(@ex) { _db_msg_Console(@methodDisplay.' Bot\'s Reaction of "'.@char.'" to message '.@msgID, @serverID); }, closure(@ex) { _db_msg_Console('Could not modify Reaction "'.@char.'" to message '.@msgID.'\n'.@ex, @serverID, 'error'); });
+	return(true);
+}
 
 proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 	if(!function_exists('discord_broadcast') || !function_exists('discord_private_message')) { return(false); }
@@ -868,7 +944,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 	@msgType = 'b';
 	@msgPrefix = '';
 	# Prefix array Format: 0: fail (false), 1: success (true), 2+: optional, format varies per prefix. i.e. 2: question, 3: deny
-	@msgPrefixes = array('console': ':desktop:', 'mcuser': '`[%p%]`', 'death': array(':angel:', ':skull_crossbones:'), 'trophy': array(':onion:', ':trophy:', ':PS5Hidden:', ':PS5Bronze:', ':PS5Silver:', ':PS5Gold:', ':PS5Plat:'), 'paper': ':page_facing_up:', 'command': ':desktop:', 'confirm': array(':x:', ':white_check_mark:', ':question:', ':no_entry:'));
+	@msgPrefixes = array('console': ':desktop:', 'mcuser': '`[%p%]`', 'death': array(':angel:', ':skull_crossbones:'), 'trophy': array(':onion:', ':trophy:', ':PS5Hidden:', ':PS5Bronze:', ':PS5Silver:', ':PS5Gold:', ':PS5Plat:'), 'paper': ':page_facing_up:', 'command': ':desktop:', 'confirm': array(':x:', ':white_check_mark:', ':question:', ':no_entry:', ':information_source:'));
 	@botconfig = import('DiscordBot.config.Bot');
 	# Load Primary Guild if none given
 	if(@serverID == '' || @serverID == null || @serverID == 'bot') { @serverID = @botconfig['Primary_Guild']; }
@@ -1087,7 +1163,8 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 				@convertEmoji = true;
 				#returns: {{0: :match:}}
 				@emojiID = _discordBot_find_emoji(@emoji[0], @serverID, @config['Use_Other_Emojis']);
-				if(array_index_exists(@emojiID, 'NotFound')) { continue(); }
+console(@emojiID);
+				if(array_index_exists(@emojiID, 'NotFound') || array_index_exists(@emojiID, 'UseDefault')) { continue(); }
 				#At this time cannot display emojis if bot is not a member of that server. Emoji Cache still allows for non-member servers to be added
 				if(@emojiID['isbotmember'] === false) {
 					@convertEmoji = false;
@@ -1210,12 +1287,12 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 			return(true);
 		}
 	} catch(InsufficientPermissionException @ex) {
-		@msg = @prefixErrorMsg.color(12).'Permission: '.color(6).@ex['message']
+		@msg = @prefixErrorMsg.color(12).'Permission: '.color(6).@ex['message'];
 		if(string_ends_with(@ex['message'], 'VIEW_CHANNEL')) {
-			@msg = color(12).'Bot cannot view the channel: '.color(3).@channel
+			@msg = color(12).'Bot cannot view the channel: '.color(3).@channel;
 		}
 		if(string_ends_with(@ex['message'], 'MESSAGE_SEND')) {
-			@msg = color(12).'Bot cannot send messages to channel: '.color(3).@channel
+			@msg = color(12).'Bot cannot send messages to channel: '.color(3).@channel;
 		}
 		_db_msg_Console(@msg, @serverID, 'error');
 		if(array_index_exists(@config, 'Nag_Server')) { _discordBot_broadcast(@serverID, @config['Nag_Server'], array('prefix': array('confirm', 1), 'dm': true, 'content': 'Permission: '.@msg), 'Bot'); }
@@ -1226,7 +1303,7 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 	} catch(Exception @ex) {
 		@traceDisplay = '';
 		foreach(@st in @ex['stackTrace']) {
-			@traceDisplay .= '\n'.@st['id'].'  '.@st['line'].'.'.@st['col']
+			@traceDisplay .= '\n'.@st['id'].'  '.@st['line'].'.'.@st['col'];
 		}
 		_db_msg_Console(@prefixErrorMsg.@ex['classType'], 'bot', 'error', '<'.@serverID.'> '.color(12).@ex['classType'].' '.color(7).@ex['message'].@traceDisplay);
 		return(false);
@@ -1293,7 +1370,7 @@ proc _discordBot_edit_message(@raw, @from, @serverID, @channel, @msgID, @type, @
 			foreach(@emoji in reg_match_all('[:][^\\s./]+[:]', @message['content'])) {
 				#returns: {{0: :match:}}
 				@emojiID = _discordBot_find_emoji(@emoji[0], @serverID, @config['Use_Other_Emojis']);
-				if(array_index_exists(@emojiID, 'NotFound')) { continue(); }
+				if(array_index_exists(@emojiID, 'NotFound') || array_index_exists(@emojiID, 'UseDefault')) { continue(); }
 				#Convert emoji :emoji: markdown to bot version:
 				@useAnimation = '';
 				if(@emojiID['animated'] === true) { @useAnimation = 'a'; }
@@ -1329,7 +1406,7 @@ proc _discordBot_edit_message(@raw, @from, @serverID, @channel, @msgID, @type, @
 				@message['embeds'][@i]['thumbnail'] = array('url': @embed['thumbnail']);
 			}
 			if(array_index_exists(@embed, 'color', 'r')) {
-				@message['embeds'][@i]['color'] = 65536 * @embed['color']['r'] + 256 * @embed['color']['g'] + @embed['color']['b']
+				@message['embeds'][@i]['color'] = 65536 * @embed['color']['r'] + 256 * @embed['color']['g'] + @embed['color']['b'];
 			}
 			if(array_index_exists(@embed, 'timestamp')) {
 				@message['embeds'][@i]['timestamp'] = simple_date('yyyy-MM-dd\'T\'HH:mm:ssZ', @embed['timestamp']);
@@ -2478,6 +2555,60 @@ proc _discordBot_lb_levelXP(@serverID = 'default', @preset = 1) {
 
 #### Bot Command Functions
 
+#Convert Unicode char / hex codepoint to UTF8 URL
+proc _db_unicode_to_url(string @str) {
+	#check is emoji or codepoint
+	@isUC = if(reg_count('[^\\u0000-\\u007F]+', @str) > 0, true, false);
+	@getURL = closure(@char) {
+		@uc = unicode_from_char(@char);
+		if(!@isUC) {
+			@isCodePoint = if(reg_count('^[\\\\]?[Uu][+]?', @char) > 0, true, false);
+			if(!@isCodePoint) { msg('Unicode code point not detected, only hex code point is supported.'); }
+			#uc needs decimal form
+			@char = reg_replace('^[\\\\]?[Uu]?[+]?', '', @char);
+			@uc = parse_int(@char, 16);
+		}
+		@range = 0;
+		foreach(@i: @max in array('7f', '7ff', 'ffff', '1fffff')) {
+			if(@uc < parse_int(@max, 16)) {
+				@range = (@i + 1);
+				break();
+			}
+		}
+		#UTF8 URL conversion: convert to Binary, add specific bits, convert to hex.
+		@uc = to_radix(@uc, 2);
+		@bits = array();
+		#{1st prefix, max x length}, slices
+		@rangeVars = array(
+			1: array(array(0, 7), array(0, length(@uc) - 1)),
+			2: array(array(110, 11), array(-11, -7), array(-6, -1)),
+			3: array(array(1110, 16), array(-16, -13), array(-12, -7), array(-6, -1)),
+			4: array(array(11110, 21), array(-21, -19), array(-18, -13), array(-12, -7), array(-6, -1))
+		);
+		@add0 = if(length(@uc) < @rangeVars[@range][0][1], string_multiply(0, @rangeVars[@range][0][1] - length(@uc)), '');
+		@uc = @add0.@uc;
+		for(@i = 1, @i <= @range, @i++) {
+			@bits[] = if(@i === 1, @rangeVars[@range][0][0], 10).@uc[cslice(@rangeVars[@range][@i][0], @rangeVars[@range][@i][1])];
+		}
+		@uc = to_radix(parse_int(array_implode(@bits, ''), 2), 16);
+		@ret = '';
+		foreach(@m in reg_match_all('..', @uc)) {
+			@ret .= '%'.to_upper(@m[0]);
+		}
+		return(@ret);
+	}
+	@ret = '';
+	if(@isUC) {
+		@ret = url_encode(@str);
+	} else {
+		foreach(@i: @s in split('\\', @str)) {
+			if(@s === '') { continue(); }
+			@ret .= @getURL(@s);
+		}
+	}
+	return(@ret);
+}
+
 proc _db_is_newmember(@serverID, @userid) {
 	if(!is_numeric(@serverID)) { return(0); }
 	if(!is_numeric(@userid)) { return(0); }
@@ -2486,12 +2617,12 @@ proc _db_is_newmember(@serverID, @userid) {
 	@userJoinTime = 0
 	@time = time();
 	try {
-		@userJoinTime = discord_member_info(@serverID, @userid)['joined_at']
+		@userJoinTime = discord_member_info(@serverID, @userid)['joined_at'];
 	} catch(NotFoundException @ex) {
 		export('DiscordBot.'.@serverID.'.debug.user.not.found.'.@userid, 1);
 	}
 	#Only action upon a new user:
-	if((@userJoinTime + @config['AS_New_User_Time']) > @time) { @return = true; }
+	if((@userJoinTime + @config['New_User_Time']) > @time) { @return = true; }
 	if(@return === true) {
 		# Returning users: Bypass new user checks
 		@save = import('DiscordBot.'.@serverID.'.is.new.member');
@@ -2511,7 +2642,7 @@ proc _db_is_newmember(@serverID, @userid) {
 				if(array_index_exists(@logJointimes, @userid, 1)) {
 					foreach(@i: @jt in @logJointimes[@userid]) {
 						if(@i < 1) {continue(); }
-						if((@jt + @config['AS_New_User_Time']) > @time) {
+						if((@jt + @config['New_User_Time']) > @time) {
 							@return = true;
 							break();
 						}
@@ -2639,26 +2770,29 @@ proc _discordBot_iscommand(@discord, @returnType = 'a', @regexPrefix = '^') {
 	@botconfig = import('DiscordBot.config.Bot');
 	@botinfo = import('DiscordBot.Bot.Info');
 	@isCmd = false;
-	@userserver = 0
+	@userserver = 0;
+	@useDM = if(array_index_exists(@discord, 'UseDM'), @discord['UseDM'], false);
 	if(is_array(@discord)) {
-		if(!array_index_exists(@discord, 'message')) {
-			_db_msg_Console('User message not given to isCommand!', 'debug');
+		if(xnor(array_index_exists(@discord, 'message'), array_index_exists(@discord, 'emoji'))) {
+			_db_msg_Console('Required message or emoji data not given to isCommand!', 'error');
 			return(false);
 		}
 	} else {
 		_db_msg_Console('Required Discord data not given to isCommand!', 'debug');
 		return(false);
 	}
-	if(!array_index_exists(@discord, 'UseDM')) { @discord['UseDM'] = false; }	
-	if(@discord['UseDM'] === false) {
-		@config = import('DiscordBot.config.'.@discord['serverid']);
-		# Prefix:
-		if(reg_count(@config['CMD_Command_Prefix'], @discord['message']) > 0) { @isCmd = true; }
-		# Mentions:
-		if(reg_count(@regexPrefix.'[@]'.@botconfig['Bot_Name'].'\\s', @discord['message']) > 0) { @isCmd = true; }
-		if(reg_count(@regexPrefix.'[@]'.@botinfo['displayname'].'\\s', @discord['message']) > 0) { @isCmd = true; }
-	} else {
-		# from DM
+	# Page reactions
+	if(array_index_exists(@discord, 'emoji')) {
+		switch(@discord['emoji']) {
+		case '◀️':
+		case ':arrow_backward:':
+		case '▶️':
+		case ':arrow_forward:':
+			@isCmd = true;
+		}
+	}
+	# from DM
+	if(@useDM) {
 		# Check for each server's Command prefix
 		foreach(@serverID in import('DiscordBot.Servers')) {
 			@cfg = import('DiscordBot.config.'.@serverID);
@@ -2668,19 +2802,38 @@ proc _discordBot_iscommand(@discord, @returnType = 'a', @regexPrefix = '^') {
 				break();
 			}
 		}
-		if(@isCmd === true && @returnType == 'id') {
-			return(@userserver);
-		} else {
+		if(@isCmd === true && @returnType === 'id') { return(@userserver); }
 		# Prefix not found, check for first word matches a command name
-			@cmdList = import('DiscordBot.Command.List.Name');
-			@check = parse_args(@discord['message']);
-			if(is_array(@cmdList) && array_size(@check) > 0) {
-				if(array_index_exists(@cmdList, to_lower(@check[0]))) {
-					@isCmd = true;
-				}
+		@cmdList = import('DiscordBot.Command.List.Name');
+		@check = parse_args(@discord['message']);
+		if(is_array(@cmdList) && array_size(@check) > 0) {
+			if(array_index_exists(@cmdList, to_lower(@check[0]))) {
+				@isCmd = true;
 			}
 		}
-	}	
+	} else {
+		@config = import('DiscordBot.config.'.@discord['serverid']);
+		if(array_index_exists(@discord, 'emoji')) {
+		# from reaction
+			foreach(@em: @act in @config['Reaction_Actions']) {
+				if(replace(replace(@em, '<', ''), '>', '') === replace(replace(@discord['emoji'], '<', ''), '>', '')) {
+					if(is_array(@act)) {
+						@isCmd = array_contains(@act, @discord['channelid']);
+					} else {
+						@isCmd = true;
+					}
+					break();
+				}
+			}
+		} else {
+		# from message
+			# Prefix:
+			if(reg_count(@config['CMD_Command_Prefix'], @discord['message']) > 0) { @isCmd = true; }
+			# Mentions:
+			if(reg_count(@regexPrefix.'[@]'.@botconfig['Bot_Name'].'\\s', @discord['message']) > 0) { @isCmd = true; }
+			if(reg_count(@regexPrefix.'[@]'.@botinfo['displayname'].'\\s', @discord['message']) > 0) { @isCmd = true; }
+		}
+	}
 	return(@isCmd);
 }
 
@@ -2689,17 +2842,19 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	@sendLogMsg = true;
 	@botconfig = import('DiscordBot.config.Bot');
 	@botinfo = import('DiscordBot.Bot.Info');
-	@cmdfromdis = '';
-	@editMsg = 0
+	@editMsg = 0;
 	@dm = false;
-	@returnMsg = array('dm': @discord['UseDM'], 'content': 'Debug', 'prefix': 'command');
+	@command = array();
+	@returnMsg = array('content': 'Debug', 'prefix': 'command');
+	@cmdDisplays = array('mc': '', 'dc': '', 'from': '', 'ret': '', 'retcolor': 3);
+	@commandReplyIDs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies');
+	if(!is_array(@commandReplyIDs)) { @commandReplyIDs = array('data': array(), 'id': array()); }
+	if(!array_index_exists(@commandReplyIDs, 'data')) { @commandReplyIDs['data'] = array(); }
+	if(!array_index_exists(@commandReplyIDs, 'id')) { @commandReplyIDs['id'] = array(); }
 	if(is_array(@discord)) {
-		if(!array_index_exists(@discord, 'time')) {
-			@discord['time'] = time();
-		}
-		if(!array_index_exists(@discord, 'serverid')) {
-			@discord['serverid'] = 0;
-		}
+		if(!array_index_exists(@discord, 'time')) { @discord['time'] = time(); }
+		if(!array_index_exists(@discord, 'serverid')) { @discord['serverid'] = 0; }
+		if(!array_index_exists(@discord, 'id') && array_index_exists(@discord, 'messageid')) { @discord['id'] = @discord['messageid']; }
 		if(!array_index_exists(@discord, 'userid')) {
 			_db_msg_Console('User Data not given to Command Handler!', @discord['serverid'], 'debug');
 			return(false);
@@ -2708,8 +2863,13 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 		_db_msg_Console('Required Discord data not given to Command Handler!', 'debug');
 		return(false);
 	}
+	@hcID = if(array_index_exists(@commandReplyIDs, 'id', @discord['id']), @commandReplyIDs['id'][@discord['id']], rand(100,5000).@StartTime);
+	@discord['UsePage'] = if(array_index_exists(@commandReplyIDs, 'data', @hcID, 'page'), @commandReplyIDs['data'][@hcID]['page'], 1);
+	@incPage = 0;
+	@callmsgID = if(array_index_exists(@commandReplyIDs, 'data', @hcID, 'cmID'), @commandReplyIDs['data'][@hcID]['cmID'], @discord['id']);
+	@replymsgID = if(array_index_exists(@commandReplyIDs, 'data', @hcID, 'rmID'), @commandReplyIDs['data'][@hcID]['rmID'], 0);
 	#Check for specified server, if not given already. User must be a member of that server!
-	if(@discord['serverid'] == 0 || @cmdfrom == 'dm') {
+	if(@discord['serverid'] === 0 || @cmdfrom === 'dm') {
 		@servers = import('DiscordBot.Servers');
 		foreach(@i: @v in parse_args(@discord['message'])) {
 			if(is_numeric(@v) && length(@v) > 15 && array_contains(@servers, @v)) {
@@ -2718,7 +2878,7 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 			}
 		}
 	}
-	if(@discord['serverid'] == 0) {
+	if(@discord['serverid'] === 0) {
 		console('I\'m unsure of which guild you want me to use this command on! trying Primary Guild');
 		@discord['serverid'] = @botconfig['Primary_Guild'];
 	}
@@ -2727,10 +2887,12 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 		return('UserNotServerMember');
 	}
 	@config = import('DiscordBot.config.'.@discord['serverid']);
+	@cacheCmd = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command');
+	if(!is_array(@cacheCmd)) { @cacheCmd = array(); }
 	@return = false;
 	@CmdReturn = '';
 	# Setup And Load Command Actions
-	if(is_proc('_discordBot_cmd_help') != true) {
+	if(!is_proc('_discordBot_cmd_help')) {
 		include_dir('command.library');
 		_discordBot_init_cmd_list();
 	}
@@ -2743,14 +2905,12 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	case 'true':
 		@dm = true;
 		@discord['SendChannel'] = @discord['userid'];
-		@cmdfromdis = ' in DM';
+		@cmdDisplays['from'] = ' in DM';
 	case 'edit':
-		@commandReplyIDs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies');
-		if(!is_array(@commandReplyIDs)) { @commandReplyIDs = array(); }
-		if(array_index_exists(@commandReplyIDs, @discord['id']) && to_lower(@config['CMD_Message_Action']) != 'delete') {
-			if(@commandReplyIDs[@discord['id']]['time'] > (time() - 86400000)) { 
-				@editMsg = @commandReplyIDs[@discord['id']]['id'];
-				@cmdfromdis = ' (via message edit)';
+		if(array_index_exists(@commandReplyIDs, 'data', @hcID) && to_lower(@config['CMD_Message_Action']) !== 'delete') {
+			if(@commandReplyIDs['data'][@hcID]['time'] > (time() - 604800000)) { 
+				@editMsg = @commandReplyIDs['data'][@hcID]['rmID'];
+				@cmdDisplays['from'] = ' (via message edit)';
 			}
 		}
 		@dm = false;
@@ -2762,25 +2922,52 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	}
 	switch(@cmdfrom) {
 	case 'batch':
-		@cmdfromdis = ' (via Batch file)';
+		@cmdDisplays['from'] = ' (via Batch file)';
+	case 'reaction':
+		@cmdDisplays['from'] = ' (via Reaction)';
+		@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages');
+		if(is_array(@cacheMsgs)) {
+			if(array_index_exists(@cacheMsgs, 'messages', @discord['id'], 'message')) { @discord['message'] = @cacheMsgs['messages'][@discord['id']]['message']; }
+		}
+		if(is_array(@cacheCmd)) {
+			if(array_index_exists(@cacheCmd, @discord['id'], 'message')) { @discord['message'] = @cacheCmd[@discord['id']]['message']; }
+		}
 	default:
-		if(@dm === true) { @cmdfromdis = ' in DM'; }
+		if(@dm === true) { @cmdDisplays['from'] = ' in DM'; }
 	}
 	@discord['UseDM'] = @dm;
 	@returnMsg['dm'] = @dm;
-
+#
+# Handle page args: Reactions for page up/down
+	@isPageReact = false;
+	if(array_index_exists(@discord, 'emoji')) {
+		switch(@discord['emoji']) {
+		case '◀️':
+		case ':arrow_backward:':
+			@isPageReact = true;
+			@incPage = -1;
+		case '▶️':
+		case ':arrow_forward:':
+			@isPageReact = true;
+			@incPage = 1;
+		}
+		if(@isPageReact) {
+			if(array_index_exists(@commandReplyIDs, 'data', @hcID)) {
+				@command = @commandReplyIDs['data'][@hcID]['cmd']; 
+				@discord['UsePage'] = @commandReplyIDs['data'][@hcID]['page'];
+				@editMsg = @commandReplyIDs['data'][@hcID]['rmID'];
+			}
+		} else if(array_index_exists(@commandReplyIDs, 'data', @hcID)) {
+			# dont corrupt IDs: reaction commands not supported on reply messages.
+			_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], array('dm': @discord['UseDM'], 'embeds': array(array('description': 'Woah there! I don\'t yet listen to reactions on my replies! Try reacting to a different message.', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))))		
+			return('NoReplyReactionCmd');
+		}
+	}
+#Send a edited message or new one?
 	if(@editMsg > 0 && to_lower(@config['CMD_Message_Action']) != 'delete') {
 		@returnMsg['message_id'] = @editMsg;
 	}
-	@afterMsg = closure(@msgID) {
-		@cacheID = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies');
-		if(!is_array(@cacheID)) { @cacheID = array(); }
-		#Sorted by calling id: reply id & time
-		@cacheID[@discord['id']] = array('id': @msgID, 'time': time());
-		export('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies', @cacheID);
-		return(true);
-	}
-#Check User Permissions
+# Check User Permissions
 	#to  check: does get roles work in a dm
 	@userType = 'User';
 	@isAdmin = false;
@@ -2801,35 +2988,59 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	# _db_msg_Console(@commandList, @discord['serverid'], 'debug');
 ###############
 # Extract Command
-	@msgcheck = reg_replace(@config['CMD_Command_Prefix'], '', @discord['message']);
-	if(@dm === true || @cmdfrom == 'mention') {
-		@msgcheck = reg_replace('^[@]'.@botconfig['Bot_Name'].'\\s', '', @msgcheck);
-		@msgcheck = reg_replace('^[@]'.@config['Bot_Name'].'\\s', '', @msgcheck);
+	# Find command if not already given from reaction pages:
+	if(!array_index_exists(@command, 0)) {
+		if(array_index_exists(@discord, 'emoji')) {
+		# from reaction
+			foreach(@em: @act in @config['Reaction_Actions']) {
+				if(replace(replace(@em, '<', ''), '>', '') === replace(replace(@discord['emoji'], '<', ''), '>', '')) {
+					@cs = if(is_array(@act), @act[0], @act);
+					@command = parse_args(@cs);
+					break();
+				}
+			}
+		} else {
+		# from message
+			@msgcheck = reg_replace(@config['CMD_Command_Prefix'], '', @discord['message']);
+			if(@dm === true || @cmdfrom === 'mention') {
+				@msgcheck = reg_replace('^[@]'.@botconfig['Bot_Name'].'\\s', '', @msgcheck);
+				@msgcheck = reg_replace('^[@]'.@config['Bot_Name'].'\\s', '', @msgcheck);
+			}
+			@command = parse_args(@msgcheck);
+		}
 	}
-	@command = parse_args(@msgcheck);
 	# No Command Given
 	if(!array_index_exists(@command, 0)) {
 		_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], array('dm': @discord['UseDM'], 'embeds': array(array('description': 'Ooooh! I can\'t wait to see what command you enter next!', 'footer': array('text': '...or not'), 'image': 'https://media.tenor.com/hrg1biY9FbsAAAAC/awesome-minions.gif'))))		
 		return('NoCmdGiven');
 	}
 	# No mentions
-	@command[0] = reg_replace('@', '', @command[0]);
+	@command[0] = replace(@command[0], '@', '');
 #Command Blacklist
 	if(array_contains(@botconfig['CMD_Blacklist_Commands'], @command[0])) {
 		_db_msg_Console(color(8).'Commands: Ignored '.color(9).@command[0], @discord['serverid'], 'debug');
 		return('Blacklist');
 	}
 # Setup Arguments
-	@args = array();
-	if(array_index_exists(@command, 1)) {
-		@args = @command[cslice(1, array_size(@command) - 1)]
-	}
+	@args = if(array_index_exists(@command, 1), @command[cslice(1, array_size(@command) - 1)], array());
 
 	if(is_string(@command[0])) { @command[0] = to_lower(@command[0]); }
-	@commanddismc = '';
-	@commanddisdc = '';
 	if(array_index_exists(@args, 0)) {
-# Remove mention in arguments
+	# Page Args
+		foreach(@k: @arg in @args) {
+			switch(@arg) {
+			case 'nextpage':
+			case 'pageup':
+				@incPage = 1;
+				array_remove(@args, @k);
+			case 'prevpage':
+			case 'previouspage':
+			case 'pagedown':
+				@incPage = -1;
+				array_remove(@args, @k);
+			}
+		}
+	# Remove mention in arguments
 		if(array_index_exists(@config, 'Sanitize_CMD_Arguments')) {
 			foreach(@mention: @replacement in @config['Sanitize_CMD_Arguments']) {
 				foreach(@k: @arg in @args) {
@@ -2839,23 +3050,51 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 		}
 		@arglimit = array_size(@args);
 		@argcontinues = '';
-		if(@arglimit >= @config['CMD_Args_Display_Limit']) { @arglimit = @config['CMD_Args_Display_Limit'] @argcontinues = ' ...'; }
-		@commanddismc = 'Args: '.color(9).array_implode(@args[cslice(0, @arglimit - 1)], ', ').@argcontinues
-		@commanddisdc = 'Args: `'.array_implode(@args[cslice(0, @arglimit - 1)], '`  `').'`'.@argcontinues 
-		if(!array_index_exists(@args, 0)) { @commanddisdc = ''; }
+		if(@arglimit >= @config['CMD_Args_Display_Limit']) { @arglimit = @config['CMD_Args_Display_Limit']; @argcontinues = ' ...'; }
+		@cmdDisplays['mc'] = 'Args: '.color(9).array_implode(@args[cslice(0, @arglimit - 1)], ', ').@argcontinues;
+		@cmdDisplays['dc'] = 'Args: `'.array_implode(@args[cslice(0, @arglimit - 1)], '`  `').'`'.@argcontinues;
+		if(!array_index_exists(@args, 0)) { @cmdDisplays['dc'] = ''; }
 	}
-	
+#Page: Increment
+	if(@incPage != 0) {
+		@discord['UsePage'] += @incPage;
+		if(@discord['UsePage'] < 1) { @discord['UsePage'] = 1; }
+	}
+
 # Deny Admin commands
 	if(array_index_exists(@commandList, @command[0])) {
 		if(@actions[@commandList[@command[0]]]['admin'] === true && @userType != 'Admin') {
-			_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdfromdis.': '.color(3).@command[0].'  '.color('r').@commanddismc, @discord['serverid']);
-			_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].' tried to use admin command'.@cmdfromdis.': `'.@command[0].'`  '.strip_colors(@commanddisdc));
+			_db_msg_Console(@discord['username'].' tried to use an admin command'.@cmdDisplays['from'].': '.color(3).@command[0].'  '.color('r').@cmdDisplays['mc'], @discord['serverid']);
+			_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].' tried to use admin command'.@cmdDisplays['from'].': `'.@command[0].'`  '.strip_colors(@cmdDisplays['dc']));
 			return('NotAdmin');
 		}
 	}
 	@discord['admin'] = @isAdmin;
 	@discord['cmd'] = @command[0];
-
+# Setup Cache Reply References (requires command and page)
+	@afterMsg = closure(@msgID) {
+		# Save Command used for future reference (i.e. next page)
+		@cacheID = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies');
+		if(!is_array(@cacheID)) { @cacheID = array('data': array(), 'id': array()); }
+		@apr = if(array_index_exists(@cacheID, 'data', @hcID, 'apr'), @cacheID['data'][@hcID]['apr'], false);
+		# Sorted by: messages: hcid: data, id: msgid: hcID
+		if(!@replymsgID) { @replymsgID = @msgID; }
+		if(!array_index_exists(@cacheID, 'id', @callmsgID)) { @cacheID['id'][@callmsgID] = @hcID; }
+		if(!array_index_exists(@cacheID, 'id', @replymsgID)) { @cacheID['id'][@replymsgID] = @hcID; }
+		@cacheID['data'][@hcID] = array('page': @discord['UsePage'], 'cmd': @command, 'cmID': @callmsgID, 'rmID': @replymsgID, 'time': time());
+		if(@apr) { @cacheID['data'][@hcID]['apr'] = @apr; }
+		# Add Page Reactions if required
+		@doaddPageReactions = import('DiscordBot.'.@discord['serverid'].'.'.@discord['id'].'.addPageReactions');
+		if(@doaddPageReactions === true && !@apr && !@discord['UseDM']) {
+			_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @replymsgID, '◀️', 'add');
+			sleep(0.5);
+			_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @replymsgID, '▶️', 'add');
+			@cacheID['data'][@hcID]['apr'] = true;
+		}
+		export('DiscordBot.'.@discord['serverid'].'.'.@discord['id'].'.addPageReactions', null);
+		export('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command.Replies', @cacheID);
+		return(true);
+	}
 # Execute command action
 	if(array_index_exists(@commandList, @command[0])) {
 		@CmdReturn = @actions[@commandList[@command[0]]]['cmd'](@discord, @args);
@@ -2871,10 +3110,9 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 		if(array_index_exists(@nocmdData[@discord['userid']], 20)) { array_remove(@nocmdData[@discord['userid']], 20); }
 		store_value('DiscordBot.debug.cmd.not.found', @nocmdData);
 		#Send Not Found messages
-		_db_msg_Console(@discord['username'].' tried to use non-existent command'.@cmdfromdis.': '.color(14).@command[0].'  '.color('r').@commanddismc, @discord['serverid']);
+		_db_msg_Console(@discord['username'].' tried to use non-existent command'.@cmdDisplays['from'].': '.color(14).@command[0].'  '.color('r').@cmdDisplays['mc'], @discord['serverid']);
 		#Send User Message
-		@sendUserMessage = true;
-		if(@cmdfrom == 'mention') { @sendUserMessage = false; }
+		@sendUserMessage = if(@cmdfrom === 'mention' || @cmdfrom === 'reaction', false, true);
 		# Only message user on repeated not found command?
 		if(to_lower(@config['CMD_Not_Found_Message_Action']) == 'repeat') {
 			if(array_index_exists(@nocmdData[@discord['userid']], 1)) { 
@@ -2884,32 +3122,24 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 			}
 		}
 		if(@config['CMD_Not_Found_Message_Action'] === false) { @sendUserMessage = false; }
-		if(@sendUserMessage === true) {
+		if(@sendUserMessage) {
 			@returnMsg['content'] = 'I have no idea what that command is, try ?help';
 			@returnMsg['reference_id'] = @discord['id'];
 			_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @returnMsg);
-		}		
+		}
 		return('NotACmd');
 	}
+###############
 # _db_msg_Console('ret: '.@CmdReturn, @discord['serverid'], 'debug');
 # _db_msg_Console('retis: '.is_string(@CmdReturn), @discord['serverid'], 'debug');
-####
-#DEBUG Save Recent Messages and Returns for reference
+###############
+# Save Recent Messages and Returns for reference
 	@discord['return'] = @CmdReturn;
-	@cacheCmd = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages');
-	if(!is_array(@cacheCmd)) { @cacheCmd = array(); }
 	@cacheCmd[@discord['id']] = @discord;
 	if(array_index_exists(@cacheCmd, @botconfig['Msg_Cache_Cmd'])) { array_remove(@cacheCmd, @botconfig['Msg_Cache_Cmd']); }
-	export('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages', @cacheCmd);
-
-	@cacheCmd = import('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.return');
-	if(!is_array(@cacheCmd)) { @cacheCmd = array(); }
-	@cacheCmd[@discord['id']] = @CmdReturn;
-	if(array_index_exists(@cacheCmd, @botconfig['Msg_Cache_Cmd'])) { array_remove(@cacheCmd, @botconfig['Msg_Cache_Cmd']); }
-	export('DiscordBot.'.@discord['serverid'].'.Cache.Cmd.Messages.return', @cacheCmd);
-####
-#Send Messages
-#return messages final message, unless true/false. multiple messages need to be handled by action
+	export('DiscordBot.'.@discord['serverid'].'.Cache.Messages.Command', @cacheCmd);
+# Send Messages
+	#return messages final message, unless true/false. multiple messages need to be handled by action
 	if(to_lower(@config['CMD_Message_Action']) == 'reply') {
 		@returnMsg['reference_id'] = @discord['id'];
 	}
@@ -2918,8 +3148,18 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 		@sendReturnMsg = true;
 		switch(@CmdReturn) {
 		case 'NoMsg':
+		case 'DuplicateCmd':
+		case 'NoPage':
 			@return = true;
 			@sendReturnMsg = false;
+		case 'RequireReaction':
+			@returnMsg['content'] = 'This command only supports being called via a reaction.';
+			@returnMsg['prefix'][1] = 4;
+			@return = false;
+		case 'RequireBotMsg':
+			@returnMsg['content'] = 'This command only supports messages sent by the bot.';
+			@returnMsg['prefix'][1] = 4;
+			@return = false;
 		case 'NoCmd':
 			@returnMsg['content'] = 'A required command module is not installed.';
 			@returnMsg['prefix'][1] = 1;
@@ -2955,15 +3195,23 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 			@returnMsg['prefix'] = 'discord';
 			@return = true;
 		}
-		if(@sendReturnMsg) { _discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @returnMsg, 'bot', @afterMsg); }
+		if(@sendReturnMsg) {
+			_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @returnMsg, 'bot', @afterMsg); 
+			if(@editMsg > 0 && to_lower(@config['CMD_Message_Action']) != 'delete') { @afterMsg(@replymsgID); }
+		}
 	} else if(is_array(@CmdReturn)) {
 		if(array_index_exists(@CmdReturn, 'content') || array_index_exists(@CmdReturn, 'embed') || array_index_exists(@CmdReturn, 'embeds')) {
+			@return = true;
+			if(array_index_exists(@CmdReturn, 'ret')) {
+				@return = @CmdReturn['ret'];
+				array_remove(@CmdReturn, 'ret');
+			}
 			if(array_index_exists(@CmdReturn, 'dm')) {
 				switch(string(@CmdReturn['dm'])) {
 				case 'true':
 				case 'dm':
 					@discord['UseDM'] = true;
-					@cmdfromdis .= ' (DM reply)';
+					@cmdDisplays['from'] .= ' (DM reply)';
 					@discord['SendChannel'] = @discord['userid'];
 				case 'false':
 				case 'broadcast':
@@ -2986,6 +3234,10 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 			if(array_index_exists(@CmdReturn, 'MCCmd')) {
 				array_remove(@CmdReturn, 'MCCmd');
 			}
+			if(array_index_exists(@CmdReturn, 'AddPageReactions')) {
+				export('DiscordBot.'.@discord['serverid'].'.'.@discord['id'].'.addPageReactions', @CmdReturn['AddPageReactions']);
+				array_remove(@CmdReturn, 'AddPageReactions');
+			}
 			if(array_index_exists(@CmdReturn, 'MC')) {
 				@players = 'players';
 				if(array_index_exists(@CmdReturn, 'players')) {
@@ -3004,7 +3256,7 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 				}
 			}
 			_discordBot_broadcast(@discord['serverid'], @discord['SendChannel'], @CmdReturn, 'discord', @afterMsg);
-			@return = true;
+			if(@editMsg > 0 && to_lower(@config['CMD_Message_Action']) != 'delete') { @afterMsg(@replymsgID); }
 		} else {
 			_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].'\'s command `'.@command[0]'` failed: '.@CmdReturn);
 			@return = false;
@@ -3013,11 +3265,14 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 		@return = @CmdReturn;
 	}
 # Send Log Messages and End.
-	@colorret = 3
-	@retdisplay = '';
-	if(@return === false) { @colorret = 12 @retdisplay = ' (Failed)'; }
+	if(@isPageReact) { 
+		@cmdDisplays['from'] .= ' [React: Page '.@discord['UsePage'].']'; 
+		# Remove user's reaction
+		_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @discord['id'], @discord['emoji'], 'remove', @discord['userid']);
+	}
+	if(@return === false) { @cmdDisplays['retcolor'] = 12; @cmdDisplays['ret'] = ' (Failed)'; }
 	if(array_index_exists(@config, 'CMD_Message_Action')) {
-		if(to_lower(@config['CMD_Message_Action']) == 'delete' && string(@CmdReturn) != 'NotACmd' && @discord['UseDM'] === false) {
+		if(to_lower(@config['CMD_Message_Action']) === 'delete' && string(@CmdReturn) !== 'NotACmd' && @discord['UseDM'] === false && @cmdfrom !== 'reaction') {
 			@hasPerm = _db_check_perms('delete', @discord['serverid'], @discord['channelid']);
 			if(@hasPerm) {
 				try {
@@ -3028,12 +3283,12 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 			} else { _db_msg_Console('Bot does not have permissions to delete command message.', @discord['serverid']) }
 		}
 	}
-	_db_msg_Console('<'.(time() - @StartTime).'ms> '.@discord['username'].' used command'.@cmdfromdis.': '.color(@colorret).@command[0].'  '.color('r').@commanddismc.color('r').@retdisplay, @discord['serverid']);
-		if(array_index_exists(@config, 'CMD_Log_Ignore_Users')) {
+	_db_msg_Console('<'.(time() - @StartTime).'ms> '.@discord['username'].' used command'.@cmdDisplays['from'].': '.color(@cmdDisplays['retcolor']).@command[0].'  '.color('r').@cmdDisplays['mc'].color('r').@cmdDisplays['ret'], @discord['serverid']);
+	if(array_index_exists(@config, 'CMD_Log_Ignore_Users')) {
 		if(array_contains(@config['CMD_Log_Ignore_Users'], @discord['username']) || array_contains(@config['CMD_Log_Ignore_Users'], @discord['userid'])) { @sendLogMsg = false; }
 	}
 	if(@sendLogMsg === true) {
-		_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].' used command'.@cmdfromdis.' `'.@command[0].'`  '.strip_colors(@commanddisdc).@retdisplay);
+		_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].' used command'.@cmdDisplays['from'].' `'.@command[0].'`  '.strip_colors(@cmdDisplays['dc']).@cmdDisplays['ret']);
 	}
 	return(@return);
 }

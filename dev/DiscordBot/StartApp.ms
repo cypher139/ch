@@ -10,7 +10,7 @@
 # ---------------------
 ### App Version Numbers
 #App, Server configs:
-@cfgVersion = array(11,15);
+@cfgVersion = array(11,16);
 # CHDiscord extension
 @requiredVersion = array(2, 15, 0);
 # Types
@@ -105,6 +105,8 @@ if(function_exists('discord_connect') && function_exists('discord_member_info') 
 				# - Leaderboard: Also publishes json to logs. A webserver can pull from this for an online leaderboard display.
 				set_interval(@return8762['AutoSave_Wait'], 100000, closure(){ _discordBot_db_autosave() });
 				_db_mc_broadcast(@connectmsg, '', true);
+				#Load exports
+				# _discordBot_db_autosave('', 'load');
 			} else {
 				discord_disconnect();
 				_db_msg_Console(color(4).'['.color(9).'Server'.color(4).'] '.color(14).'Guild Configurations were not found.'.color(8).'Disconnected from Discord', 'bot');

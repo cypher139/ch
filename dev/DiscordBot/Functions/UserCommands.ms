@@ -3,7 +3,7 @@
 include_dir('../command.library');
 _discordBot_init_cmd_list();
 # Servers commands
-bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority': 'HIGH'), null, @discord) {
+bind('discord_message_received', array('id': 'DiscordBot.CMD.listen.Message', 'priority': 'HIGH'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
@@ -11,8 +11,9 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	@isCmd = false;
 	@isMention = '';
 	@userType = 'User';
-	if(@discord['bot']) { @userType = 'Bot'; }
-	if(@discord['webhook']) { @userType = 'Webhook'; }
+	@userColor = 15;
+	if(@discord['bot']) { @userType = 'Bot'; @userColor = 3; }
+	if(@discord['webhook']) { @userType = 'Webhook'; @userColor = 5; }
 # If channel is not authorized to send to, output to DM instead.
 	@dm = false;
 	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel']) && !array_contains(@config['CMD_Channels_Send'], @discord['channelid'])) { 
@@ -34,7 +35,7 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 	
 	# Action command, all message output is handled from there.
 	if(@isCmd === true) {
-		if(@userType == 'User') {
+		if(@userType === 'User') {
 			consume();
 			@discord['time'] = time();
 			@isMention = _discordBot_ismention(@discord);
@@ -49,16 +50,54 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.Servers', 'priority
 			if(@isMention === true) { @isMention = 'mention'; }
 			@return = _discordBot_handlecommand(@discord, @dm, @isMention);
 		} else {
-			@botcolor = 15
-			if(@userType == 'Bot') { @botcolor = 3; }
-			if(@userType == 'Webhook') { @botcolor = 5; }
-			_db_msg_Console(color(@botcolor).@userType.': '.color(9).@discord['nickname'].color(7).' tried using one of my commands!', @discord['serverid']);
+			_db_msg_Console(color(@userColor).@userType.': '.color(9).@discord['nickname'].color(7).' tried using one of my commands!', @discord['serverid']);
 		}
 	}
 }
 #
+bind('discord_reaction_added', array('id': 'DiscordBot.CMD.listen.Reaction', 'priority': 'HIGH'), null, @discord) {
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
+	@discord['id'] = @discord['messageid'];
+	@botconfig = import('DiscordBot.config.Bot');
+	@config = import('DiscordBot.config.'.@discord['serverid']);
+	@botinfo = import('DiscordBot.Bot.Info');
+	@isCmd = false;
+	@isMention = '';
+	@userType = 'User';
+	@return = null;
+	if(@discord['bot']) { @userType = 'Bot'; }
+	# Webhook not available for thie event. if(@discord['webhook']) { @userType = 'Webhook'; }
+# If channel is not authorized to send to, output to DM instead.
+	@dm = false;
+	if(!array_contains(@config['CMD_Channels_Send'], @discord['channel']) && !array_contains(@config['CMD_Channels_Send'], @discord['channelid'])) { 
+		@discord['channel'] = @discord['userid'];
+		@dm = true;
+	}
+	if(array_contains(@config['CMD_Channels_Receive'], @discord['channel']) || array_contains(@config['CMD_Channels_Receive'], @discord['channelid'])) {
+		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true);
+		@isCmd = _discordBot_iscommand(@discord);
+	}
+	if(@isCmd === true) {
+		if(@userType === 'User') {
+			consume();
+			@discord['time'] = time();
+			@return = _discordBot_handlecommand(@discord, @dm, 'reaction');
+		}
+		@char = ':x:';
+		if(@return === true) { @char = ':white_check_mark:'; } else if(@return === false) { @char = ':x:'; } else { @char = '⁉'; }
+		# Let user know of command completion by adding Success (true), Fail (false), or Question (string) reaction.
+		_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @discord['messageid'], @char, 'add');
+		set_timeout(10000, closure(){
+			_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @discord['messageid'], @char, 'remove');
+		});
+	}
+}
+
+
+#
+#
 # DM commands
-bind('discord_private_message_received', array('id': 'DiscordBot.CMD.DMs', 'priority': 'HIGH'), null, @discord) {
+bind('discord_private_message_received', array('id': 'DiscordBot.CMD.listen.DM', 'priority': 'HIGH'), null, @discord) {
 	@discord['time'] = time();
 	@discord['UseDM'] = true;
 	@botconfig = import('DiscordBot.config.Bot');

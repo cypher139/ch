@@ -26,7 +26,7 @@ foreach(@arg in @args) {
 include_dir('command.library');
 #pseudo array for actions that require event array
 # 777378696782657084 = ASCII: MINECRAFT
-@discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'message': $);
+@discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'playerUUID': puuid(player()), 'message': $);
 
 @config = import('DiscordBot.config.'.@serverID);
 msg('Using Server ID: '.@serverID);

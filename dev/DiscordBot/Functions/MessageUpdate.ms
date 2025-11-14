@@ -1,7 +1,7 @@
 #Notify users of message Updates and reactions, and update bot message caches accordingly.
 proc _db_update_message_cache(@discord, @updateType, @isaction) {
 	@return = array();
-	@msgID = 0
+	@msgID = 0;
 	@msgUserID = @discord['userid'];
 	if(array_index_exists(@discord, 'messageuserid')) { @msgUserID = @discord['messageuserid']; }
 	@userType = 'user';
@@ -16,7 +16,7 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 	}
 	@idtime = rshift(@discord['id'], 22) + 1420070400000
 	@time = time();
-	@diff = @time - @idtime
+	@diff = @time - @idtime;
 	if(@diff > 2000 && @isaction != true) { console('updproc: '.@discord); }
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
@@ -54,7 +54,7 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 	# -- If index not found: Add message id to server/user indexes. -list for debug the index number
 	if(@serverIndex < 0 || @serverIndex == null) {
 		array_insert(@cacheMsgs['server'], @msgID, 0);
-		@serverIndex = 0
+		@serverIndex = 0;
 		@addSi = true;
 	}
 	if(@userIndex < 0 || @userIndex == null) {
@@ -63,7 +63,7 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 			array_insert(@cacheMsgs[@userType][@msgUserID], @msgID, 0);
 			@addUi = true;
 		}
-		@userIndex = 0
+		@userIndex = 0;
 	}
 #edits
 	@newData = array_deep_clone(@cacheMsgs['messages'][@msgID]);
@@ -77,7 +77,7 @@ proc _db_update_message_cache(@discord, @updateType, @isaction) {
 		}
 		@newData['message'] = @discord['message'];
 		if(!array_index_exists(@newData, 'edits')) { @newData['edits'] = 0; }
-		@newData['edits']++
+		@newData['edits']++;
 		@newData['edittime'] = time();
 		@return['after'] = @newData['message'];
 	case 'addreaction':
@@ -128,6 +128,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username']);
 	@embedColor = array('r': 0, 'g': 0, 'b': 200);
 	@memberInfo = array('color': @embedColor, 'avatar': 'https://cdn.discordapp.com/embed/avatars/0.png');
+	@msgDisplay = @discord['message'];
 	if(@discord['webhook'] === true) {
 		@iswebhook = _discordBot_iswebhook(@discord['userid']);
 		@kwCache = import('DiscordBot.webhooks.cache.data', array());
@@ -158,20 +159,15 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 		}
 	}
 	#Message Formatting
-	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] === false) {
-		@discord['message'] = '<Sent a GIF>';
-	}
+	if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] === false) { @msgDisplay = '<Sent a GIF>'; }
 	if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
-		if(@discord['message'] == '') {
-			@discord['message'] = '<Sent a file> ';
-		} else {
-			@discord['message'] = @discord['message'].'\n <Also attached file:> ';
-		}
+		@fileList = array();
+		@msgDisplay .= if(@discord['message'] === '', '<Sent a file> ', '\n <Also attached file:> ');
 		foreach(@num: @attach in @discord['attachments']) {
-			@filenum = 'File: ';
-			if(@num != 0) { @filenum = '  File #'.(@num + 1).': '; }
-			@discord['message'] = @discord['message'].@filenum.@attach['filename'];
+			@fileList[] = @attach['filename'];
+			@msgDisplay .= if(@num === 0, 'File: ', '  File #'.(@num + 1).': ').@attach['filename'];
 		}
+		@discord['filelist'] = @fileList;
 	}
 # Update Recent Messages with current data	
 	@saveMsg = _db_update_message_cache(@discord, 'edit');
@@ -207,7 +203,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 	@logMsg = array('author': array('icon_url': @memberInfo['avatar'], 'name': @discord['username'], 'url': 'https://www.google.com/search?q='.reg_replace('\\W+', '+', @discord['username'])),
 	'title': 'Message Edited in <#'.@discord['channelid'].'>',
 	'url': 'https://discordapp.com/channels/'.@discord['serverid'].'/'.@discord['channelid'].'/'.@discord['id'],
-	'fields': array(array('name': 'Before', 'value': @saveMsg['before'], 'inline': false), array('name': 'After', 'value': @discord['message'], 'inline': false)),
+	'fields': array(array('name': 'Before', 'value': @saveMsg['before'], 'inline': false), array('name': 'After', 'value': @msgDisplay, 'inline': false)),
 	'footer': array('text': 'User ID: '.@discord['userid']),
 	'color': @embedColor,
 	'timestamp': time()
@@ -259,7 +255,7 @@ bind('discord_message_updated', array('id': 'DiscordBot.Message.Update', 'priori
 			if(@isMention === true) { @isMention = 'mention'; }
 			@return = _discordBot_handlecommand(@discord, 'edit', @isMention);
 		} else {
-			@botcolor = 15
+			@botcolor = 15;
 			if(@userType == 'Bot') { @botcolor = 3; }
 			if(@userType == 'Webhook') { @botcolor = 5; }
 			_db_msg_Console(color(@botcolor).@userType.': '.color(9).@userDisplay.color(7).' tried using one of my commands!', @discord['serverid']);
@@ -272,59 +268,37 @@ bind('discord_reaction_added', array('id': 'DiscordBot.Message.React.Add', 'prio
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
-	#Check: Ignore sending messages about Ping log emoji use
-	@isIPemoji = false;
-	@logChannel = '';
-	if(array_index_exists(@config, 'Channels', 'Ping_Log')) { @logChannel = @config['Channels']['Ping_Log']; } else { @logChannel = @config['Channels']['Log']; }
-	if(@discord['messageuserid'] == @botconfig['Bot_ID']) {
-		if(@discord['channelid'] == @logChannel || @discord['channel'] == @logChannel) {
-			if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji'])) { 
-				@isIPemoji = true;
-			} else if(array_index_exists(@config, 'Reaction_Actions', reg_replace('[0-9]', '', @discord['emoji']))) {
-				@isIPemoji = true;
-			}
-		}
-	}
-	# if(@isIPemoji === false) { console('bind-ra:'.@discord); }
+	#Check: Ignore sending messages about reaction commands
+	@isCmdEmoji = if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji']) && is_consumed(), true, false);
+	# if(@isCmdEmoji === false) { console('bind-ra:'.@discord); }
 	@discord['time'] = time();
 	# Update Recent Messages with current data
-	@saveMsg = _db_update_message_cache(@discord, 'addreaction', @isIPemoji);
-	if(@isIPemoji === true) { die(); }
-	@addindex = '';
-	if(@saveMsg['addui'] === true) { @addindex = color(10).'+ui'.color('r'); }
-	if(@saveMsg['addsi'] === true) { @addindex .= color(10).'+si'.color('r'); }
-	#Send to Admin Logs
-	_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message in '.@discord['channel'].'  '.@addindex, @discord['serverid'], 'debug');
+	@saveMsg = _db_update_message_cache(@discord, 'addreaction', @isCmdEmoji);
+	if(@isCmdEmoji === false) {
+		@addindex = '';
+		if(@saveMsg['addui'] === true) { @addindex = color(10).'+ui'.color('r'); }
+		if(@saveMsg['addsi'] === true) { @addindex .= color(10).'+si'.color('r'); }
+		#Send to Admin Logs
+		_db_msg_Console(color(9).@discord['username'].color(10).' added '.color(7).'reaction <'.@discord['emoji'].'> to a message in '.@discord['channel'].'  '.@addindex, @discord['serverid'], 'debug');
+	}
 }
 
 bind('discord_reaction_removed', array('id': 'DiscordBot.Message.React.Remove', 'priority': 'MONITOR'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
-	@isIPemoji = false;
-	@logChannel = '';
-	if(array_index_exists(@config, 'Channels', 'Ping_Log')) { @logChannel = @config['Channels']['Ping_Log']; } else { @logChannel = @config['Channels']['Log']; }
-	#Due to discord stuff reaction removed can't have messageuserid given without extra work, use cache as workaround:
-	@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages');
-	if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()); }
-	if(array_index_exists(@cacheMsgs, 'messages', @discord['messageid'])) {
-		if(@cacheMsgs['messages'][@discord['messageid']]['userid'] == @botconfig['Bot_ID']) {
-			if(@discord['channelid'] == @logChannel || @discord['channel'] == @logChannel) {
-				if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji'])) { 
-					@isIPemoji = true;
-				} else if(array_index_exists(@config, 'Reaction_Actions', reg_replace('[0-9]', '', @discord['emoji']))) {
-					@isIPemoji = true;
-				}
-			}
-		}
-	}
+	#Due to discord api implementations, reaction removed can't have messageuserid given without extra work, use cache as workaround:
+	// @cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages');
+	// if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()); }
+	@isCmdEmoji = if(array_index_exists(@config, 'Reaction_Actions', @discord['emoji']) && is_consumed(), true, false);
 	@discord['time'] = time();
 	# Update Recent Messages with current data
-	@saveMsg = _db_update_message_cache(@discord, 'removereaction', @isIPemoji);
-	if(@isIPemoji === true) { die(); }
-	@addindex = '';
-	if(@saveMsg['addui'] === true) { @addindex = color(10).'+ui'.color('r'); }
-	if(@saveMsg['addsi'] === true) { @addindex .= color(10).'+si'.color('r'); }
-	#Send to Admin Logs
-	_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message in '.@discord['channel'].'  '.@addindex, @discord['serverid'], 'debug');
+	@saveMsg = _db_update_message_cache(@discord, 'removereaction', @isCmdEmoji);
+	if(@isCmdEmoji === false) {
+		@addindex = '';
+		if(@saveMsg['addui'] === true) { @addindex = color(10).'+ui'.color('r'); }
+		if(@saveMsg['addsi'] === true) { @addindex .= color(10).'+si'.color('r'); }
+		#Send to Admin Logs
+		_db_msg_Console(color(9).@discord['username'].color(12).' removed '.color(7).'reaction <'.@discord['emoji'].'> to a message in '.@discord['channel'].'  '.@addindex, @discord['serverid'], 'debug');
+	}
 }

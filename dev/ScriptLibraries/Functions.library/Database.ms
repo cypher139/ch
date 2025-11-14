@@ -11,7 +11,7 @@ if(!is_array(@args)) {
 	@args = parse_args(@args);
 }
 
-msg(@action.', a: '.@args);
+# msg(@action.', a: '.@args);
 @option1 = '';
 @option2 = '';
 if(array_size(@args) <= 0) {
@@ -77,42 +77,60 @@ switch(@action){
 		
 		@vdis = @v;
 		@arraymsg = '';
-		@as = 0
-		@as2 = 0
-		@color = 7
+		@as9 = false;
+		@color = 7;
 		if(is_array(@v)) {
-			@as = array_size(@v);
-			@arraymsg = color(3).' size: '.@as
+			@as = array(array_size(@v));
+			if(@as[0] > 9) { @as9 = true; }
+			@useKeys = array_contains(@args, '-keys');
+			array_remove_values(@args, '-keys');
+			@useSize = array_contains(@args, '-size');
+			array_remove_values(@args, '-size');
+			@useData = @v;
+			@indexPrefix = '';
+			@noIndex = false;
 			if(array_index_exists(@args, 1)) {
-				if(@args[1] == '-keys') {
-					@vdis = color(3).'Keys Only: \n'.color(@color).array_keys(@v);
-				} else if(@args[1] == '-size') {
-					@vdis = color(3).'Array Size: '.color(@color).@as
-				} else if(array_index_exists(@v, @args[1])) {
-					if(is_array(@v[@args[1]])) {
-						@as2 = array_size(@v[@args[1]]);
-						@arraymsg .= color(3).' index size: '.@as2
+				@v2 = @v;
+				@arg2 = array();
+				foreach(@i: @d in @args[1..]) {
+					@j = @i + 1;
+					if(is_array(@v2)) {
+						if(!array_index_exists(@v2, @d)) {
+							@indexPrefix = color(12).'Sub Index #'.@j.': "'.@d.'" was not found!';
+							@noIndex = true;
+							break();
+						}
 					}
-					@vdis = color(3).'Index: '.@args[1].'\n'.color(@color).@v[@args[1]]
-				} else {
-					@vdis = color(12).'Index '.@args[1].' was not found!';
+					@v2 = @v2[@d];
+					if(is_array(@v2)) {
+						@as[] = array_size(@v2);
+						if(@as[-1] > 9) { @as9 = true; }
+						@arg2[] = @d.color(9).' <'.color(5).@as[-1].color(9).'>';
+					} else { @arg2[] = @d; @as[] = 0; }
+					@indexPrefix = color(3).'index'.if(array_size(@as) > 1, 'es', '').': '.color('r').'['.color(3).array_implode(@arg2, color('r').']['.color(3)).color('r').']: ';
+					@useData = @v2;
 				}
 			}
+			@vdis = @indexPrefix;
+			if(!@noIndex) {
+				@vdis .= if(@useKeys && is_array(@useData), color(5).' Keys Only:\n'.color(@color).array_keys(@useData), if(@useSize, color(3).' Array Size:\n'.color(@color).@as[-1], '\n'.color(@color).@useData));
+			}
+			@arraymsg = color(3).' array size'.if(array_size(@as) > 1, 's', '').': '.color(5).array_implode(@as, ', ');
 		} else {
 			switch(@v) {
 			case true:
-				@color = 10
+				@color = 10;
 			case false:
-				@color = 12
+				@color = 12;
 			case null:
-				@color = 8
+				@color = 8;
 			default:
 				if(is_numeric(@v)) { @color = 9; }
 			}
 		}
 		@type = reg_replace('[:]?ms[.]lang[.]', '', typeof(@v));
-		@return = @prefix.color(6).@vPrefix.': '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@vdis
-		if(@as > 9 || @as2 > 9) { @return .= '\n'.@arraymsg; }
+		@return = @prefix.color(6).@vPrefix.': '.color(13).@args[0].color(7).' is_'.@type.@arraymsg.'\n'.color(@color).@vdis;
+		if(@as9) { @return .= '\n'.@arraymsg; }
 		return(@return);
 
 	case 'clearvalue':

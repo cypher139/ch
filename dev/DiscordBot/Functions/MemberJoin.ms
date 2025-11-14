@@ -237,7 +237,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 		}
 # If new member: Add Delineator roles, or roles new users need to have to access server
 # If previous member: Restore old roles.
-		@membersFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former.roles')   
+		@membersFR = get_value('DiscordBot.'.@discord['serverid'].'.members.former.roles');
 		if(!is_array(@membersFR)) { @membersFR = array(); }
 		if(array_index_exists(@membersFR, @discord['userid']) && @config['Welcome_Roles_Restore'] === true) {
 			array_push_all(@currentroles, @membersFR[@discord['userid']]['data']);
@@ -247,7 +247,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			foreach(@rn: @rid in @currentroles) {
 				@rm = false;
 				if(array_index_exists(@hr, @rid) || array_contains(@hr, @rn)) { @rm = true; }
-				if(array_contains_ic(@config['Role_Admins'], @rn) || array_contains(@config['Role_Admins'], @rid)) { @roleAdmin = true @rm = true; }
+				if(array_contains_ic(@config['Role_Admins'], @rn) || array_contains(@config['Role_Admins'], @rid)) { @roleAdmin = true; @rm = true; }
 				if(@rm === true) {
 					array_remove(@currentroles, @rn);
 				}
@@ -298,7 +298,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			@isMember = false;
 			_db_msg_Console('['.@discord['userid'].'] '.@discord['username'].' joined ... and left!??', @discord['serverid']);
 		}
-		if(!array_index_exists(@joininfo, @discord['userid']) && @isMember === true) { 
+		if(!array_index_exists(@joininfo, @discord['userid']) && @isMember === true) {
 			@joininfo[@discord['userid']] = array();
 			@joininfo[@discord['userid']]['time'] = @time;
 			@joininfo[@discord['userid']]['user'] = @discord['username'];
@@ -313,7 +313,7 @@ bind('discord_member_joined', array('id': 'DiscordBot.User.join'), null, @discor
 			}
 			array_remove(@inv, @discord['userid']);
 		}
-		if(array_index_exists(@wm, @discord['userid'])) { 
+		if(array_index_exists(@wm, @discord['userid'])) {
 			if(@isMember === true) {
 				@joininfo[@discord['userid']]['wmid'] = @wm[@discord['userid']];
 			}
@@ -381,10 +381,10 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 	if(is_array(@leaderboard)) {
 		if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { 
 			if(@leaderboard['members'][@discord['userid']]['level'] > 0) {
-				@displays['level'] = '-Level: '.@leaderboard['members'][@discord['userid']]['level']
+				@displays['level'] = '-Level: '.@leaderboard['members'][@discord['userid']]['level'];
 			}
 			if(@config['LB_Options']['Remove_On_Leave'] === true) { @lbremove = 1; }
-			if(@leaderboard['members'][@discord['userid']]['level'] < 6) { @lbremove = 1 }		
+			if(@leaderboard['members'][@discord['userid']]['level'] < 6) { @lbremove = 1; }		
 		}
 	}
 # Remove Welcome message and save invite data
@@ -418,7 +418,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			if(is_array(@joininfo[@discord['userid']]['code'])) {
 			# Multiple Invite Matches
 				@matches = array_implode(@joininfo[@discord['userid']]['code'], '  ');
-				@displays['inviter'] = '-Invites: I\'m not sure which one: '.@matches
+				@displays['inviter'] = '-Invites: I\'m not sure which one: '.@matches;
 			} else if(@joininfo[@discord['userid']]['code'] != '') {
 			# Single Invite Match
 				@inv = get_value('DiscordBot.'.@discord['serverid'].'.Invites');
@@ -434,8 +434,10 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 		}
 		@joininfoFR[@discord['userid']] = @joininfo[@discord['userid']];
 		@joininfoFR[@discord['userid']]['removed'] = time();
+		@joininfoFR[@discord['userid']]['username'] = @discord['username'];
+		@joininfoFR[@discord['userid']]['nickname'] = @discord['nickname'];
 	# New Members:
-		if(time() < (@joininfo[@discord['userid']]['time'] + @config['Welcome_Message_Timeout'])) {
+		if(time() < (@joininfo[@discord['userid']]['time'] + @config['New_User_Time'])) {
 			# Remove leaderboard entry, but don't record in former entry
 			if(is_array(@leaderboard)) {
 				if(array_index_exists(@leaderboard, 'members', @discord['userid'])) { @lbremove = 2; }
@@ -448,7 +450,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 						discord_delete_message(@discord['serverid'], @config['Channels']['Welcome_Message'], @joininfo[@discord['userid']]['wmid']);
 						@wmres = color(8).' <New join>';
 					} catch(Exception @ex) {
-						@wmres = ' Unable to remove Welcome Message!\n'.color(12).@ex['classType'].': '.@ex['message']
+						@wmres = ' Unable to remove Welcome Message!\n'.color(12).@ex['classType'].': '.@ex['message'];
 					}
 				} else {
 					@wmres = ' Member Leave was Not allowed to remove '.@discord['username'].'\'s welcome message.';
@@ -462,7 +464,7 @@ bind('discord_member_left', array('id': 'DiscordBot.User.leave'), null, @discord
 			store_value('DiscordBot.'.@discord['serverid'].'.members.former.roles', @membersFR);
 		}
 		array_remove(@joininfo, @discord['userid']);
-		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo)	
+		store_value('DiscordBot.'.@discord['serverid'].'.Join.info', @joininfo);
 	} else {
 	#If no join info write roles data.
 		@joininfoFR[@discord['userid']] = array('user': @discord['username']);

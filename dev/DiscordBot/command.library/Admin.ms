@@ -75,7 +75,7 @@ proc _discordBot_cmd_whois(@discord, @args) {
 			continue();
 		}
 		@userInfo = discord_member_info(@discord['serverid'], @userID);
-		@userDisplay = _db_get_user_nick(@discord['serverid'], @userID, @userInfo['username']);
+		@userDisplay = _db_get_user_nick(@userID, @discord['serverid'], @userInfo['username']);
 		@embedsExtra = array();
 		if(@showExtraInfo === true) {
 			@lastUserMsgs = array();
@@ -279,119 +279,6 @@ proc _discordBot_cmd_asremove(@discord, @args) {
 	return('Removed '.@userid.' ('.@username.') from Anti-Spam restrictions.');
 }
 
-# Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
-proc _discordBot_cmd_geoiplookup(@discord, @args) {
-	# Requires IP Blacklist script and working shell command.
-	if(!is_proc('_geoip_lookup')) { return('NoCmd'); }
-	@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
-	@raw = false;
-	if(array_contains(@args, 'raw')) {
-		@raw = true;
-		array_remove_values(@args, 'raw');
-	}
-	@checkIPs = array();
-	@rawIPData = array();
-	@msgIPData = array('ISP Database Lookup Results:');
-	# Validate IPs
-	foreach(@i: @v in @args) {
-		if(@v == 'raw') { continue(); }
-		if(@i > 5) { @msgIPData[] = 'Sorry, this command only supports a few IP addresses at a time.'; break(); }
-		@arg = reg_replace('[%][0]$', '', @v);
-		@noip = false;
-		@lan = false;
-		@cgnat = false;
-		@loop = false;
-		if(string_contains(@arg, '/')) { return('CIDR Blocks are not supported in this command.'); }
-		#contains both or neither octet dividers.
-		if(xor(string_contains(@arg, '.'), string_contains(@arg, ':')) === false) { @noip = true; }
-		#v4:
-		if(string_contains(@arg, '.') && !string_contains(@arg, ':')) {
-			if(!is_numeric(replace(@arg, '.', ''))) { @noip = true; }
-			if(reg_count('[.]', @arg) != 3) { @noip = true; }
-		} 
-		#v6:
-		if(!string_contains(@arg, '.') && string_contains(@arg, ':')) {
-			if(reg_count('[G-Zg-z]+', @arg) > 0) { console(reg_match_all('[G-Zg-z]+', @arg)) @noip = true; }
-		}
-		#lan:
-		if(string_starts_with(@arg, '10.') || string_starts_with(@arg, '172.16.') || string_starts_with(@arg, '192.168.') || string_starts_with(@arg, 'fc00:') || string_starts_with(@arg, 'fd00:')) { @lan = true; }
-		#lan: link local:
-		if(string_starts_with(@arg, '169.254.') || string_starts_with(@arg, 'fe80:')) { @lan = true; }
-		#loopback
-		if(string_starts_with(@arg, '127.') || string_ends_with(@arg, '::1')) { @loop = true; }
-		#cgnat:
-		if(string_starts_with(@arg, '100.')) {
-			@split = reg_split('[.:]', @arg);
-			if(@split[1] > 63 && @split[1] < 128) { @cgnat = true; }
-		}
-		if(@noip === true) {
-			@userCheck = 'string';
-			@userCheck = _discordBot_cmd_proc_finduserID(@arg, @discord, true);
-			if(is_numeric(@userCheck) || @userCheck == 'bot' || @userCheck == 'self') {
-				_db_msg_Console(color(8).'Geo IP lookup: '.color(4).@discord['username'].' tried to doxx fellow Discord user '.@arg.'.', @discord['serverid'], 'warning');
-				@say = array('https://media.tenor.com/uvxv8BBNFNYAAAAC/kid-child.gif', 'https://imgs.xkcd.com/comics/wisdom_of_the_ancients.png', 'https://imgs.xkcd.com/comics/second.png', 'https://imgs.xkcd.com/comics/security.png');
-				@footer = 'You thought you had me on that one, didn\'t you? no. XD';
-				if(@userCheck == 'bot') { @footer = 'Haha, I don\'t give up that easily.'; }
-				if(@userCheck == 'self') { @footer = 'You were really going to go that far, huh?'; }
-				return(array('MC': '[Server] Discordian "'.@discord['username'].'" tried to trick me! It was not effective.', 'embed': array('footer': array('text': @footer), 'image': array_get_rand(@say))));
-			}
-			_db_msg_Console(color(12).'Geo IP lookup: Invalid IP given: '.@arg, @discord['serverid'], 'warning');
-			continue();
-		}
-		if(@lan === true) {
-			_db_msg_Console(color(12).'Geo IP lookup: LAN IP given: '.@arg, @discord['serverid'], 'warning');
-			@say = array('https://media.tenor.com/NsarNwOAsf8AAAAd/pipp-petals-worried.gif', 'https://media.tenor.com/QSb5JWCCpzkAAAAd/typing-eric-cartman.gif', 'https://media.tenor.com/4KP456_GUqQAAAAd/infinate-forever.gif', 'https://media.tenor.com/GJLm5GaIKkcAAAAd/rj45-izojo.gif', 'https://media.tenor.com/BKZatJG2ofgAAAAd/linux-breakin.gif');
-			@footer = 'Party time!';
-			if(string_ends_with(@arg, '.1')) { 
-				@say = array('https://media.tenor.com/B6tCkBJVo7kAAAAd/kayizer-kayizerserver.gif', 'https://media.tenor.com/8wD_c9iWsP4AAAAd/ksp-forum-502-bad-gateway.gif', 'https://media.tenor.com/hOgPINkCBA4AAAAd/jayz2cents-computers.gif');
-				@footer = 'That company went out of business years ago.';
-			}
-			return(array('MC': '[Server] Discordian "'.@discord['username'].'" tried to enter a private party! It was not effective.', 'embed': array('footer': array('text': @footer), 'image': array_get_rand(@say))));
-		}
-		if(@cgnat === true) {
-			_db_msg_Console(color(12).'Geo IP lookup: CGNAT reserved IP given: '.@arg, @discord['serverid'], 'warning');
-			@say = array('https://media.tenor.com/zfvF3qUe2GAAAAAd/tallon-griekspoor-shoo.gif', 'https://media.tenor.com/HsYDYDbRcpIAAAAd/chicken-chicken-bro.gif');
-			@footer = 'Bugged out eh?';
-			return(array('MC': '[Server] Discordian "'.@discord['username'].'" likes bugs!', 'embed': array('footer': array('text': @footer), 'image': array_get_rand(@say))));
-		}
-		if(@loop === true) {
-			_db_msg_Console(color(12).'Geo IP lookup: Loopback IP given: '.@arg, @discord['serverid'], 'warning');
-			@say = array('https://media.tenor.com/v0m0sgjo5G4AAAAd/rollin-keep-rollin.gif', 'https://media.tenor.com/x8MVeW7sF4MAAAAd/hot-wheels.gif', 'https://media.tenor.com/-VVnFMnHTCoAAAAd/balthazar-chien.gif', 'https://media.tenor.com/eosED7PskfIAAAAd/funny-you.gif', 'https://media.tenor.com/pyth4Zs3xqMAAAAd/look-in-the-mirror-pam.gif', 'https://media.tenor.com/QQ2qpJ4XhWkAAAAd/inefablejuly-cat-talking-to-itself-on-the-mirror.gif');
-			@footer = 'Keep Calm and Keep Rolling on.';
-			return(array('MC': '[Server] Discordian "'.@discord['username'].'" is rollin!', 'embed': array('footer': array('text': @footer), 'image': array_get_rand(@say))));
-		}
-		@checkIPs[] = @arg;
-	}
-	# Get IP data
-	@ipdb = array();
-	@ipdb = _geoip_lookup(@checkIPs, @raw);
-	if(!is_array(@ipdb)) { return('Error'); }
-	# Parse
-	foreach(@ip in @checkIPs) {
-		@listIPData = '`'.@ip.'` ';
-		if(array_index_exists(@blacklistIP, 'IP_Blacklist')) {
-			if(array_contains(@blacklistIP['IP_Blacklist'], @ip)) {
-				@listIPData .= ' <<IP present on blacklist>>';
-			}
-		}
-		if(@raw === true) { @rawIPData[] = @ip.@ipdb[@ip]['raw']; }
-		if(@ipdb[@ip]['c'] != '') { @listIPData .= ' Country: '.@ipdb[@ip]['c']; }
-		if(@ipdb[@ip]['cn'] != '') { @listIPData .= ' :flag_'.to_lower(@ipdb[@ip]['cn']).':'; }
-		if(@ipdb[@ip]['rc'] != '') { @listIPData .= ' Registered Country: '.@ipdb[@ip]['rc']; }
-		if(@ipdb[@ip]['rcn'] != '') { @listIPData .= ' :flag_'.to_lower(@ipdb[@ip]['rcn']).':'; }
-		if(@ipdb[@ip]['asn'] != '') { @listIPData .= ' ASN: '.@ipdb[@ip]['asn']; }
-		if(@ipdb[@ip]['aso'] != '') { @listIPData .= ' | '.to_lower(@ipdb[@ip]['aso']); }
-		if(@ipdb[@ip]['asn'] != '' && array_index_exists(@blacklistIP, 'Discovered_ASNs', @ipdb[@ip]['asn'])) {
-			if(@blacklistIP['Discovered_ASNs'][@ipdb[@ip]['asn']] > 0) { @listIPData .= ' <ASN present on blacklist>'; } else { @listIPData .= ' <Past ASN>'; }
-		}
-		if(@listIPData != '`'.@ip.'` ') { @msgIPData[] = @listIPData; }
-	}
-	# Returns
-	if(@raw === true) { _discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': array_implode(@rawIPData, '\n')), 'bot'); }
-	if(array_size(@msgIPData) < 2) { @msgIPData[] = '`None Found`'; }
-	return(array_implode(@msgIPData, '\n'));
-}
-
 proc _discordBot_cmd_getperms(@discord, @args) {
 	@serverID = @discord['serverid'];
 	foreach(@arg in @args) {
@@ -450,8 +337,6 @@ proc _discordBot_cmd_error(@discord, @args) {
 			'help': 'Checks all users of your server in search of which users have only "Welcome roles" awarded upon join, or no roles at all. If you are a server admin, a list of matching Users is sent in a DM to you.', 'usage': '<none/welcome> [hideid] [noDM]'),
 	'asremove': array('alias': array('as'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_asremove(@discord, @args)); },
 			'help': 'Removes a Discord User from the bot\'s AntiSpam restrictions. Must specify User ID.', 'usage': '<User ID>'),
-	'geoiplookup': array('alias': array('geoip'), 'admin': false, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_geoiplookup(@discord, @args)); },
-			'help': 'Get basic Geo IP information for an IP Address, such as ASN ID and the organization name.', 'usage': '<IP Address> [2nd IP] [3rd IP] [4th IP] [5th IP]', 'usagenote': 'Checking LAN or otherwise non-public IPs might get you sent a meme.'),
 	'getperms': array('alias': array('checkpermissions'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_getperms(@discord, @args)); },
 			'help': 'Verify any server the bot is connected to has the permissions needed for each function of the bot.', 'usage': '<Server ID>'),
 	'errdebug': array('alias': array('error'), 'admin': true, 'category': 'Admin', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_error(@discord, @args)); })

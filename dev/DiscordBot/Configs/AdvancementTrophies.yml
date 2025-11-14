@@ -1,3 +1,4 @@
+gameVersion: 1.21.11
 advancement_trophy:
   story/root: b
   story/upgrade_tools: b
@@ -30,6 +31,7 @@ advancement_trophy:
   adventure/sniper_duel: b
   adventure/bullseye: b
   adventure/overoverkill: s
+  adventure/spear_many_mobs: b
   husbandry/root: b
   husbandry/place_dried_ghast_in_water: s
   husbandry/safely_harvest_honey: b

@@ -10,20 +10,20 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 	@discord['time'] = @time;
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
-	@noXP = false;
-	if(@discord['bot'] === true || is_consumed() === true) { @noXP = true; }
+	@noXP = if(@discord['bot'] === true || is_consumed() === true, true, false);
 	@userDisplay = _db_get_user_nick(@discord['userid'], @discord['serverid'], @discord['username']);
+	@msgDisplay = @discord['message'];
 	@sendtoMC = false;
 	@sendtoCS = false;
-	if(@discord['channel'] == @config['Channels']['Minecraft'] || @discord['channelid'] == @config['Channels']['Minecraft']) { @sendtoMC = true @sendtoCS = true; }
+	if(@discord['channel'] === @config['Channels']['Minecraft'] || @discord['channelid'] === @config['Channels']['Minecraft']) { @sendtoMC = true; @sendtoCS = true; }
 	if(array_index_exists(@config, 'Channels', 'CS')) {
 		@sendtoCS = false;
-		if(@discord['channel'] == @config['Channels']['CS'] || @discord['channelid'] == @config['Channels']['CS']) { @sendtoCS = true; }
+		if(@discord['channel'] === @config['Channels']['CS'] || @discord['channelid'] === @config['Channels']['CS']) { @sendtoCS = true; }
 	}
 
 # Console: List bot reference mention
 	if(array_index_exists(@discord, 'reference', 'userid')) {
-		if(@discord['reference']['userid'] == @botconfig['Bot_ID']) {
+		if(@discord['reference']['userid'] === @botconfig['Bot_ID']) {
 			_db_msg_Console(color(11).@userDisplay.'\'s '.color(9).'message referenced me! Their message:\n'.color('r').@discord['message'], @discord['serverid']);
 		}
 	}
@@ -41,26 +41,20 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true);
 		# @newuser = _db_is_newmember(@discord['serverid'], @discord['userid']);
 	#Message Formatting
-		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] === false) {
-			@discord['message'] = '<Sent a GIF>';
-		}
+		if(reg_count('^.+\\/\\/tenor\\.com\\/view', @discord['message']) > 0 && @config['URL_Broadcast'] === false) { @msgDisplay = '<Sent a GIF>'; }
 		if(array_index_exists(@discord, 'attachments', 0, 'filename')) {
-			if(@discord['message'] == '') {	
-				@discord['message'] = '<Sent a file> ';
-			} else {
-				@discord['message'] = @discord['message'].'\n <Also attached file:> ';
-			}
+			@fileList = array();
+			@msgDisplay .= if(@discord['message'] === '', '<Sent a file> ', '\n <Also attached file:> ');
 			foreach(@num: @attach in @discord['attachments']) {
-				@filenum = 'File: ';
-				if(@num != 0) { @filenum = '  File #'.(@num + 1).': '; }
-				@discord['message'] = @discord['message'].@filenum.@attach['filename'];
+				@fileList[] = @attach['filename'];
+				@msgDisplay .= if(@num === 0, 'File: ', '  File #'.(@num + 1).': ').@attach['filename'];
 			}
+			@discord['filelist'] = @fileList;
 		}
 	#Save Recent Messages for reference
-		@userType = 'user';
-		if(@discord['bot'] === true) { @userType = 'bot'; }
+		@userType = if(@discord['bot'] === true, 'bot', 'user');
 		if(array_index_exists(@discord, 'channeltype')) {
-			if(@discord['channeltype'] == 'TEXT') {
+			if(@discord['channeltype'] === 'TEXT') {
 				array_remove(@discord, 'channeltype');
 			}
 		}
@@ -114,25 +108,24 @@ bind('discord_message_received', array('id': 'DiscordBot.Message.Receive', 'prio
 				}
 			}
 			foreach(@rN: @rID in @userRoles) {
-				@role = 0
+				@role = 0;
 				if(array_contains_ic(array_keys(@config['Role_Colors']), @rN)) { @role = @rN; }
 				if(array_contains_ic(array_keys(@config['Role_Colors']), @rID)) { @role = @rID; }
-				if(@role != 0) {	
+				if(@role !== 0) {	
 					#Try to ensure an admin role gets picked for color
 					if(@isAdmin === true && !array_contains_ic(@config['Role_Admins'], @role)) { continue(); }
 					@usernamecolor = @config['Role_Colors'][@role];
-	#dev				_db_msg_Console('chose role color: '.@role, @discord['serverid'], 'debug');
+# _db_msg_Console('chose role color: '.@role, @discord['serverid'], 'debug');
 					#Only go with first role found
 					break();
 				}
 			}
 		#Send
-			@sendmsg = color('#'.@usernamecolor).'['.@userDisplay.'] '.color(7).@discord['message'];
+			@sendmsg = color('#'.@usernamecolor).'['.@userDisplay.'] '.color(7).@msgDisplay;
 			if(@discord['bot'] === true) {
 				@sendmsg = color(@usernamecolor).'[Bot]'.@sendmsg;
 			}
-			@sendto = 'players';
-			if(@config['Console_Messages_Chat'] === true) { @sendto = ''; }
+			@sendto = if(@config['Console_Messages_Chat'] === true, '', 'players');
 			_db_mc_broadcast(@sendmsg, @sendto, @config['Console_Messages_Chat'], @checkPermission);
 			if(array_index_exists(@discord, 'attachments', 0, 'filename') && @config['URL_Broadcast'] === true) {
 				foreach(@num: @attach in @discord['attachments']) {
