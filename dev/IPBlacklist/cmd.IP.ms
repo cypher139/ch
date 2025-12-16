@@ -108,13 +108,13 @@ register_command('ip', array(
 				return(true);
 			}
 			@time = time();
-			@serverConfig = import('ipbl.config.Server');
+			@serverConfig = import('IPBlacklist.config.Server');
 			@results = array();
 		# Sub Actions:
 			switch(@cmd) {
 			case 'blacklist':
 		#Check if a given IP is already in IP Blacklist config
-				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+				@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 				@results[] = color(14).'IPs to add to IP Blacklist: ';
 				@listIPData = '';
 				@ipuserdata = import('primus.database.IP');
@@ -168,7 +168,7 @@ register_command('ip', array(
 				}
 			case 'whitelist':
 		#Check if a given IP is already in IP Blacklist config
-				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+				@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 				@results[] = color(3).'IPs to remove from IP Blacklist: ';
 				@listIPData = '';
 				@ipuserdata = import('primus.database.IP');
@@ -284,7 +284,7 @@ register_command('ip', array(
 				if(@update) { store_value('ipbl.ping.add.counts', @addedPingCounts); }
 			case 'check':
 		#Check if a given IP is already in IP Blacklist config
-				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+				@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 				@results[] = color(14).'is IPs on IP Blacklist: ';
 				@listIPData = '';
 				foreach(@arg in @args) {
@@ -312,7 +312,7 @@ register_command('ip', array(
 				} else { @results[] = color(12).'No IPs were given to check?!?!'; }
 			case 'notblock':
 		#Check all IPs for potential blocks to add to list
-				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+				@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 				@results[] = color(14).'All IPs not on a Block Blacklist: ';
 				@listIPData = '';
 				@useLimit = false;
@@ -364,7 +364,7 @@ register_command('ip', array(
 				}
 				if(import('ipbl.cmd.IP.report') == 'auto') { @useMsg = true; @useReturn = false; }
 				export('ipbl.cmd.IP.report', null);
-				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+				@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 				foreach(@type: @typeName in array('ignore': 'Ignored', 'blacklist': 'Blacklisted')) {
 					@count = 0
 					@iplog = get_value('Server.pings.log.'.@type.'.IP');
@@ -584,14 +584,14 @@ register_command('ip', array(
 				if(array_size(@usearray) <= 0) { die(color(12).'No IPs were provided.'); }
 				@obFileData = array('Obnoxious': array());
 				try {
-					@obFileData = yml_decode(read(import('ipbl.config.dir').'/Obnoxious_IPs.yml'));
+					@obFileData = yml_decode(read(import('dir.lp').'/IPBlacklist/Configs/Obnoxious_IPs.yml'));
 				} catch(Exception @ex) {
 					@results[] = color(12).'There was an error with the Obnoxious IP Config file. ';
 					# console(@ex);
 				}
 				@spFileData = array('Spam_Player_Names': array());
 				try {
-					@spFileData = yml_decode(read(import('ipbl.config.dir').'/Spam_Player_Names.yml'));
+					@spFileData = yml_decode(read(import('dir.lp').'/IPBlacklist/Configs/Spam_Player_Names.yml'));
 				} catch(Exception @ex) {
 					@results[] = color(12).'There was an error with the Spam_Player_Names IP Config file. ';
 					# console(@ex);
@@ -659,9 +659,9 @@ register_command('ip', array(
 				if(import('ipbl.cmd.IP.report') !== 'auto') {
 					@results[] = color(6).'Total IPs listed: '.color(9).@ipcount.color(6).' | Total Average Time between pings: '.color(9).@allavgtime.' ('._display_duration(@allavgtime).')';
 				}
-				_write_file(import('ipbl.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.txt', strip_colors(array_implode(@results, '\n')), 'overwrite');
-				_write_file(import('ipbl.logs.dir').'/Average '.@types[@type].' IP Ping times'.@filecurate.'.json', json_encode(@jsoncfg), 'overwrite');
-				_write_file(import('ipbl.logs.dir').'/Average obnoxious IP Ping times'.@filecurate.'.yml', yml_encode(@obnoxData, true), 'overwrite');
+				_write_file('^lp/IPBlacklist/Logs/Average '.@types[@type].' IP Ping times'.@filecurate.'.txt', strip_colors(array_implode(@results, '\n')), 'overwrite');
+				_write_file('^lp/IPBlacklist/Logs/Average '.@types[@type].' IP Ping times'.@filecurate.'.json', json_encode(@jsoncfg), 'overwrite');
+				_write_file('^lp/IPBlacklist/Logs/Average obnoxious IP Ping times'.@filecurate.'.yml', yml_encode(@obnoxData, true), 'overwrite');
 				if(array_size(@obnoxData) > 0 && @showobnoxData) { @results[] = color(14).'Obnoxious: IPs with average times below 1 day and over 10 pings: ('.array_size(@obnoxData).')\n'.color(8).map_implode(@obnoxData, color(9).': ', '\n'.color(8)); }
 				#--
 				@addtoobList = array();
@@ -696,11 +696,11 @@ register_command('ip', array(
 				}
 				if(array_size(@checkobList) > 0 && @enCheckob) { @results[] = color(12).array_size(@checkobList).color(14).' Obnoxious IPs: 20+ pings, with mismatched ping count on list: \n'.color(6).map_implode(@checkobList, color(2).': '.color(12), '\n'.color(6)); }
 				if(@obUpdate) {
-					_write_file(import('ipbl.config.dir').'/Obnoxious_IPs.yml', yml_encode(@obFileData, true), 'overwrite');
+					_write_file('^lp/IPBlacklist/Configs/Obnoxious_IPs.yml', yml_encode(@obFileData, true), 'overwrite');
 				}
 		# Lookup ASN number, ISP, and country of any IP address, using the GeoIP shell command lookup feature.
 			case 'geoip':
-				@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+				@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 				@raw = false;
 				if(array_contains(@args, 'raw')) { 
 					@raw = true;

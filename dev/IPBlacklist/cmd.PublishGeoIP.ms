@@ -38,16 +38,16 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 	@player = '~console';
 	@reportmsg = array();
 	if(function_exists('player')) { @player = player(); }
-	@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+	@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 	@extFileList = array('Source1.txt');
-	if(function_exists('list_files')) { @extFileList = list_files(import('ipbl.config.dir')); }
+	if(function_exists('list_files')) { @extFileList = list_files(import('dir.lp').'/IPBlacklist/Configs'); }
 	@checkIP = @blacklistIP['IP_Blacklist'][];
 	@sourceCount = 1;
 	foreach(@num: @filename in @extFileList) {
 		if(reg_count('^[Ss]ource[0-9][.]txt$', @filename) < 1) { continue(); }
 		@extSource = array();
 		try {
-			@extSource = parse_args(replace(replace(read(import('ipbl.config.dir').'/'.@filename), '\r', ''), '\n', ' '));
+			@extSource = parse_args(replace(replace(read(import('dir.lp').'/IPBlacklist/Configs/'.@filename), '\r', ''), '\n', ' '));
 		} catch(IOException @ex) {
 			_geoip_report_send_msg(@prefixError.color(12).'ext source file "'.@filename.'" could not be read. ', @player, @ex['message']);
 			@extSource = array();
@@ -81,12 +81,13 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 		# if(string_ends_with(@ip, ':')) { @checkIP[@index] .= 0; }
 	}
 	@checkIP = array_sort(array_unique(@checkIP, false), 'REGULAR');
-	@serverConfig = import('ipbl.config.Server');
-	@writeDir = import('ipbl.logs.dir');
+	@serverConfig = import('IPBlacklist.config.Server');
+	@writeDir = import('dir.lp').'/IPBlacklist/Logs';
 	@gitpublish = true;
 	if(array_index_exists(@serverConfig, 'Git_Dir')) { @writeDir = @serverConfig['Git_Dir']; } else { @gitpublish = false; }
 	@time = time();
 	@raw = false;
+	@nomsg = array('a': array(), 'c': array());
 	@ipdb = array();
 	@asnlist = array();
 	@asnc = array();
@@ -101,7 +102,7 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 	@rawfileData = array('Spam_Player_Names': array());
 	foreach(@n in @loadFiles) {	
 		try {
-			@tmp = read(import('ipbl.config.dir').'/'.@n.'.yml');
+			@tmp = read(import('dir.lp').'/IPBlacklist/Configs/'.@n.'.yml');
 			if(array_index_exists(@rawfileData, @n)) { @rawfileData[@n] = @tmp; }
 			@fileData = array_merge(@fileData, yml_decode(@tmp));
 			@tmp = null;
@@ -144,7 +145,7 @@ x_new_thread('GeoIPASNReport'.time(), closure(){
 		}
 		@scReport = integer(array_size(@checkIP) * .10);
 		@s5 = 1;
-console(@scReport.'   /   '.array_size(@checkIP));
+# console(@scReport.'   /   '.array_size(@checkIP));
 		foreach(@i: @ip in @checkIP) {
 			if(@i % @scReport < 1) { 
 				_geoip_report_send_msg(@prefix.color(8).'['.color(3).strip_colors(_progressbar(@s5, array(0, 10, 10), array('-', '.', ' '))).color(8).'] Checked '.color(5).@i.color(8).' of '.color(1).array_size(@checkIP).color(8).' IPs.', @player);
@@ -338,7 +339,7 @@ console(@scReport.'   /   '.array_size(@checkIP));
 		_write_file(@writeDir.'/Reports/Known-ASNs.csv', 'Known ASNs\n'.array_implode(@kASN, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/Known-MC-ASNs.csv', 'Known Minecraft centric spam ASNs\n'.array_implode(@spasnList, '\n'), 'overwrite');
 		_write_file(@writeDir.'/Reports/Obnoxious_IPs.yml', '# '.array_implode(@comment['obnoxious'], '\n# ').'\n'.@fileOB, 'overwrite');
-		_write_file(import('ipbl.config.dir').'/Obnoxious_IPs.yml', '# '.array_implode(@comment['obnoxious'], '\n# ').'\n'.@fileOB, 'overwrite');
+		_write_file('^lp/IPBlacklist/Configs/Obnoxious_IPs.yml', '# '.array_implode(@comment['obnoxious'], '\n# ').'\n'.@fileOB, 'overwrite');
 		_write_file(@writeDir.'/Reports/IP_Block_Blacklist.yml', '# '.array_implode(@comment['blocks'], '\n# ').'\n'.yml_encode(array('IP_Block_Blacklist': @fileData['IP_Block_Blacklist']), true), 'overwrite');
 		_write_file(@writeDir.'/IPBlacklist.yml', '# '.array_implode(@comment['start'], '\n# ').'\n# '.array_implode(@comment['sources'], '\n# ').'\n#\n# '.array_implode(@comment['obnoxious'], '\n# ').'\n'.@fileOB.'#\n'.@rawfileData['Spam_Player_Names'].'\n#\n# '.array_implode(@comment['blocks'], '\n# ').'\n'.yml_encode(array('IP_Block_Blacklist': @fileData['IP_Block_Blacklist']), true).'#\n# '.array_implode(@comment['ip'], '\n# ').'\n'.@newcfg.'\n'.yml_encode(@extracfg, true), 'overwrite');
 		_write_file(@writeDir.'/IPBlacklist.json', json_encode(@jsoncfg), 'overwrite');
@@ -379,7 +380,7 @@ set_cron('@daily', closure(){ _geoip_asn_report(); });
 #------------------------------
 # Update Check for GeoIP Database files
 set_cron('0 23 * * *', closure(){ 
-	@serverConfig = import('ipbl.config.Server');
+	@serverConfig = import('IPBlacklist.config.Server');
 	_download_file('GeoLite2-ASN.mmdb', @serverConfig['LookupIP_DB_Dir']);
 	_download_file('GeoLite2-City.mmdb', @serverConfig['LookupIP_DB_Dir']);
 	_download_file('geoip.py', @serverConfig['LookupIP_DB_Dir'], '', 'create');

@@ -1,3 +1,9 @@
+#Version
+@7y6s = import('cypher139.version', array());
+@7y6s['lib'] = '1.0.1723-'.if(in_cmdline_mode(), 'cmd', 'mc');
+@7y6s['env'] = if(in_cmdline_mode(), 'cmd', 'mc');
+export('cypher139.version', @7y6s);
+
 # Extension Version Check
 if(extension_exists('CHFiles')) {
 	@version = reg_replace('[^0-9.]+', '', extension_info()['CHFiles']['version']);
@@ -36,6 +42,10 @@ set_cron('2 * * * *', closure(){
 	}
 	return(true);
 });
+# LocalPackages Path Setup
+@pf = if(get_os() === 'WINDOWS', '\\', '/');
+@path = if(in_cmdline_mode(), '../', sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages');
+export('dir.lp', file_resolve(@path));
 
 # Minecraft only server function:
 if(!in_cmdline_mode()) {

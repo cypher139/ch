@@ -1,8 +1,8 @@
 bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, @ping) {
-	@blacklistIP = import('ipbl.config.IPBlacklist');
+	@blacklistIP = import('IPBlacklist.config.IPBlacklist');
 	if(!is_array(@blacklistIP)) { @blacklistIP = array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()); }
 	@time = time();
-	@serverConfig = import('ipbl.config.Server');
+	@serverConfig = import('IPBlacklist.config.Server');
 	@pinglevel = @serverConfig['Ping_Message_Level'];
 	# Repeated pings get special message
 	@ip = reg_replace('[%][0]$', '', @ping['ip']);
@@ -130,9 +130,9 @@ bind('server_ping', array('id': 'ipbl.Monitor.Ping', 'priority': 'HIGH'), null, 
 }
 
 bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null, @event) {	
-	@serverConfig = import('ipbl.config.Server');
-	@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
-	@blUUID = import('ipbl.config.UUIDBlacklist', array('UUID_Blacklist': array()));
+	@serverConfig = import('IPBlacklist.config.Server');
+	@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+	@blUUID = import('IPBlacklist.config.UUIDBlacklist', array('UUID_Blacklist': array()));
 	@ipdata = import('primus.database.IP');
 	@ip = reg_replace('[%][0]$', '', @event['ip']);
 	if(!is_array(@ipdata)) { @ipdata = array(); }
@@ -206,7 +206,7 @@ bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null
 		# Add ip to spam player names:
 		@spn = array();
 		try {
-			@spn= yml_decode(read(import('ipbl.config.dir').'/Spam_Player_Names.yml'))['Spam_Player_Names'];
+			@spn= yml_decode(read(import('dir.lp').'/IPBlacklist/Configs/Spam_Player_Names.yml'))['Spam_Player_Names'];
 		} catch(Exception @ex) {
 			_msg_Admins('IP Blacklist', 'error', color(12).'There was an error with the Spam_Player_Names IP Config file.', @ex);
 		}
@@ -219,7 +219,7 @@ bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null
 					@spn[@event['player']] = @array;
 				}
 			} else { @spn[@event['player']] = @ip; }
-			_write_file(import('ipbl.config.dir').'/Spam_Player_Names.yml', yml_encode(array('Spam_Player_Names': @spn), true), 'overwrite');
+			_write_file('^lp/IPBlacklist/Configs/Spam_Player_Names.yml', yml_encode(array('Spam_Player_Names': @spn), true), 'overwrite');
 		}
 	}
 #Handle Player Kick and Admin messages
@@ -237,7 +237,7 @@ bind('player_login', array('id': 'ipbl.Monitor.Login', 'priority': 'HIGH'), null
 
 # Concurrent IP Check: record number of concurrent players connected
 bind('player_join', array('id': 'ipbl.Monitor.Join', 'priority': 'MONITOR'), null, @event) {
-	@serverConfig = import('ipbl.config.Server');
+	@serverConfig = import('IPBlacklist.config.Server');
 	@ip = reg_replace('[%][0]$', '', pinfo(player())[3]);
 	@concurrentList = import('Server.IP.concurrent');
 	if(!is_array(@concurrentList)) { @concurrentList = array(); }
@@ -246,7 +246,7 @@ bind('player_join', array('id': 'ipbl.Monitor.Join', 'priority': 'MONITOR'), nul
 	export('Server.IP.concurrent', @concurrentList);
 }
 bind('player_quit', array('id': 'ipbl.Monitor.Quit', 'priority': 'MONITOR'), null, @event) {
-	@serverConfig = import('ipbl.config.Server');
+	@serverConfig = import('IPBlacklist.config.Server');
 	@ip = reg_replace('[%][0]$', '', pinfo(player())[3]);
 	@concurrentList = import('Server.IP.concurrent');
 	if(!is_array(@concurrentList)) { @concurrentList = array(); }

@@ -112,7 +112,7 @@ proc _discordBot_cmd_pingblacklist(@discord, @args) {
 # Action IPs
 	if(array_size(@checkIPs) > 0) {
 	#Get
-		@blacklistIP = import('ipbl.config.IPBlacklist');
+		@blacklistIP = import('IPBlacklist.config.IPBlacklist');
 		if(!is_array(@blacklistIP)) { array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()); }
 		# Get player name(s) from IP database
 		@ipuserdata = import('primus.database.IP');
@@ -180,7 +180,7 @@ proc _discordBot_cmd_pingblacklist(@discord, @args) {
 proc _discordBot_cmd_geoiplookup(@discord, @args) {
 	# Requires IP Blacklist script and working shell command.
 	if(!is_proc('_geoip_lookup')) { return('NoCmd'); }
-	@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
+	@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array(), 'IP_Block_Blacklist': array()));
 	@raw = if(array_contains(@args, 'raw'), true, false);
 	if(@raw) { array_remove_values(@args, 'raw'); }
 	@cacheID = import('DiscordBot.bot.msg.IP.Review');

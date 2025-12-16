@@ -9,7 +9,7 @@ proc _chat_help() {
 
 }
 if($config == 'help') { _chat_help() die(); }
-
+@name = import('chatmodifier.name');
 @ret = '';
 @prefix = '';
 @type = $type
@@ -17,7 +17,7 @@ switch($type) {
 case 'c':
 case 'Chat':
 	@prefix = 'Chat';
-	@ret = _chat_load_config($config);
+	@ret = _load_yml_config(@name, $config, import(@name.'.cfg.version')[$config]);
 case 'd':
 case 'db':
 case 'DiscordBot':

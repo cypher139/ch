@@ -14,22 +14,19 @@
 # CHDiscord extension
 @requiredVersion = array(2, 15, 0);
 # Types
-@dev = '-dev';
-@envtype = '';
+@dev = import('cypher139.version.dev', '-dev');
+@envtype = if(in_cmdline_mode(), 'cmd', 'mc');
+# ---------------------
+### Version
+@7y6s = import('cypher139.version', array());
+@7y6s['DiscordBot'] = '1.0.'.array_implode(@cfgVersion, '').'.'.array_implode(@requiredVersion, '').'-'.@envtype.@dev;
+export('cypher139.version', @7y6s);
 # ---------------------
 ### Startup Prerequisites
 # Path Setup
-@pf = '/';
-if(get_os() == 'WINDOWS') { @pf = '\\'; }
-@path = '';
-if(in_cmdline_mode()) {
-	@envtype = 'cmd';
-	@path = pwd();
-} else {
-	@envtype = 'mc';
-	@path = sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot';
-}
-export('DiscordBot.version', '1.0.'.array_implode(@cfgVersion, '').array_implode(@requiredVersion, '').'-'.@envtype.@dev);
+@pf = if(get_os() === 'WINDOWS', '\\', '/');
+@path = if(in_cmdline_mode(), pwd(), sys_properties()['user.dir'].@pf.'plugins'.@pf.'CommandHelper'.@pf.'LocalPackages'.@pf.'DiscordBot');
+
 export('DiscordBot.config.dir', file_resolve(@path.@pf.'Configs'));
 export('DiscordBot.logs.dir', file_resolve(@path.@pf.'Logs'));
 export('DiscordBot.test.dir', time());
@@ -47,12 +44,15 @@ if(extension_exists('CHDiscord')) {
 }
 # Command Line specific
 if(in_cmdline_mode()) {
-	@pathparent = reg_replace('[^/]+$', '', pwd());
+	@dirLP = file_resolve('../');
+	export('dir.lp', @dirLP);
 	# Shared Libraries
-    if(array_contains(ls(@pathparent), 'ScriptLibraries')) {
-		include(@pathparent.'/ScriptLibraries/UncaughtException.ms');
-		include(@pathparent.'/ScriptLibraries/Functions.library/Database.ms');
-        include(@pathparent.'/ScriptLibraries/auto_include.ms');
+    if(array_contains(ls(@dirLP), 'ScriptLibraries') || array_contains(ls(pwd()), 'ScriptLibraries')) {
+		@pathPrefix = if(array_contains(ls(@dirLP), 'ScriptLibraries'), @dirLP, pwd());
+		include(@pathPrefix.'/ScriptLibraries/UncaughtException.ms');
+		include(@pathPrefix.'/ScriptLibraries/Functions.library/Database.ms');
+        include(@pathPrefix.'/ScriptLibraries/auto_include.ms');
+        include(@pathPrefix.'/ScriptLibraries/main.ms');
     }
 	# External Scripts
 	# Core Functions

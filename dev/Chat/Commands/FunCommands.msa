@@ -19,6 +19,7 @@ switch($type) {
 		@color = color('f').'Assorted HTML Colors: '.color('#8a00ff').'Purple '.color('#ff0000').'Red '.color('#1bae93').'Turquoise '.color('#ba3e39').'Burnt Orange '.color('#f1c40f').'Yellow '.color('#7289da').'Soft Blue '.color('#aadd00').'Light Green '.color('#ffcc00').'Light Orange';
 	case 'hex':
 		@rgbDisplay = '';
+		include_dir('../../ScriptLibraries/Functions.library');
 		if(is_proc('_hex_to_rgb')) {
 			@rgb = _hex_to_rgb(@usecolor);
 			@rgbDisplay = ' RGB: '.color(12).'R: '.@rgb['r'].' '.color(10).'G: '.@rgb['g'].' '.color(3).'B: '.@rgb['b']

@@ -15,7 +15,8 @@ Spam_Player_Names:
   JustAScanner: 156.253.227.141
   kevincitopito: 85.235.71.200
   kinho_fsc: 170.233.250.30
-  kons0las: 
+  kons0las:
+    - 198.44.157.73  
     - 199.58.83.10
     - 104.28.196.152
     - 104.28.196.153
@@ -36,6 +37,7 @@ Spam_Player_Names:
   ohnepixel: 
     - 23.27.110.36
     - 62.197.152.132
+  ScannerBot: 94.33.33.163
   Schesser: 193.35.18.165
   # Server Seeker and variants: Once discovered keeps checking every 5-15m via 1 second connection through mojang auth, causing "com.mojang.authlib.GameProfile....lost connection: Disconnected" console spam
   ServerSeeker: 

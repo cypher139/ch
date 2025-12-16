@@ -1,107 +1,20 @@
 ### Functions
 
-proc _ipbl_load_config(@cfgtype) {
-	if(@cfgtype == '' || @cfgtype == null) { @cfgtype = 'Server'; }
-	@loadcfg = '';
-	try {
-		@loadcfg = yml_decode(read(import('ipbl.config.dir').'/'.@cfgtype.'.yml'));
-	} catch(IOException @ex) {
-		_msg_Admins('IP Blacklist', 'error', color(12).@cfgtype.' Config file could not be read. ', @ex['message']);
-		return(false);
-	} catch(FormatException @ex) {
-		_msg_Admins('IP Blacklist', 'error', color(12).@cfgtype.' Config file is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message'])); 
-		return(false);
-	} catch(Exception @ex) {
-		_msg_Admins('IP Blacklist', 'error', color(12).'There was an error with the '.@cfgtype.' Config file. ', @ex['message']); 
-		return(false);
-	}
-#Checks:
-	switch(string(@cfgtype)) {
-	case 'Server':
-		if(!array_index_exists(@loadcfg, 'v')) { _msg_Admins('IP Blacklist', 'error', color(12).'Server Config is too old, please update.') return('OldConfig'); }
-		if(@loadcfg['v'] < import('ipbl.cfg.version', array(0,0,0))[0]) {
-			_msg_Admins('IP Blacklist', 'error', color(12).'Server Config for "'.@cfgtype.'" is outdated, please update.');
-			return('OldConfig');
-		}
-		if(array_index_exists(@loadcfg, 'Not_Configured')) {
-			_msg_Admins('IP Blacklist', 'warning', color(12).'Server Config file is still using the default values. Please configure it to your needs!');
-			return(false);
-		}
-	case 'UUIDBlacklist':
-		noop();
-	case 'IPBlacklist':
-		@serverConfig = import('ipbl.config.Server', array('Write_Blacklist_IP_File': false));
-		@kh = import('ipbl.config.IPBlacklist.load.hash', array());
-		@update = false;
-		if(array_index_exists(@loadcfg, 'Obnoxious')) {
-			if(!array_index_exists(@kh, 'o')) { @kh['o'] = sha1(array_keys(@loadcfg['Obnoxious'])); }
-			if(sha1(array_keys(@loadcfg['Obnoxious'])) !== @kh['o']) {
-				@loadcfg['IP_Blacklist'] = array_merge(@loadcfg['IP_Blacklist'], array_keys(@loadcfg['Obnoxious']));
-				@update = true;
-				@kh['o'] = sha1(array_keys(@loadcfg['Obnoxious']));
-			}
-			array_remove(@loadcfg, 'Obnoxious');
-		}
-		if(array_index_exists(@loadcfg, 'Spam_Player_Names')) {
-			if(!array_index_exists(@kh, 's')) { @kh['s'] = sha1(@loadcfg['Spam_Player_Names']); }
-			if(sha1(@loadcfg['Spam_Player_Names']) !== @kh['s']) {
-				@update = true;
-				foreach(@name: @IP in @loadcfg['Spam_Player_Names']) {
-					if(is_array(@IP)) {
-						@loadcfg['IP_Blacklist'] = array_merge(@loadcfg['IP_Blacklist'], @IP);
-					} else {
-						@loadcfg['IP_Blacklist'][] = @IP;
-					}
-				}
-				@kh['s'] = sha1(@loadcfg['Spam_Player_Names']);
-			}
-			array_remove(@loadcfg, 'Spam_Player_Names');
-		}
-		foreach(@index: @ip in @loadcfg['IP_Blacklist']) {
-			if(is_array(@ip)) {
-				if(array_size(@ip) > 1) { throw(FormatException, 'Please re-check your IP Blacklist config, as IP entries are misaligned.'); }
-				@ip = array_implode(array_keys(@ip), '');
-				if(string_ends_with(@ip, ':')) { 
-					@ip .= ':';
-					# @ip .= 0;
-				}
-				_msg_Admins('IP Blacklist', 'warning', color(5).'Correcting '.color(9).'array'.color(5).' in IP: '.color(3).@ip, ' ('.@loadcfg['IP_Blacklist'][@index].')');
-				@loadcfg['IP_Blacklist'][@index] = @ip;
-				@update = true;
-			}
-		}
-		if(@update) {
-			export('ipbl.config.IPBlacklist.load.hash',	@kh);
-			@loadcfg['IP_Blacklist'] = array_unique(@loadcfg['IP_Blacklist']);
-		}
-		_ipbl_save_config(@loadcfg, 'block');
-	default:
-		_msg_Admins('IP Blacklist', 'error', color(14).'Config file given not recognized.');
-		return(false);
-	}
-	@loadTimes = import('ipbl.config.load.time');
-	if(!is_array(@loadTimes)) { @loadTimes = array(); }
-	@loadTimes[@cfgtype] = time();
-	export('ipbl.config.load.time', @loadTimes);
-	export('ipbl.config.'.@cfgtype, @loadcfg);
-	return(@loadcfg);
-}
-
 proc _ipbl_save_config(array @blacklistIP = array(), string @savetype = 'all') {
 	@direct = true;
-	@serverConfig = import('ipbl.config.Server');
+	@serverConfig = import('IPBlacklist.config.Server');
 	if(array_size(@blacklistIP) < 3 || !array_index_exists(@blacklistIP, 'IP_Blacklist')) {
-		@blacklistIP = import('ipbl.config.IPBlacklist');
+		@blacklistIP = import('IPBlacklist.config.IPBlacklist');
 		@direct = false;
 	}
 	if(!is_array(@blacklistIP)) { _msg_Admins('IP Blacklist', 'error', color(14).'No data given to save.'); return(false); }
 #Export, if directly given
 	if(@direct === true && @savetype === 'all') {
-		export('ipbl.config.IPBlacklist', @blacklistIP);
+		export('IPBlacklist.config.IPBlacklist', @blacklistIP);
 	}
 #Save to persistance
 	if(@savetype === 'all' || @savetype === 'store') {
-		store_value('ipbl.config.IPBlacklist', @blacklistIP);
+		store_value('IPBlacklist.config.IPBlacklist', @blacklistIP);
 	}
 #Publish list of blacklisted IPs to a file for use by your firewall.
 	if(@savetype === 'all' || @savetype === 'block') {
@@ -120,8 +33,8 @@ proc _ipbl_save_config(array @blacklistIP = array(), string @savetype = 'all') {
 				if(@ipSizeNew > @ipSizeOld) { @ipSizePrefix = 'Added '.(@ipSizeNew - @ipSizeOld).' IPs to'; }
 				if(@ipSizeNew < @ipSizeOld) {
 					@ipSizePrefix = 'Removed '.(@ipSizeOld - @ipSizeNew).' IPs from';
-					_write_file(import('ipbl.logs.dir').'/ipold.yml', yml_encode(@ipFileList, true), 'OVERWRITE');
-					_write_file(import('ipbl.logs.dir').'/ipnew.yml', yml_encode(@blacklistIP['IP_Blacklist'], true), 'OVERWRITE');
+					_write_file('^lp/IPBlacklist/Logs/ipold.yml', yml_encode(@ipFileList, true), 'OVERWRITE');
+					_write_file('^lp/IPBlacklist/Logs/ipnew.yml', yml_encode(@blacklistIP['IP_Blacklist'], true), 'OVERWRITE');
 				}
 				if(@ipSizePrefix != '') { console('[IP Blacklist] '.@ipSizePrefix.' firewall blacklist.', false); }
 			}
@@ -129,7 +42,7 @@ proc _ipbl_save_config(array @blacklistIP = array(), string @savetype = 'all') {
 	}
 # write ipbl yml
 	if(@savetype === 'all' || @savetype === 'cfg') {
-		_write_file(import('ipbl.config.dir').'/IPBlacklist.yml', yml_encode(@blacklistIP, true), 'OVERWRITE');
+		_write_file('^lp/IPBlacklist/Configs/IPBlacklist.yml', yml_encode(@blacklistIP, true), 'OVERWRITE');
 	}
 	return(true);
 }
@@ -138,7 +51,7 @@ proc _ipbl_pings_write_log(array @ping = array(), string @type = 'ignore', boole
 	@time = time();
 	if(array_size(@ping) <= 0) { return('no data'); }
 	if(@superignore === true) { return('ignored'); }
-	@serverConfig = import('ipbl.config.Server');
+	@serverConfig = import('IPBlacklist.config.Server');
 	@ip = reg_replace('[%][0]$', '', @ping['ip']);
 	@ignoredIPPings = get_value('Server.pings.log.'.@type.'.IP');
 	if(!is_array(@ignoredIPPings)) { @ignoredIPPings = array(); }
@@ -147,10 +60,10 @@ proc _ipbl_pings_write_log(array @ping = array(), string @type = 'ignore', boole
 	array_push(@ignoredIPPings[@ip], @time);
 	if(@ISP != 'Unknown') { @ignoredIPPings['isp'][@ip] = @ISP; }
 	store_value('Server.pings.log.'.@type.'.IP', @ignoredIPPings);
-	_write_file(import('ipbl.logs.dir').'/Ping-Log-'.@type.'-IPs.csv', simple_date('MM-dd-yy HH:mm:ss', @time).','.@ping['ip'].'\n', 'append');
+	_write_file('^lp/IPBlacklist/Logs/Ping-Log-'.@type.'-IPs.csv', simple_date('MM-dd-yy HH:mm:ss', @time).','.@ping['ip'].'\n', 'append');
 	#Optional: publish IP block list to server HTML
 	if(@type == 'blacklist' && @serverConfig['Write_Blacklist_IP_File'] === true) {
-		@blacklistIP = import('ipbl.config.IPBlacklist', array('IP_Blacklist': array()));
+		@blacklistIP = import('IPBlacklist.config.IPBlacklist', array('IP_Blacklist': array()));
 		array_remove(@ignoredIPPings, 'isp');
 		@ipList = array_merge(@blacklistIP['IP_Blacklist'], array_keys(@ignoredIPPings));
 		@ipList = array_sort(@ipList, 'REGULAR');
@@ -214,7 +127,7 @@ proc _download_file(@file, @path, @url, @mode = 'update') {
 }
 
 proc _geoip_lookup(@args, boolean @raw = false) {
-	@serverConfig = import('ipbl.config.Server');
+	@serverConfig = import('IPBlacklist.config.Server');
 	@checkIPs = array();
 	if(!is_array(@args)) { @args = array(@args); }
 	#Setup Check array, validate addresses

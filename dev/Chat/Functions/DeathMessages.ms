@@ -1,6 +1,6 @@
 #version 1.1-tmc
 # Load Server Configs for Minecraft usage
-	@return8239 = _chat_load_config('Death_Messages');
+	@return8239 = _load_yml_config(import('chatmodifier.name'), 'Death_Messages');
 	if(!is_array(@return8239)) { die(); }
 
 bind('player_death', array('id': 'Chat.msg.Death', 'priority': 'NORMAL'), null, @death) {

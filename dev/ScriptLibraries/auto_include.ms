@@ -49,20 +49,83 @@ proc _msg_Admins(string @name = 'CommandHelper', string @type = 'info', string @
 	}
 }
 
+proc _load_yml_config(string @Script, string @config, int @minVersion = 0, @afterLoad = '') {
+	if(!@config) { @config = 'Server'; }
+	if(!@Script) { throw(CastException, 'Must provide Script Name.'); }
+	@data = '';
+	@pf = if(get_os() === 'WINDOWS', '\\', '/');
+	try {
+		@data = yml_decode(read(import('dir.lp').@pf.@Script.@pf.'Configs'.@pf.@config.'.yml'));
+	} catch(IOException @ex) {
+		_msg_Admins(@Script, 'error', color(12).@config.' Config file not recognized or found. ', @ex['message']);
+		return(false);
+	} catch(FormatException @ex) {
+		_msg_Admins(@Script, 'error', color(12).@config.' Config\'s YML is improperly formatted.', '\n'.reg_replace('Improperly formatted YML[:]?', '', @ex['message'])); 
+		return(false);
+	} catch(Exception @ex) {
+		_msg_Admins(@Script, 'error', color(12).'There was an error with the '.@config.' Config file. ', @ex['message']); 
+		return(false);
+	}
+#Checks:
+	if(!is_array(@data)) {
+		_msg_Admins(@Script, 'error', @config.' config file is not formatted.');
+		return(false);
+	}
+	if(@minVersion > 0) {
+		if(!array_index_exists(@data, 'v')) { _msg_Admins(@Script, 'error', color(12).@config.' Config is too old, please update.') return('OldConfig'); }
+		@cfgVersion = import(@Script.'.cfg.version');
+		if(!is_array(@cfgVersion)) { @cfgVersion = array(); }
+		if(!array_index_exists(@cfgVersion, @config)) { _msg_Admins(@Script, 'error', color(12).'Config version not present, please update.') return('OldConfig'); }
+		if(@data['v'] < @cfgVersion[@config]) {
+			_msg_Admins(@Script, 'error', color(12).@config.' Config for "'.@config.'" is outdated, please update.');
+			return('OldConfig');
+		}
+	}
+	if(array_index_exists(@data, 'Not_Configured')) {
+		_msg_Admins(@Script, 'warning', color(14).@config.' Config file is still using the default values. Please configure it to your needs!');
+		return(false);
+	}
+	switch(string(@config)) {
+	case 'Experimental':
+	case 'ex':
+		@servercfg = import(@Script.'.config.Server');
+		@data = array_merge(@data, @servercfg);
+	}
+	if(is_closure(@afterLoad)) { @data = @afterLoad(@data); }
+	@loadTimes = import('cypher139.config.load.time');
+	if(!is_array(@loadTimes)) { @loadTimes = array(); }
+	if(!array_index_exists(@loadTimes, @Script)) { @loadTimes[@Script] = array(); }
+	@loadTimes[@Script][@config] = time();
+	export('cypher139.config.load.time', @loadTimes);
+	export(@Script.'.config.'.@config, @data);
+	return(@data);
+}
+
+
 proc _write_file(string @path, @content, @append, @option) {
 	if(length(@path) < 5) { return(false); }
 	if(!is_bytearray(@content)) {
 		if(length(@content) <= 0) { return(false); }
 	}
-	@pf = '/';
-	@notpf = '\\\\';
-	@pathdrive = '/';
+	#0: NOT this OS, 1: this OS
+	@pf = if(get_os() === 'WINDOWS', array('/', '\\'), array('\\', '/'));
+	@pfR = if(get_os() === 'WINDOWS', array('/', '\\\\'), array('\\\\', '/'));
+	@path = reg_replace('['.@pfR[0].']', @pf[1], @path);
+	# Prefix LocalPackages to path?
+	if(string_starts_with(@path, '^lp')) {
+		#Cmdline: Use parent if requested LP folder is current dir
+		@lpcmd = if(in_cmdline_mode() && string_starts_with(@path, '^lp'.@pf[1].reg_match('[^'.@pfR[1].']+$', pwd())[0]), '../', pwd());
+		@lp = if(in_cmdline_mode(), @lpcmd, sys_properties()['user.dir'].@pf[1].'plugins'.@pf[1].'CommandHelper'.@pf[1].'LocalPackages');
+		@path = file_resolve(replace(@path, '^lp', @lp));
+	}
+	#check for need to resolve
+	@pdcheck = reg_count('^'.if(get_os() === 'WINDOWS', '[A-Za-z]:\\\\', '/'), @path[0..1]);
+	if(!@pdcheck) { @path = file_resolve(@path); }
+	@pd = if(get_os() === 'WINDOWS', @path[0..1].'\\', '/');
 	#backslash escapes on regex: must add extra backslash
-	if(get_os() == 'WINDOWS') { @pf = '\\\\' @notpf = '/' @pathdrive = @path[0..1].'\\'; }
-	@path = reg_replace('['.@notpf.']', @pf, @path);
-	@pathparent = reg_replace('[^'.@pf.']+$', '', @path);
-	@pathlayout = reg_match('(.+)(['.@pf.'].+)(['.@pf.'].+)$', @path);
-	@pathsplit = reg_split(@pf, @path);
+	@pathparent = reg_replace('[^'.@pfR[1].']+$', '', @path);
+	@pathlayout = reg_match('(.+)(['.@pfR[1].'].+)(['.@pfR[1].'].+)$', @path);
+	@pathsplit = reg_split(@pfR[1], @path);
 	array_remove(@pathsplit, 0);
 	# console(@pathlayout);
 	# 1 = root path, 2 = /parent, 3 = /filename or current dir
@@ -83,7 +146,7 @@ proc _write_file(string @path, @content, @append, @option) {
 	}
 	if(extension_exists('CHFiles')) {
 		#Create Parent folder(s);
-		@pathbuild = @pathdrive;
+		@pathbuild = @pd;
 		for(@i = 0, @i < array_size(@pathsplit), @i++) {
 			try {
 				if(!is_dir(@pathbuild)) {
@@ -93,14 +156,14 @@ proc _write_file(string @path, @content, @append, @option) {
 				# You do not have permission to view folder. -- Most likely checking early in path in unprivileged directories outside of CH's base-dir
 				if((@i + 1) == array_size(@pathsplit)) {
 					# Entire path was unavailable to CH, stop here.
-					console('Create Parent Folder: '.@ex);
+					console('[WriteFile:CHFiles] Create Parent Folder: '.@ex);
 					return(false);
 				}
 			}
-			@pathbuild .= @pf.@pathsplit[@i];
+			@pathbuild .= @pf[1].@pathsplit[@i];
 		}
-		# File check: 
-		#	Append: if file does not exist make an empty file 
+		# File check:
+		#	Append: if file does not exist make an empty file
 		#	Create mode: stop if file exists
 		try {
 			if(file_exists(@path)) {
@@ -111,7 +174,7 @@ proc _write_file(string @path, @content, @append, @option) {
 				create_file(@path);
 			}
 		} catch(Exception @ex) {
-			console('Create file: '.@ex);
+			console('[WriteFile:CHFiles] Create file: '.@ex);
 			return(false);
 		}
 		try {
@@ -119,7 +182,7 @@ proc _write_file(string @path, @content, @append, @option) {
 			return(true);
 		} catch(Exception @ex) {
 			msg('File not written, check console logs.');
-			console('Write file: '.@ex);
+			console('[WriteFile:CHFiles] Write file: '.@ex);
 			return(false);
 		}
 	}
@@ -133,7 +196,7 @@ proc _write_file(string @path, @content, @append, @option) {
 				chf_create_file(@path, true);
 			}
 		} catch(Exception @ex) {
-			console('Create file: '.@ex);
+			console('[WriteFile:CHFile] Create file: '.@ex);
 			return(false);
 		}
 		try {
@@ -149,22 +212,22 @@ proc _write_file(string @path, @content, @append, @option) {
 			return(true);
 		} catch(Exception @ex) {
 			msg('File not written, check console logs.');
-			console('Write file: '.@ex);
+			console('[WriteFile:CHFile] Write file: '.@ex);
 			return(false);
 		}	
 	}
 	if(in_cmdline_mode()) {
 		try {
-			x_write(@path, @content, @append)  
+			x_write(@path, @content, @append);
 			return(true);
 		} catch(Exception @ex) {
 			msg('File not written, check console logs.');
-			console('Write file: '.@ex);
+			console('[WriteFile:Cmd] Write file: '.@ex);
 			return(false);
 		}
 	} else {
 		msg('[Write file] No writing method was found.');
-		console(color(12).'[Write file] No writing method was found. '.color(6).'Please install the CHFiles or CHFile extension.');
+		console(color(12).'[Write File] No writing method was found. '.color(6).'Please install the CHFiles or CHFile extension.');
 		return(false);
 	}
 }
