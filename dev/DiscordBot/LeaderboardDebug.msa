@@ -32,6 +32,26 @@ msg('Server: '.@config['Server_Nickname']);
 
 #Serverwide actions
 switch($action) {
+case 'colorcheck':
+	@changes = array('n': 0, 'o': 0);
+	foreach(@id: @d in @leaderboard['members']) {
+		if(!array_index_exists(@d, 'color')) {
+			@changes['n']++;
+			@leaderboard['members'][@id]['color'] = array(255,255,255); 
+			msg(color(12).'No color: '.color(3).@d['username']);
+		}
+		if(!is_array(@d['color'])) { 
+			@changes['o']++;
+			@leaderboard['members'][@id]['color'] = array(255,255,255); 
+			msg(color(14).'Old color: '.color(3).@d['username']); 
+		}
+	}
+	if(@changes['n'] < 1 && @changes['o'] < 1) {
+		msg(color(10).'No Color Changes!');
+	} else {
+		msg(color(11).'Fixed Colors: '.color(7).'None: '.color(14).@changes['n'].color(7).', Old format: '.color(10).@changes['o']);
+	}
+	die();
 case 'lastmessagedatestage1':
 case 'lmd1':
 	@addall = false;
@@ -214,6 +234,42 @@ case 'lessthan':
 	}
 	msg(color(11).'Count: '.@count);
 	die();
+case 'prune':
+	@oldlb = get_value('DiscordBot.'.@serverID.'.members.former.leaderboard');
+	@count = 0;
+	msg(color(9).'Removing Leaderboard entries from those no longer on server:');
+	if(!is_array(@oldlb)) { @oldlb = array(); }
+	@countwc = 0;
+	foreach(@userid: @user in @leaderboard['members']) {
+		try {
+			@userinfo = discord_member_info(@serverID, @userid);
+		} catch(NotFoundException @ex) {
+			#Webhook check
+			@isWebhook = _discordBot_iswebhook(@userid);
+			if(is_null(@isWebhook)) {
+				@countwc++;
+				msg(color(8).'Checking Webhook status for: '.color('r').@user['username'].' <@'.@userid.'>');
+				continue();
+			}
+			if(@isWebhook === false) {
+				@oldlb[@userid] = @user;
+				@oldlb[@userid]['removed'] = time();
+				array_remove(@leaderboard['members'], @userid);
+				msg('Removed: '.@user['username'].' <@'.@userid.'>');
+				@count++;
+			}
+		} catch(Exception @ex) {
+			die(color(12).@ex['classType'].': '.@ex['message']);
+		}
+	}
+	if(@count > 0) {	
+		@leaderboard['lastedit'] = time();
+		export('DiscordBot.Leaderboard', @leaderboard);
+		store_value('DiscordBot.'.@serverID.'.members.former.leaderboard', @oldlb);
+	}
+	msg(color(9).'Removed '.color(if(@count > 0, 11, 10)).@count.color(9).' leaderboard entries.');
+	if(@countwc > 0) { msg(color(1).'Webhooks searches were detected, re-run command again to prune all leaderboard members.'); }
+	die();
 }
 
 #User specific actions
@@ -304,30 +360,5 @@ case 'd':
 	@leaderboard['members'][@id] = array('time': (time() - 70000), 'level': 3, 'xp': 412, 'username': 'TESTNAME', 'message_count': 0);
 	export('DiscordBot.'.@serverID.'.Leaderboard', @leaderboard);
 	msg('Saved default for this ID');
-	
-case 'prune':
-	@oldlb = get_value('DiscordBot.'.@serverID.'.members.former.leaderboard');
-	@count = 0
-	msg('Removing Leaderboard entries from those no longer on server:');
-	if(!is_array(@oldlb)) { @oldlb = array(); }
-	foreach(@userid: @user in @leaderboard['members']) {
-		try {
-			@userinfo = discord_member_info(@serverID, @userid);
-		} catch(NotFoundException @ex) {
-			@oldlb[@userid] = @user;
-			@oldlb[@userid]['removed'] = time();
-			array_remove(@leaderboard['members'], @userid);
-			msg('Removed: '.@user['username'].' <@'.@userid.'>');
-			@count++
-		} catch(Exception @ex) {
-			die(color(12).@ex['classType'].': '.@ex['message']);
-		}
-	}
-	if(@count > 0) {	
-		@leaderboard['lastedit'] = time();
-		export('DiscordBot.Leaderboard', @leaderboard);
-		store_value('DiscordBot.'.@serverID.'.members.former.leaderboard', @oldlb);
-	}
-	msg('Count: '.@count);
 }
 <<<

@@ -31,10 +31,14 @@ proc _db_validate_ip(@v, @discord) {
 	} 
 	#v6:
 	if(!string_contains(@arg, '.') && string_contains(@arg, ':')) {
-		if(reg_count('[^0-9A-Fa-f]+', @arg) > 0 || reg_count('[:]', @arg) < 2) { @noip = true; }
+		if(reg_count('[G-Zg-z]+', @arg) > 0 || reg_count('[:]', @arg) < 2) { @noip = true; }
 	}
 	#lan:
-	@lan = if(string_starts_with(@arg, '10.') || string_starts_with(@arg, '172.16.') || string_starts_with(@arg, '192.168.') || string_starts_with(@arg, 'fc00:') || string_starts_with(@arg, 'fd00:'), true, false);
+	@lan = if(string_starts_with(@arg, '10.') || string_starts_with(@arg, '192.168.') || string_starts_with(@arg, 'fc00:') || string_starts_with(@arg, 'fd00:'), true, false);
+	if(string_starts_with(@arg, '172.')) {
+		@split = reg_split('[.:]', @arg);
+		if(@split[1] > 15 && @split[1] < 32) { @lan = true; }
+	}
 	#lan: link local:
 	if(string_starts_with(@arg, '169.254.') || string_starts_with(@arg, 'fe80:')) { @lan = true; }
 	#loopback

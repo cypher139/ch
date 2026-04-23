@@ -368,6 +368,85 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 }
 
 
+proc _discordBot_cmd_reactionroles(@discord, @args) {
+	@botperms = discord_get_permissions(@discord['serverid']);
+	if(!array_contains(@botperms, 'ADMINISTRATOR') && !array_contains(@botperms, 'MANAGE_ROLES')) {	return('NoPerms'); }
+	@config = import('DiscordBot.config.'.@discord['serverid']);
+	@roleIsAdmin = false;
+	@roleDirection = '';
+	@useEmoji = '';
+	if(array_index_exists(@discord, 'emoji')) {
+		@useEmoji = replace(replace(@discord['emoji'], '<', ''), '>', '');
+	}
+
+	switch(@discord['listener']) {
+	case 'reactionadd':
+	case 'reactionremove':
+		@roleDirection = substr(@discord['listener'], 8);
+	default:
+		#Return message options
+		if(@discord['admin'] === true) {
+			return(array('dm': true, 'content': 'Current Reaction Roles settings: \n Monitored Message IDs: ```'.array_implode(@config['Reaction_Roles_Messages'], '\n').'```\n List of Emojis and their assigned Roles: \n```'.yml_encode(@config['Reaction_Roles'], true).'```'));
+		} else {
+			return('RequireReaction');
+		}
+	}
+	#Only allow specified channels and messages
+	if(array_index_exists(@config, 'Channels', 'Reaction_Roles')) {
+		if(!array_contains(@config['Channels']['Reaction_Roles'], @discord['channel']) && !array_contains(@config['Channels']['Reaction_Roles'], @discord['channelid'])) { return('NoMsg'); }
+	}
+	if(!array_contains(@config['Reaction_Roles_Messages'], @discord['id'])) { return('NoMsg'); }
+	#Get Role to set
+	if(!array_index_exists(@config, 'Reaction_Roles', @useEmoji)) {
+	#overriden in handlecommand atm
+		_db_msg_Console('Reaction Roles: Emoji '.color(10).@discord['emoji'].color('r').' used on Reaction Role message: '.color(9).@discord['id'].color(7).' <#'.@discord['channel'].'>'.color('r').' does not have a configured role ID.', @discord['serverid'], 'warning');
+		_discordBot_broadcast(@discord['serverid'], '--admin', 'Reaction Roles: Emoji '.@discord['emoji'].' used on Reaction Role message: `'.@discord['id'].'` in `#'.@discord['channel'].'` does not have a configured role ID.');
+		return('NoMsg');
+	}
+	#Get rolename and id
+	@totalRoles = get_value('DiscordBot.'.@discord['serverid'].'.roles.total');
+	@roleID = @config['Reaction_Roles'][@useEmoji];
+	@roleName = '';
+	if(!is_numeric(@roleID)) {
+		foreach(@rid: @rn in @totalRoles) {
+			if(@rn != @roleID) { continue(); }
+			@roleID = @rid;
+			@roleName = @rn;
+			break();
+		}
+	} else if(array_index_exists(@totalRoles, @roleID)) {
+		@roleName = @totalRoles[@roleID];
+	}
+	if(!@roleName) { 
+		_db_msg_Console('Reaction Roles: Emoji '.color(10).@discord['emoji'].color('r').' has a configured role that is not recognized: '.@roleID, @discord['serverid'], 'error');	
+		return('Error'); 
+	}
+	
+	
+# Security checks
+# Remove admin roles.
+	# @totalRoles = get_value('DiscordBot.'.@discord['serverid'].'.roles.total');
+	if(array_contains_ic(@config['Role_Admins'], @roleName) || array_contains(@config['Role_Admins'], @roleID)) {
+		@roleIsAdmin = true;
+	}
+	if(@roleIsAdmin === true) {
+	# Disallow awarding admin roles to non-admin
+		if(@discord['admin'] === false) {
+			_discordBot_broadcast(@discord['serverid'], '--admin', 'Reaction Roles: Emoji '.@discord['emoji'].' is configured to give "'.@roleName.'" role, which is designated as an admin role. Action to give this role to non-admin user '.@discord['username'].' was blocked.');
+			return(array('ret': false, 'embeds': array(array('footer': array('text': 'i saw that, nice try. no super cool permissions for you.'), 'image': 'https://media.tenor.com/qfyuBx40-IAAAAAC/patrick-star-dumb.gif'))));
+		}
+	}
+	@return = array('dm': true, 'content': '');
+	@doSetRoles = _discordBot_set_roles(@discord['serverid'], @discord['userid'], @roleDirection, array(@roleID), 'Reaction Roles: '.@roleDirection.' role: '.@roleName, 'Reaction Roles');
+	@serverNick = import('DiscordBot.Servers.Nicknames')[@discord['serverid']];
+	
+	@prefix = if(@roleDirection == 'add', 'Gave you', 'Took away').' the `'.@roleName.'` role at *'.@serverNick.'*!';
+	
+	if(@doSetRoles === false) { return('Error'); } else {
+		@return['content'] = @prefix;
+	}
+	return(@return);
+}
 #Add Commands to List
 @c3lx = import('DiscordBot.Command.List', array());
 @mIu7 = array(	
@@ -376,7 +455,9 @@ proc _discordBot_cmd_transferroles(@discord, @args) {
 	'dmoptions': array('alias': array('dm'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_dmoptions(@discord, @args)); },
 			'help': 'Configure Notfication Privacy Options regarding when you DM the bot.', 'usage': '<options: notifycontent, urlreadback, opt-out>', 'usagenote': 'When you send a DM to the bot, a notification of your DM is sent to each server\'s log channel. You may request that the message content is not displayed in the notification.\n"notifycontent": Toggles displaying your message content in the DM notifications.\n"urlreadback": Toggles DM\'ing you a link to the last sent DM\'s attachments.\n"opt-out": Sets notifycontent and url readback to disabled. You cannot opt-out of sending the notification.'),
 	'transferroles': array('alias': array('trroles'), 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_transferroles(@discord, @args)); },
-			'help': 'Transfer Discord server roles from one account to another. Useful for users reconnecting with your server after they had to switch to a new account.', 'usage': '<From Username or User ID, or undo> <To Username or User ID>', 'usagenote': '-- For server security, any designated server admin roles are not given in the transfer. If you are expecting such a role contact the server\'s moderation team.\n-- Only ONE role transfer is allowed per receiving Discord account.\n-- If the From user has since left the server, the bot will make an effort to search through it\'s internal role cache to find the roles the user had. Depending on the time elapsed this effort may not be successful.\n"undo" as the from username: Undoes a transfer roles transaction for the specified "to" username, and restores the roles of the "to" user to their previous state before the transfer occured.')
+			'help': 'Transfer Discord server roles from one account to another. Useful for users reconnecting with your server after they had to switch to a new account.', 'usage': '<From Username or User ID, or undo> <To Username or User ID>', 'usagenote': '-- For server security, any designated server admin roles are not given in the transfer. If you are expecting such a role contact the server\'s moderation team.\n-- Only ONE role transfer is allowed per receiving Discord account.\n-- If the From user has since left the server, the bot will make an effort to search through it\'s internal role cache to find the roles the user had. Depending on the time elapsed this effort may not be successful.\n"undo" as the from username: Undoes a transfer roles transaction for the specified "to" username, and restores the roles of the "to" user to their previous state before the transfer occured.'),
+	'reactionroles': array('alias': '', 'admin': false, 'category': 'Utility', 'cmd': closure(@discord, @args) { return(_discordBot_cmd_reactionroles(@discord, @args)); },	
+			'help': 'Let your server users award themselves roles by reacting with emojis to specially configured message(s)!', 'usage': '<React to a configured message with the emoji>', 'usagenote': '-- For server security, any designated server admin roles are not given unless user is already an admin.\n-- This command requires an emoji reaction to a message.\n-- To view current settings: Admins may use issue this command directly via a DM to the bot.')
 );
 @c3lx = array_merge(@c3lx, @mIu7);
 export('DiscordBot.Command.List', @c3lx);

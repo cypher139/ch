@@ -5,6 +5,7 @@ _discordBot_init_cmd_list();
 # Servers commands
 bind('discord_message_received', array('id': 'DiscordBot.CMD.listen.Message', 'priority': 'HIGH'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
+	@discord['listener'] = 'message';
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
 	@botinfo = import('DiscordBot.Bot.Info');
@@ -32,7 +33,6 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.listen.Message', 'p
 	
 		@isCmd = _discordBot_iscommand(@discord);
 	}
-	
 	# Action command, all message output is handled from there.
 	if(@isCmd === true) {
 		if(@userType === 'User') {
@@ -55,14 +55,16 @@ bind('discord_message_received', array('id': 'DiscordBot.CMD.listen.Message', 'p
 	}
 }
 #
-bind('discord_reaction_added', array('id': 'DiscordBot.CMD.listen.Reaction', 'priority': 'HIGH'), null, @discord) {
+bind('discord_reaction_added', array('id': 'DiscordBot.CMD.listen.Reaction.Add', 'priority': 'HIGH'), null, @discord) {
 	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
 	@discord['id'] = @discord['messageid'];
+	@discord['listener'] = 'reactionadd';
 	@botconfig = import('DiscordBot.config.Bot');
 	@config = import('DiscordBot.config.'.@discord['serverid']);
 	@botinfo = import('DiscordBot.Bot.Info');
 	@isCmd = false;
 	@isMention = '';
+	@isRR = false;
 	@userType = 'User';
 	@return = null;
 	if(@discord['bot']) { @userType = 'Bot'; }
@@ -77,19 +79,37 @@ bind('discord_reaction_added', array('id': 'DiscordBot.CMD.listen.Reaction', 'pr
 		export('DiscordBot.'.@discord['serverid'].'.CacheUpdate', true);
 		@isCmd = _discordBot_iscommand(@discord);
 	}
+	if(array_contains(@config['Reaction_Roles_Messages'], @discord['id'])) { @isCmd = true; @isRR = true;}
 	if(@isCmd === true) {
 		if(@userType === 'User') {
 			consume();
 			@discord['time'] = time();
 			@return = _discordBot_handlecommand(@discord, @dm, 'reaction');
 		}
-		@char = ':x:';
-		if(@return === true) { @char = ':white_check_mark:'; } else if(@return === false) { @char = ':x:'; } else { @char = '⁉'; }
-		# Let user know of command completion by adding Success (true), Fail (false), or Question (string) reaction.
-		_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @discord['messageid'], @char, 'add');
-		set_timeout(10000, closure(){
-			_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @discord['messageid'], @char, 'remove');
-		});
+	}
+}
+#
+bind('discord_reaction_removed', array('id': 'DiscordBot.CMD.listen.Reaction.Remove', 'priority': 'HIGH'), null, @discord) {
+	if(!array_contains(import('DiscordBot.Servers'), @discord['serverid'])) { die(); }
+	@discord['id'] = @discord['messageid'];
+	@discord['listener'] = 'reactionremove';
+	@botconfig = import('DiscordBot.config.Bot');
+	@config = import('DiscordBot.config.'.@discord['serverid']);
+	@botinfo = import('DiscordBot.Bot.Info');
+	@isCmd = false;
+	@isMention = '';
+	@isRR = false;
+	@userType = 'User';
+	@return = null;
+	if(@discord['bot']) { @userType = 'Bot'; }
+	# Commands currently not setup for usage on remove emoji, unless command requires toggling depending on reaction present or not. - e.g. reaction roles.
+	if(array_contains(@config['Reaction_Roles_Messages'], @discord['id'])) { @isCmd = true; @isRR = true;}
+	if(@isRR === true) {
+		if(@userType === 'User') {
+			consume();
+			@discord['time'] = time();
+			@return = _discordBot_handlecommand(@discord, false, 'reaction');
+		}
 	}
 }
 
@@ -99,6 +119,7 @@ bind('discord_reaction_added', array('id': 'DiscordBot.CMD.listen.Reaction', 'pr
 # DM commands
 bind('discord_private_message_received', array('id': 'DiscordBot.CMD.listen.DM', 'priority': 'HIGH'), null, @discord) {
 	@discord['time'] = time();
+	@discord['listener'] = 'dm';
 	@discord['UseDM'] = true;
 	@botconfig = import('DiscordBot.config.Bot');
 	@servers = import('DiscordBot.Servers');
@@ -120,6 +141,7 @@ bind('discord_private_message_received', array('id': 'DiscordBot.CMD.listen.DM',
 	if(@isCmd === true) {
 		consume();
 		@discord['channel'] = @discord['userid'];
+		@discord['channelid'] = @discord['userid'];
 		@discord['serverid'] = @userserver;
 		@discord['nickname'] = @discord['displayname'];
 		@return = _discordBot_handlecommand(@discord, 'dm', 'dm');

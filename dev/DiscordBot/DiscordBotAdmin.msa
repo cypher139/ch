@@ -26,7 +26,8 @@ foreach(@arg in @args) {
 include_dir('command.library');
 #pseudo array for actions that require event array
 # 777378696782657084 = ASCII: MINECRAFT
-@discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'playerUUID': puuid(player()), 'message': $);
+@playerUUID = if(player() === '~console', player(), puuid(player()));
+@discord = array('admin': true, 'bot': false, 'serverid': @serverID, 'userid': 777378696782657084, 'username': player(), 'playerUUID': @playerUUID, 'message': $);
 
 @config = import('DiscordBot.config.'.@serverID);
 msg('Using Server ID: '.@serverID);
@@ -90,9 +91,14 @@ case 'getmembercount':
 case 'memberinfo':
 	if(!array_index_exists(@args, 0)) { die(color(12).'Specify the Discord user ID to view!'); }
 	try {
-		@gmr = discord_member_info(@serverID, @args[0]);
-		msg(color(10).'Member info:');
-		msg(@gmr);
+		@a = true;
+		@dmi = discord_member_info(@serverID, @args[0]);
+		if(!@a) {
+			array_remove(@dmi, 'avatar');
+			array_remove(@dmi, 'color');
+		}
+		msg(color(10).'Info for member: '.color(3).@args[0]);
+		msg(color(3).map_implode(@dmi, color(9).': ', color(7).'\n'));
 	} catch(NotFoundException @ex) {
 		if(!is_numeric(@args[0])) { die(color(12).'Username was Not Found on Server; to proceed a User ID is required.') }
 		@fr = get_value('DiscordBot.'.@discord['serverid'].'.members.former');

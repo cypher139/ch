@@ -1162,8 +1162,9 @@ proc _discordBot_broadcast(@serverID, @channel, @raw, @origin, @afterMsg) {
 			foreach(@emoji in reg_match_all('[:][^\\s./]+[:]', @message['content'])) {
 				@convertEmoji = true;
 				#returns: {{0: :match:}}
+# console(@serverID.': useother: '.@config['Use_Other_Emojis']);
 				@emojiID = _discordBot_find_emoji(@emoji[0], @serverID, @config['Use_Other_Emojis']);
-console(@emojiID);
+# console(@emojiID);
 				if(array_index_exists(@emojiID, 'NotFound') || array_index_exists(@emojiID, 'UseDefault')) { continue(); }
 				#At this time cannot display emojis if bot is not a member of that server. Emoji Cache still allows for non-member servers to be added
 				if(@emojiID['isbotmember'] === false) {
@@ -1757,7 +1758,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			@invites = get_value('DiscordBot.'.@serverID.'.Invites');
 			@logJointimes = get_value('DiscordBot.'.@serverID.'.log.users.Join.Times');
 			if(!is_array(@logJointimes)) { @logJointimes = array(); }
-			@rrUpdates = 0
+			@rrUpdates = 0;
 			@sortWR = array(123,456);
 			if(@config['Welcome_Roles_Award'] === true) {
 				@sortWR = array_sort(@config['Welcome_Roles'], 'NUMERIC');
@@ -1798,28 +1799,34 @@ proc _discordBot_update_members(@useguild = 0) {
 			foreach(@index: @id in @membersID) {
 		# Member Info (avatar, isBot, Username, etc);
 				@idInfo = '';
-				@idLastMsg = 0
-				@idLevel = 0
+				@idLastMsg = 0;
+				@idLevel = 0;
 				@consoleMsg = '';
 				try {
 					@idInfo = discord_member_info(@serverID, @id);
 				} catch(NotFoundException @ex) {
 					_db_msg_Console('Update Roles: Not found: '.@id, @serverID);
-					@debugstats['nf']++
-					continue()		
+					@debugstats['nf']++;
+					continue();
 				} catch(Exception @ex) {
-					_db_msg_Console('error on id: '.@id.'\n'.@ex['message'], @serverID)		
-					@debugstats['fails']++
+					_db_msg_Console('error on id: '.@id.'\n'.@ex['message'], @serverID);
+					@debugstats['fails']++;
 					continue();
 				}
 				@membersInfo[@id] = @idInfo;
 				@membersNames[@idInfo['username']] = @id;
-				if(@idInfo['displayname'] != null && @idInfo['displayname'] != @idInfo['username']) {
-					@membersNamesDisplay[@idInfo['displayname']] = @id;
+				if(@idInfo['displayname'] != null && @idInfo['displayname'] !== @idInfo['username']) {
+					if(array_index_exists(@membersNamesDisplay, @idInfo['displayname'])) {
+						if(!is_array(@membersNamesDisplay[@idInfo['displayname']])) { @membersNamesDisplay[@idInfo['displayname']] = array(@membersNamesDisplay[@idInfo['displayname']]); }
+						@membersNamesDisplay[@idInfo['displayname']][] = @id;
+					} else {
+						@membersNamesDisplay[@idInfo['displayname']] = @id;
+					}
 				}
 			# Config Updates if bot User
 				if(@id == @config['Bot_ID']) {
-					if(@idInfo['nickname'] != '') { @config['Bot_Name'] = @idInfo['nickname']; } else { @config['Bot_Name'] = @idInfo['nickname']; }
+					@config['Bot_Name'] = if(@idInfo['nickname'] != '', @idInfo['nickname'], @idInfo['displayname']);
+					if(@idInfo['displayname'] == '') { @config['Bot_Name'] = @idInfo['username']; }
 					export('DiscordBot.config.'.@serverID, @config);
 				}
 			# Add User Join time to logs, if not present
@@ -1833,10 +1840,8 @@ proc _discordBot_update_members(@useguild = 0) {
 				if(@config['LB_Enable'] === true && is_array(@leaderboard) && @idInfo['bot'] === false) {
 					if(array_index_exists(@leaderboard, 'members', @id)) {
 						@newavatar = reg_match('([^/]+)[.][A-Za-z]{2,}$', @idInfo['avatar']);
-						@newcolor = 'fff';
-						if(@idInfo['color'] != null) { @newcolor = array(@idInfo['color']['r'],@idInfo['color']['g'],@idInfo['color']['b']); }
 						if(array_index_exists(@newavatar, 1)) { @leaderboard['members'][@id]['avatar'] = @newavatar[1]; }
-						@leaderboard['members'][@id]['color'] = @newcolor;
+						@leaderboard['members'][@id]['color'] = if(@idInfo['color'] === null, array(255,255,255), array(@idInfo['color']['r'],@idInfo['color']['g'],@idInfo['color']['b']));
 						@leaderboard['members'][@id]['username'] = @idInfo['username'];
 						if(@idInfo['nickname'] == null || @idInfo['nickname'] == '') {
 							if(@idInfo['displayname'] == null || @idInfo['displayname'] == '') {
@@ -1856,7 +1861,7 @@ proc _discordBot_update_members(@useguild = 0) {
 			# Roles: Check for No Roles
 				@idRoles = discord_member_get_roles(@serverID, @id);
 				if(!is_array(@idRoles)) {
-					@debugstats['af']++
+					@debugstats['af']++;
 					continue();
 				}
 				if(array_size(@idRoles) <= 0) {
@@ -2024,47 +2029,50 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 			}
 		}
 	}
-	@currentRank = 0
-	@rRoles = 0
+	@currentRank = 0;
+	@rRoles = 0;
 	foreach(@rank: @data in @config['Role_Ranks']) {
 		if(array_contains(@userRoles, @data['RoleID'])) {
 			@currentRank = @rank;
-			@rRoles++
+			@rRoles++;
 		}
 	}
 # Count qualifying roles
-	@qRoles = 0
+	@qRoles = 0;
 	foreach(@role in @config['Role_Ranks_Qualifying_Roles']) {
 		if(array_contains(@userRoles, @role)) {
-			@qRoles++
+			@qRoles++;
 		}
 	}
 # Count role separators
-	@sRoles = 0
+	@sRoles = 0;
 	foreach(@role in @config['Role_Ranks_Separators']) {
 		if(array_contains(@userRoles, @role)) {
-			@sRoles++
+			@sRoles++;
 		}
 	}
 # Count which Bonus Roles are present: If an associated role is not present from above list, then check these additional Roles:
 	if(array_index_exists(@config, 'Role_Ranks_QR_Bonus')) {
-		foreach(@roleNotPresent: @BonusRole in @config['Role_Ranks_QR_Bonus']) {
-			if(!array_contains(@userRoles, @roleNotPresent) && array_contains(@userRoles, @BonusRole)) {
-				@qRoles++
+		foreach(@roleNotPresent: @BR in @config['Role_Ranks_QR_Bonus']) {
+			if(!is_array(@BR)) { @BR = array(@BR); }
+			foreach(@BonusRole in @BR) {
+				if(!array_contains(@userRoles, @roleNotPresent) && array_contains(@userRoles, @BonusRole)) {
+					@qRoles++;
+				}
 			}
 		}
 	}
 # Find which rank matches counted roles
-	@newRank = 0
+	@newRank = 0;
 	@newRankMsg = 'level 0';
 	foreach(@i: @rank in @ranknums) {
-		@lastrank = 0
+		@lastrank = 0;
 		if(@i != 0) {
-			@lastrank = @ranknums[(@i - 1)]
+			@lastrank = @ranknums[(@i - 1)];
 		}
 		if(@qRoles == @rank) {
 			@newRank = @rank;
-			@newRankMsg = @qRoles.' = '.@newRank
+			@newRankMsg = @qRoles.' = '.@newRank;
 			break();
 		}
 		#In Between two ranks
@@ -2082,12 +2090,12 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 		#Has highest rank
 		if(array_size(@ranknums) - 1 == @i && @qRoles > @rank) {
 			@newRank = @rank;
-			@newRankMsg = @qRoles.' > max: '.@newRank
+			@newRankMsg = @qRoles.' > max: '.@newRank;
 			break();
 		}
 	}
 # New roles setup
-	@stats = array('status': @newRankMsg, 'setRoles': false, 'qR': @qRoles, 'rR': @rRoles, 'currentrank': @currentRank, 'newrank': @newRank);
+	@stats = array('status': @newRankMsg, 'setRoles': false, 'sR': @sRoles, 'qR': @qRoles, 'rR': @rRoles, 'currentrank': @currentRank, 'newrank': @newRank);
 	@newRoles = array_deep_clone(@userRoles);
 	foreach(@roledata in @config['Role_Ranks']) {
 		array_remove_values(@newRoles, @roledata['RoleID']);
@@ -2111,17 +2119,17 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 		}
 	}
 # Setup Messages
-	@logmsg = 'Role Ranks: 0 roles'.@rsMsg
+	@logmsg = 'Role Ranks: 0 roles'.@rsMsg;
 	if(@newRank != 0) {
 		@newRoles[] = @config['Role_Ranks'][@newRank]['RoleID'];
-		@logmsg = 'Awarded Role Rank "'.@config['Role_Ranks'][@newRank]['RoleName'].'"'.@rsMsg
+		@logmsg = 'Awarded Role Rank "'.@config['Role_Ranks'][@newRank]['RoleName'].'"'.@rsMsg;
 	}
 	if(@newRank < @currentRank) {
-		@logmsg = 'Role Ranks: Derank! ('.@newRank.' < '.@currentRank.')'.@rsMsg
+		@logmsg = 'Role Ranks: Derank! ('.@newRank.' < '.@currentRank.')'.@rsMsg;
 		@stats['derank'] = true;
 	}
 	if(@newRank == @currentRank && @rRoles > 1) {
-		@logmsg = 'Role Ranks: Removing '.(@rRoles - 1).' of Multiple Rank Roles'.@rsMsg
+		@logmsg = 'Role Ranks: Removing '.(@rRoles - 1).' of Multiple Rank Roles'.@rsMsg;
 	}
 	@stats['logmsg'] = @logmsg;
 # Array compare. sort both role arrays
@@ -2153,16 +2161,16 @@ proc _discordBot_process_role_ranks(@discord, array @userRoles = array(), @isloo
 		@rrMsgType = color(7).'=';
 		if(array_index_exists(@stats, 'derank')) { @rrMsgType = color(14).'>'; }
 		if(@currentRank < @newRank) { @rrMsgType = color(10).'<'; }
-		@rrMsg = @currentRank.' '.@rrMsgType.' '.color('r').@newRank.color(8).' ('.@qRoles.')'.@rsType
+		@rrMsg = @currentRank.' '.@rrMsgType.' '.color('r').@newRank.color(8).' ('.@qRoles.')'.@rsType;
 		if(@currentRank == @newRank && @rRoles > 1) {
-			@rrMsg = @rrMsgPrefix.color(11).'Multiple Rank Roles: '.@rRoles.@rsType
+			@rrMsg = @rrMsgPrefix.color(11).'Multiple Rank Roles: '.@rRoles.@rsType;
 		}
 		if(@isloop === false) {
 			_db_msg_Console(@rrMsgPrefix.@rrMsg, @discord['serverid']);
 		}
 	}
 	if(@isloop === false) {
-		@allstats = get_value('DiscordBot.debug.'.@discord['serverid'].'.rank.stats')	
+		@allstats = get_value('DiscordBot.debug.'.@discord['serverid'].'.rank.stats');
 		if(!is_array(@allstats)) { @allstats = array(); }
 		@allstats[@discord['username']] = @stats;
 		store_value('DiscordBot.debug.'.@discord['serverid'].'.rank.stats', @allstats);
@@ -2813,7 +2821,7 @@ proc _discordBot_iscommand(@discord, @returnType = 'a', @regexPrefix = '^') {
 		}
 	} else {
 		@config = import('DiscordBot.config.'.@discord['serverid']);
-		if(array_index_exists(@discord, 'emoji')) {
+		if(array_index_exists(@discord, 'emoji') && array_index_exists(@config, 'Reaction_Actions')) {
 		# from reaction
 			foreach(@em: @act in @config['Reaction_Actions']) {
 				if(replace(replace(@em, '<', ''), '>', '') === replace(replace(@discord['emoji'], '<', ''), '>', '')) {
@@ -2898,6 +2906,7 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	}
 	@actions = import('DiscordBot.Command.List', array());
 	@commandList = import('DiscordBot.Command.List.Name', array());
+
 	switch(string(@channelType)) {
 	case 'dm':
 	case 'pm':
@@ -2940,7 +2949,7 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 #
 # Handle page args: Reactions for page up/down
 	@isPageReact = false;
-	if(array_index_exists(@discord, 'emoji')) {
+	if(array_index_exists(@discord, 'emoji') && !array_contains(@config['Reaction_Roles_Messages'], @discord['id'])) {
 		switch(@discord['emoji']) {
 		case '◀️':
 		case ':arrow_backward:':
@@ -2992,11 +3001,22 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	if(!array_index_exists(@command, 0)) {
 		if(array_index_exists(@discord, 'emoji')) {
 		# from reaction
-			foreach(@em: @act in @config['Reaction_Actions']) {
-				if(replace(replace(@em, '<', ''), '>', '') === replace(replace(@discord['emoji'], '<', ''), '>', '')) {
-					@cs = if(is_array(@act), @act[0], @act);
-					@command = parse_args(@cs);
-					break();
+			# Reaction Role Message ID specific emoji
+			if(array_contains(@config['Reaction_Roles_Messages'], @discord['id'])) {
+				foreach(@em: @act in @config['Reaction_Roles']) {
+					if(replace(replace(@em, '<', ''), '>', '') === replace(replace(@discord['emoji'], '<', ''), '>', '')) {
+						@command = array('reactionroles', @em);
+						break();
+					}
+				}
+				if(!array_index_exists(@command, 0)) { return('NoRole'); }
+			} else {
+				foreach(@em: @act in @config['Reaction_Actions']) {
+					if(replace(replace(@em, '<', ''), '>', '') === replace(replace(@discord['emoji'], '<', ''), '>', '')) {
+						@cs = if(is_array(@act), @act[0], @act);
+						@command = parse_args(@cs);
+						break();
+					}
 				}
 			}
 		} else {
@@ -3143,7 +3163,7 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 	if(to_lower(@config['CMD_Message_Action']) == 'reply') {
 		@returnMsg['reference_id'] = @discord['id'];
 	}
-	@returnMsg['prefix'] = array('confirm', true);
+	@returnMsg['prefix'] = array('confirm', 0);
 	if(is_string(@CmdReturn)) {
 		@sendReturnMsg = true;
 		switch(@CmdReturn) {
@@ -3152,6 +3172,7 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 		case 'NoPage':
 			@return = true;
 			@sendReturnMsg = false;
+			@sendLogMsg = false;
 		case 'RequireReaction':
 			@returnMsg['content'] = 'This command only supports being called via a reaction.';
 			@returnMsg['prefix'][1] = 4;
@@ -3283,12 +3304,22 @@ proc _discordBot_handlecommand(@discord, @channelType, @cmdfrom) {
 			} else { _db_msg_Console('Bot does not have permissions to delete command message.', @discord['serverid']) }
 		}
 	}
-	_db_msg_Console('<'.(time() - @StartTime).'ms> '.@discord['username'].' used command'.@cmdDisplays['from'].': '.color(@cmdDisplays['retcolor']).@command[0].'  '.color('r').@cmdDisplays['mc'].color('r').@cmdDisplays['ret'], @discord['serverid']);
 	if(array_index_exists(@config, 'CMD_Log_Ignore_Users')) {
 		if(array_contains(@config['CMD_Log_Ignore_Users'], @discord['username']) || array_contains(@config['CMD_Log_Ignore_Users'], @discord['userid'])) { @sendLogMsg = false; }
 	}
+	@consoleLogMsg = '<'.(time() - @StartTime).'ms> '.@discord['username'].' used command'.@cmdDisplays['from'].': '.color(@cmdDisplays['retcolor']).@command[0].'  '.color('r').@cmdDisplays['mc'].color('r').@cmdDisplays['ret'];
 	if(@sendLogMsg === true) {
+		_db_msg_Console(@consoleLogMsg, @discord['serverid']);
 		_discordBot_broadcast(@discord['serverid'], '--admin', @discord['username'].' used command'.@cmdDisplays['from'].' `'.@command[0].'`  '.strip_colors(@cmdDisplays['dc']).@cmdDisplays['ret']);
+	# Let user know of command completion by adding Success (true), Fail (false), or Question (string) reaction.
+		@char = ':x:';
+		if(@return === true) { @char = ':white_check_mark:'; } else if(@return === false) { @char = ':x:'; } else { @char = '⁉'; }
+		_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @discord['id'], @char, 'add');
+		set_timeout(5000, closure(){
+			_discordBot_add_reaction(@discord['serverid'], @discord['channelid'], @discord['id'], @char, 'remove');
+		});
+	} else {
+		_db_msg_Console(@consoleLogMsg, @discord['serverid'], 'debug');
 	}
 	return(@return);
 }
@@ -3318,13 +3349,36 @@ proc _discordBot_init_cmd_list(@test) {
 }
 
 
-proc _discordBot_cmd_proc_finduserID(@target, @discord, @nodm = false) {
+proc _discordBot_cmd_proc_finduserID(@target, @discord, @nodm = false, @mode) {
 	@botconfig = import('DiscordBot.config.Bot');
 	if(!array_index_exists(@discord, 'serverid')) { @discord['serverid'] = @botconfig['Primary_Guild']; }
 	if(!array_index_exists(@discord, 'userid')) { @discord['userid'] = null; }
 	if(!array_index_exists(@discord, 'channelid')) { @discord['channelid'] = 0; }
 	if(!array_index_exists(@discord, 'id')) { @discord['id'] = 0; }
 	@config = import('DiscordBot.config.'.@discord['serverid']);
+	@strict = false;
+	if(@mode == '' || @mode == null) {
+		if(array_index_exists(@config, 'Find_User_Search_Mode')) {
+			@mode = @config['Find_User_Search_Mode'];
+		} else {
+			@mode = true;
+		}
+	}	
+	switch(string(@mode)) {
+	case 'guess':
+	case 'false':
+		@strict = false;
+	case 'strict':
+	case 'true':
+	default:
+		@strict = true;
+	}
+	#Tag check
+	@tag = 0;
+	if(reg_count('[#][0-9]{4}$', @target) > 0) {
+		@tag = reg_match('[0-9]{4}$', @target)[1];
+		@target = reg_replace('[#][0-9]{4}$', '', @target);
+	}
 	@membernames = get_value('DiscordBot.'.@discord['serverid'].'.members.names');
 	@membernamesDisplay = get_value('DiscordBot.'.@discord['serverid'].'.members.names.display');
 	@useDisplay = false;
@@ -3332,7 +3386,7 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord, @nodm = false) {
 	if(!is_array(@membernames)) { @membernames = array(); }
 	if(is_numeric(@target)) {
 		if(@target == @config['Bot_ID']) { return('bot'); }
-		if(@target == @discord['userid'] && @discord['UseDM'] === false) { return('self') }	
+		if(@target == @discord['userid'] && @discord['UseDM'] === false) { return('self'); }	
 		try {
 			@memberroles = discord_member_get_roles(@discord['serverid'], @target);
 		} catch (NotFoundException @ex) {
@@ -3341,7 +3395,7 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord, @nodm = false) {
 		}
 		return(@target);
 	} else {
-		if(@target == '' || @target == null) { return('notfound'); }
+		if(!@target) { return('notfound'); }
 		@target = replace(@target, '@', '');
 		if(reg_count('^[@]?'.@config['Bot_Name'].'[#]?[0-9]{0,4}?$', @target) > 0) {
 			return('bot');
@@ -3355,52 +3409,96 @@ proc _discordBot_cmd_proc_finduserID(@target, @discord, @nodm = false) {
 			return('self');
 		case '.':
 		case '^':
+		case '^^':
 			@cacheMsgs = import('DiscordBot.'.@discord['serverid'].'.Cache.Messages');
 			if(!is_array(@cacheMsgs)) { @cacheMsgs = array('messages': array(), 'bot': array(), 'user': array(), 'server': array()); }
-			@isUser = 0
+			@isUser = 0;
 			foreach(@sid in @cacheMsgs['server']) {
-				if(@cacheMsgs['messages'][@sid]['channelid'] != @discord['channelid']) { continue(); }
-				if(@cacheMsgs['messages'][@sid]['userid'] == @botconfig['Bot_ID']) { continue(); }
-				if(@cacheMsgs['messages'][@sid]['id'] == @discord['id']) { continue(); }
+				if(@cacheMsgs['messages'][@sid]['channelid'] !== @discord['channelid']) { continue(); }
+				if(@cacheMsgs['messages'][@sid]['userid'] === @botconfig['Bot_ID']) { continue(); }
+				if(@cacheMsgs['messages'][@sid]['id'] === @discord['id']) { continue(); }
 				@isUser = @cacheMsgs['messages'][@sid]['userid'];
 				# console('break: '.@cacheMsgs['messages'][@sid]['id']);
 				break();
 			}
-			if(@isUser != 0) { return(@isUser); } else { return('notfound'); }
+			if(@isUser > 0) { return(@isUser); } else { return('notfound'); }
 		}
 		if(length(@target) < 2) { 
 			if(@target != '.' && @target != '_') { return('notfound'); }
-		}
-		#Check matches
-		@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array');
-		#Recheck with tag, if exists
-		if(reg_count('[#][0-9]{4}$', @target) > 0 && !array_index_exists(@targetmatches, 0)) {
-			@target = reg_replace('[#][0-9]{4}$', '', @target);
-			@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array');
-		}
-		#Check Display names if not found in username
-		if(!array_index_exists(@targetmatches, 0)) {
-			@targetmatches = _array_string_contains(array_keys(@membernamesDisplay), @target, '', 'array');
-			@useDisplay = true;
 		}
 		if(array_index_exists(@discord, 'username')) {
 			if(equals_ic(@target, @discord['username'])) { return('self'); }
 		}
 		if(array_index_exists(@discord, 'nickname')) {
-			if(equals_ic(@target, @discord['nickname'])) { return('self'); }
+			if(equals_ic(@target, @discord['nickname']) || equals_ic(@target.'#'.@tag, @discord['nickname'])) { return('self'); }
 		}
 		if(array_index_exists(@discord, 'displayname')) {
-			if(equals_ic(@target, @discord['displayname'])) { return('self'); }
+			if(equals_ic(@target, @discord['displayname']) || equals_ic(@target.'#'.@tag, @discord['displayname'])) { return('self'); }
 		}
-		_db_msg_Console('finduserID: matches ('.array_size(@targetmatches).'): '.@targetmatches, @discord['serverid'], 'debug');
-		
+		#Check matches
+		@ut = if(@tag > 0, @target.'#'.@tag, @target);
+		@targetmatches = _array_string_contains(array_keys(@membernames), @ut, '', 'array');
+		#Recheck with tag, if exists
+		if(@tag > 0 && !array_index_exists(@targetmatches, 0)) {
+			@targetmatches = _array_string_contains(array_keys(@membernames), @target, '', 'array');
+		}
+		#Check Display names if not found in username
+		if(!array_index_exists(@targetmatches, 0)) {
+			@targetmatches = _array_string_contains(array_keys(@membernamesDisplay), @ut, '', 'array');
+			@useDisplay = true;
+		}
+		@ret = '';
+		if(@useDisplay) {
+			foreach(@e in @targetmatches) {
+				if(array_index_exists(@membernamesDisplay, @e)) {
+					if(is_array(@membernamesDisplay[@e])) {
+						_db_msg_Console('finduserID: Same display name "'.@e.'" has multiple User IDs: '.array_size(@e).if(@strict, ' [s]', '').'!: '.@e, @discord['serverid'], 'debug');
+						if(@discord['userid'] != null && @nodm === false) {
+							@dmMsg = 'I found multiple Users with the name `'.@e.'`! You\'ll have to be more specific, such as providing the desired User ID.';			
+							if(length(array_implode(@membernamesDisplay[@e], ', ')) < 800) { @dmMsg .= ' User IDs Matched: ('.array_size(@membernamesDisplay[@e]).'):\n'.array_implode(@membernamesDisplay[@e], ', '); }
+							_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': @dmMsg), 'bot');
+						}
+						return('multiple');
+					}
+				}
+			}
+		}
+		_db_msg_Console('finduserID: matches ('.array_size(@targetmatches).')'.if(@strict, ' [s]', '').': '.@targetmatches, @discord['serverid'], 'debug');
+		# Non-Strict: Multiple:
+		#		get highest XP (if guess)
+		if(array_index_exists(@targetmatches, 1) && @strict === false) {
+			@leaderboard = import('DiscordBot.'.@discord['serverid'].'.Leaderboard');
+			@useMatch = '';
+			@useXP = 0;
+			foreach(@id: @d in @leaderboard['members']) {
+				foreach(@e in @targetmatches) {
+					@c = false;
+					if(array_index_exists(@d, 'nickname')) {
+						if(@d['nickname'] !== '' && equals_ic(@d['nickname'], @e)) { @c = true; }
+					# } else {
+						# _db_msg_Console('no nick: '.@id.' '.@d, @discord['serverid'], 'debug');
+					}
+					if(equals_ic(@d['username'], @e)) { @c = true; }
+					if(@c && @d['xp'] > @useXP) {
+						@useXP = @d['xp'];
+						@useMatch = @e;
+					}
+				}
+			}
+			if(@useMatch !== '') {
+				@targetmatches = array(@useMatch);
+				_db_msg_Console('finduserID: matches: LB picked: '.@useMatch.' ('.@useXP.'xp)', @discord['serverid'], 'debug');
+			}
+		}
+		#		 Todo: check manual user
+		#
 		if(!array_index_exists(@targetmatches, 0)) {
 			_db_msg_Console('Could not find user ID for '.@target.'!', @discord['serverid']);
 			return('notfound');
 		} else if(array_index_exists(@targetmatches, 1)) {
 			if(@discord['userid'] != null && @nodm === false) {
-				@dmMsg = 'I found multiple users with that search; I\'m not sure which one you meant to apply this command to.'				
-				if(length(array_implode(@targetmatches, ', ')) < 800) {	@dmMsg .= ' Users Matched ('.array_size(@targetmatches).'):\n'.array_implode(@targetmatches, ', '); }
+				@dmMsg = 'I found multiple users matching that search; I\'m not sure which one you meant to apply this command to.';			
+				if(length(array_implode(@targetmatches, ', ')) < 800) { @dmMsg .= ' Users Matched ('.array_size(@targetmatches).'):\n'.array_implode(@targetmatches, ', '); }
 				_discordBot_broadcast(@discord['serverid'], @discord['userid'], array('dm': true, 'content': @dmMsg), 'bot');
 			}
 			_db_msg_Console('finduserID: Matched Multiple Users ('.array_size(@targetmatches).'):\n'.array_implode(@targetmatches, ', '), @discord['serverid'], 'debug');

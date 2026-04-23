@@ -1,6 +1,6 @@
 # discordBot Guild Configuration
 # Config version number
-v: 16
+v: 17
 # General admin
 Server_Nickname: "Your Server"
 #
@@ -36,6 +36,9 @@ Channels:
   #Showcase: 123235346
   # Showcase: What channel should users be redirected to in order to keep chatting about the project?
   #Showcase_Talk: 987654213
+  # Reaction Roles Channel
+  # If set, Reaction roles only occur on this channel (supports multiple channels)
+  # Reaction_Roles: roles
 
 
 # Send message to Console: Includes logs such as Member joins, voice chat joins, Bot DM notifications, and Discord Command usage.
@@ -89,6 +92,10 @@ AS_Timeout_User: true
 AS_Brand_User: true
 # Log various User Info in the Spam alert message?
 AS_Log_ShowUserInfo: true
+# New Users: What domain names in a link are not allowed to be posted by a new user?
+AS_New_User_Domain_Blacklist:
+  - telegram.com
+  - mega.nz
 # Safe URLs:
 # What sites are allowed on "safe URL sources only" channels?
 AS_Safe_URL_Sites:
@@ -249,6 +256,9 @@ Reaction_Actions:
   1️⃣: 1to100
 
 #
+# Find user search: if multiple matches, should we try to guess a user, or ask caller to narrow down search for us?
+# Strict or true: Ask user, Guess or false: Try to pick one, ask if no luck.
+Find_User_Search_Mode: false
 # Command Options
 # Command: fakeadmin
 # What role do you use to award as a joke / fake Admin role? (DO NOT give a real admin role here)
@@ -259,6 +269,19 @@ Fake_Admin_Rolename: "Super Admin"
 Whitelist_Role: 123456
 # How many whitelists are allowed per player? (If no limit desired set to a high number)
 Whitelist_Allowed_Uses: 5
+#
+#
+# Reaction Roles:
+# List of approved message IDs to listen to
+Reaction_Roles_Messages:
+- 123
+- 456
+# List of emojis that apply a role.
+#Supported Formats:
+# Default emoji:  unicode emoji: roleID
+# Custom Emoji:  EmojiName:numericID: roleID
+Reaction_Roles:
+  ❔: 28761
 #
 #
 #Admin
@@ -428,7 +451,7 @@ LB_Options:
   Web_ShowID: false
 # If a user has a Nickname or display name, show their username as well?
   Web_ShowNickUser: false
-# For leaderboards showing if seomone left the server, should we show that date?
+# For leaderboards showing if someone left the server, should we show that date?
   Web_ShowLeave: false
 #
 #

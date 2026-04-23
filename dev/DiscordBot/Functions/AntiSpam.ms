@@ -76,6 +76,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 	@flagDesc = array(
 		'newlimit': '*New* user has talked on more than the limit of %count% different channels.',
 		'newglobalping': '*New* user used a global mention: `%word%`',
+		'newdomain': '*New* user sent a link to domain %domain% which is blacklisted for posting by new users.',
 		'dupe': 'Duplicated same message',
 		'fastchannel': 'Chatted on %count% channels too quickly',
 		'fastmsg': 'Sent messages very quickly',
@@ -283,6 +284,18 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				@flagDesc['newglobalping'] = replace(@flagDesc['newglobalping'], '%word%', @word);
 			}
 		}
+	#Check if link sent includes a domain not allowed for posting by a new user.
+		if(array_index_exists(@config, 'AS_New_User_Domain_Blacklist') && array_contains(@userFlags, 's-url')) {
+			foreach(@i: @url in @messageURLs) {
+				@domain = if(is_null(@url[2]), @url[3], @url[2].@url[3]);
+				if(array_contains(@config['AS_New_User_Domain_Blacklist'], @domain)) {
+					@adduser = true;
+					@userFlags[] = 'newdomain';
+					@flagDesc['newdomain'] = replace(@flagDesc['newdomain'], '%domain%', @domain);
+					break();
+				}
+			}
+		}
 	}
 # Ignore Checks:
 	# Message sent in a No XP (ignored) channel
@@ -307,6 +320,14 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			@asmembers[@discord['userid']] = array('flags': @userFlags, 'log': false, 'rtime': @time, 'time': @time, 'username': @discord['username'], 'notes': '', 'triggercount': 0);
 		}
 		_db_msg_Console('AS: adduser: '.@asmembers[@discord['userid']], @discord['serverid'], 'debug');
+		#Debug: save json of messages received from user
+		if(array_index_exists(@cacheMsgs, 'user', @discord['userid'])) {
+			@saveMsgs = array('User :'.@discord['username'].'  ID: '.@discord['userid'], 'Message IDs:', @cacheMsgs['user'][@discord['userid']], 'Messages:');
+			foreach(@msgID in @cacheMsgs['user'][@discord['userid']]) {
+				@saveMsgs[] = @msgID.':  '.@cacheMsgs['messages'][@msgID];
+			}
+			_write_file(import('DiscordBot.logs.dir').'/'.@discord['serverid'].'/debug/AntiSpam_User_Message_'.@discord['userid'].'.txt', array_implode(@saveMsgs, '\n'), 'overwrite');
+		}
 	}
 	
 ##### -------------------
@@ -342,7 +363,8 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			@msgcount = 0;
 		# Delete messages recorded in the user's cached messages?
 			if(@config['AS_Remove_Messages'] === true) {
-				if(array_contains(@userFlags, 'newlimit'.@config['AS_New_User_Channel_Limit']) || array_contains(@userFlags, 'newglobalping')) {
+				# if(array_contains(@userFlags, 'newlimit'.@config['AS_New_User_Channel_Limit']) || array_contains(@userFlags, 'newglobalping')) {
+				if(@newuser === true) {
 				# New User: Remove last 5 mins of messages
 					@dmtimeout = 300000;
 				}
@@ -381,7 +403,8 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			if(@config['AS_Timeout_User'] === true) {
 				@actiontaken .= ' <24 Hour Timeout set for user>';
 				discord_request('PATCH', 'guilds/'.@discord['serverid'].'/members/'.@discord['userid'], array('communication_disabled_until': simple_date('yyyy-MM-dd\'T\'HH:mm:ss.SSS\'000+00:00\'', (time() + 86400000), 'UTC')), 
-				closure(@ex) { _discordBot_broadcast(@discord['serverid'], '--admin', 'Successfully set timeout on user `'.@discord['nickname'].'` for the next 24 hours.') }, 
+				# closure(@ex) { _discordBot_broadcast(@discord['serverid'], '--admin', 'Successfully set timeout on user `'.@discord['nickname'].'` for the next 24 hours.') }, 
+				closure(@ex) { _db_msg_Console('Successfully set timeout on user `'.@discord['nickname'].'` for the next 24 hours.', @discord['serverid']) }, 
 				closure(@ex) { _db_msg_Console('AntiSpam: Set Timeout failed for '.@discord['username'].'\n'.@ex, @discord['serverid'], 'error'); }
 				);
 			}
@@ -483,7 +506,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				}
 				if(@announceMsg != '') { _discordBot_broadcast(@discord['serverid'], '--announce', @announceMsg); }
 				@subMsg = '';
-				if(array_contains(@userFlags, 'newlimit'.@config['AS_New_User_Channel_Limit']) || array_contains(@userFlags, 'newglobalping')) {
+				if(@newuser === true) {
 					@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times');
 					if(!is_array(@logJointimes)) { @logJointimes = array(); }
 					if(!array_index_exists(@logJointimes, @discord['userid'], 1)) { @subMsg = '\n\nIf you have recently rejoined the server with a new account, ask the moderators to use my `transferroles` command to bypass this AntiSpam protection.'; }
