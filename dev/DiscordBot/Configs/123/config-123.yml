@@ -38,7 +38,10 @@ Channels:
   #Showcase_Talk: 987654213
   # Reaction Roles Channel
   # If set, Reaction roles only occur on this channel (supports multiple channels)
-  # Reaction_Roles: roles
+  #Reaction_Roles: roles
+  # AntiSpam: Honeypot Channel
+  # If set, any chat on this channel will trigger AntiSpam.
+  #Honeypot: honeypot
 
 
 # Send message to Console: Includes logs such as Member joins, voice chat joins, Bot DM notifications, and Discord Command usage.
@@ -109,6 +112,8 @@ AS_Safe_URL_Channels:
 # AS_Non_Words_Limit: 50
 # **Optional** If enabled, does not add user to AntiSpam effects if the message was sent in an "no XP" channel. (Requires Leaderboard config of noXP channels)
 # AS_Ignore_NoXP: true
+# **Optional** Allow admins to chat in the Honeypot channel?
+# AS_Honeypot_AllowAdmin: true
 #General Alert to all server members. Useful to tell users to keep their accounts safe, and to inform users of why many channels may have missing unread messages.
 # **Optional, uncomment to customize**
 # AS_General_Announcement: "Another member got hacked or just chose to spam sketchy invites. I removed those messages, sorry for the unread notifications! Remember if you get your account back feel free to DM one of us or someone from the server so that you can be unbanned."

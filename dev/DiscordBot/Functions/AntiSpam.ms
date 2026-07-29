@@ -81,6 +81,7 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 		'fastchannel': 'Chatted on %count% channels too quickly',
 		'fastmsg': 'Sent messages very quickly',
 		'chansafe': 'URL containing a non-whitelisted domain `%d%` was sent on safe channel `%channel%`',
+		'honeypot': 'User talked in Honeypot channel %channel%',
 		's-rpchar': '%count% non-alphabet characters present: %list%', 
 		's-chan': 'were sent on at least %count% channels',
 		's-url': 'contains an URL',
@@ -266,7 +267,8 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			if(array_size(@userFlags) < 1) { @userFlags[] = 'dupe'; }
 		}
 		export('DiscordBot.'.@discord['serverid'].'.antispam.dupecount', @dcount);
-	}	
+	}
+
 # Checks for New Users:
 	# --- Returning users bypass new user checks, as new member reports false. ---
 	if(@newuser === true) {
@@ -297,6 +299,36 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 			}
 		}
 	}
+
+# Honeypot:
+	# Message sent in Honeypot channel
+	if(array_index_exists(@config, 'Channels', 'Honeypot')) {
+		@isAdmin = false;
+		if(@discord['channelid'] === @config['Channels']['Honeypot']) {
+			if(array_index_exists(@config, 'AS_Honeypot_AllowAdmin')) {
+				if(@config['AS_Honeypot_AllowAdmin'] == true) {
+					# Admins may talk on Honeypot channel
+					try {
+						foreach(@rN: @rID in discord_member_get_roles(@discord['serverid'], @discord['username'])) {
+							if(array_contains_ic(@config['Role_Admins'], @rN) || array_contains(@config['Role_Admins'], @rID)) {
+								@isAdmin = true;
+								break();
+							}
+						}
+					} catch(Exception @ex) {
+						_db_msg_Console('as: isAdmin check: '.@ex, @discord['serverid'], 'error');
+						@isAdmin = 'Unknown';
+					}
+				}
+			}
+			if(@isAdmin === false) {
+				@adduser = true; 
+				@userFlags[] = 'honeypot';
+				@flagDesc['honeypot'] = replace(@flagDesc['honeypot'], '%channel%', @discord['channel']);
+			}
+		}
+	}
+
 # Ignore Checks:
 	# Message sent in a No XP (ignored) channel
 	if(array_index_exists(@config, 'AS_Ignore_NoXP')) {
@@ -498,13 +530,18 @@ bind('discord_message_received', array('id': 'DiscordBot.antispam.check', 'prior
 				_db_msg_Console(color(14).@discord['username'].color(8).' <@'.@discord['userid'].'>'.color(7).' triggered Anti Spam protection. Reason'.@s.': '.color(9).@prDis, @discord['serverid']);
 				_discordBot_broadcast(@discord['serverid'], '--admin', @logMsg);
 				@announceMsg = @botconfig['AS_General_Announcement'];
+				@announceMsgSubflag = '';
 				if(array_index_exists(@config, 'AS_General_Announcement')) { @announceMsg = @config['AS_General_Announcement']; }
 				foreach(@r in @userFlags) {
 					if(array_index_exists(@config, 'AS_Announcement_'.@r)) {
-						@announceMsg = replace(@config['AS_Announcement_'.@r], '%UserID%', '<@'.@discord['userid'].'>');
+						if(string_starts_with(@r, 's-')) {
+							@announceMsgSubflag .= '\n'.replace(@config['AS_Announcement_'.@r], '%UserID%', '<@'.@discord['userid'].'>');
+						} else {
+							@announceMsg = replace(@config['AS_Announcement_'.@r], '%UserID%', '<@'.@discord['userid'].'>');
+						}
 					}
 				}
-				if(@announceMsg != '') { _discordBot_broadcast(@discord['serverid'], '--announce', @announceMsg); }
+				if(@announceMsg != '') { _discordBot_broadcast(@discord['serverid'], '--announce', @announceMsg.@announceMsgSubflag); }
 				@subMsg = '';
 				if(@newuser === true) {
 					@logJointimes = get_value('DiscordBot.'.@discord['serverid'].'.log.users.Join.Times');
